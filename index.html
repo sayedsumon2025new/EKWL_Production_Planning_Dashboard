@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EKWL · HW Production Planning Dashboard</title>
+<style>
+/* ══ TOKENS ══════════════════════════════════════ */
+:root{
+  --navy:#0d1b2a; --navy2:#152236; --navy3:#1e3050;
+  --green:#1a6b3c; --green2:#2a8a4f; --green-hi:#3aaa63;
+  --amber:#e07800; --amber2:#f0a500;
+  --teal:#007a94; --red:#c0392b; --blue:#1565c0;
+  --text:#e8eef4; --text2:#a8bece; --text3:#5a7a94;
+  --white:#ffffff; --bg:#f0f4f8; --border:#2a3f5a;
+  --card:#192840;
+}
+
+/* ── ITEM COLOR MAP ── */
+.ic-TShirt{background:#4fc3f7!important;color:#000!important}
+.ic-SweatShirt{background:#ce93d8!important;color:#000!important}
+.ic-Hoody{background:#ffb74d!important;color:#000!important}
+.ic-Polo{background:#81c784!important;color:#000!important}
+.ic-SweatPant{background:#4db6ac!important;color:#000!important}
+.ic-LongPant{background:#26a69a!important;color:#000!important}
+.ic-Dress{background:#f48fb1!important;color:#000!important}
+.ic-Tanktop{background:#a1887f!important;color:#fff!important}
+.ic-Cardigan{background:#ff8a65!important;color:#000!important}
+.ic-Jogger{background:#dce775!important;color:#000!important}
+.ic-Shorts{background:#4dd0e1!important;color:#000!important}
+.ic-ShortPant{background:#aed581!important;color:#000!important}
+.ic-Tops{background:#fff176!important;color:#000!important}
+.ic-Leggings{background:#f06292!important;color:#000!important}
+.ic-Tracksuit{background:#66bb6a!important;color:#000!important}
+.ic-Pants{background:#8d6e63!important;color:#fff!important}
+.ic-Jacket{background:#ef5350!important;color:#fff!important}
+.ic-Bottom{background:#78909c!important;color:#fff!important}
+.ic-HoodyJacket{background:#ffb74d!important;color:#000!important}
+
+/* ══ RESET ═══════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif}
+body{background:var(--navy);color:var(--text)}
+
+/* ══ TOP NAV ═════════════════════════════════════ */
+#topnav{
+  position:fixed;top:0;left:0;right:0;height:48px;
+  background:var(--navy2);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:0;
+  z-index:1000;
+  box-shadow:0 2px 12px rgba(0,0,0,.5);
+}
+#topnav .brand{
+  padding:0 16px;
+  font-size:15px;font-weight:700;
+  color:var(--amber2);
+  letter-spacing:.5px;
+  border-right:1px solid var(--border);
+  white-space:nowrap;
+  height:100%;display:flex;align-items:center;gap:8px;
+}
+#topnav .brand span{color:var(--text2);font-weight:400;font-size:12px}
+
+#slide-tabs{
+  display:flex;align-items:center;
+  flex:1;overflow-x:auto;
+  scrollbar-width:none;
+  height:100%;
+}
+#slide-tabs::-webkit-scrollbar{display:none}
+.stab{
+  height:100%;
+  padding:0 14px;
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;
+  color:var(--text2);
+  cursor:pointer;
+  border-right:1px solid var(--border);
+  white-space:nowrap;
+  transition:all .15s;
+  border-bottom:2px solid transparent;
+}
+.stab:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.stab.active{color:var(--amber2);border-bottom-color:var(--amber2);background:rgba(240,165,0,.06)}
+.stab .tnum{
+  background:var(--navy3);
+  border-radius:10px;
+  font-size:10px;
+  padding:1px 6px;
+  font-family:monospace;
+  color:var(--text3);
+}
+.stab.active .tnum{background:rgba(240,165,0,.2);color:var(--amber2)}
+
+#topnav .right{
+  display:flex;align-items:center;gap:8px;
+  padding:0 12px;
+  border-left:1px solid var(--border);
+  height:100%;
+}
+#month-filter{
+  background:var(--navy3);
+  border:1px solid var(--border);
+  border-radius:5px;
+  color:var(--text);
+  padding:4px 10px;
+  font-size:13px;
+  outline:none;
+}
+.top-btn{
+  padding:5px 12px;
+  border-radius:5px;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text2);
+  font-size:12px;
+  cursor:pointer;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.top-btn:hover{border-color:var(--amber2);color:var(--amber2)}
+.top-btn.primary{background:var(--amber);border-color:var(--amber);color:#000;font-weight:700}
+.top-btn.primary:hover{background:var(--amber2)}
+
+/* ══ SLIDES ══════════════════════════════════════ */
+#slides-wrap{
+  position:fixed;top:48px;left:0;right:0;bottom:0;
+  overflow:hidden;
+}
+.slide{
+  position:absolute;inset:0;
+  overflow-y:auto;overflow-x:hidden;
+  opacity:0;pointer-events:none;
+  transition:opacity .25s ease;
+  padding:16px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--border) transparent;
+}
+.slide.active{opacity:1;pointer-events:all}
+.slide::-webkit-scrollbar{width:5px}
+.slide::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ══ CARDS & TABLES ══════════════════════════════ */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:16px;
+  margin-bottom:14px;
+}
+.card-title{
+  font-size:13px;font-weight:700;
+  color:var(--amber2);
+  letter-spacing:.8px;text-transform:uppercase;
+  margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.card-title .ct-right{margin-left:auto;font-size:11px;color:var(--text2);font-weight:400;text-transform:none;letter-spacing:0}
+
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.dt{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
+table.dt thead th{
+  background:var(--navy);
+  color:var(--amber2);
+  padding:7px 10px;
+  text-align:left;
+  border:1px solid var(--border);
+  white-space:nowrap;
+  font-size:11px;
+  letter-spacing:.5px;
+  position:sticky;top:0;z-index:5;
+}
+table.dt tbody td{
+  padding:6px 10px;
+  border:1px solid var(--border);
+  color:var(--text);
+  white-space:nowrap;
+}
+table.dt tbody tr:hover{background:rgba(255,255,255,.03)}
+table.dt tbody tr:nth-child(even){background:rgba(0,0,0,.15)}
+table.dt tfoot td{
+  background:var(--navy);
+  color:var(--amber2);
+  font-weight:700;
+  padding:7px 10px;
+  border:1px solid var(--border);
+  font-size:12px;
+}
+.num{text-align:right!important;font-family:monospace}
+.cen{text-align:center!important}
+
+/* ══ KPIS ════════════════════════════════════════ */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.kpi{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:12px 14px;
+  position:relative;overflow:hidden;
+}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--amber),transparent)}
+.kpi-lbl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);font-family:monospace;margin-bottom:5px}
+.kpi-val{font-size:22px;font-weight:700;color:var(--amber2);font-family:monospace;line-height:1}
+.kpi-sub{font-size:10px;color:var(--text3);margin-top:3px}
+
+/* ══ UPLOAD SLIDE ════════════════════════════════ */
+#s0{background:linear-gradient(135deg,var(--navy) 0%,#0d2040 100%)}
+.upload-hero{
+  max-width:900px;margin:0 auto;
+  padding:20px 0;
+}
+.upload-hero h1{
+  font-size:clamp(18px,2.5vw,28px);
+  font-weight:700;color:var(--text);
+  margin-bottom:6px;
+}
+.upload-hero h1 span{color:var(--amber2)}
+.upload-hero p{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6}
+
+.dropzone{
+  border:2px dashed var(--border);
+  border-radius:12px;
+  padding:32px;
+  text-align:center;
+  background:rgba(255,255,255,.02);
+  transition:all .2s;
+  cursor:pointer;
+  margin-bottom:16px;
+}
+.dropzone:hover,.dropzone.drag{border-color:var(--amber2);background:rgba(240,165,0,.04)}
+.dz-icon{font-size:42px;margin-bottom:10px}
+.dz-text{font-size:14px;color:var(--text2);margin-bottom:8px}
+.dz-sub{font-size:12px;color:var(--text3)}
+
+#file-input{display:none}
+
+.config-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:10px;
+  margin-bottom:16px;
+}
+.cfg-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:14px;
+}
+.cfg-title{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--amber2);font-family:monospace;margin-bottom:10px}
+.cfg-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.cfg-row label{font-size:12px;color:var(--text2);flex:1}
+.cfg-row input{
+  width:65px;
+  background:var(--navy3);
+  border:1px solid var(--border);
+  border-radius:4px;
+  color:var(--text);
+  padding:4px 8px;
+  font-size:13px;
+  font-family:monospace;
+  text-align:right;
+  outline:none;
+}
+.cfg-row input:focus{border-color:var(--amber2)}
+
+.csv-format{
+  background:var(--navy3);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:14px;
+  font-family:monospace;
+  font-size:11px;
+  color:var(--text2);
+  overflow-x:auto;
+  margin-bottom:16px;
+  white-space:pre;
+  line-height:1.6;
+}
+
+.status-bar{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:12px 16px;
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:16px;
+}
+.status-dot{width:10px;height:10px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background .3s}
+.status-dot.ok{background:var(--green-hi);box-shadow:0 0 6px var(--green-hi)}
+.status-dot.err{background:var(--red)}
+#status-msg{font-size:13px;color:var(--text2)}
+#row-count{margin-left:auto;font-family:monospace;font-size:12px;color:var(--amber2)}
+
+/* ══ BAR CHART ═══════════════════════════════════ */
+.bar-chart{display:flex;flex-direction:column;gap:6px}
+.bar-row{display:flex;align-items:center;gap:8px}
+.bar-lbl{width:120px;font-size:12px;color:var(--text2);text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-wrap{flex:1;height:20px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:3px;transition:width .5s ease;min-width:2px}
+.bar-val{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:10px;font-family:monospace;color:rgba(255,255,255,.8)}
+
+/* ══ LOADING % CELL ══════════════════════════════ */
+.loading-cell{
+  padding:4px 8px!important;
+  font-weight:700;
+  font-family:monospace;
+  font-size:12px;
+  text-align:center!important;
+}
+.lo-over{background:#c0392b!important;color:#fff!important}
+.lo-ok  {background:#1a6b3c!important;color:#fff!important}
+.lo-low {background:#7f8c8d!important;color:#fff!important}
+
+/* ══ ITEM CHIP ═══════════════════════════════════ */
+.ichip{
+  display:inline-block;
+  padding:2px 9px;
+  border-radius:3px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.3px;
+}
+
+/* ══ SLIDE 9 CALENDAR ════════════════════════════ */
+.cal-wrap{overflow:auto;max-height:calc(100vh - 160px)}
+table.cal{border-collapse:collapse;font-size:10px;white-space:nowrap}
+table.cal th{
+  background:var(--navy);
+  color:var(--amber2);
+  padding:5px 6px;
+  border:1px solid var(--border);
+  text-align:center;
+  position:sticky;top:0;z-index:10;
+  font-size:10px;
+}
+table.cal th.line-th{position:sticky;left:0;z-index:20;width:55px;background:var(--navy)}
+table.cal td{
+  border:1px solid rgba(45,65,90,.7);
+  padding:3px 5px;
+  text-align:center;
+  min-width:54px;
+  font-size:10px;
+  font-weight:600;
+}
+table.cal td.line-td{
+  position:sticky;left:0;
+  background:var(--navy2);
+  color:var(--amber2);
+  font-family:monospace;
+  font-weight:700;
+  font-size:11px;
+  z-index:5;
+  border-right:2px solid var(--border);
+}
+.cal-legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.cal-leg-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)}
+.cal-leg-box{width:14px;height:14px;border-radius:2px}
+
+/* ══ SUMMARY BOXES ═══════════════════════════════ */
+.sum-box{
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;font-weight:700;
+  font-family:monospace;
+  height:100%;
+  border-radius:4px;
+}
+
+/* ══ TWO COL ═════════════════════════════════════ */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:800px){.two-col,.three-col{grid-template-columns:1fr}}
+
+/* ══ SLIDE HEADERS ═══════════════════════════════ */
+.slide-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+  flex-wrap:wrap;gap:8px;
+}
+.slide-title{
+  font-size:16px;font-weight:700;
+  color:var(--text);
+  display:flex;align-items:center;gap:10px;
+}
+.slide-title .snum{
+  background:var(--amber);
+  color:#000;
+  font-size:11px;
+  font-family:monospace;
+  padding:2px 8px;
+  border-radius:4px;
+}
+.slide-subtitle{font-size:11px;color:var(--text3);font-family:monospace}
+
+/* ══ PAGER ═══════════════════════════════════════ */
+.pager-btns{display:flex;gap:6px}
+.pg-btn{
+  padding:5px 14px;
+  border-radius:5px;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text2);
+  font-size:12px;
+  cursor:pointer;
+  transition:all .15s;
+}
+.pg-btn:hover{border-color:var(--amber2);color:var(--amber2)}
+
+/* ══ PRINT ═══════════════════════════════════════ */
+@media print{
+  #topnav{display:none}
+  #slides-wrap{position:static;overflow:visible}
+  .slide{position:static;opacity:1;pointer-events:all;display:block!important;page-break-after:always}
+  body{overflow:auto}
+}
+
+/* ══ SCROLLBAR ═══════════════════════════════════ */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ══ BADGE ═══════════════════════════════════════ */
+.badge-g{background:rgba(26,107,60,.25);color:#3aaa63;border:1px solid rgba(26,107,60,.4);padding:2px 8px;border-radius:20px;font-size:11px;font-family:monospace}
+.badge-r{background:rgba(192,57,43,.25);color:#e74c3c;border:1px solid rgba(192,57,43,.4);padding:2px 8px;border-radius:20px;font-size:11px;font-family:monospace}
+.badge-a{background:rgba(224,120,0,.2);color:var(--amber2);border:1px solid rgba(224,120,0,.3);padding:2px 8px;border-radius:20px;font-size:11px;font-family:monospace}
+
+/* ══ RANGE TABLE ═════════════════════════════════ */
+.range-summary{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  margin-top:12px;
+}
+.rsum-box{
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:12px;
+  text-align:center;
+}
+.rsum-title{font-size:10px;color:var(--text3);font-family:monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.rsum-val{font-size:24px;font-weight:700;color:var(--amber2);font-family:monospace}
+.rsum-sub{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* ══ EFFICIENCY BAR ══════════════════════════════ */
+.eff-bar{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin-top:3px}
+.eff-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--red),var(--amber),var(--green-hi))}
+</style>
+</head>
+<body>
+
+<!-- ══ TOP NAV ════════════════════════════════ -->
+<div id="topnav">
+  <div class="brand">
+    📊 <div><div>EKWL · HW Planning</div><span>Production Dashboard</span></div>
+  </div>
+  <div id="slide-tabs">
+    <div class="stab active" onclick="goSlide(0)" data-s="0"><span class="tnum">00</span> Upload</div>
+    <div class="stab" onclick="goSlide(1)" data-s="1"><span class="tnum">01</span> Order Table</div>
+    <div class="stab" onclick="goSlide(2)" data-s="2"><span class="tnum">02</span> Plan Qty Analysis</div>
+    <div class="stab" onclick="goSlide(3)" data-s="3"><span class="tnum">03</span> Buyer Summary</div>
+    <div class="stab" onclick="goSlide(4)" data-s="4"><span class="tnum">04</span> Line Plan & Loading</div>
+    <div class="stab" onclick="goSlide(5)" data-s="5"><span class="tnum">05</span> Item Status</div>
+    <div class="stab" onclick="goSlide(6)" data-s="6"><span class="tnum">06</span> EWO Details</div>
+    <div class="stab" onclick="goSlide(7)" data-s="7"><span class="tnum">07</span> Charts</div>
+    <div class="stab" onclick="goSlide(8)" data-s="8"><span class="tnum">08</span> Feeding Analysis</div>
+    <div class="stab" onclick="goSlide(9)" data-s="9"><span class="tnum">09</span> Line Calendar</div>
+  </div>
+  <div class="right">
+    <select id="month-filter" onchange="applyFilter()"><option value="">All Months</option></select>
+    <button class="top-btn" onclick="downloadTemplate()">⬇ Template</button>
+    <button class="top-btn" onclick="exportData()">⬇ Export</button>
+    <button class="top-btn primary" onclick="document.getElementById('file-input').click()">📂 Load CSV</button>
+    <input type="file" id="file-input" accept=".csv" onchange="handleFile(this)">
+  </div>
+</div>
+
+<!-- ══ SLIDES ═════════════════════════════════ -->
+<div id="slides-wrap">
+
+<!-- ─── SLIDE 0: UPLOAD ──────────────────── -->
+<div class="slide active" id="s0">
+  <div class="upload-hero">
+    <h1>📊 EKWL · HW <span>Production Planning</span> Dashboard</h1>
+    <p>CSV ফাইল আপলোড করুন → সব slide স্বয়ংক্রিয়ভাবে তৈরি হবে। একটি CSV-তে একাধিক মাসের ডেটা রাখতে পারবেন।</p>
+
+    <div class="dropzone" id="dz" onclick="document.getElementById('file-input').click()">
+      <div class="dz-icon">📤</div>
+      <div class="dz-text">CSV ফাইল এখানে drag & drop করুন অথবা click করুন</div>
+      <div class="dz-sub">Format: CSV (Comma Separated Values) · UTF-8</div>
+    </div>
+
+    <div class="status-bar" id="status-bar">
+      <div class="status-dot" id="sdot"></div>
+      <div id="status-msg">কোনো ডেটা লোড হয়নি — CSV আপলোড করুন।</div>
+      <div id="row-count"></div>
+    </div>
+
+    <!-- CSV Format Guide -->
+    <div class="card">
+      <div class="card-title">📋 CSV Column Format (এই অনুযায়ী ফাইল তৈরি করুন)</div>
+      <div class="csv-format">Month,Line,EWO,Buyer,Style,SMV,OrderQty,PlanQty,DeliveryDate,StartDate,EndDate
+Apr-26,12,263480,Tommy,Polo,18.7,5546,638,2026-04-30,2026-04-01,2026-04-14
+Apr-26,8,263480,Tommy,Polo,18.7,5546,2552,2026-04-30,2026-04-15,2026-04-30
+Apr-26,3,263562,Ralph Lauren,Polo,20,2800,641,2026-04-01,2026-04-01,2026-04-30
+Apr-26,5,263590,Carhartt,T-Shirt,6.5,1500,325,2026-04-01,2026-04-01,2026-04-20
+Apr-26,6,263497,Tommy,T-Shirt,10.2,3373,3445,2026-04-01,2026-04-01,2026-04-25
+May-26,1,265100,M&S,Hoody,22,4500,4500,2026-05-15,2026-05-01,2026-05-15</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:10px;line-height:1.8">
+        <b style="color:var(--amber2)">একটি EWO একাধিক Line-এ চললে — প্রতিটি Line-এর জন্য আলাদা Row দিন</b> (EWO same থাকবে)<br>
+        • <b>Month</b>: Apr-26, May-26 ইত্যাদি &nbsp;|&nbsp;
+        <b>Line</b>: লাইন নম্বর (1-47) &nbsp;|&nbsp;
+        <b>EWO</b>: Work Order নম্বর &nbsp;|&nbsp;
+        <b>Buyer</b>: Tommy, Carhartt, M&S ইত্যাদি<br>
+        • <b>Style</b>: T-Shirt, Polo, Hoody, Sweat Shirt, Jogger, Shorts, Sweat Pant, Long Pant, Dress, Cardigan, Tops, Leggings, Tracksuit, Pants, Jacket<br>
+        • <b>OrderQty</b>: মোট Order (EWO-র সব row-এ same) &nbsp;|&nbsp;
+        <b>PlanQty</b>: ওই Line-এর জন্য Plan &nbsp;|&nbsp;
+        <b>StartDate/EndDate</b>: YYYY-MM-DD (Calendar slide-এর জন্য)
+      </div>
+    </div>
+
+    <!-- HW Line Strength Config -->
+    <div class="config-grid">
+      <div class="cfg-card">
+        <div class="cfg-title">⚙ HW Line Strength (Default)</div>
+        <div class="cfg-row"><label>T-Shirt</label><input type="number" id="hw-TShirt" value="12"></div>
+        <div class="cfg-row"><label>Hoody/Jacket</label><input type="number" id="hw-HoodyJacket" value="13"></div>
+        <div class="cfg-row"><label>Sweat Shirt</label><input type="number" id="hw-SweatShirt" value="3"></div>
+        <div class="cfg-row"><label>Polo</label><input type="number" id="hw-Polo" value="12"></div>
+        <div class="cfg-row"><label>TOP's</label><input type="number" id="hw-Tops" value="1"></div>
+        <div class="cfg-row"><label>Bottom</label><input type="number" id="hw-Bottom" value="6"></div>
+      </div>
+      <div class="cfg-card">
+        <div class="cfg-title">🏭 Capacity Settings</div>
+        <div class="cfg-row"><label>Factory Name</label><input type="text" id="cfg-name" value="EKWL · HW" style="width:130px;text-align:left"></div>
+        <div class="cfg-row"><label>Target Efficiency (%)</label><input type="number" id="cfg-eff" value="65"></div>
+        <div style="margin-top:12px">
+          <button class="top-btn primary" style="width:100%;padding:8px" onclick="renderAll()">🔄 সব Slide রিফ্রেশ করুন</button>
+        </div>
+      </div>
+      <div class="cfg-card">
+        <div class="cfg-title">🚀 Quick Start</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.9">
+          1️⃣ উপরে <b style="color:var(--amber2)">Template</b> ডাউনলোড করুন<br>
+          2️⃣ Excel-এ open করে আপনার ডেটা পেস্ট করুন<br>
+          3️⃣ CSV হিসেবে save করুন (UTF-8)<br>
+          4️⃣ এখানে আপলোড করুন<br>
+          5️⃣ উপরের Tab-এ ক্লিক করে slide দেখুন
+        </div>
+        <div style="margin-top:10px">
+          <button class="top-btn" style="width:100%;padding:7px" onclick="loadSampleData()">▶ Sample Data দিয়ে দেখুন</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /s0 -->
+
+<!-- ─── SLIDE 1: ORDER TABLE ──────────────── -->
+<div class="slide" id="s1">
+  <div class="slide-header">
+    <div class="slide-title"><span class="snum">01</span> Order Summary Table <span class="slide-subtitle" id="s1-month"></span></div>
+    <div class="pager-btns">
+      <button class="pg-btn" onclick="goSlide(0)">← Back</button>
+      <button class="pg-btn" onclick="goSlide(2)">Next →</button>
+    </div>
+  </div>
+  <div class="kpi-row" id="s1-kpi"></div>
+  <div class="card">
+    <div class="card-title">📋 Order Detail Table <span class="ct-right" id="s1-count"></span></div>
+    <div class="tbl-wrap"><table class="dt" id="s1-tbl">
+      <thead><tr>
+        <th>Month</th><th>Team (Line)</th><th>EWO</th><th>Buyer</th>
+        <th>Style</th><th class="num">SMV</th>
+        <th class="num">Order Qty</th><th class="num">Plan Qty</th>
+        <th>Delivery Date</th><th class="num">Count</th>
+      </tr></thead>
+      <tbody id="s1-body"></tbody>
+      <tfoot><tr id="s1-foot"></tr></tfoot>
+    </table></div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 2: PLAN QTY ANALYSIS ────────── -->
+<div class="slide" id="s2">
+  <div class="slide-header">
+    <div class="slide-title"><span class="snum">02</span> Plan Quantity Details <span class="slide-subtitle" id="s2-months"></span></div>
+    <div class="pager-btns">
+      <button class="pg-btn" onclick="goSlide(1)">← Back</button>
+      <button class="pg-btn" onclick="goSlide(3)">Next →</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 Order QTY Range Analysis</div>
+    <div class="tbl-wrap" id="s2-tbl-wrap"></div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">📈 Order Range Distribution</div>
+      <div class="bar-chart" id="s2-bar"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📌 Summary</div>
+      <div id="s2-summary"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 3: BUYER SUMMARY ─────────────── -->
+<div class="slide" id="s3">
+  <div class="slide-header">
+    <div class="slide-title"><span class="snum">03</span> Buyer Summary <span class="slide-subtitle" id="s3-month"></span></div>
+    <div class="pager-btns">
+      <button class="pg-btn" onclick="goSlide(2)">← Back</button>
+      <button class="pg-btn" onclick="goSlide(4)">Next →</button>
+    </div>
+  </div>
+  <div class="kpi-row" id="s3-kpi"></div>
+  <div class="card">
+    <div class="card-title">👔 Buyer-wise Order vs Plan Summary</div>
+    <div class="tbl-wrap"><table class="dt" id="s3-tbl">
+      <thead><tr>
+        <th>Month</th><th>Buyer</th>
+        <th class="num">Order Qty</th><th class="num">Plan Qty</th>
+        <th class="num">Plan Hours</th><th class="num">Plan In%</th>
+        <th class="num">AVG Efficiency</th>
+      </tr></thead>
+      <tbody id="s3-body"></tbody>
+      <tfoot><tr id="s3-foot"></tr></tfoot>
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 Buyer-wise Plan Qty</div>
+    <div class="bar-chart" id="s3-bar"></div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 4: LINE PLAN & LOADING ─────── -->
+<div class="slide" id="s4">
+  <div class="slide-header">
+    <div class="slide-title"><span class="snum">04</span> Chassis Line Plan & Loading <span class="slide-subtitle" id="s4-month"></span></div>
+    <div class="pager-btns">
+      <button class="pg-btn" onclick="goSlide(3)">← Back</button>
+      <button class="pg-btn" onclick="goSlide(5)">Next →</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🏭 Plan vs HW Line Strength → Loading % <span class="ct-right">🔴 Over 100% &nbsp; 🟢 ≤100%</span></div>
+    <div class="tbl-wrap"><table class="dt" id="s4-tbl">
+      <thead><tr>
+        <th>Chassis (Item)</th>
+        <th class="num">HW Line Strength</th>
+        <th id="s4-m1h" class="num">—</th>
+        <th id="s4-m2h" class="num">—</th>
+        <th id="s4-lo1" class="cen">Loading</th>
+        <th id="s4-lo2" class="cen">Loading</th>
+      </tr></thead>
+      <tbody id="s4-body"></tbody>
+      <tfoot><tr id="s4-foot"></tr></tfoot>
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 Line Loading Comparison</div>
+    <div id="s4-bar"></div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 5: ITEM STATUS ───────────────── -->
+<div class="slide" id="s5">
+  <div class="slide-header">
+    <div class="slide-title"><span class="snum">05</span> Item / Style Status <span class="slide-subtitle" id="s5-month"></span></div>
+    <div class="pager-btns">
+      <button class="pg-btn" onclick="goSlide(4)">← Back</button>
+      <button class="pg-btn" onclick="goSlide(6)">Next →</button>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">📌 Item Status — Line Count</div>
+      <div class="tbl-wrap"><table class="dt" id="s5-tbl">
+        <thead><tr><th>Item</th><th class="num">Total Lines</th><th class="num">In%</th></tr></thead>
+        <tbody id="s5-body"></tbody>
+        <tfoot><tr id="s5-foot"></tr></tfoot>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Item Distribution (Lines)</div>
+      <div class="bar-chart" id="s5-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 6: EWO DETAILS ──────────────── -->
+<div class="slide" id="s6">
+  <div class="slide-header">
+    <div class="slide-title"><span class="snum">06</span> EWO Detail Table <span class="slide-subtitle" id="s6-month"></span></div>
+    <div class="pager-btns">
+      <button class="pg-btn" onclick="goSlide(5)">← Back</button>
+      <button class="pg-btn" onclick="goSlide(7)">Next →</button>
+    </div>
+  </div>
+  <div class="kpi-row" id="s6-kpi"></div>
+  <div class="card">
+    <div class="card-title">📝 EWO Detail — Line Run & Split QTY <span class="ct-right" id="s6-count"></span></div>
+    <div class="tbl-wrap"><table class="dt" id="s6-tbl">
+      <thead><tr>
+        <th>Month</th><th>EWO</th><th>Line Run Status</th>
+        <th class="num">No Of Line Run</th>
+        <th class="num">No Of Feeding</th>
+        <th>Item</th>
+        <th class="num">Order Qty</th>
+        <th class="num">Plan Qty</th>
+        <th>Split QTY</th>
+      </tr></thead>
+      <tbody id="s6-body"></tbody>
+      <tfoot><tr id="s6-foot"></tr></tfoot>
+    </table></div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 7: CHARTS ───────────────────── -->
+<div class="slide" id="s7">
+  <div class="slide-header">
+    <div class="slide-title"><span class="snum">07</span> Plan vs HW Charts <span class="slide-subtitle" id="s7-month"></span></div>
+    <div class="pager-btns">
+      <button class="pg-btn" onclick="goSlide(6)">← Back</button>
+      <button class="pg-btn" onclick="goSlide(8)">Next →</button>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card" style="min-height:320px">
+      <div class="card-title">📊 EKWL-HW Plan vs Actual Chassis Status</div>
+      <canvas id="s7-canvas1" style="width:100%;max-height:260px"></canvas>
+    </div>
+    <div class="card" style="min-height:320px">
+      <div class="card-title">📊 Line Plan Summary</div>
+      <canvas id="s7-canvas2" style="width:100%;max-height:260px"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 Buyer-wise Order vs Plan</div>
+    <canvas id="s7-canvas3" style="width:100%;max-height:220px"></canvas>
+  </div>
+</div>
+
+<!-- ─── SLIDE 8: FEEDING ANALYSIS ─────────── -->
+<div class="slide" id="s8">
+  <div class="slide-header">
+    <div class="slide-title"><span class="snum">08</span> Feeding Analysis <span class="slide-subtitle" id="s8-month"></span></div>
+    <div class="pager-btns">
+      <button class="pg-btn" onclick="goSlide(7)">← Back</button>
+      <button class="pg-btn" onclick="goSlide(9)">Next →</button>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">🔄 EWO Feeding Frequency Analysis</div>
+      <div class="tbl-wrap"><table class="dt" id="s8-tbl">
+        <thead><tr>
+          <th>No Of Time's</th>
+          <th class="num">No Of EWO</th>
+          <th class="num">Feeding</th>
+          <th class="num">Percentage</th>
+          <th>Remarks</th>
+        </tr></thead>
+        <tbody id="s8-body"></tbody>
+        <tfoot><tr id="s8-foot"></tr></tfoot>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 EWO Feeding Distribution</div>
+      <div class="bar-chart" id="s8-bar"></div>
+      <div style="margin-top:16px" id="s8-summary"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 9: LINE CALENDAR ─────────────── -->
+<div class="slide" id="s9">
+  <div class="slide-header">
+    <div class="slide-title"><span class="snum">09</span> Line Running Style Calendar <span class="slide-subtitle" id="s9-month"></span></div>
+    <div class="pager-btns">
+      <button class="pg-btn" onclick="goSlide(8)">← Back</button>
+      <button class="pg-btn" onclick="goSlide(0)">🏠 Home</button>
+    </div>
+  </div>
+  <div class="cal-legend" id="s9-legend"></div>
+  <div class="card" style="padding:8px">
+    <div class="cal-wrap">
+      <table class="cal" id="s9-cal"></table>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="card-title">📊 Item Count per Day</div>
+    <div class="tbl-wrap">
+      <table class="dt" id="s9-summary-tbl">
+        <thead id="s9-sum-head"></thead>
+        <tbody id="s9-sum-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /slides-wrap -->
+
+<script>
+const esc = v => String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function monthTime(m){const [name,y]=m.split('-');return Date.UTC(2000+Number(y),monthNames.indexOf(name),1)}
+function sortedMonths(data){return unique(data,'month').sort((a,b)=>monthTime(a)-monthTime(b))}
+function validDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;const d=new Date(s+'T00:00:00Z');return Number.isFinite(+d)&&d.toISOString().slice(0,10)===s}
+function parseRecords(text){
+  text=text.replace(/^\uFEFF/,'');const rows=[];let row=[],field='',quoted=false,closed=false;
+  const pushField=()=>{row.push(field.trim());field='';closed=false};
+  const pushRow=()=>{pushField();if(row.some(v=>v!==''))rows.push(row);row=[]};
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(quoted){if(c==='"'){if(text[i+1]==='"'){field+='"';i++}else{quoted=false;closed=true}}else field+=c;continue}
+    if(c==='"'){if(field.trim()||closed)throw Error('Invalid quote in CSV');field='';quoted=true}
+    else if(c===',')pushField();
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;pushRow()}
+    else if(closed){if(!/\s/.test(c))throw Error('Unexpected text after a quoted field')}
+    else field+=c;
+  }
+  if(quoted)throw Error('Unclosed quoted CSV field');
+  if(field||row.length||closed)pushRow();return rows;
+}
+function chassisOf(s){const aliases={Hoody:'Hoody/Jacket',Jacket:'Hoody/Jacket','Sweat Pant':'Bottom','Long Pant':'Bottom',Shorts:'Bottom','Short Pant':'Bottom',Jogger:'Bottom',Pants:'Bottom',Tops:"TOP's"};return Object.hasOwn(aliases,s)?aliases[s]:(['T-Shirt','Hoody/Jacket','Sweat Shirt','Polo',"TOP's",'Bottom'].includes(s)?s:'Other')}
+function strengths(){return Object.fromEntries([['T-Shirt','TShirt'],['Hoody/Jacket','HoodyJacket'],['Sweat Shirt','SweatShirt'],['Polo','Polo'],["TOP's",'Tops'],['Bottom','Bottom']].map(([name,id])=>[name,Math.max(0,N(document.getElementById('hw-'+id).value))]))}
+function csvCell(v){const s=String(v??'');return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
+
+/* ══════════════════════════════════════════════════
+   GLOBALS
+══════════════════════════════════════════════════ */
+let DATA = [];
+let MONTHS = [];
+let CURRENT_SLIDE = 0;
+
+const ITEM_KEY = s => (s||'').replace(/[\s\/]/g,'').replace(/&/g,'');
+const ITEM_CLASS = s => 'ic-' + ITEM_KEY(s);
+
+const ITEM_COLORS_HEX = {
+  'T-Shirt':'#4fc3f7','SweatShirt':'#ce93d8','Hoody':'#ffb74d',
+  'Polo':'#81c784','SweatPant':'#4db6ac','LongPant':'#26a69a',
+  'Dress':'#f48fb1','Tanktop':'#a1887f','Cardigan':'#ff8a65',
+  'Jogger':'#dce775','Shorts':'#4dd0e1','ShortPant':'#aed581',
+  'Tops':'#fff176','Leggings':'#f06292','Tracksuit':'#66bb6a',
+  'Pants':'#8d6e63','Jacket':'#ef5350','Bottom':'#78909c',
+  'HoodyJacket':'#ffb74d'
+};
+
+function itemColor(s){const k=ITEM_KEY(s);return Object.hasOwn(ITEM_COLORS_HEX,k)?ITEM_COLORS_HEX[k]:'#607d8b'}
+function itemChip(s){
+  const c=itemColor(s);
+  const isLight=['#fff176','#dce775','#aed581','#4fc3f7','#81c784','#4dd0e1','#4db6ac','#f48fb1','#ffb74d','#ff8a65','#ce93d8','#f06292'].includes(c);
+  return `<span class="ichip" style="background:${c};color:${isLight?'#000':'#fff'}">${esc(s||'—')}</span>`;
+}
+
+const N = v => Number.isFinite(Number(v))?Number(v):0;
+const fmt = v => N(v).toLocaleString();
+const pct = (a,b) => b?Math.round(a/b*100)+'%':'0%';
+
+/* ══ SLIDE NAV ══════════════════════════════════ */
+function goSlide(n){
+  document.querySelectorAll('.slide').forEach((s,i)=>s.classList.toggle('active',i===n));
+  document.querySelectorAll('.stab').forEach(t=>t.classList.toggle('active',+t.dataset.s===n));
+  CURRENT_SLIDE=n;
+  if(n>0 && DATA.length) renderSlide(n);
+}
+
+/* ══ FILE HANDLING ══════════════════════════════ */
+const dz=document.getElementById('dz');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)readFile(f)});
+
+function handleFile(input){if(input.files[0])readFile(input.files[0]);input.value=''}
+
+function readFile(file){const r=new FileReader();r.onload=e=>parseCSV(e.target.result);r.onerror=()=>setStatus(false,'Could not read the selected file.');r.readAsText(file,'UTF-8')}
+
+function parseCSV(text){
+ try{
+  const records=parseRecords(text);if(!records.length)throw Error('The CSV is empty');
+  const headers=records.shift().map(h=>h.toLowerCase().replace(/\s+/g,''));
+  const required=['month','line','ewo','buyer','style','smv','orderqty','planqty','deliverydate'];
+  for(const k of required)if(!headers.includes(k))throw Error('Missing column: '+k);
+  if(new Set(headers).size!==headers.length)throw Error('Duplicate column headers');
+  const candidates=[],metadata=new Map();
+  records.forEach((cols,i)=>{
+   const fail=msg=>{throw Error('Record '+(i+2)+': '+msg)};
+   if(cols.length!==headers.length)fail('column count does not match the header');
+   const row=Object.fromEntries([...required,'startdate','enddate'].map(k=>[k,cols[headers.indexOf(k)]||'']));
+   for(const k of ['month','ewo','buyer','style'])if(!row[k])fail(k+' is required');
+   if(!/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2}$/.test(row.month))fail('Month must use MMM-YY, for example Apr-26');
+   for(const k of ['line','smv','orderqty','planqty']){
+    const v=row[k];const plain=/^\d+(\.\d+)?$/.test(v);const grouped=/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(v);
+    const n=Number(v.replace(/,/g,''));if(!(plain||grouped)||!Number.isFinite(n)||n<0)fail(k+' must be a non-negative number');row[k]=n;
+   }
+   if(!Number.isInteger(row.line)||row.line<1||row.line>47)fail('Line must be an integer from 1 to 47');
+   if(!Number.isInteger(row.orderqty)||!Number.isInteger(row.planqty))fail('Quantities must be whole pieces');
+   for(const k of ['deliverydate','startdate','enddate'])if(row[k]&&!validDate(row[k]))fail(k+' must be a valid YYYY-MM-DD date');
+   if(Boolean(row.startdate)!==Boolean(row.enddate))fail('Supply both StartDate and EndDate, or leave both empty');
+   if(row.startdate>row.enddate)fail('StartDate is after EndDate');
+   const key=JSON.stringify([row.month,row.ewo]);const old=metadata.get(key);
+   if(old&&['buyer','style','smv','orderqty','deliverydate'].some(k=>old[k]!==row[k]))fail('Conflicting metadata for EWO '+row.ewo+' in '+row.month);
+   metadata.set(key,row);candidates.push(row);
+  });
+  DATA=candidates;MONTHS=sortedMonths(DATA);
+  document.getElementById('month-filter').innerHTML='<option value="">All Months</option>'+MONTHS.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('');
+  document.getElementById('month-filter').value='';
+  renderAll();goSlide(1);setStatus(true,DATA.length+' rows loaded successfully',DATA.length+' rows · '+MONTHS.length+' months');return true;
+ }catch(error){setStatus(false,error.message+' — previous data retained.');return false}
+}
+
+function setStatus(ok,msg,count=''){
+  document.getElementById('sdot').className='status-dot '+(ok?'ok':'err');
+  document.getElementById('status-msg').textContent=msg;
+  document.getElementById('row-count').textContent=count;
+}
+
+function getFiltered(){
+  const m=document.getElementById('month-filter').value;
+  return m?DATA.filter(r=>r.month===m):DATA;
+}
+
+function applyFilter(){renderAll()}
+function renderAll(){
+ const factory=document.getElementById('cfg-name').value.trim()||'EKWL · HW';
+ document.title=factory+' Production Planning Dashboard';
+ document.querySelector('#topnav .brand').textContent=factory+' · Production Planning';
+ for(let i=1;i<=9;i++)renderSlide(i)
+}
+function renderSlide(n){
+  const fns={1:renderS1,2:renderS2,3:renderS3,4:renderS4,5:renderS5,6:renderS6,7:renderS7,8:renderS8,9:renderS9};
+  if(fns[n])fns[n](getFiltered());
+}
+
+/* ══ UTILITIES ══════════════════════════════════ */
+function groupBy(arr,key){
+  return arr.reduce((a,r)=>{(a[r[key]]||(a[r[key]]=[])).push(r);return a},Object.create(null));
+}
+function sum(arr,key){return arr.reduce((s,r)=>s+N(r[key]),0)}
+function unique(arr,key){return [...new Set(arr.map(r=>r[key]))]}
+
+// Get unique EWOs (deduplicate by month+ewo)
+function getUniqueEWOs(data){
+  const map={};
+  data.forEach(r=>{
+    const k=JSON.stringify([r.month,r.ewo]);
+    if(!map[k]){map[k]={month:r.month,ewo:r.ewo,buyer:r.buyer,style:r.style,smv:r.smv,orderqty:r.orderqty,planqty:0,lines:[],deliverydate:r.deliverydate}}
+    map[k].planqty+=r.planqty;
+    map[k].lines.push(r.line);
+  });
+  return Object.values(map);
+}
+
+function monthLabel(data){
+  const ms=unique(data,'month');
+  return ms.length?ms.join(' & '):'-';
+}
+
+/* ══ SLIDE 1: ORDER TABLE ═══════════════════════ */
+function renderS1(data){
+  const ml=monthLabel(data);
+  document.getElementById('s1-month').textContent=ml;
+  document.getElementById('s1-count').textContent=`${data.length} rows`;
+
+  const totOrd=sum(getUniqueEWOs(data),'orderqty');
+  const totPlan=sum(data,'planqty');
+  const ewos=getUniqueEWOs(data).length;
+  const buyers=unique(data,'buyer').length;
+  const lines=unique(data,'line').length;
+
+  document.getElementById('s1-kpi').innerHTML=`
+    <div class="kpi"><div class="kpi-lbl">Total Rows</div><div class="kpi-val">${data.length}</div><div class="kpi-sub">Line entries</div></div>
+    <div class="kpi"><div class="kpi-lbl">Unique EWOs</div><div class="kpi-val">${ewos}</div><div class="kpi-sub">Work orders</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Order</div><div class="kpi-val">${fmt(totOrd)}</div><div class="kpi-sub">PCS</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Plan</div><div class="kpi-val">${fmt(totPlan)}</div><div class="kpi-sub">PCS</div></div>
+    <div class="kpi"><div class="kpi-lbl">Buyers</div><div class="kpi-val">${buyers}</div><div class="kpi-sub">Active</div></div>
+    <div class="kpi"><div class="kpi-lbl">Lines Used</div><div class="kpi-val">${lines}</div><div class="kpi-sub">Sewing lines</div></div>
+  `;
+
+  const tb=document.getElementById('s1-body');
+  tb.innerHTML=data.map((r,i)=>`<tr>
+    <td>${esc(r.month)}</td>
+    <td class="cen">${r.line}</td>
+    <td class="num">${esc(r.ewo)}</td>
+    <td>${esc(r.buyer)}</td>
+    <td>${itemChip(r.style)}</td>
+    <td class="num">${r.smv}</td>
+    <td class="num">${fmt(r.orderqty)}</td>
+    <td class="num">${fmt(r.planqty)}</td>
+    <td>${esc(r.deliverydate)}</td>
+    <td class="num">1</td>
+  </tr>`).join('');
+
+  document.getElementById('s1-foot').innerHTML=`
+    <td colspan="6">Total</td>
+    <td class="num">${fmt(totOrd)}</td>
+    <td class="num">${fmt(totPlan)}</td>
+    <td colspan="2"></td>
+  `;
+}
+
+/* ══ SLIDE 2: PLAN QTY ANALYSIS ════════════════ */
+function renderS2(data){
+  const ms=sortedMonths(data);
+  document.getElementById('s2-months').textContent=ms.join(' & ');
+
+  const RANGES=[
+    {lbl:'0-500',min:0,max:500},
+    {lbl:'501-1000',min:501,max:1000},
+    {lbl:'1001-2000',min:1001,max:2000},
+    {lbl:'2001-3000',min:2001,max:3000},
+    {lbl:'3001-5000',min:3001,max:5000},
+    {lbl:'5001-8000',min:5001,max:8000},
+    {lbl:'Above 8000',min:8001,max:Infinity}
+  ];
+
+  // Get unique EWOs per month
+  const ewosPerMonth={};
+  ms.forEach(m=>{ewosPerMonth[m]=getUniqueEWOs(data.filter(r=>r.month===m))});
+
+  // Build columns for each month
+  const thCols=ms.map(m=>`<th class="num">${esc(m)} No Of Style</th><th class="num">${esc(m)} In%</th>`).join('');
+  let html=`<table class="dt"><thead><tr>
+    <th>Order QTY Range</th>${thCols}
+  </tr></thead><tbody>`;
+
+  const totals=ms.map(m=>ewosPerMonth[m].length);
+
+  let smallMid={}, bigMid={};
+  ms.forEach(m=>{smallMid[m]=0;bigMid[m]=0});
+
+  RANGES.forEach(range=>{
+    html+=`<tr><td><b>${range.lbl}</b></td>`;
+    ms.forEach((m,mi)=>{
+      const ewos=ewosPerMonth[m];
+      const cnt=ewos.filter(e=>e.orderqty>=range.min&&e.orderqty<=range.max).length;
+      const tot=totals[mi];
+      const p=tot?Math.round(cnt/tot*100):0;
+      html+=`<td class="num">${cnt}</td><td class="num">${p}%</td>`;
+      if(range.max<=5000) smallMid[m]+=cnt;
+      else bigMid[m]+=cnt;
+    });
+    html+=`</tr>`;
+  });
+
+  html+=`<tr><td style="color:var(--amber2);font-weight:700">Total Style</td>`;
+  ms.forEach((m,mi)=>{html+=`<td class="num" colspan="2">${totals[mi]}</td>`});
+  html+=`</tr></tbody></table>`;
+  document.getElementById('s2-tbl-wrap').innerHTML=html;
+
+  // Bar chart
+  const barData=RANGES.map(r=>({
+    lbl:r.lbl,
+    vals:ms.map(m=>ewosPerMonth[m].filter(e=>e.orderqty>=r.min&&e.orderqty<=r.max).length)
+  }));
+  const maxV=Math.max(...barData.flatMap(r=>r.vals),1);
+  document.getElementById('s2-bar').innerHTML=barData.map(r=>`
+    <div class="bar-row">
+      <div class="bar-lbl">${r.lbl}</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+        ${r.vals.map((v,i)=>`<div class="bar-wrap" style="height:14px">
+          <div class="bar-fill" style="width:${Math.round(v/maxV*100)}%;background:${i===0?'#f0a500':'#3aaa63'}"></div>
+          <div class="bar-val">${v}</div>
+        </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  // Summary
+  let sumHtml='<div class="range-summary">';
+  ms.forEach(m=>{
+    const t=totals[ms.indexOf(m)];
+    const sm=smallMid[m], bm=bigMid[m];
+    sumHtml+=`
+      <div class="rsum-box"><div class="rsum-title">${esc(m)} 5000 or fewer</div>
+        <div class="rsum-val">${t?Math.round(sm/t*100):0}%</div>
+        <div class="rsum-sub">${sm} of ${t} styles</div></div>
+      <div class="rsum-box"><div class="rsum-title">${esc(m)} Above 5000</div>
+        <div class="rsum-val">${t?Math.round(bm/t*100):0}%</div>
+        <div class="rsum-sub">${bm} of ${t} styles</div></div>`;
+  });
+  sumHtml+='</div>';
+  document.getElementById('s2-summary').innerHTML=sumHtml;
+}
+
+/* ══ SLIDE 3: BUYER SUMMARY ═════════════════════ */
+function renderS3(data){
+  const ml=monthLabel(data);
+  document.getElementById('s3-month').textContent=ml;
+
+
+  const byBuyer=groupBy(data,'buyer');
+  const totOrd=sum(getUniqueEWOs(data),'orderqty');
+  const totPlan=sum(data,'planqty');
+  let totHrs=0,rows=[];
+
+  Object.entries(byBuyer).forEach(([buyer,rws])=>{
+    const ewos=getUniqueEWOs(rws);
+    const ordQty=sum(ewos,'orderqty');
+    const planQty=sum(rws,'planqty');
+    const planHrs=rws.reduce((s,r)=>s+r.planqty*r.smv/60,0);
+    totHrs+=planHrs;
+    const planPct=totPlan?Math.round(planQty/totPlan*100):0;
+      rows.push({buyer,ordQty,planQty,planHrs:Math.round(planHrs),planPct,month:sortedMonths(rws).join(' & ')});
+  });
+
+  rows.sort((a,b)=>b.planQty-a.planQty);
+
+  document.getElementById('s3-kpi').innerHTML=`
+    <div class="kpi"><div class="kpi-lbl">Total Buyers</div><div class="kpi-val">${rows.length}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Order Qty</div><div class="kpi-val">${fmt(totOrd)}</div><div class="kpi-sub">PCS</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Plan Qty</div><div class="kpi-val">${fmt(totPlan)}</div><div class="kpi-sub">PCS</div></div>
+    <div class="kpi"><div class="kpi-lbl">Plan Hours</div><div class="kpi-val">${fmt(Math.round(totHrs))}</div><div class="kpi-sub">Total</div></div>
+  `;
+
+  document.getElementById('s3-body').innerHTML=rows.map(r=>`<tr>
+    <td>${esc(r.month)}</td><td><b>${esc(r.buyer)}</b></td>
+    <td class="num">${fmt(r.ordQty)}</td>
+    <td class="num">${fmt(r.planQty)}</td>
+    <td class="num">${fmt(r.planHrs)}</td>
+    <td class="num">${r.planPct}%</td>
+    <td class="num">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span>${Math.min(100,Math.max(0,N(document.getElementById('cfg-eff').value)))}%</span>
+        <div class="eff-bar" style="flex:1"><div class="eff-fill" style="width:${Math.min(100,Math.max(0,N(document.getElementById('cfg-eff').value)))}%"></div></div>
+      </div>
+    </td>
+  </tr>`).join('');
+
+  document.getElementById('s3-foot').innerHTML=`
+    <td colspan="2">Total</td>
+    <td class="num">${fmt(totOrd)}</td>
+    <td class="num">${fmt(totPlan)}</td>
+    <td class="num">${fmt(Math.round(totHrs))}</td>
+    <td class="num">${totPlan?100:0}%</td><td></td>`;
+
+  const maxPlan=Math.max(...rows.map(r=>r.planQty),1);
+  document.getElementById('s3-bar').innerHTML=rows.map(r=>`
+    <div class="bar-row">
+      <div class="bar-lbl">${esc(r.buyer)}</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(r.planQty/maxPlan*100)}%;background:#3aaa63"></div>
+        <div class="bar-val">${fmt(r.planQty)}</div></div>
+    </div>`).join('');
+}
+
+/* ══ SLIDE 4: LINE PLAN & LOADING ══════════════ */
+function renderS4(data){
+ const ms=sortedMonths(data),hw=strengths(),chassis=[...Object.keys(hw),'Other'];
+ document.getElementById('s4-month').textContent=ms.join(' & ');
+ const count=(m,c)=>new Set(data.filter(r=>r.month===m&&(!c||chassisOf(r.style)===c)).map(r=>r.line)).size;
+ document.querySelector('#s4-tbl thead').innerHTML='<tr><th>Chassis (Item)</th><th>HW Strength</th>'+ms.map(m=>'<th>'+esc(m)+' Lines</th><th>'+esc(m)+' Loading</th>').join('')+'</tr>';
+ document.getElementById('s4-body').innerHTML=chassis.map(c=>'<tr><td>'+itemChip(c)+'</td><td class="num">'+(c==='Other'?'Unassigned':hw[c])+'</td>'+ms.map(m=>{const n=count(m,c),capacity=hw[c];return '<td class="num">'+n+'</td><td class="num">'+(capacity?Math.round(n/capacity*100)+'%':n?'No capacity':'—')+'</td>'}).join('')+'</tr>').join('');
+ const totalHW=Object.values(hw).reduce((a,b)=>a+b,0);
+ document.getElementById('s4-foot').innerHTML='<td>Unique lines (all chassis)</td><td class="num">'+totalHW+'</td>'+ms.map(m=>'<td class="num">'+count(m)+'</td><td class="num">'+pct(count(m),totalHW)+'</td>').join('');
+ const bars=[{label:'HW Strength',value:totalHW},...ms.map(m=>({label:m+' Plan',value:count(m)}))];const max=Math.max(1,...bars.map(b=>b.value));
+ document.getElementById('s4-bar').innerHTML=bars.map(b=>'<div class="bar-row"><div class="bar-lbl">'+esc(b.label)+'</div><div class="bar-wrap"><div class="bar-fill" style="background:#3aaa63;width:'+b.value/max*100+'%"></div><div class="bar-val">'+b.value+'</div></div></div>').join('');
+}
+
+/* ══ SLIDE 5: ITEM STATUS ═══════════════════════ */
+function renderS5(data){
+  document.getElementById('s5-month').textContent=monthLabel(data);
+  const byStyle=groupBy(data,'style');
+  const totLines=data.length;
+  const rows=Object.entries(byStyle)
+    .map(([s,rws])=>({style:s,lines:new Set(rws.map(r=>r.month+'|'+r.line)).size}))
+    .sort((a,b)=>b.lines-a.lines);
+  const totL=rows.reduce((s,r)=>s+r.lines,0);
+
+  document.getElementById('s5-body').innerHTML=rows.map(r=>`<tr>
+    <td>${itemChip(r.style)}</td>
+    <td class="num">${r.lines}</td>
+    <td class="num">${Math.round(r.lines/totL*100)}%</td>
+  </tr>`).join('');
+  document.getElementById('s5-foot').innerHTML=`<td>Total</td><td class="num">${totL}</td><td class="num">${totL?100:0}%</td>`;
+
+  const maxL=Math.max(...rows.map(r=>r.lines),1);
+  document.getElementById('s5-bar').innerHTML=rows.map(r=>`
+    <div class="bar-row">
+      <div class="bar-lbl" style="display:flex;align-items:center;gap:4px;justify-content:flex-end">
+        <span style="width:10px;height:10px;border-radius:2px;background:${itemColor(r.style)};flex-shrink:0"></span>
+        ${esc(r.style)}
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-fill" style="width:${Math.round(r.lines/maxL*100)}%;background:${itemColor(r.style)}"></div>
+        <div class="bar-val" style="color:#000">${r.lines}</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ══ SLIDE 6: EWO DETAILS ═══════════════════════ */
+function renderS6(data){
+  document.getElementById('s6-month').textContent=monthLabel(data);
+  const ewos=getUniqueEWOs(data);
+
+  // Group original data by ewo for line details
+  const ewoMap={};
+  data.forEach(r=>{
+    const k=JSON.stringify([r.month,r.ewo]);
+    if(!ewoMap[k])ewoMap[k]={month:r.month,ewo:r.ewo,buyer:r.buyer,style:r.style,smv:r.smv,orderqty:r.orderqty,planqty:0,lines:[],splits:[]};
+    ewoMap[k].planqty+=r.planqty;
+    const pos=ewoMap[k].lines.indexOf(r.line);
+    if(pos<0){ewoMap[k].lines.push(r.line);ewoMap[k].splits.push(r.planqty)}else ewoMap[k].splits[pos]+=r.planqty;
+  });
+
+  const rows=Object.values(ewoMap);
+  const totOrd=rows.reduce((s,r)=>s+r.orderqty,0);
+  const totPlan=rows.reduce((s,r)=>s+r.planqty,0);
+  document.getElementById('s6-count').textContent=`${rows.length} unique EWOs`;
+  document.getElementById('s6-kpi').innerHTML=`
+    <div class="kpi"><div class="kpi-lbl">Unique EWOs</div><div class="kpi-val">${rows.length}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Order Qty</div><div class="kpi-val">${fmt(totOrd)}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Plan Qty</div><div class="kpi-val">${fmt(totPlan)}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Avg Lines/EWO</div><div class="kpi-val">${rows.length?(rows.reduce((s,r)=>s+r.lines.length,0)/rows.length).toFixed(1):'0'}</div></div>`;
+
+  document.getElementById('s6-body').innerHTML=rows.map(r=>{
+    const lineStr=r.lines.join('|');
+    const splitStr=r.splits.map(fmt).join('|');
+    return `<tr>
+      <td>${esc(r.month)}</td>
+      <td class="num">${esc(r.ewo)}</td>
+      <td><code style="font-size:11px">${lineStr}</code></td>
+      <td class="num">${r.lines.length}</td>
+      <td class="num">${r.lines.length}</td>
+      <td>${itemChip(r.style)}</td>
+      <td class="num">${fmt(r.orderqty)}</td>
+      <td class="num">${fmt(r.planqty)}</td>
+      <td style="font-size:11px;font-family:monospace">${splitStr}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('s6-foot').innerHTML=`
+    <td colspan="6">Total</td>
+    <td class="num">${fmt(totOrd)}</td>
+    <td class="num">${fmt(totPlan)}</td><td></td>`;
+}
+
+/* ══ SLIDE 7: CHARTS (Canvas) ═══════════════════ */
+function renderS7(data){
+ document.getElementById('s7-month').textContent=monthLabel(data);
+ const ms=sortedMonths(data),hw=strengths(),chassis=[...Object.keys(hw),'Other'];
+ const colors=['#ce93d8','#ef5350','#4fc3f7','#ffb74d','#4db6ac'];
+ const plans=ms.map((m,i)=>({lbl:m+' Plan',vals:chassis.map(c=>new Set(data.filter(r=>r.month===m&&chassisOf(r.style)===c).map(r=>r.line)).size),color:colors[i%colors.length]}));
+ drawGroupedBar('s7-canvas1',chassis,[{lbl:'HW Strength',vals:chassis.map(c=>hw[c]||0),color:'#3aaa63'},...plans]);
+ drawGroupedBar('s7-canvas2',['Grand Total'],[{lbl:'HW Strength',vals:[Object.values(hw).reduce((a,b)=>a+b,0)],color:'#3aaa63'},...ms.map((m,i)=>({lbl:m+' Plan',vals:[new Set(data.filter(r=>r.month===m).map(r=>r.line)).size],color:colors[i%colors.length]}))]);
+ const buyers=unique(data,'buyer');drawGroupedBar('s7-canvas3',buyers,[{lbl:'Order Qty',vals:buyers.map(b=>sum(getUniqueEWOs(data.filter(r=>r.buyer===b)),'orderqty')),color:'#4fc3f7'},{lbl:'Plan Qty',vals:buyers.map(b=>sum(data.filter(r=>r.buyer===b),'planqty')),color:'#3aaa63'}]);
+}
+
+function drawGroupedBar(canvasId,labels,datasets){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas) return;
+  const W=canvas.parentElement.offsetWidth||600;
+  const legendColumns=Math.max(1,Math.floor((W-75)/150));
+  const legendHeight=Math.ceil(datasets.length/legendColumns)*16;
+  const H=220+legendHeight;
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const pad={top:20,right:20,bottom:50+legendHeight,left:55};
+  const cW=W-pad.left-pad.right;
+  const cH=H-pad.top-pad.bottom;
+
+  const allVals=datasets.flatMap(d=>d.vals);
+  const maxV=Math.max(...allVals,1)*1.15;
+
+  // grid
+  const gridLines=4;
+  ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=1;
+  for(let i=0;i<=gridLines;i++){
+    const y=pad.top+cH*(1-i/gridLines);
+    ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+cW,y);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.35)';ctx.font='9px monospace';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxV*i/gridLines),pad.left-4,y+3);
+  }
+
+  const n=labels.length;
+  const nd=datasets.length;
+  const groupW=cW/Math.max(n,1);
+  const barW=Math.min(groupW*0.7/nd,35);
+  const gapBetween=2;
+
+  datasets.forEach((ds,di)=>{
+    ctx.fillStyle=ds.color;
+    labels.forEach((lbl,li)=>{
+      const v=ds.vals[li]||0;
+      const bH=Math.max(v/maxV*cH,1);
+      const x=pad.left+groupW*li+(groupW*(1-(nd*barW+(nd-1)*gapBetween)/groupW)/2)+(barW+gapBetween)*di;
+      const y=pad.top+cH-bH;
+      ctx.fillRect(x,y,barW,bH);
+      // value on top
+      ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='9px monospace';ctx.textAlign='center';
+      if(v>0)ctx.fillText(v,x+barW/2,y-2);
+      ctx.fillStyle=ds.color;
+    });
+  });
+
+  // x labels
+  ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='10px sans-serif';ctx.textAlign='center';
+  labels.forEach((lbl,li)=>{
+    const x=pad.left+groupW*li+groupW/2;
+    ctx.fillText(lbl.length>10?lbl.slice(0,10)+'…':lbl,x,H-pad.bottom+14);
+  });
+
+  // legend
+  datasets.forEach((ds,i)=>{
+    const lx=pad.left+(i%legendColumns)*150;
+    const ly=H-legendHeight+Math.floor(i/legendColumns)*16;
+    ctx.fillStyle=ds.color;ctx.fillRect(lx,ly,10,8);
+    ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='9px sans-serif';ctx.textAlign='left';
+    ctx.fillText(ds.lbl,lx+13,ly+7,132);
+  });
+}
+
+/* ══ SLIDE 8: FEEDING ANALYSIS ══════════════════ */
+function renderS8(data){
+  document.getElementById('s8-month').textContent=monthLabel(data);
+
+  // Count lines per EWO (= feeding count)
+  const ewoMap={};
+  data.forEach(r=>{
+    const k=JSON.stringify([r.month,r.ewo]);
+    if(!ewoMap[k])ewoMap[k]=new Set();
+    ewoMap[k].add(r.line);
+  });
+
+  const feedCounts=Object.values(ewoMap).map(lines=>lines.size);
+  const maxFeed=Math.max(...feedCounts,1);
+  const totEWO=feedCounts.length;
+
+  const freq={};
+  feedCounts.forEach(c=>{freq[c]=(freq[c]||0)+1});
+
+  const rows=Object.entries(freq).map(([times,cnt])=>({times:N(times),cnt,feeding:N(times)*cnt}))
+    .sort((a,b)=>a.times-b.times);
+  const totFeeding=rows.reduce((s,r)=>s+r.feeding,0);
+
+  document.getElementById('s8-body').innerHTML=rows.map(r=>`<tr>
+    <td class="cen">${r.times}</td>
+    <td class="num">${r.cnt}</td>
+    <td class="num">${r.feeding}</td>
+    <td class="num">${Math.round(r.cnt/totEWO*100)}%</td>
+    <td></td>
+  </tr>`).join('');
+  document.getElementById('s8-foot').innerHTML=`
+    <td>Total Run EWO</td>
+    <td class="num">${totEWO}</td>
+    <td class="num">${totFeeding}</td>
+    <td class="num">${totEWO?100:0}%</td><td></td>`;
+
+  const maxCnt=Math.max(...rows.map(r=>r.cnt),1);
+  document.getElementById('s8-bar').innerHTML=rows.map(r=>`
+    <div class="bar-row">
+      <div class="bar-lbl">${r.times} Lines</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(r.cnt/maxCnt*100)}%;background:${r.times===1?'#3aaa63':r.times<=2?'#f0a500':'#ef5350'}"></div>
+        <div class="bar-val">${r.cnt} EWOs</div></div>
+    </div>`).join('');
+
+  const singleLine=freq[1]||0;
+  document.getElementById('s8-summary').innerHTML=`
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-lbl">Single Line EWO</div><div class="kpi-val c">${singleLine}</div>
+        <div class="kpi-sub">${(totEWO?Math.round(singleLine/totEWO*100):0)}% of total</div></div>
+      <div class="kpi"><div class="kpi-lbl">Multi Line EWO</div><div class="kpi-val" style="color:var(--amber2)">${totEWO-singleLine}</div>
+        <div class="kpi-sub">${(totEWO?Math.round((totEWO-singleLine)/totEWO*100):0)}% of total</div></div>
+      <div class="kpi"><div class="kpi-lbl">Total Feeding</div><div class="kpi-val">${totFeeding}</div></div>
+    </div>`;
+}
+
+/* ══ SLIDE 9: LINE CALENDAR ═════════════════════ */
+function renderS9(data){
+ const ms=sortedMonths(data),selected=document.getElementById('month-filter').value||ms[0];
+ document.getElementById('s9-month').textContent=selected?(ms.length>1?selected+' (select another month above)':selected):'No data';
+ const records=data.filter(r=>r.month===selected),dated=records.filter(r=>validDate(r.startdate)&&validDate(r.enddate)&&r.startdate<=r.enddate);
+ if(!selected||!dated.length){document.getElementById('s9-cal').innerHTML='<tbody><tr><td>No valid schedules. Supply StartDate and EndDate in YYYY-MM-DD format.</td></tr></tbody>';for(const id of ['s9-legend','s9-sum-head','s9-sum-body'])document.getElementById(id).innerHTML='';return}
+ const start=new Date(monthTime(selected)),end=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth()+1,0));
+ const dates=[];for(let d=new Date(start);d<=end;d.setUTCDate(d.getUTCDate()+1))dates.push(d.toISOString().slice(0,10));
+ const lines=unique(records,'line').sort((a,b)=>a-b),styles=unique(records,'style');const counts=Object.fromEntries(styles.map(s=>[s,dates.map(()=>0)]));const conflicts=dates.map(()=>0);let conflictCount=0;
+ let out='<thead><tr><th>Line</th>'+dates.map(d=>'<th>'+Number(d.slice(8))+'</th>').join('')+'</tr></thead><tbody>';
+ for(const line of lines){out+='<tr><td>'+line+'</td>';dates.forEach((date,i)=>{
+  const active=dated.filter(r=>r.line===line&&r.startdate<=date&&r.enddate>=date);
+  if(active.length>1){conflictCount++;conflicts[i]++;out+='<td style="background:#c0392b;color:white" title="'+esc(active.map(r=>r.ewo+': '+r.style).join(' / '))+'">Conflict</td>'}
+  else if(active.length){const s=active[0].style;counts[s][i]++;out+='<td title="'+esc(active[0].ewo+': '+s)+'" style="background:'+itemColor(s)+';color:#000">'+esc(s.slice(0,5))+'</td>'}
+  else out+='<td>—</td>';
+ });out+='</tr>'}out+='</tbody>';document.getElementById('s9-cal').innerHTML=out;
+ document.getElementById('s9-legend').innerHTML=styles.map(itemChip).join(' ')+(conflictCount?'<span style="color:#ff8a80"> '+conflictCount+' conflicting line-days; shown separately below.</span>':'')+(records.length!==dated.length?'<span> Some rows have no schedule dates.</span>':'');
+ document.getElementById('s9-sum-head').innerHTML='<tr><th>Item</th>'+dates.map(d=>'<th>'+Number(d.slice(8))+'</th>').join('')+'<th>Line-days</th><th>In%</th></tr>';
+ const summaryRow=(name,values)=>{const total=values.reduce((a,b)=>a+b,0);return '<tr><td>'+esc(name)+'</td>'+values.map(v=>'<td class="num">'+v+'</td>').join('')+'<td class="num">'+total+'</td><td>'+pct(total,dates.length*lines.length)+'</td></tr>'};
+ const totals=dates.map((_,i)=>conflicts[i]+styles.reduce((n,s)=>n+counts[s][i],0));
+ document.getElementById('s9-sum-body').innerHTML=styles.map(s=>summaryRow(s,counts[s])).join('')+(conflictCount?summaryRow('Conflicts',conflicts):'')+summaryRow('Occupied line-days',totals);
+}
+
+/* ══ TEMPLATE DOWNLOAD ══════════════════════════ */
+function downloadTemplate(){
+  const csv=`Month,Line,EWO,Buyer,Style,SMV,OrderQty,PlanQty,DeliveryDate,StartDate,EndDate
+Apr-26,12,263480,Tommy,Polo,18.7,5546,638,2026-04-30,2026-04-01,2026-04-14
+Apr-26,8,263480,Tommy,Polo,18.7,5546,2552,2026-04-30,2026-04-15,2026-04-30
+Apr-26,3,263562,Ralph Lauren,Polo,20,2800,641,2026-04-01,2026-04-01,2026-04-30
+Apr-26,5,263590,Carhartt,T-Shirt,6.5,1500,325,2026-04-01,2026-04-01,2026-04-20
+Apr-26,6,263497,Tommy,T-Shirt,10.2,3373,3445,2026-04-01,2026-04-01,2026-04-25
+Apr-26,7,263909,Ralph Lauren,T-Shirt,8.96,2000,208,2026-04-01,2026-04-01,2026-04-18
+Apr-26,9,263752,Tommy,Hoody,20,400,25,2026-04-01,2026-04-01,2026-04-05
+Apr-26,14,263553,Tommy,T-Shirt,8.9,15415,2617,2026-04-01,2026-04-01,2026-04-28
+Apr-26,14,263757,Tommy,T-Shirt,9.3,524,415,2026-04-01,2026-04-20,2026-04-30
+Apr-26,1,264100,M&S,Sweat Shirt,15,8500,4200,2026-04-25,2026-04-05,2026-04-25
+Apr-26,2,264100,M&S,Sweat Shirt,15,8500,4300,2026-04-25,2026-04-06,2026-04-26
+Apr-26,20,264200,Carhartt,Hoody,22,12000,6000,2026-04-28,2026-04-10,2026-04-28
+Apr-26,21,264200,Carhartt,Hoody,22,12000,6000,2026-04-28,2026-04-10,2026-04-28
+Apr-26,30,264300,M&S,T-Shirt,7.5,25000,12500,2026-04-30,2026-04-01,2026-04-20
+Apr-26,31,264300,M&S,T-Shirt,7.5,25000,12500,2026-04-30,2026-04-15,2026-04-30
+May-26,1,265100,Tommy,Sweat Shirt,16,9000,4500,2026-05-20,2026-05-01,2026-05-15
+May-26,2,265100,Tommy,Sweat Shirt,16,9000,4500,2026-05-20,2026-05-10,2026-05-20
+May-26,5,265200,Ralph Lauren,Polo,19,6000,3000,2026-05-25,2026-05-01,2026-05-25
+May-26,6,265200,Ralph Lauren,Polo,19,6000,3000,2026-05-25,2026-05-05,2026-05-25`;
+  download(csv,'production_planning_template.csv','text/csv');
+}
+
+/* ══ EXPORT ════════════════════════════════════ */
+function exportData(){
+  if(!DATA.length){alert('No data to export.');return}
+  const hdr='Month,Line,EWO,Buyer,Style,SMV,OrderQty,PlanQty,DeliveryDate,StartDate,EndDate\n';
+  const rows=DATA.map(r=>[r.month,r.line,r.ewo,r.buyer,r.style,r.smv,r.orderqty,r.planqty,r.deliverydate,r.startdate,r.enddate].map(csvCell).join(',')).join('\r\n');
+  download(hdr+rows,'planning_export.csv','text/csv');
+}
+
+function download(content,name,type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+/* ══ SAMPLE DATA ════════════════════════════════ */
+function loadSampleData(){
+  const csv=`Month,Line,EWO,Buyer,Style,SMV,OrderQty,PlanQty,DeliveryDate,StartDate,EndDate
+Apr-26,12,263480,Tommy,Polo,18.7,5546,638,2026-04-30,2026-04-01,2026-04-14
+Apr-26,8,263480,Tommy,Polo,18.7,5546,2552,2026-04-30,2026-04-15,2026-04-30
+Apr-26,3,263562,Ralph Lauren,Polo,20,2800,641,2026-04-01,2026-04-01,2026-04-30
+Apr-26,5,263590,Carhartt,T-Shirt,6.5,1500,325,2026-04-01,2026-04-01,2026-04-20
+Apr-26,6,263497,Tommy,T-Shirt,10.2,3373,3445,2026-04-01,2026-04-01,2026-04-25
+Apr-26,7,263909,Ralph Lauren,T-Shirt,8.96,2000,208,2026-04-01,2026-04-01,2026-04-18
+Apr-26,9,263752,Tommy,Hoody,20,400,25,2026-04-01,2026-04-01,2026-04-05
+Apr-26,14,263553,Tommy,T-Shirt,8.9,15415,2617,2026-04-01,2026-04-01,2026-04-28
+Apr-26,14,263757,Tommy,T-Shirt,9.3,524,415,2026-04-01,2026-04-20,2026-04-30
+Apr-26,1,264100,M&S,Sweat Shirt,15,8500,4200,2026-04-25,2026-04-05,2026-04-25
+Apr-26,2,264101,M&S,Sweat Shirt,15,7600,3800,2026-04-25,2026-04-06,2026-04-26
+Apr-26,20,264200,Carhartt,Hoody,22,12000,6000,2026-04-28,2026-04-10,2026-04-28
+Apr-26,21,264200,Carhartt,Hoody,22,12000,6000,2026-04-28,2026-04-10,2026-04-28
+Apr-26,30,264300,M&S,T-Shirt,7.5,25000,12500,2026-04-30,2026-04-01,2026-04-20
+Apr-26,31,264300,M&S,T-Shirt,7.5,25000,12500,2026-04-30,2026-04-15,2026-04-30
+Apr-26,10,264400,Ralph Lauren,Sweat Shirt,14.5,18000,9000,2026-04-22,2026-04-01,2026-04-22
+Apr-26,11,264400,Ralph Lauren,Sweat Shirt,14.5,18000,9000,2026-04-22,2026-04-05,2026-04-22
+Apr-26,15,264500,Tommy,Hoody,21,22000,11000,2026-04-28,2026-04-08,2026-04-28
+Apr-26,16,264500,Tommy,Hoody,21,22000,11000,2026-04-28,2026-04-10,2026-04-28
+Apr-26,22,264600,Carhartt,T-Shirt,9,38000,19000,2026-04-30,2026-04-01,2026-04-20
+Apr-26,23,264600,Carhartt,T-Shirt,9,38000,19000,2026-04-30,2026-04-15,2026-04-30
+Apr-26,24,264700,Tommy,Polo,17,7500,3750,2026-04-25,2026-04-05,2026-04-25
+Apr-26,25,264700,Tommy,Polo,17,7500,3750,2026-04-25,2026-04-10,2026-04-25
+Apr-26,26,264800,M&S,Polo,19.5,9400,4700,2026-04-28,2026-04-08,2026-04-28
+Apr-26,27,264800,M&S,Polo,19.5,9400,4700,2026-04-28,2026-04-12,2026-04-28
+Apr-26,33,264900,Ralph Lauren,Polo,20,3700,1850,2026-04-20,2026-04-01,2026-04-20
+Apr-26,34,264900,Ralph Lauren,Polo,20,3700,1850,2026-04-20,2026-04-05,2026-04-20
+Apr-26,40,265000,Varner,T-Shirt,8.5,51000,25500,2026-04-30,2026-04-01,2026-04-20
+Apr-26,41,265000,Varner,T-Shirt,8.5,51000,25500,2026-04-30,2026-04-15,2026-04-30
+Apr-26,42,265010,Tommy,Sweat Shirt,16,11400,5700,2026-04-25,2026-04-05,2026-04-25
+Apr-26,43,265010,Tommy,Sweat Shirt,16,11400,5700,2026-04-25,2026-04-10,2026-04-25
+Apr-26,44,265020,Tommy,T-Shirt,10,14000,7000,2026-04-28,2026-04-08,2026-04-28
+Apr-26,45,265020,Tommy,T-Shirt,10,14000,7000,2026-04-28,2026-04-12,2026-04-28
+Apr-26,46,265030,Carhartt,Hoody,23,9200,4600,2026-04-25,2026-04-05,2026-04-25
+Apr-26,47,265030,Carhartt,Hoody,23,9200,4600,2026-04-25,2026-04-10,2026-04-25
+May-26,1,265100,Tommy,Sweat Shirt,16,9000,4500,2026-05-20,2026-05-01,2026-05-15
+May-26,2,265100,Tommy,Sweat Shirt,16,9000,4500,2026-05-20,2026-05-10,2026-05-20
+May-26,5,265200,Ralph Lauren,Polo,19,6000,3000,2026-05-25,2026-05-01,2026-05-25
+May-26,6,265200,Ralph Lauren,Polo,19,6000,3000,2026-05-25,2026-05-05,2026-05-25
+May-26,10,265300,M&S,T-Shirt,8,12000,6000,2026-05-28,2026-05-01,2026-05-20
+May-26,11,265300,M&S,T-Shirt,8,12000,6000,2026-05-28,2026-05-15,2026-05-28
+May-26,20,265400,Tommy,Hoody,20,8500,4250,2026-05-22,2026-05-05,2026-05-22
+May-26,21,265400,Tommy,Hoody,20,8500,4250,2026-05-22,2026-05-08,2026-05-22`;
+  parseCSV(csv);
+}
+
+/* ══ KEYBOARD NAV ═══════════════════════════════ */
+document.addEventListener('keydown',e=>{
+  if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+  if(e.key==='ArrowRight')goSlide(Math.min(CURRENT_SLIDE+1,9));
+  if(e.key==='ArrowLeft')goSlide(Math.max(CURRENT_SLIDE-1,0));
+});
+
+/* ══ RESIZE CHARTS ══════════════════════════════ */
+window.addEventListener('resize',()=>{if(DATA.length&&CURRENT_SLIDE===7)renderS7(getFiltered())});
+</script>
+</body>
+</html>
