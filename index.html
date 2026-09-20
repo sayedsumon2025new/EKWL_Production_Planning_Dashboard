@@ -443,6 +443,19 @@ table.cal td.line-td{
 /* ══ EFFICIENCY BAR ══════════════════════════════ */
 .eff-bar{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin-top:3px}
 .eff-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--red),var(--amber),var(--green-hi))}
+
+/* ══ SUPABASE UPLOAD MODAL ═════════════════════ */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(3,10,20,.82);z-index:5000;align-items:center;justify-content:center;padding:18px}
+.modal-bg.open{display:flex}
+.modal-box{width:min(560px,96vw);background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 20px 70px rgba(0,0,0,.55)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.modal-head h3{color:var(--amber2);font-size:16px}
+.modal-close{background:transparent;border:0;color:var(--text2);font-size:22px;cursor:pointer}
+.modal-box input[type=email],.modal-box input[type=password],.modal-box input[type=file]{width:100%;background:var(--navy3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:10px;margin:5px 0 9px}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.modal-msg{font-size:12px;color:var(--text2);line-height:1.5;margin-top:8px;word-break:break-word}
+.modal-progress{width:100%;height:12px;margin-top:10px}
+
 </style>
 </head>
 <body>
@@ -468,12 +481,34 @@ table.cal td.line-td{
     <select id="month-filter" onchange="applyFilter()"><option value="">All Months</option></select>
     <button class="top-btn" onclick="downloadTemplate()">⬇ Template</button>
     <button class="top-btn" onclick="exportData()">⬇ Export</button>
-    <button class="top-btn primary" onclick="document.getElementById('file-input').click()">📂 Load CSV</button>
-    <input type="file" id="file-input" accept=".csv" onchange="handleFile(this)">
+    <button class="top-btn primary" onclick="openUploadModal()">☁ Upload New Plan</button>
+    <input type="file" id="file-input" accept=".csv,text/csv" onchange="handleFile(this)">
   </div>
 </div>
 
 <!-- ══ SLIDES ═════════════════════════════════ -->
+
+<!-- Supabase Upload Modal -->
+<div id="upload-modal" class="modal-bg" onclick="if(event.target===this)closeUploadModal()">
+  <div class="modal-box">
+    <div class="modal-head"><h3>☁ Upload New Plan to Supabase</h3><button class="modal-close" onclick="closeUploadModal()">×</button></div>
+    <div id="login-fields">
+      <input id="sb-email" type="email" placeholder="Admin email">
+      <input id="sb-password" type="password" placeholder="Password">
+    </div>
+    <div class="modal-actions">
+      <button class="top-btn primary" id="sb-login-btn" onclick="sbLogin()">Sign in</button>
+      <button class="top-btn" id="sb-logout-btn" onclick="sbLogout()">Sign out</button>
+    </div>
+    <div id="sb-auth-msg" class="modal-msg">Checking login...</div>
+    <hr style="border:0;border-top:1px solid var(--border);margin:14px 0">
+    <input id="sb-csv-file" type="file" accept=".csv,text/csv">
+    <button class="top-btn primary" style="width:100%;padding:9px" onclick="uploadNewPlan()">Upload & Import New Plan</button>
+    <progress id="sb-progress" class="modal-progress" value="0" max="100"></progress>
+    <div id="sb-upload-msg" class="modal-msg">নতুন raw Plan Data CSV select করুন। Upload complete হলে dashboard নিজে refresh হবে।</div>
+  </div>
+</div>
+
 <div id="slides-wrap">
 
 <!-- ─── SLIDE 0: UPLOAD ──────────────────── -->
@@ -1566,6 +1601,94 @@ May-26,11,265300,M&S,T-Shirt,8,12000,6000,2026-05-28,2026-05-15,2026-05-28
 May-26,20,265400,Tommy,Hoody,20,8500,4250,2026-05-22,2026-05-05,2026-05-22
 May-26,21,265400,Tommy,Hoody,20,8500,4250,2026-05-22,2026-05-08,2026-05-22`;
   parseCSV(csv);
+}
+
+
+/* ══ INTEGRATED SUPABASE CSV UPLOAD ════════════ */
+function openUploadModal(){document.getElementById('upload-modal').classList.add('open');refreshSbAuth()}
+function closeUploadModal(){document.getElementById('upload-modal').classList.remove('open')}
+function sbMsg(id,msg,ok=null){const e=document.getElementById(id);e.textContent=msg;e.style.color=ok===true?'#3aaa63':ok===false?'#ff8a80':'var(--text2)'}
+function csvNum(v){if(v===undefined||v===null||String(v).trim()==='')return null;const x=Number(String(v).replace(/,/g,''));return Number.isFinite(x)?x:null}
+function csvDate(v){if(!v||!String(v).trim())return null;const x=new Date(v);return Number.isNaN(x.getTime())?null:x.toISOString().slice(0,10)}
+function csvChunks(a,size){const r=[];for(let i=0;i<a.length;i+=size)r.push(a.slice(i,i+size));return r}
+function rawDateHeader(h){return /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(String(h).trim())}
+function rawHeaderDate(h){const [m,d,y]=h.split('/').map(Number);return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+async function refreshSbAuth(){
+ const {data:{user}}=await SB.auth.getUser();
+ sbMsg('sb-auth-msg',user?'Signed in: '+user.email:'Not signed in',!!user);
+ document.getElementById('login-fields').style.display=user?'none':'block';
+ document.getElementById('sb-login-btn').style.display=user?'none':'inline-block';
+ document.getElementById('sb-logout-btn').style.display=user?'inline-block':'none';
+ return user;
+}
+async function sbLogin(){
+ const email=document.getElementById('sb-email').value.trim(),password=document.getElementById('sb-password').value;
+ if(!email||!password){sbMsg('sb-auth-msg','Email এবং password দিন।',false);return}
+ const {error}=await SB.auth.signInWithPassword({email,password});
+ if(error){sbMsg('sb-auth-msg',error.message,false);return}
+ document.getElementById('sb-password').value='';await refreshSbAuth();
+}
+async function sbLogout(){await SB.auth.signOut();await refreshSbAuth()}
+async function parseRawPlanFile(file){
+ const text=await file.text(), records=parseRecords(text);
+ if(records.length<2)throw Error('CSV is empty.');
+ const fields=records.shift();
+ const seen=new Set();
+ fields.forEach(h=>{if(seen.has(h))throw Error('Duplicate CSV header: '+h);seen.add(h)});
+ const dateFields=fields.filter(rawDateHeader);
+ if(!dateFields.length)throw Error('No daily date columns such as 9/17/2026 were found.');
+ const rows=records.map((cols,i)=>{
+   if(cols.length!==fields.length)throw Error('Record '+(i+2)+': column count does not match header.');
+   return Object.fromEntries(fields.map((h,j)=>[h,cols[j]??'']));
+ });
+ return {rows,dateFields};
+}
+async function uploadNewPlan(){
+ let uploadId=null;
+ try{
+  const user=await refreshSbAuth();if(!user)throw Error('Please sign in first.');
+  const file=document.getElementById('sb-csv-file').files[0];if(!file)throw Error('Choose Plan Data CSV first.');
+  const prog=document.getElementById('sb-progress');prog.value=3;sbMsg('sb-upload-msg','CSV reading & validation...');
+  const {rows,dateFields}=await parseRawPlanFile(file);
+
+  const {data:up,error:ue}=await SB.from('plan_uploads').insert({file_name:file.name,row_count:rows.length,status:'processing'}).select('id').single();
+  if(ue)throw ue; uploadId=up.id; prog.value=8;
+
+  const safeName=`${uploadId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+  const backup=await SB.storage.from('plan-data').upload(safeName,file,{contentType:'text/csv',upsert:false});
+  if(backup.error)console.warn('CSV backup:',backup.error.message);
+
+  const records=rows.map((r,i)=>({
+   upload_id:uploadId,source_row:i+2,is_summary_row:!r['Buyer']||!r['Line #'],
+   unit:r['Unit']||null,line_no:r['Line #']||null,buyer:r['Buyer']||null,
+   product_type:r['Product Type']||null,product:r['Product']||null,ewo:csvNum(r['EWO']),
+   stroke:r['Stroke']||null,po:r['P.O.']||null,col:r['Col']||null,print:r['Print']||null,
+   emb:r['Emb']||null,outsource:r['Outsource']||null,order_qty:csvNum(r['Order qty']),
+   planned_qty:csvNum(r['Planned qty']),pcd:csvDate(r['PCD']),psd:csvDate(r['PSD']),pfd:csvDate(r['PFD']),
+   strip_plan_qty:csvNum(r['Strip Plan Qty']),delivery:csvDate(r['Delivery']),manpower:csvNum(r['Manpower']),
+   smv:csvNum(r['SMV']),average:csvNum(r['Average']),criteria:r['Criteria']||null,total:csvNum(r['Total'])
+  }));
+  const rowIdMap=new Map();let done=0;
+  for(const batch of csvChunks(records,300)){
+    const {data,error}=await SB.from('plan_records').insert(batch).select('id,source_row');if(error)throw error;
+    data.forEach(x=>rowIdMap.set(x.source_row,x.id));done+=batch.length;
+    prog.value=8+Math.round(37*done/records.length);sbMsg('sb-upload-msg',`Main rows: ${done}/${records.length}`);
+  }
+  const daily=[];
+  rows.forEach((r,i)=>{const recordId=rowIdMap.get(i+2);dateFields.forEach(h=>daily.push({record_id:recordId,upload_id:uploadId,plan_date:rawHeaderDate(h),value:csvNum(r[h])||0}))});
+  done=0;
+  for(const batch of csvChunks(daily,800)){
+    const {error}=await SB.from('plan_daily').insert(batch);if(error)throw error;done+=batch.length;
+    prog.value=45+Math.round(50*done/daily.length);sbMsg('sb-upload-msg',`Daily values: ${done}/${daily.length}`);
+  }
+  const {error:fe}=await SB.from('plan_uploads').update({status:'complete'}).eq('id',uploadId);if(fe)throw fe;
+  prog.value=100;sbMsg('sb-upload-msg','Upload complete. Dashboard refreshing...',true);
+  await loadFromSupabase();
+  setTimeout(closeUploadModal,900);
+ }catch(error){
+  console.error(error);sbMsg('sb-upload-msg',error?.message||String(error),false);
+  if(uploadId)console.warn('Incomplete upload remains with processing status:',uploadId);
+ }
 }
 
 /* ══ KEYBOARD NAV ═══════════════════════════════ */
