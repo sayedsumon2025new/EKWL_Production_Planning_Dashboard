@@ -870,6 +870,7 @@ function csvCell(v){const s=String(v??'');return /[",\r\n]/.test(s)?'"'+s.replac
    GLOBALS
 ══════════════════════════════════════════════════ */
 let DATA = [];
+let DAILY_PLAN = [];
 let MONTHS = [];
 let CURRENT_SLIDE = 0;
 
@@ -944,12 +945,11 @@ async function loadFromSupabase(){
     if(upErr) throw upErr;
     if(!uploads || !uploads.length) throw Error('Supabase-এ কোনো completed upload পাওয়া যায়নি.');
 
-    const upload=uploads[0];
-    const pageSize=1000;
+    const upload=uploads[0], pageSize=1000;
     let rows=[], from=0;
     while(true){
       const {data:part,error}=await SB.from('plan_records')
-        .select('source_row,line_no,buyer,product_type,product,ewo,order_qty,planned_qty,delivery,psd,pfd,smv,criteria,is_summary_row')
+        .select('id,source_row,line_no,buyer,product_type,product,ewo,order_qty,planned_qty,delivery,psd,pfd,smv,criteria,is_summary_row')
         .eq('upload_id',upload.id)
         .eq('criteria','Plan/Day')
         .eq('is_summary_row',false)
@@ -962,6 +962,7 @@ async function loadFromSupabase(){
     }
 
     DATA=rows.map(r=>({
+      record_id:r.id,
       month: monthFromISO(r.psd || r.pfd || r.delivery),
       line: lineNumber(r.line_no),
       ewo: r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),
@@ -973,9 +974,34 @@ async function loadFromSupabase(){
       deliverydate: r.delivery || '',
       startdate: r.psd || '',
       enddate: r.pfd || ''
-    })).filter(r=>r.month && r.line>0);
+    })).filter(r=>r.line>0);
 
-    MONTHS=sortedMonths(DATA);
+    const meta=new Map(DATA.map(r=>[String(r.record_id),r]));
+    DAILY_PLAN=[];
+    from=0;
+    while(true){
+      const {data:part,error}=await SB.from('plan_daily')
+        .select('record_id,plan_date,value')
+        .eq('upload_id',upload.id)
+        .order('plan_date',{ascending:true})
+        .range(from,from+pageSize-1);
+      if(error) throw error;
+      (part||[]).forEach(d=>{
+        const r=meta.get(String(d.record_id));
+        if(r) DAILY_PLAN.push({
+          record_id:d.record_id, date:d.plan_date, value:N(d.value),
+          line:r.line, ewo:r.ewo, buyer:r.buyer, style:r.style
+        });
+      });
+      if(!part || part.length<pageSize) break;
+      from+=pageSize;
+    }
+
+    // Month filter follows the actual uploaded date columns in plan_daily.
+    MONTHS=[...new Set(DAILY_PLAN.map(d=>monthFromISO(d.date)).filter(Boolean))]
+      .sort((a,b)=>monthTime(a)-monthTime(b));
+    if(!MONTHS.length) MONTHS=sortedMonths(DATA);
+
     document.getElementById('month-filter').innerHTML=
       '<option value="">All Months</option>'+
       MONTHS.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('');
@@ -984,7 +1010,7 @@ async function loadFromSupabase(){
     renderAll();
     setStatus(true,
       'Supabase live data loaded: '+upload.file_name,
-      DATA.length+' Plan/Day rows · '+MONTHS.length+' months'
+      DATA.length+' Plan/Day rows · '+DAILY_PLAN.length+' date values'
     );
     goSlide(1);
   }catch(error){
@@ -1494,25 +1520,71 @@ function renderS8(data){
 
 /* ══ SLIDE 9: LINE CALENDAR ═════════════════════ */
 function renderS9(data){
- const ms=sortedMonths(data),selected=document.getElementById('month-filter').value||ms[0];
- document.getElementById('s9-month').textContent=selected?(ms.length>1?selected+' (select another month above)':selected):'No data';
- const records=data.filter(r=>r.month===selected),dated=records.filter(r=>validDate(r.startdate)&&validDate(r.enddate)&&r.startdate<=r.enddate);
- if(!selected||!dated.length){document.getElementById('s9-cal').innerHTML='<tbody><tr><td>No valid schedules. Supply StartDate and EndDate in YYYY-MM-DD format.</td></tr></tbody>';for(const id of ['s9-legend','s9-sum-head','s9-sum-body'])document.getElementById(id).innerHTML='';return}
- const start=new Date(monthTime(selected)),end=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth()+1,0));
- const dates=[];for(let d=new Date(start);d<=end;d.setUTCDate(d.getUTCDate()+1))dates.push(d.toISOString().slice(0,10));
- const lines=unique(records,'line').sort((a,b)=>a-b),styles=unique(records,'style');const counts=Object.fromEntries(styles.map(s=>[s,dates.map(()=>0)]));const conflicts=dates.map(()=>0);let conflictCount=0;
- let out='<thead><tr><th>Line</th>'+dates.map(d=>'<th>'+Number(d.slice(8))+'</th>').join('')+'</tr></thead><tbody>';
- for(const line of lines){out+='<tr><td>'+line+'</td>';dates.forEach((date,i)=>{
-  const active=dated.filter(r=>r.line===line&&r.startdate<=date&&r.enddate>=date);
-  if(active.length>1){conflictCount++;conflicts[i]++;out+='<td style="background:#c0392b;color:white" title="'+esc(active.map(r=>r.ewo+': '+r.style).join(' / '))+'">Conflict</td>'}
-  else if(active.length){const s=active[0].style;counts[s][i]++;out+='<td title="'+esc(active[0].ewo+': '+s)+'" style="background:'+itemColor(s)+';color:#000">'+esc(s.slice(0,5))+'</td>'}
-  else out+='<td>—</td>';
- });out+='</tr>'}out+='</tbody>';document.getElementById('s9-cal').innerHTML=out;
- document.getElementById('s9-legend').innerHTML=styles.map(itemChip).join(' ')+(conflictCount?'<span style="color:#ff8a80"> '+conflictCount+' conflicting line-days; shown separately below.</span>':'')+(records.length!==dated.length?'<span> Some rows have no schedule dates.</span>':'');
- document.getElementById('s9-sum-head').innerHTML='<tr><th>Item</th>'+dates.map(d=>'<th>'+Number(d.slice(8))+'</th>').join('')+'<th>Line-days</th><th>In%</th></tr>';
- const summaryRow=(name,values)=>{const total=values.reduce((a,b)=>a+b,0);return '<tr><td>'+esc(name)+'</td>'+values.map(v=>'<td class="num">'+v+'</td>').join('')+'<td class="num">'+total+'</td><td>'+pct(total,dates.length*lines.length)+'</td></tr>'};
- const totals=dates.map((_,i)=>conflicts[i]+styles.reduce((n,s)=>n+counts[s][i],0));
- document.getElementById('s9-sum-body').innerHTML=styles.map(s=>summaryRow(s,counts[s])).join('')+(conflictCount?summaryRow('Conflicts',conflicts):'')+summaryRow('Occupied line-days',totals);
+  // Dates come ONLY from the uploaded CSV date columns stored in plan_daily.
+  const allDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(Boolean))].sort();
+  const selected=document.getElementById('month-filter').value;
+  const dates=selected ? allDates.filter(d=>monthFromISO(d)===selected) : allDates;
+
+  document.getElementById('s9-month').textContent=
+    dates.length ? (selected||'Uploaded date range')+' · '+dates[0]+' → '+dates[dates.length-1] : 'No daily data';
+
+  if(!dates.length){
+    document.getElementById('s9-cal').innerHTML='<tbody><tr><td>No date-wise Plan/Day data found in plan_daily.</td></tr></tbody>';
+    for(const id of ['s9-legend','s9-sum-head','s9-sum-body'])document.getElementById(id).innerHTML='';
+    return;
+  }
+
+  // Use Product Type (mapped into style) and only positive Plan/Day values.
+  // Same line + same date + multiple products => highest Plan/Day wins.
+  const daily=DAILY_PLAN.filter(d=>dates.includes(d.date) && d.value>0);
+  const lines=[...new Set(daily.map(d=>d.line).filter(n=>n>0))].sort((a,b)=>a-b);
+  const winner=new Map();
+  daily.forEach(d=>{
+    const k=d.line+'|'+d.date, old=winner.get(k);
+    if(!old || d.value>old.value) winner.set(k,d);
+  });
+
+  const styles=[...new Set([...winner.values()].map(d=>d.style))].sort();
+  const counts=Object.fromEntries(styles.map(s=>[s,dates.map(()=>0)]));
+
+  let out='<thead><tr><th>Line</th>'+
+    dates.map(d=>'<th title="'+esc(d)+'">'+Number(d.slice(8))+'<div style="font-size:8px;color:var(--text2);font-weight:400">'+esc(monthNames[Number(d.slice(5,7))-1])+'</div></th>').join('')+
+    '</tr></thead><tbody>';
+
+  for(const line of lines){
+    out+='<tr><td>'+line+'</td>';
+    dates.forEach((date,i)=>{
+      const w=winner.get(line+'|'+date);
+      if(!w){out+='<td>—</td>';return}
+      counts[w.style][i]++;
+      out+='<td title="'+esc('EWO '+w.ewo+' · '+w.style+' · Plan/Day '+fmt(w.value))+
+        '" style="background:'+itemColor(w.style)+';color:#000;font-weight:700">'+
+        esc(w.style)+'</td>';
+    });
+    out+='</tr>';
+  }
+  out+='</tbody>';
+  document.getElementById('s9-cal').innerHTML=out;
+
+  document.getElementById('s9-legend').innerHTML=
+    styles.map(itemChip).join(' ')+
+    '<span style="margin-left:8px;color:var(--text2)">Same line/date হলে highest Plan/Day product দেখানো হচ্ছে.</span>';
+
+  document.getElementById('s9-sum-head').innerHTML=
+    '<tr><th>Product Type</th>'+
+    dates.map(d=>'<th title="'+esc(d)+'">'+Number(d.slice(8))+'</th>').join('')+
+    '<th>Line-days</th><th>In%</th></tr>';
+
+  const summaryRow=(name,values)=>{
+    const total=values.reduce((a,b)=>a+b,0);
+    return '<tr><td>'+esc(name)+'</td>'+
+      values.map(v=>'<td class="num">'+v+'</td>').join('')+
+      '<td class="num">'+total+'</td><td>'+pct(total,dates.length*Math.max(lines.length,1))+'</td></tr>';
+  };
+  const totals=dates.map((_,i)=>styles.reduce((n,s)=>n+counts[s][i],0));
+  document.getElementById('s9-sum-body').innerHTML=
+    styles.map(s=>summaryRow(s,counts[s])).join('')+
+    summaryRow('Occupied line-days',totals);
 }
 
 /* ══ TEMPLATE DOWNLOAD ══════════════════════════ */
