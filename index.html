@@ -456,6 +456,73 @@ table.cal td.line-td{
 .modal-msg{font-size:12px;color:var(--text2);line-height:1.5;margin-top:8px;word-break:break-word}
 .modal-progress{width:100%;height:12px;margin-top:10px}
 
+
+/* Order Table filters */
+.order-filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+.order-filters .flbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.6px}
+.order-filters input{min-width:170px;background:var(--navy3);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:6px 8px;font-size:11px}.order-filters input::placeholder{color:var(--text2)}
+.order-filters select{min-width:145px;background:var(--navy3);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:6px 8px;font-size:11px}
+.order-filters button{background:var(--navy3);border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:6px 10px;font-size:11px;cursor:pointer}
+.order-filters button:hover{border-color:var(--amber);color:var(--amber2)}
+
+
+.order-hover{position:fixed;display:none;z-index:9999;min-width:310px;max-width:460px;background:#0d1b2a;border:1px solid #f0a500;border-radius:7px;box-shadow:0 10px 30px rgba(0,0,0,.45);padding:10px;color:#e8eef4;font-size:11px;pointer-events:none}
+.order-hover .oh-title{color:#ffb000;font-weight:800;margin-bottom:7px}
+.order-hover table{width:100%;border-collapse:collapse}
+.order-hover th,.order-hover td{padding:5px 7px;border-bottom:1px solid #28405a;text-align:right}
+.order-hover th:first-child,.order-hover td:first-child{text-align:left}
+.order-hover .oh-total td{color:#ffb000;font-weight:800;border-top:1px solid #f0a500}
+.hoverable{cursor:help}
+
+
+/* Buyer Summary: fit all columns cleanly within the card */
+#slide3 .table-wrap{overflow-x:auto}
+#slide3 table{width:100%;table-layout:fixed;font-size:10px}
+#slide3 th,#slide3 td{padding:7px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#slide3 th{font-size:9px;line-height:1.15;white-space:normal;text-align:center}
+#slide3 th:nth-child(1),#slide3 td:nth-child(1){width:11%}
+#slide3 th:nth-child(2),#slide3 td:nth-child(2){width:10%}
+#slide3 th:nth-child(3),#slide3 td:nth-child(3){width:8%}
+#slide3 th:nth-child(4),#slide3 td:nth-child(4){width:8%}
+#slide3 th:nth-child(5),#slide3 td:nth-child(5){width:8%}
+#slide3 th:nth-child(6),#slide3 td:nth-child(6){width:7%}
+#slide3 th:nth-child(7),#slide3 td:nth-child(7){width:7%}
+#slide3 th:nth-child(8),#slide3 td:nth-child(8){width:9%}
+#slide3 th:nth-child(9),#slide3 td:nth-child(9){width:8%}
+#slide3 th:nth-child(10),#slide3 td:nth-child(10){width:9%}
+#slide3 th:nth-child(11),#slide3 td:nth-child(11){width:7%}
+#slide3 th:nth-child(12),#slide3 td:nth-child(12){width:8%}
+#slide3 td.num{font-variant-numeric:tabular-nums}
+
+
+/* Range distribution line numbers */
+.range-lines{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.range-line-chip{display:inline-flex;align-items:center;justify-content:center;min-width:25px;padding:2px 6px;border:1px solid #36516f;border-radius:4px;background:#132943;color:#b9d9f5;font-size:9px;font-weight:700}
+.range-line-label{font-size:9px;color:var(--text2);margin-right:3px;align-self:center}
+
+
+/* Order Range Distribution — separated bordered range blocks */
+#s2-bar{display:flex;flex-direction:column;gap:7px}
+#s2-bar .bar-row{
+  border:1px solid #35597d;
+  border-radius:6px;
+  background:rgba(13,31,50,.42);
+  padding:7px 9px;
+  align-items:flex-start;
+  transition:border-color .15s ease,background .15s ease;
+}
+#s2-bar .bar-row:hover{
+  border-color:var(--amber);
+  background:rgba(240,165,0,.045);
+}
+#s2-bar .bar-lbl{
+  min-width:82px;
+  padding-top:2px;
+  font-weight:700;
+  color:#d7e8f8;
+}
+#s2-bar .range-lines{margin-top:1px}
+
 </style>
 </head>
 <body>
@@ -509,6 +576,7 @@ table.cal td.line-td{
   </div>
 </div>
 
+<div id="order-hover" class="order-hover"></div>
 <div id="slides-wrap">
 
 <!-- ─── SLIDE 0: UPLOAD ──────────────────── -->
@@ -599,13 +667,22 @@ May-26,1,265100,M&S,Hoody,22,4500,4500,2026-05-15,2026-05-01,2026-05-15</div>
   </div>
   <div class="kpi-row" id="s1-kpi"></div>
   <div class="card">
+    <div class="order-filters">
+      <span class="flbl">Filter</span>
+      <input id="s1-ewo-search" type="search" placeholder="Search EWO..." oninput="renderS1(getFiltered())">
+      <select id="s1-line-filter" onchange="document.getElementById('s1-ewo-filter').value='';document.getElementById('s1-buyer-filter').value='';document.getElementById('s1-item-filter').value='';renderS1(getFiltered())"><option value="">All Lines</option></select>
+      <select id="s1-ewo-filter" onchange="document.getElementById('s1-buyer-filter').value='';document.getElementById('s1-item-filter').value='';renderS1(getFiltered())"><option value="">All EWO</option></select>
+      <select id="s1-buyer-filter" onchange="document.getElementById('s1-item-filter').value='';renderS1(getFiltered())"><option value="">All Buyers</option></select>
+      <select id="s1-item-filter" onchange="renderS1(getFiltered())"><option value="">All Items</option></select>
+      <button onclick="clearOrderFilters()">Clear Filters</button>
+    </div>
     <div class="card-title">📋 Order Detail Table <span class="ct-right" id="s1-count"></span></div>
     <div class="tbl-wrap"><table class="dt" id="s1-tbl">
       <thead><tr>
         <th>Month</th><th>Team (Line)</th><th>EWO</th><th>Buyer</th>
         <th>Style</th><th class="num">SMV</th>
         <th class="num">Order Qty</th><th class="num">Plan Qty</th>
-        <th>Delivery Date</th><th class="num">Count</th>
+        <th>PCD</th><th>PSD</th><th>PFD</th><th>Delivery Date</th><th class="num">Count</th>
       </tr></thead>
       <tbody id="s1-body"></tbody>
       <tfoot><tr id="s1-foot"></tr></tfoot>
@@ -654,8 +731,8 @@ May-26,1,265100,M&S,Hoody,22,4500,4500,2026-05-15,2026-05-01,2026-05-15</div>
       <thead><tr>
         <th>Month</th><th>Buyer</th>
         <th class="num">Order Qty</th><th class="num">Plan Qty</th>
-        <th class="num">Plan Hours</th><th class="num">Plan In%</th>
-        <th class="num">AVG Efficiency</th>
+        <th class="num">Plan Hours</th><th class="num">Total PO Qty</th><th class="num">Dummy PO Qty</th><th class="num">Dummy PO Plan Qty</th><th class="num">Dummy Plan %</th>
+        <th class="num">ABP Target Efficiency</th><th class="num">Plan Efficiency</th><th class="num">Diff</th><th class="num">Plan In%</th>
       </tr></thead>
       <tbody id="s3-body"></tbody>
       <tfoot><tr id="s3-foot"></tr></tfoot>
@@ -871,6 +948,9 @@ function csvCell(v){const s=String(v??'');return /[",\r\n]/.test(s)?'"'+s.replac
 ══════════════════════════════════════════════════ */
 let DATA = [];
 let DAILY_PLAN = [];
+let SAH_DATA = [];
+let BUYER_PLAN_DATA = [];
+let CLOCK_HOUR_DATA = [];
 let MONTHS = [];
 let CURRENT_SLIDE = 0;
 
@@ -949,7 +1029,7 @@ async function loadFromSupabase(){
     let rows=[], from=0;
     while(true){
       const {data:part,error}=await SB.from('plan_records')
-        .select('id,source_row,line_no,buyer,product_type,product,ewo,order_qty,planned_qty,delivery,psd,pfd,smv,criteria,is_summary_row')
+        .select('id,source_row,line_no,buyer,product_type,product,ewo,po,col,order_qty,planned_qty,pcd,delivery,psd,pfd,smv,criteria,total,is_summary_row')
         .eq('upload_id',upload.id)
         .eq('criteria','Plan/Day')
         .eq('is_summary_row',false)
@@ -961,20 +1041,63 @@ async function loadFromSupabase(){
       from+=pageSize;
     }
 
+    // Raw Plan/Day values for Buyer Summary.
+    BUYER_PLAN_DATA=rows.map(r=>({
+      buyer:r.buyer||'',
+      po:String(r.po||'').trim(),
+      orderqty:N(r.order_qty),
+      planqty:N(r.total)
+    }));
+
     DATA=rows.map(r=>({
       record_id:r.id,
       month: monthFromISO(r.psd || r.pfd || r.delivery),
       line: lineNumber(r.line_no),
       ewo: r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),
       buyer: r.buyer || '',
+      color: r.col || '',
+      po: r.po || '',
       style: dashboardStyle(r.product_type || r.product),
       smv: N(r.smv),
       orderqty: N(r.order_qty),
-      planqty: N(r.planned_qty),
+      planqty: N(r.total),
       deliverydate: r.delivery || '',
+      pcddate: r.pcd || '',
       startdate: r.psd || '',
       enddate: r.pfd || ''
     })).filter(r=>r.line>0);
+
+    // Fetch the raw SAH/Day rows. Buyer Summary Plan Hours must match
+    // the uploaded file's Criteria = SAH/Day -> Total values exactly.
+    SAH_DATA=[];
+    let sahFrom=0;
+    while(true){
+      const {data:sahPart,error:sahErr}=await SB.from('plan_records')
+        .select('buyer,total,is_summary_row')
+        .eq('upload_id',upload.id)
+        .eq('criteria','SAH/Day')
+        .eq('is_summary_row',false)
+        .range(sahFrom,sahFrom+pageSize-1);
+      if(sahErr) throw sahErr;
+      SAH_DATA.push(...(sahPart||[]).map(r=>({buyer:r.buyer||'',total:N(r.total)})));
+      if(!sahPart || sahPart.length<pageSize) break;
+      sahFrom+=pageSize;
+    }
+
+    CLOCK_HOUR_DATA=[];
+    let chFrom=0;
+    while(true){
+      const {data:chPart,error:chErr}=await SB.from('plan_records')
+        .select('buyer,total,is_summary_row')
+        .eq('upload_id',upload.id)
+        .eq('criteria','Clock Hour/Day')
+        .eq('is_summary_row',false)
+        .range(chFrom,chFrom+pageSize-1);
+      if(chErr) throw chErr;
+      CLOCK_HOUR_DATA.push(...(chPart||[]).map(r=>({buyer:r.buyer||'',total:N(r.total)})));
+      if(!chPart || chPart.length<pageSize) break;
+      chFrom+=pageSize;
+    }
 
     const meta=new Map(DATA.map(r=>[String(r.record_id),r]));
     DAILY_PLAN=[];
@@ -1111,46 +1234,113 @@ function monthLabel(data){
 }
 
 /* ══ SLIDE 1: ORDER TABLE ═══════════════════════ */
+function s1Fill(id,values,label){
+  const el=document.getElementById(id); if(!el)return;
+  const cur=el.value;
+  const vals=[...new Set(values.map(v=>String(v??'')).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  el.innerHTML='<option value="">'+label+'</option>'+vals.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+  if(vals.includes(cur))el.value=cur;
+}
+function clearOrderFilters(){
+  const search=document.getElementById('s1-ewo-search'); if(search)search.value='';
+  ['s1-line-filter','s1-ewo-filter','s1-buyer-filter','s1-item-filter'].forEach(id=>document.getElementById(id).value='');
+  renderS1(getFiltered());
+}
+
+function colorBreakdownHtml(row, view){
+  const rows=view.filter(x=>String(x.ewo)===String(row.ewo) && String(x.line)===String(row.line));
+  const byColor={};
+  rows.forEach(x=>{
+    const c=x.color||'(Blank)';
+    if(!byColor[c])byColor[c]={order:0,plan:0,pos:new Set()};
+    byColor[c].order+=N(x.orderqty); byColor[c].plan+=N(x.planqty);
+    if(String(x.po||'').trim()) byColor[c].pos.add(String(x.po).trim());
+  });
+  const entries=Object.entries(byColor).sort((a,b)=>b[1].order-a[1].order);
+  const to=entries.reduce((s,[,v])=>s+v.order,0), tp=entries.reduce((s,[,v])=>s+v.plan,0);
+  const allPOs=new Set(); entries.forEach(([,v])=>v.pos.forEach(po=>allPOs.add(po)));
+  return '<div class="oh-title">EWO '+esc(row.ewo)+' · Line '+esc(row.line)+' · Color-wise Data</div>'+
+    '<table><thead><tr><th>Color</th><th>No. of PO</th><th>Order Qty</th><th>Plan Qty</th></tr></thead><tbody>'+
+    entries.map(([c,v])=>'<tr><td>'+esc(c)+'</td><td>'+fmt(v.pos.size)+'</td><td>'+fmt(v.order)+'</td><td>'+fmt(v.plan)+'</td></tr>').join('')+
+    '<tr class="oh-total"><td>Total</td><td>'+fmt(allPOs.size)+'</td><td>'+fmt(to)+'</td><td>'+fmt(tp)+'</td></tr></tbody></table>';
+}
+function showOrderHover(ev,idx){
+  const row=window.__S1_VIEW[idx], box=document.getElementById('order-hover');
+  if(!row||!box)return;
+  box.innerHTML=colorBreakdownHtml(row,window.__S1_VIEW);
+  box.style.display='block'; moveOrderHover(ev);
+}
+function moveOrderHover(ev){
+  const box=document.getElementById('order-hover'); if(!box||box.style.display==='none')return;
+  const pad=14,w=box.offsetWidth,h=box.offsetHeight;
+  let x=ev.clientX+14,y=ev.clientY+14;
+  if(x+w>innerWidth-pad)x=ev.clientX-w-14;
+  if(y+h>innerHeight-pad)y=ev.clientY-h-14;
+  box.style.left=Math.max(pad,x)+'px';box.style.top=Math.max(pad,y)+'px';
+}
+function hideOrderHover(){const b=document.getElementById('order-hover');if(b)b.style.display='none'}
+
 function renderS1(data){
   const ml=monthLabel(data);
   document.getElementById('s1-month').textContent=ml;
-  document.getElementById('s1-count').textContent=`${data.length} rows`;
 
-  const totOrd=sum(getUniqueEWOs(data),'orderqty');
-  const totPlan=sum(data,'planqty');
-  const ewos=getUniqueEWOs(data).length;
-  const buyers=unique(data,'buyer').length;
-  const lines=unique(data,'line').length;
+  // Cascading filters:
+  // Line -> EWO -> Buyer -> Item
+  // Each next dropdown only shows values available after previous selections.
+  const lineEl=document.getElementById('s1-line-filter');
+  const ewoEl=document.getElementById('s1-ewo-filter');
+  const buyerEl=document.getElementById('s1-buyer-filter');
+  const itemEl=document.getElementById('s1-item-filter');
+
+  s1Fill('s1-line-filter',data.map(r=>r.line),'All Lines');
+  const line=lineEl.value;
+  const ewoSearch=(document.getElementById('s1-ewo-search')?.value||'').trim().toLowerCase();
+
+  const searched=data.filter(r=>!ewoSearch || String(r.ewo).toLowerCase().includes(ewoSearch));
+  const afterLine=searched.filter(r=>!line || String(r.line)===line);
+  s1Fill('s1-ewo-filter',afterLine.map(r=>r.ewo),'All EWO');
+  const ewo=ewoEl.value;
+
+  const afterEwo=afterLine.filter(r=>!ewo || String(r.ewo)===ewo);
+  s1Fill('s1-buyer-filter',afterEwo.map(r=>r.buyer),'All Buyers');
+  const buyer=buyerEl.value;
+
+  const afterBuyer=afterEwo.filter(r=>!buyer || String(r.buyer)===buyer);
+  s1Fill('s1-item-filter',afterBuyer.map(r=>r.style),'All Items');
+  const item=itemEl.value;
+
+  const view=afterBuyer.filter(r=>!item || String(r.style)===item);
+
+  document.getElementById('s1-count').textContent=
+    view.length===data.length ? `${view.length} rows` : `${view.length} filtered / ${data.length} rows`;
+
+  const totOrd=sum(view,'orderqty');
+  const totPlan=sum(view,'planqty');
+  const ewos=getUniqueEWOs(view).length;
+  const buyers=unique(view,'buyer').length;
+  const lines=unique(view,'line').length;
 
   document.getElementById('s1-kpi').innerHTML=`
-    <div class="kpi"><div class="kpi-lbl">Total Rows</div><div class="kpi-val">${data.length}</div><div class="kpi-sub">Line entries</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Rows</div><div class="kpi-val">${view.length}</div><div class="kpi-sub">Filtered entries</div></div>
     <div class="kpi"><div class="kpi-lbl">Unique EWOs</div><div class="kpi-val">${ewos}</div><div class="kpi-sub">Work orders</div></div>
     <div class="kpi"><div class="kpi-lbl">Total Order</div><div class="kpi-val">${fmt(totOrd)}</div><div class="kpi-sub">PCS</div></div>
     <div class="kpi"><div class="kpi-lbl">Total Plan</div><div class="kpi-val">${fmt(totPlan)}</div><div class="kpi-sub">PCS</div></div>
     <div class="kpi"><div class="kpi-lbl">Buyers</div><div class="kpi-val">${buyers}</div><div class="kpi-sub">Active</div></div>
-    <div class="kpi"><div class="kpi-lbl">Lines Used</div><div class="kpi-val">${lines}</div><div class="kpi-sub">Sewing lines</div></div>
-  `;
+    <div class="kpi"><div class="kpi-lbl">Lines Used</div><div class="kpi-val">${lines}</div><div class="kpi-sub">Sewing lines</div></div>`;
 
-  const tb=document.getElementById('s1-body');
-  tb.innerHTML=data.map((r,i)=>`<tr>
-    <td>${esc(r.month)}</td>
-    <td class="cen">${r.line}</td>
-    <td class="num">${esc(r.ewo)}</td>
-    <td>${esc(r.buyer)}</td>
-    <td>${itemChip(r.style)}</td>
-    <td class="num">${r.smv}</td>
-    <td class="num">${fmt(r.orderqty)}</td>
-    <td class="num">${fmt(r.planqty)}</td>
-    <td>${esc(r.deliverydate)}</td>
-    <td class="num">1</td>
-  </tr>`).join('');
+  window.__S1_VIEW=view;
+  document.getElementById('s1-body').innerHTML=view.map((r,i)=>`<tr>
+    <td>${esc(r.month)}</td><td class="cen">${r.line}</td>
+    <td class="num hoverable" onmouseenter="showOrderHover(event,${i})" onmousemove="moveOrderHover(event)" onmouseleave="hideOrderHover()">${esc(r.ewo)}</td>
+    <td>${esc(r.buyer)}</td><td>${itemChip(r.style)}</td><td class="num">${r.smv}</td>
+    <td class="num hoverable" onmouseenter="showOrderHover(event,${i})" onmousemove="moveOrderHover(event)" onmouseleave="hideOrderHover()">${fmt(r.orderqty)}</td><td class="num">${fmt(r.planqty)}</td>
+    <td>${esc(r.pcddate)}</td><td>${esc(r.startdate)}</td><td>${esc(r.enddate)}</td>
+    <td>${esc(r.deliverydate)}</td><td class="num">1</td></tr>`).join('');
 
   document.getElementById('s1-foot').innerHTML=`
-    <td colspan="6">Total</td>
-    <td class="num">${fmt(totOrd)}</td>
-    <td class="num">${fmt(totPlan)}</td>
-    <td colspan="2"></td>
-  `;
+    <td colspan="6">Total</td><td class="num">${fmt(totOrd)}</td>
+    <td class="num">${fmt(totPlan)}</td><td colspan="5"></td>`;
 }
 
 /* ══ SLIDE 2: PLAN QTY ANALYSIS ════════════════ */
@@ -1175,7 +1365,7 @@ function renderS2(data){
   // Build columns for each month
   const thCols=ms.map(m=>`<th class="num">${esc(m)} No Of Style</th><th class="num">${esc(m)} In%</th>`).join('');
   let html=`<table class="dt"><thead><tr>
-    <th>Order QTY Range</th>${thCols}
+    <th>Order QTY Range</th>${thCols}<th class="num">No of EWO</th>
   </tr></thead><tbody>`;
 
   const totals=ms.map(m=>ewosPerMonth[m].length);
@@ -1183,23 +1373,33 @@ function renderS2(data){
   let smallMid={}, bigMid={};
   ms.forEach(m=>{smallMid[m]=0;bigMid[m]=0});
 
+  const allUniqueEWOs=getUniqueEWOs(data);
+  const grandEwoCount=allUniqueEWOs.length;
+
   RANGES.forEach(range=>{
     html+=`<tr><td><b>${range.lbl}</b></td>`;
     ms.forEach((m,mi)=>{
       const ewos=ewosPerMonth[m];
       const cnt=ewos.filter(e=>e.orderqty>=range.min&&e.orderqty<=range.max).length;
-      const tot=totals[mi];
-      const p=tot?Math.round(cnt/tot*100):0;
+      // In% is based on EWO share, not a sum:
+      // EWO in this range / total EWO * 100
+      const p=grandEwoCount ? Math.round(cnt/grandEwoCount*100) : 0;
       html+=`<td class="num">${cnt}</td><td class="num">${p}%</td>`;
       if(range.max<=5000) smallMid[m]+=cnt;
       else bigMid[m]+=cnt;
     });
-    html+=`</tr>`;
+    const uniqueEwoCount=allUniqueEWOs.filter(e=>e.orderqty>=range.min&&e.orderqty<=range.max).length;
+    html+=`<td class="num" style="font-weight:700">${uniqueEwoCount}</td></tr>`;
   });
 
-  html+=`<tr><td style="color:var(--amber2);font-weight:700">Total Style</td>`;
-  ms.forEach((m,mi)=>{html+=`<td class="num" colspan="2">${totals[mi]}</td>`});
-  html+=`</tr></tbody></table>`;
+  html+=`<tr><td style="color:var(--amber2);font-weight:700">Total EWO</td>`;
+  ms.forEach((m,mi)=>{
+    const monthEwoCount=ewosPerMonth[m].length;
+    const monthPct=grandEwoCount ? Math.round(monthEwoCount/grandEwoCount*100) : 0;
+    html+=`<td class="num">${monthEwoCount}</td><td class="num">${monthPct}%</td>`;
+  });
+  html+=`<td class="num" style="color:var(--amber2);font-weight:700">${grandEwoCount}</td>
+         </tr></tbody></table>`;
   document.getElementById('s2-tbl-wrap').innerHTML=html;
 
   // Bar chart
@@ -1208,16 +1408,27 @@ function renderS2(data){
     vals:ms.map(m=>ewosPerMonth[m].filter(e=>e.orderqty>=r.min&&e.orderqty<=r.max).length)
   }));
   const maxV=Math.max(...barData.flatMap(r=>r.vals),1);
-  document.getElementById('s2-bar').innerHTML=barData.map(r=>`
-    <div class="bar-row">
+  document.getElementById('s2-bar').innerHTML=barData.map(r=>{
+    const rangeEWOs=allUniqueEWOs.filter(e=>e.orderqty>=RANGES.find(x=>x.lbl===r.lbl).min && e.orderqty<=RANGES.find(x=>x.lbl===r.lbl).max);
+    const rangeEwoSet=new Set(rangeEWOs.map(e=>String(e.ewo)));
+    const lines=[...new Set(data
+      .filter(x=>rangeEwoSet.has(String(x.ewo)))
+      .map(x=>String(x.line))
+      .filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    return `<div class="bar-row" style="align-items:flex-start">
       <div class="bar-lbl">${r.lbl}</div>
       <div style="flex:1;display:flex;flex-direction:column;gap:3px">
         ${r.vals.map((v,i)=>`<div class="bar-wrap" style="height:14px">
           <div class="bar-fill" style="width:${Math.round(v/maxV*100)}%;background:${i===0?'#f0a500':'#3aaa63'}"></div>
           <div class="bar-val">${v}</div>
         </div>`).join('')}
+        <div class="range-lines"><span class="range-line-label">Lines:</span>
+          ${lines.length?lines.map(l=>`<span class="range-line-chip">${esc(l)}</span>`).join(''):'<span class="range-line-label">—</span>'}
+        </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   // Summary
   let sumHtml='<div class="range-summary">';
@@ -1243,18 +1454,33 @@ function renderS3(data){
 
 
   const byBuyer=groupBy(data,'buyer');
-  const totOrd=sum(getUniqueEWOs(data),'orderqty');
-  const totPlan=sum(data,'planqty');
+  const activeBuyers=new Set(data.map(r=>String(r.buyer)));
+  const buyerPlanScope=BUYER_PLAN_DATA.filter(r=>activeBuyers.has(String(r.buyer)));
+  const totOrd=sum(buyerPlanScope,'orderqty');
+  const totPlan=sum(buyerPlanScope,'planqty');
   let totHrs=0,rows=[];
 
   Object.entries(byBuyer).forEach(([buyer,rws])=>{
-    const ewos=getUniqueEWOs(rws);
-    const ordQty=sum(ewos,'orderqty');
-    const planQty=sum(rws,'planqty');
-    const planHrs=rws.reduce((s,r)=>s+r.planqty*r.smv/60,0);
+    const buyerPlanRows=buyerPlanScope.filter(x=>String(x.buyer)===String(buyer));
+    const ordQty=sum(buyerPlanRows,'orderqty');
+    const planQty=sum(buyerPlanRows,'planqty');
+    const totalPOQty=new Set(buyerPlanRows.map(x=>x.po).filter(Boolean)).size;
+    const dummyRows=buyerPlanRows.filter(x=>/^D-/i.test(x.po));
+    const dummyPOQty=new Set(dummyRows.map(x=>x.po).filter(Boolean)).size;
+    const dummyPOPlanQty=sum(dummyRows,'planqty');
+    const dummyPlanPct=planQty>0 ? dummyPOPlanQty/planQty*100 : 0;
+    const planHrs=SAH_DATA
+      .filter(s=>String(s.buyer)===String(buyer))
+      .reduce((sum,s)=>sum+N(s.total),0);
+    const clockHrs=CLOCK_HOUR_DATA
+      .filter(s=>String(s.buyer)===String(buyer))
+      .reduce((sum,s)=>sum+N(s.total),0);
+    const planEff=clockHrs>0 ? planHrs/clockHrs*100 : 0;
+    const abpTargetEff=Math.min(100,Math.max(0,N(document.getElementById('cfg-eff').value)));
+    const effDiff=planEff-abpTargetEff;
     totHrs+=planHrs;
     const planPct=totPlan?Math.round(planQty/totPlan*100):0;
-      rows.push({buyer,ordQty,planQty,planHrs:Math.round(planHrs),planPct,month:sortedMonths(rws).join(' & ')});
+      rows.push({buyer,ordQty,planQty,planHrs:planHrs,totalPOQty,dummyPOQty,dummyPOPlanQty,dummyPlanPct,clockHrs,abpTargetEff,planEff,effDiff,planPct,month:sortedMonths(rws).join(' & ')});
   });
 
   rows.sort((a,b)=>b.planQty-a.planQty);
@@ -1271,21 +1497,38 @@ function renderS3(data){
     <td class="num">${fmt(r.ordQty)}</td>
     <td class="num">${fmt(r.planQty)}</td>
     <td class="num">${fmt(r.planHrs)}</td>
+    <td class="num">${fmt(r.totalPOQty)}</td>
+    <td class="num">${fmt(r.dummyPOQty)}</td>
+    <td class="num">${fmt(r.dummyPOPlanQty)}</td>
+    <td class="num">${r.dummyPlanPct.toFixed(1)}%</td>
+    <td class="num">${r.abpTargetEff.toFixed(1)}%</td>
+    <td class="num">${r.planEff.toFixed(1)}%</td>
+    <td class="num" style="color:${r.effDiff>=0?'#3aaa63':'#ff6b6b'}">${r.effDiff>=0?'+':''}${r.effDiff.toFixed(1)}%</td>
     <td class="num">${r.planPct}%</td>
-    <td class="num">
-      <div style="display:flex;align-items:center;gap:6px">
-        <span>${Math.min(100,Math.max(0,N(document.getElementById('cfg-eff').value)))}%</span>
-        <div class="eff-bar" style="flex:1"><div class="eff-fill" style="width:${Math.min(100,Math.max(0,N(document.getElementById('cfg-eff').value)))}%"></div></div>
-      </div>
-    </td>
   </tr>`).join('');
 
+  const totClock=rows.reduce((s,r)=>s+r.clockHrs,0);
+  const totalPlanEff=totClock>0 ? totHrs/totClock*100 : 0;
+  const totalPOQty=new Set(buyerPlanScope.map(r=>r.po).filter(Boolean)).size;
+  const totalDummyRows=buyerPlanScope.filter(r=>/^D-/i.test(r.po));
+  const totalDummyPOQty=new Set(totalDummyRows.map(r=>r.po).filter(Boolean)).size;
+  const totalDummyPOPlanQty=sum(totalDummyRows,'planqty');
+  const totalDummyPlanPct=totPlan>0 ? totalDummyPOPlanQty/totPlan*100 : 0;
+  const totalABPTarget=Math.min(100,Math.max(0,N(document.getElementById('cfg-eff').value)));
+  const totalEffDiff=totalPlanEff-totalABPTarget;
   document.getElementById('s3-foot').innerHTML=`
     <td colspan="2">Total</td>
     <td class="num">${fmt(totOrd)}</td>
     <td class="num">${fmt(totPlan)}</td>
     <td class="num">${fmt(Math.round(totHrs))}</td>
-    <td class="num">${totPlan?100:0}%</td><td></td>`;
+    <td class="num">${fmt(totalPOQty)}</td>
+    <td class="num">${fmt(totalDummyPOQty)}</td>
+    <td class="num">${fmt(totalDummyPOPlanQty)}</td>
+    <td class="num">${totalDummyPlanPct.toFixed(1)}%</td>
+    <td class="num">${totalABPTarget.toFixed(1)}%</td>
+    <td class="num">${totalPlanEff.toFixed(1)}%</td>
+    <td class="num" style="color:${totalEffDiff>=0?'#3aaa63':'#ff6b6b'}">${totalEffDiff>=0?'+':''}${totalEffDiff.toFixed(1)}%</td>
+    <td class="num">${totPlan?100:0}%</td>`;
 
   const maxPlan=Math.max(...rows.map(r=>r.planQty),1);
   document.getElementById('s3-bar').innerHTML=rows.map(r=>`
@@ -1772,7 +2015,40 @@ document.addEventListener('keydown',e=>{
 
 /* ══ RESIZE CHARTS ══════════════════════════════ */
 window.addEventListener('resize',()=>{if(DATA.length&&CURRENT_SLIDE===7)renderS7(getFiltered())});
-window.addEventListener('DOMContentLoaded',loadFromSupabase);
+
+/* Persist Upload-page capacity settings in this browser until the user edits them. */
+const SETTINGS_STORAGE_KEY='ekwlhw_capacity_settings_v1';
+const SETTINGS_IDS=['hw-TShirt','hw-HoodyJacket','hw-SweatShirt','hw-Polo','hw-Tops','hw-Bottom','cfg-name','cfg-eff'];
+
+function saveCapacitySettings(){
+  try{
+    const values={};
+    SETTINGS_IDS.forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) values[id]=el.value;
+    });
+    localStorage.setItem(SETTINGS_STORAGE_KEY,JSON.stringify(values));
+  }catch(e){ console.warn('Could not save capacity settings',e); }
+}
+
+function loadCapacitySettings(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY)||'{}');
+    SETTINGS_IDS.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el) return;
+      if(saved[id]!==undefined && saved[id]!==null) el.value=saved[id];
+      el.addEventListener('input',saveCapacitySettings);
+      el.addEventListener('change',saveCapacitySettings);
+    });
+  }catch(e){ console.warn('Could not restore capacity settings',e); }
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  loadCapacitySettings();
+  loadFromSupabase();
+});
+
 </script>
 </body>
 </html>
