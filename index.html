@@ -800,7 +800,12 @@ May-26,1,265100,M&S,Hoody,22,4500,4500,2026-05-15,2026-05-01,2026-05-15</div>
 
 </div><!-- /slides-wrap -->
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL = "https://rdslpcazdzqjlenbezaf.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Vp8l2awmxvWpiqXOVabT_w_iZYX-faF";
+const SB = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
 const esc = v => String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function monthTime(m){const [name,y]=m.split('-');return Date.UTC(2000+Number(y),monthNames.indexOf(name),1)}
@@ -863,6 +868,94 @@ function goSlide(n){
   document.querySelectorAll('.stab').forEach(t=>t.classList.toggle('active',+t.dataset.s===n));
   CURRENT_SLIDE=n;
   if(n>0 && DATA.length) renderSlide(n);
+}
+
+
+/* ══ SUPABASE LIVE DATA ═════════════════════════ */
+function monthFromISO(s){
+  if(!s) return '';
+  const d=new Date(s+'T00:00:00Z');
+  if(!Number.isFinite(+d)) return '';
+  return monthNames[d.getUTCMonth()]+'-'+String(d.getUTCFullYear()).slice(-2);
+}
+function lineNumber(v){
+  const m=String(v??'').match(/\d+/);
+  return m?Number(m[0]):0;
+}
+function dashboardStyle(v){
+  const s=String(v??'').trim().toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
+  const map={
+    't shirt':'T-Shirt','tshirt':'T-Shirt','tee shirt':'T-Shirt',
+    'sweat shirt':'Sweat Shirt','sweatshirt':'Sweat Shirt',
+    'hoody':'Hoody','hoodie':'Hoody','polo':'Polo',
+    'sweat pant':'Sweat Pant','sweatpant':'Sweat Pant',
+    'long pant':'Long Pant','longpant':'Long Pant',
+    'short pant':'Short Pant','shorts':'Shorts','jogger':'Jogger',
+    'tops':'Tops','top':'Tops','dress':'Dress','cardigan':'Cardigan',
+    'leggings':'Leggings','tracksuit':'Tracksuit','pants':'Pants',
+    'jacket':'Jacket','bottom':'Bottom','tanktop':'Tanktop','tank top':'Tanktop'
+  };
+  return map[s] || String(v??'').trim() || 'Other';
+}
+async function loadFromSupabase(){
+  try{
+    setStatus(true,'Supabase থেকে latest planning data load হচ্ছে...','Please wait');
+
+    const {data:uploads,error:upErr}=await SB.from('plan_uploads')
+      .select('id,file_name,uploaded_at,row_count')
+      .eq('status','complete')
+      .order('uploaded_at',{ascending:false})
+      .limit(1);
+    if(upErr) throw upErr;
+    if(!uploads || !uploads.length) throw Error('Supabase-এ কোনো completed upload পাওয়া যায়নি.');
+
+    const upload=uploads[0];
+    const pageSize=1000;
+    let rows=[], from=0;
+    while(true){
+      const {data:part,error}=await SB.from('plan_records')
+        .select('source_row,line_no,buyer,product_type,product,ewo,order_qty,planned_qty,delivery,psd,pfd,smv,criteria,is_summary_row')
+        .eq('upload_id',upload.id)
+        .eq('criteria','Plan/Day')
+        .eq('is_summary_row',false)
+        .order('source_row',{ascending:true})
+        .range(from,from+pageSize-1);
+      if(error) throw error;
+      rows.push(...(part||[]));
+      if(!part || part.length<pageSize) break;
+      from+=pageSize;
+    }
+
+    DATA=rows.map(r=>({
+      month: monthFromISO(r.psd || r.pfd || r.delivery),
+      line: lineNumber(r.line_no),
+      ewo: r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),
+      buyer: r.buyer || '',
+      style: dashboardStyle(r.product_type || r.product),
+      smv: N(r.smv),
+      orderqty: N(r.order_qty),
+      planqty: N(r.planned_qty),
+      deliverydate: r.delivery || '',
+      startdate: r.psd || '',
+      enddate: r.pfd || ''
+    })).filter(r=>r.month && r.line>0);
+
+    MONTHS=sortedMonths(DATA);
+    document.getElementById('month-filter').innerHTML=
+      '<option value="">All Months</option>'+
+      MONTHS.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('');
+    document.getElementById('month-filter').value='';
+
+    renderAll();
+    setStatus(true,
+      'Supabase live data loaded: '+upload.file_name,
+      DATA.length+' Plan/Day rows · '+MONTHS.length+' months'
+    );
+    goSlide(1);
+  }catch(error){
+    console.error(error);
+    setStatus(false,'Supabase load failed: '+(error?.message||error)+'. CSV upload এখনও ব্যবহার করা যাবে.');
+  }
 }
 
 /* ══ FILE HANDLING ══════════════════════════════ */
@@ -1484,6 +1577,7 @@ document.addEventListener('keydown',e=>{
 
 /* ══ RESIZE CHARTS ══════════════════════════════ */
 window.addEventListener('resize',()=>{if(DATA.length&&CURRENT_SLIDE===7)renderS7(getFiltered())});
+window.addEventListener('DOMContentLoaded',loadFromSupabase);
 </script>
 </body>
 </html>
