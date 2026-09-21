@@ -856,6 +856,17 @@ table.cal td.priority-2{color:#ffd166}
 
 #s9-sum-head .icpd-day{font-size:10px;font-weight:900;color:var(--amber);line-height:1}
 #s9-sum-head .icpd-month{font-size:7px;font-weight:700;color:var(--text2);margin-top:3px;line-height:1}
+
+#s9 table.cal tbody td[data-cal-tip]{transform:none!important;box-shadow:none!important;cursor:pointer!important;transition:font-weight .08s ease!important}
+#s9 table.cal tbody td[data-cal-tip]:hover{transform:none!important;box-shadow:none!important;font-size:inherit!important;font-weight:900!important}
+#cal-detail-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:100000;background:rgba(15,23,42,.48);backdrop-filter:blur(2px)}
+#cal-detail-modal.open{display:flex}
+#cal-detail-box{width:min(430px,92vw);max-height:86vh;overflow:auto;background:#fff;color:#10263e;border:1px solid #d8e2ec;border-radius:14px;box-shadow:0 20px 55px rgba(0,0,0,.28);padding:18px}
+#cal-detail-box .cd-head{display:flex;justify-content:space-between;gap:12px;padding-bottom:11px;margin-bottom:10px;border-bottom:1px solid #e5edf5}
+#cal-detail-box .cd-title{font-size:16px;font-weight:900;color:#002b5b}.cd-sub{font-size:11px;font-weight:800;color:#64748b;margin-top:3px}
+#cal-detail-box .cd-close{border:0;background:#eef3f8;color:#334155;border-radius:8px;width:30px;height:30px;font-size:20px;cursor:pointer;font-weight:900}
+#cal-detail-box .cd-row{display:flex;justify-content:space-between;gap:18px;padding:7px 2px;border-bottom:1px dashed #e6edf4}
+#cal-detail-box .cd-lbl{font-size:11px;font-weight:800;color:#64748b}#cal-detail-box .cd-val{font-size:12px;font-weight:900;text-align:right;color:#10263e}
 </style>
 
 <style id="optical-white-professional-theme">
@@ -1332,6 +1343,7 @@ input,select,textarea{
 #s9 table.cal tbody td:not(.line-td):not(.priority-cell):not(.hit-pct):not(.miss-pct):hover{transform:scale(1.16);z-index:30!important;background:#fff3bf!important;color:#002b5b!important;box-shadow:0 0 0 2px #f59e0b,0 6px 16px rgba(0,0,0,.22)!important;font-size:calc(100% + 1px)!important;font-weight:900!important}
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -3438,6 +3450,12 @@ function renderS9(data){
       // Working Hour = date-wise line total Clock Hour / one line-wise Manpower.
       const workingHour=manpower>0?clock/manpower:0;
 
+      // Fixed capacity = 10 working hours per line.
+      const capacityWorkingHour=10;
+      const capacityClockHour=capacityWorkingHour*manpower;
+      const capacityDiffClockHour=(capacityWorkingHour-workingHour)*manpower;
+      const capacityStatus=capacityDiffClockHour>0?'Less Work Load':(capacityDiffClockHour<0?'Over Plan':'Full Capacity');
+
       const eff=clock>0?sah/clock*100:0;
 
       let color=w.color||'';
@@ -3457,9 +3475,16 @@ function renderS9(data){
         runStart=lineDates[j];
       }
 
+      // Ladder Efficiency = Admin > Efficiency & Run Day Ladder,
+      // matched by Product Type and current continuous Run Day.
+      const ladderRows=getEfficiencyLadder();
+      const ladderRow=ladderRows.find(r=>norm(r[0])===norm(w.style));
+      const ladderDayIndex=Math.min(Math.max(runDay,1),6); // Day-6 is also 6+
+      const ladderEfficiency=ladderRow?N(ladderRow[ladderDayIndex]):null;
+
       const payload=encodeURIComponent(JSON.stringify({
-        line,date,ewo:w.ewo||'',qty:w.value,buyer:w.buyer||'',style:w.style||'',color,sah,clock,manpower,workingHour,eff,hit,
-        runDay,runStart
+        line,date,ewo:w.ewo||'',qty:w.value,buyer:w.buyer||'',style:w.style||'',color,sah,clock,manpower,workingHour,capacityWorkingHour,capacityClockHour,capacityDiffClockHour,capacityStatus,eff,hit,
+        runDay,runStart,ladderEfficiency
       }));
       cells.push('<td class="'+(hit?'hit-cell':'miss-cell')+'" data-cal-tip="'+payload+'" style="'+(hit?'background:#b7e4c7!important;color:#17351f!important;':'background:#f6c1c1!important;color:#681b1b!important;')+'font-weight:800!important">'+esc(w.style)+'</td>');
     });
@@ -3469,37 +3494,110 @@ function renderS9(data){
   out+='</tbody>';
   document.getElementById('s9-cal').innerHTML=out;
 
-  // Same rich hover tooltip used by EWO Gantt.
-  const calTip=document.getElementById('ewo-gantt-tip');
-  document.querySelectorAll('#s9 td[data-cal-tip]').forEach(td=>{
-    td.onmouseenter=()=>{
-      const w=JSON.parse(decodeURIComponent(td.dataset.calTip));
-      const effClass=w.eff>=60?'eff-good':(w.eff>=40?'eff-mid':'eff-low');
-      calTip.innerHTML=
-        '<div class="gt-title">EWO '+esc(w.ewo||'—')+' · Line '+w.line+' · '+esc(w.date)+'</div>'+
-        '<div class="gt-row"><span class="gt-lbl">Status</span><span class="gt-val '+(w.hit?'eff-good':'eff-low')+'">'+(w.hit?'Priority Hit':'Priority Not Hit')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Plan Qty</span><span class="gt-val qty">'+fmt(w.qty)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Plan SAH</span><span class="gt-val sah">'+Number(w.sah).toFixed(1)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Clock Hour/Day</span><span class="gt-val">'+Number(w.clock).toFixed(1)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Manpower</span><span class="gt-val">'+(w.manpower?Number(w.manpower).toFixed(0):'—')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Working Hour</span><span class="gt-val" style="color:#67e8f9">'+(w.manpower?Number(w.workingHour).toFixed(1):'—')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Buyer Name</span><span class="gt-val buyer">'+esc(w.buyer||'—')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Product Name</span><span class="gt-val prod">'+esc(w.style||'—')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Run Start</span><span class="gt-val" style="color:#fbbf24">'+esc(w.runStart||'—')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Run Day</span><span class="gt-val" style="color:#38bdf8;font-size:13px">'+(w.runDay||0)+' Day'+((w.runDay||0)===1?'':'s')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Color Name</span><span class="gt-val colorname">'+esc(w.color||'—')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Plan Efficiency</span><span class="gt-val '+effClass+'">'+(w.clock>0?w.eff.toFixed(1)+'%':'—')+'</span></div>';
-      calTip.style.display='block';
+  // Calendar details: hover = bold only; left-click = popup.
+  // Event delegation keeps working every time renderS9 rebuilds the calendar table.
+  const calTable=document.getElementById('s9-cal');
+  if(calTable){
+    calTable.onclick=function(e){
+      const td=e.target.closest('td[data-cal-tip]');
+      if(!td || !calTable.contains(td)) return;
+      e.preventDefault();
+
+      let w={};
+      try{w=JSON.parse(decodeURIComponent(td.getAttribute('data-cal-tip')||''));}catch(err){return;}
+
+      const modal=document.getElementById('cal-detail-modal');
+      const title=document.getElementById('cal-detail-title');
+      const sub=document.getElementById('cal-detail-sub');
+      const body=document.getElementById('cal-detail-body');
+      if(!modal||!title||!sub||!body)return;
+
+      title.textContent=(w.style||'Product')+' — Plan Details';
+      sub.textContent='Line '+(w.line||'—')+' • '+(w.date||'—')+' • EWO '+(w.ewo||'—');
+
+      const diff=Number(w.capacityDiffClockHour||0);
+      const rows=[
+        ['Priority Status',w.hit?'Priority Hit':'Priority Not Hit',w.hit?'#15803d':'#dc2626'],
+        ['Plan Qty',Number(w.qty||0).toLocaleString(),null],
+        ['Plan SAH',Number(w.sah||0).toFixed(1),null],
+        ['Clock Hour/Day',Number(w.clock||0).toFixed(1),null],
+        ['Manpower',w.manpower?Number(w.manpower).toFixed(0):'—',null],
+        ['Working Hour',w.manpower?Number(w.workingHour).toFixed(1):'—','#0284c7'],
+        ['Capacity Working Hour',Number(w.capacityWorkingHour||10).toFixed(1),'#059669'],
+        ['Capacity Clock Hour',w.manpower?Number(w.capacityClockHour||0).toFixed(1):'—',null],
+        [diff>=0?'Less Work Load Hour':'Over Plan Hour',w.manpower?Math.abs(diff).toFixed(1):'—',diff>=0?'#d97706':'#dc2626'],
+        ['Capacity Status',w.capacityStatus||'—',w.capacityStatus==='Full Capacity'?'#15803d':(w.capacityStatus==='Less Work Load'?'#d97706':'#dc2626')],
+        ['Buyer Name',w.buyer||'—',null],
+        ['Product Name',w.style||'—','#15803d'],
+        ['Run Start',w.runStart||'—',null],
+        ['Run Day',(w.runDay||0)+' Day'+((w.runDay||0)===1?'':'s'),'#0284c7'],
+        ['Ladder Efficiency',w.ladderEfficiency==null?'—':Number(w.ladderEfficiency).toFixed(1)+'%','#7c3aed'],
+        ['Color Name',w.color||'—','#ea580c'],
+        ['Plan Efficiency',Number(w.clock||0)>0?Number(w.eff||0).toFixed(1)+'%':'—',null]
+      ];
+
+      body.innerHTML=rows.map(r=>
+        '<div class="cd-row"><span class="cd-lbl">'+esc(r[0])+'</span>'+
+        '<span class="cd-val"'+(r[2]?' style="color:'+r[2]+'"':'')+'>'+esc(String(r[1]))+'</span></div>'
+      ).join('');
+
+      modal.dataset.copyText=[
+        title.textContent,
+        sub.textContent,
+        ...rows.map(r=>r[0]+': '+r[1])
+      ].join('\n');
+
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden','false');
     };
-    td.onmousemove=e=>{
-      const pad=14,tw=calTip.offsetWidth||260,th=calTip.offsetHeight||180;
-      let x=e.clientX+14,y=e.clientY+14;
-      if(x+tw+pad>window.innerWidth)x=e.clientX-tw-14;
-      if(y+th+pad>window.innerHeight)y=e.clientY-th-14;
-      calTip.style.left=x+'px'; calTip.style.top=y+'px';
-    };
-    td.onmouseleave=()=>calTip.style.display='none';
-  });
+  }
+
+  // Bind close controls once.
+  const calModal=document.getElementById('cal-detail-modal');
+  const calClose=document.getElementById('cal-detail-close');
+  const calCopy=document.getElementById('cal-detail-copy');
+  if(calCopy && !calCopy.dataset.bound){
+    calCopy.dataset.bound='1';
+    calCopy.addEventListener('click',async()=>{
+      const box=document.getElementById('cal-detail-box');
+      if(!box)return;
+      const old=calCopy.textContent;
+      calCopy.textContent='Copying...';
+      try{
+        if(typeof html2canvas!=='function') throw new Error('Screenshot library unavailable');
+        const canvas=await html2canvas(box,{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false});
+        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+        if(!blob) throw new Error('Image creation failed');
+        if(!navigator.clipboard || typeof ClipboardItem==='undefined') throw new Error('Image clipboard not supported');
+        await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+        calCopy.textContent='Screen Copied!';
+      }catch(err){
+        // If browser blocks image clipboard (common for local file:// pages), save PNG instead.
+        try{
+          if(typeof html2canvas!=='function') throw err;
+          const canvas=await html2canvas(box,{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false});
+          const a=document.createElement('a');
+          a.download='plan-details-popup.png';
+          a.href=canvas.toDataURL('image/png');
+          a.click();
+          calCopy.textContent='PNG Saved';
+        }catch(e){
+          calCopy.textContent='Copy Failed';
+        }
+      }
+      setTimeout(()=>calCopy.textContent=old,1500);
+    });
+  }
+  if(calClose && !calClose.dataset.bound){
+    calClose.dataset.bound='1';
+    calClose.addEventListener('click',()=>{calModal.classList.remove('open');calModal.setAttribute('aria-hidden','true');});
+  }
+  if(calModal && !calModal.dataset.bound){
+    calModal.dataset.bound='1';
+    calModal.addEventListener('click',e=>{
+      if(e.target===calModal){calModal.classList.remove('open');calModal.setAttribute('aria-hidden','true');}
+    });
+  }
 
   const total=totalHit+totalMiss, hitPct=total?totalHit/total*100:0, missPct=total?totalMiss/total*100:0;
   document.getElementById('s9-hit-chart').innerHTML=`<div class="s9-hit-wrap"><div class="s9-hit-pie" style="background:conic-gradient(#3aaa63 0 ${hitPct}%,#d94a4a ${hitPct}% 100%)"><div class="s9-hit-center"><b>${hitPct.toFixed(0)}%</b><span>${fmt(total)} Plan Cells</span></div></div><div class="s9-hit-legend"><div><i class="s9-dot" style="background:#3aaa63"></i>Hit <b>${hitPct.toFixed(1)}% (${fmt(totalHit)})</b></div><div><i class="s9-dot" style="background:#d94a4a"></i>Not Hit <b>${missPct.toFixed(1)}% (${fmt(totalMiss)})</b></div></div></div>`;
@@ -3770,5 +3868,21 @@ window.addEventListener('DOMContentLoaded',()=>{
 
 </script>
 <div id="ewo-gantt-tip"></div>
+<div id="cal-detail-modal" aria-hidden="true">
+  <div id="cal-detail-box">
+    <div class="cd-head">
+      <div>
+        <div class="cd-title" id="cal-detail-title">Plan Details</div>
+        <div class="cd-sub" id="cal-detail-sub"></div>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center">
+          <button id="cal-detail-copy" type="button" title="Copy popup as image" style="border:0;background:#002b5b;color:#fff;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:900;cursor:pointer">Copy Screen</button>
+          <button class="cd-close" id="cal-detail-close" type="button" aria-label="Close">×</button>
+        </div>
+    </div>
+    <div id="cal-detail-body"></div>
+  </div>
+</div>
+
 </body>
 </html>
