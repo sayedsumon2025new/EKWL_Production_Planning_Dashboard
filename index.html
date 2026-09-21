@@ -367,7 +367,7 @@ table.cal td.line-td{
 }
 
 /* ══ TWO COL ═════════════════════════════════════ */
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.two-col{display:grid;grid-template-columns:1fr;gap:14px}
 .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
 @media(max-width:800px){.two-col,.three-col{grid-template-columns:1fr}}
 
@@ -475,24 +475,26 @@ table.cal td.line-td{
 .hoverable{cursor:help}
 
 
-/* Buyer Summary: fit all columns cleanly within the card */
-#slide3 .table-wrap{overflow-x:auto}
-#slide3 table{width:100%;table-layout:fixed;font-size:10px}
-#slide3 th,#slide3 td{padding:7px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#slide3 th{font-size:9px;line-height:1.15;white-space:normal;text-align:center}
-#slide3 th:nth-child(1),#slide3 td:nth-child(1){width:11%}
-#slide3 th:nth-child(2),#slide3 td:nth-child(2){width:10%}
-#slide3 th:nth-child(3),#slide3 td:nth-child(3){width:8%}
-#slide3 th:nth-child(4),#slide3 td:nth-child(4){width:8%}
-#slide3 th:nth-child(5),#slide3 td:nth-child(5){width:8%}
-#slide3 th:nth-child(6),#slide3 td:nth-child(6){width:7%}
-#slide3 th:nth-child(7),#slide3 td:nth-child(7){width:7%}
-#slide3 th:nth-child(8),#slide3 td:nth-child(8){width:9%}
-#slide3 th:nth-child(9),#slide3 td:nth-child(9){width:8%}
-#slide3 th:nth-child(10),#slide3 td:nth-child(10){width:9%}
-#slide3 th:nth-child(11),#slide3 td:nth-child(11){width:7%}
-#slide3 th:nth-child(12),#slide3 td:nth-child(12){width:8%}
-#slide3 td.num{font-variant-numeric:tabular-nums}
+/* Buyer Summary: compact fitted columns/rows */
+#s3 .tbl-wrap{overflow-x:auto}
+#s3 #s3-tbl{width:100%;min-width:0;table-layout:fixed;font-size:10px}
+#s3 #s3-tbl th,#s3 #s3-tbl td{padding:5px 4px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#s3 #s3-tbl th{font-size:9px;white-space:normal;text-align:center;vertical-align:middle}
+#s3 #s3-tbl tbody td,#s3 #s3-tbl tfoot td{height:29px}
+#s3 #s3-tbl th:nth-child(1),#s3 #s3-tbl td:nth-child(1){width:5%}
+#s3 #s3-tbl th:nth-child(2),#s3 #s3-tbl td:nth-child(2){width:8%}
+#s3 #s3-tbl th:nth-child(3),#s3 #s3-tbl td:nth-child(3){width:7%}
+#s3 #s3-tbl th:nth-child(4),#s3 #s3-tbl td:nth-child(4){width:6%}
+#s3 #s3-tbl th:nth-child(5),#s3 #s3-tbl td:nth-child(5){width:7%}
+#s3 #s3-tbl th:nth-child(6),#s3 #s3-tbl td:nth-child(6){width:8%}
+#s3 #s3-tbl th:nth-child(7),#s3 #s3-tbl td:nth-child(7){width:8%}
+#s3 #s3-tbl th:nth-child(8),#s3 #s3-tbl td:nth-child(8){width:10%}
+#s3 #s3-tbl th:nth-child(9),#s3 #s3-tbl td:nth-child(9){width:8%}
+#s3 #s3-tbl th:nth-child(10),#s3 #s3-tbl td:nth-child(10){width:12%}
+#s3 #s3-tbl th:nth-child(11),#s3 #s3-tbl td:nth-child(11){width:10%}
+#s3 #s3-tbl th:nth-child(12),#s3 #s3-tbl td:nth-child(12){width:5%}
+#s3 #s3-tbl th:nth-child(13),#s3 #s3-tbl td:nth-child(13){width:6%}
+#s3 #s3-tbl td.num{font-variant-numeric:tabular-nums}
 
 
 /* Range distribution line numbers */
@@ -609,6 +611,204 @@ table.cal td.line-td{
 .feeding-pie-legend{min-width:220px;max-width:330px;flex:1}.feeding-leg-row{display:grid;grid-template-columns:12px minmax(90px,1fr) 58px 50px;gap:7px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(53,81,111,.45);font-size:10px}
 .feeding-leg-dot{width:10px;height:10px;border-radius:2px}.feeding-leg-name{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.feeding-leg-count,.feeding-leg-pct{text-align:right;font-family:monospace}.feeding-leg-pct{color:var(--amber2);font-weight:800}
 @media(max-width:900px){.feeding-pie-grid{grid-template-columns:1fr}.feeding-pie-card{min-height:360px}}
+
+
+/* Chassis Loading Summary — Excel/reference style */
+#s4 #s4-tbl{border-collapse:collapse;width:100%;table-layout:fixed;background:#fff;color:#000;font-family:Arial,sans-serif;font-size:12px}
+#s4 #s4-tbl th{position:static;background:#9fc5e8!important;color:#000!important;border:1px solid #111!important;padding:7px 6px!important;text-align:center!important;font-weight:800;font-size:12px}
+#s4 #s4-tbl td{background:#fff;color:#000;border:1px solid #111!important;padding:5px 8px!important;height:27px;font-weight:700}
+#s4 #s4-tbl tbody td:first-child{text-align:center!important}
+#s4 #s4-tbl tbody td:nth-child(2){text-align:center!important}
+#s4 #s4-tbl tbody td:nth-child(3){background:#f4cdb9!important;color:#000!important;text-align:center!important}
+#s4 #s4-tbl tbody td:nth-child(4){padding:0!important;text-align:center!important}
+#s4 #s4-tbl tfoot td{background:#f2f2f2!important;color:#000!important;border:1px solid #111!important;padding:6px 8px!important;font-weight:900;text-align:center!important}
+#s4 #s4-tbl tfoot td:first-child,#s4 #s4-tbl tfoot td:nth-child(2),#s4 #s4-tbl tfoot td:nth-child(3){color:#f07800!important}
+#s4 #s4-tbl tfoot td:nth-child(3){background:#f2f2f2!important}
+
+
+/* Reference-style Order QTY Range Analysis */
+.qty-range-ref{width:100%;border-collapse:collapse;background:#fff;color:#000;font-family:Arial,sans-serif;font-size:13px;font-weight:700}
+.qty-range-ref th,.qty-range-ref td{border:1px solid #111;padding:4px 7px;height:25px;line-height:1.1}
+.qty-range-ref thead th{background:#8f9aa5;color:#fff;text-align:left;font-weight:800}
+.qty-range-ref thead th:nth-child(n+2){text-align:center}
+.qty-range-ref td.num{text-align:center;font-variant-numeric:tabular-nums}
+.qty-range-ref tr.range-low td{background:#83c7df}
+.qty-range-ref tr.range-high td{background:#57b63d}
+.qty-range-ref td.summary-low{background:#83c7df!important;text-align:center;vertical-align:middle;font-size:16px;font-weight:800}
+.qty-range-ref td.summary-high{background:#57b63d!important;text-align:center;vertical-align:middle;font-size:16px;font-weight:800}
+.qty-range-ref tr.range-total td{background:#fff!important;color:#000;font-weight:800}
+
+/* Plan Qty Analysis — dynamic range pie chart */
+.range-pie-area{margin-top:16px;min-height:300px;border:1px solid #314965;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:42px;padding:22px;background:#1b2e49}
+.range-pie{width:210px;height:210px;border-radius:50%;position:relative;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.range-pie-hole{position:absolute;inset:44px;border-radius:50%;background:#1b2e49;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffb000}
+.range-pie-hole b{font-size:28px;line-height:1}.range-pie-hole span{font-size:11px;color:#91aac7;margin-top:8px;text-transform:uppercase;letter-spacing:1px}
+.range-pie-legend{min-width:210px;display:flex;flex-direction:column;gap:14px}
+.range-pie-legend>div{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:10px;color:#dce9f7;font-size:13px}
+.range-pie-legend i{width:12px;height:12px;border-radius:3px}.range-pie-legend strong{color:#ffb000;font-size:16px}
+@media(max-width:760px){.range-pie-area{flex-direction:column;gap:20px}.range-pie{width:180px;height:180px}.range-pie-hole{inset:38px}}
+
+
+table.cal th.priority-head{min-width:100px;background:#10263a;color:var(--amber2);z-index:10}
+table.cal td.priority-cell{min-width:100px;text-align:center;font-weight:800;white-space:nowrap;background:#132b43}
+table.cal td.priority-1{color:#55d6ff}
+table.cal td.priority-2{color:#ffd166}
+
+
+/* === Chassis Priority layout fix === */
+#chassisPriorityPanel,
+.chassis-priority-panel,
+#adminChassisPanel {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+}
+#chassisPriorityEditor,
+.chassis-priority-editor,
+#chassisPriorityRows {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
+  overflow-x: auto !important;
+}
+.chassis-priority-row {
+  display: grid !important;
+  grid-template-columns: 80px minmax(130px,1fr) minmax(130px,1fr) auto !important;
+  gap: 10px !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin-bottom: 7px !important;
+}
+.chassis-priority-row input,
+.chassis-priority-row select {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+.chassis-priority-row .row-actions,
+.chassis-priority-row .chassis-row-actions {
+  position: static !important;
+  display: flex !important;
+  gap: 6px !important;
+  justify-content: flex-end !important;
+  white-space: nowrap !important;
+}
+#chassisPriorityActions,
+.chassis-priority-actions {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  margin-top: 12px !important;
+  position: static !important;
+  transform: none !important;
+}
+
+
+/* Chassis Priority v2 — full-width fitted table + controls after final row */
+.chassis-master-note{margin-bottom:12px}
+.chassis-table-wrap{width:100%;max-width:100%;overflow-x:auto}
+.chassis-priority-table{width:100%!important;max-width:none!important;margin:0!important;table-layout:fixed!important}
+.chassis-priority-table th:nth-child(1){width:14%}
+.chassis-priority-table th:nth-child(2){width:37%}
+.chassis-priority-table th:nth-child(3){width:37%}
+.chassis-priority-table th:nth-child(4){width:12%}
+.chassis-priority-table th,.chassis-priority-table td{padding:6px 8px!important;vertical-align:middle!important}
+.chassis-priority-table input{display:block;width:100%!important;min-width:0!important;height:30px!important;box-sizing:border-box!important}
+.chassis-priority-table .ch-team{text-align:center!important}
+.chassis-priority-table td:last-child{text-align:center!important}
+.chassis-bottom-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:8px!important;width:100%!important;margin-top:12px!important;padding:0!important;position:static!important;transform:none!important;clear:both!important}
+.chassis-bottom-actions #chassis-save-msg{margin-right:auto}
+@media(max-width:760px){
+ .chassis-priority-table{min-width:680px!important}
+ .chassis-bottom-actions{justify-content:flex-start!important;flex-wrap:wrap!important}
+}
+
+
+/* Plan Qty Analysis — fitted top table + pie */
+.s2-range-top{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.85fr);gap:16px;align-items:stretch}
+#s2-tbl-wrap{width:100%;overflow:hidden}
+.qty-range-ref{width:100%!important;table-layout:fixed!important}
+.qty-range-ref th,.qty-range-ref td{padding:3px 7px!important;height:29px!important;line-height:1.05!important;box-sizing:border-box!important}
+.qty-range-ref th:nth-child(1){width:34%!important}
+.qty-range-ref th:nth-child(2){width:23%!important}
+.qty-range-ref th:nth-child(3){width:23%!important}
+.qty-range-ref th:nth-child(4){width:20%!important}
+.s2-top-pie{border:1px solid #314965;border-radius:7px;background:#172a43;min-height:250px;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.s2-top-pie-title{color:#ffb000;font-size:13px;font-weight:800;letter-spacing:.7px;margin-bottom:8px}
+.s2-top-pie-body{display:flex;align-items:center;justify-content:center;gap:18px;width:100%}
+.s2-top-donut{width:170px;height:170px;border-radius:50%;position:relative;flex:0 0 170px}
+.s2-top-hole{position:absolute;inset:36px;border-radius:50%;background:#172a43;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
+.s2-top-hole b{font-size:25px;line-height:1}.s2-top-hole span{font-size:10px;color:#91aac7;margin-top:5px}
+.s2-top-legend{display:flex;flex-direction:column;gap:14px;font-size:12px;color:#dce9f7}
+.s2-top-legend .lg{display:grid;grid-template-columns:11px 1fr;gap:7px;align-items:start}
+.s2-top-legend i{width:10px;height:10px;border-radius:50%;margin-top:3px}
+.s2-top-legend strong{display:block;color:#ffb000;font-size:15px;margin-top:2px}
+@media(max-width:900px){.s2-range-top{grid-template-columns:1fr}.s2-top-pie{min-height:230px}}
+
+
+/* === Slide 09 Priority Hit Analysis === */
+.s9-analysis-grid{display:grid;grid-template-columns:minmax(300px,36%) 1fr;gap:12px;margin:0 0 12px}
+.s9-analysis-card{background:var(--card);border:1px solid #314965;border-radius:8px;padding:12px;min-height:230px}
+.s9-analysis-title{font-size:13px;font-weight:800;color:var(--amber2);text-align:center;margin-bottom:10px;letter-spacing:.4px}
+.s9-hit-wrap{display:flex;align-items:center;justify-content:center;gap:24px;min-height:175px}
+.s9-hit-pie{width:160px;height:160px;border-radius:50%;position:relative;flex:0 0 160px;box-shadow:0 0 0 1px #35516f}
+.s9-hit-pie:after{content:'';position:absolute;inset:38px;border-radius:50%;background:var(--card)}
+.s9-hit-center{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}.s9-hit-center b{font-size:24px}.s9-hit-center span{font-size:9px;color:var(--text2);margin-top:3px}
+.s9-hit-legend{font-size:11px;line-height:1.8}.s9-hit-legend b{color:#fff}.s9-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}
+.s9-prod-bars{display:flex;align-items:flex-end;gap:14px;height:185px;padding:8px 10px 0;border-left:1px solid #35516f;border-bottom:1px solid #35516f;overflow-x:auto}
+.s9-prod-col{height:100%;min-width:68px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}
+.s9-prod-pair{height:145px;display:flex;align-items:flex-end;gap:4px}
+.s9-prod-one{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px}
+.s9-prod-val{font-size:9px;color:#fff;font-weight:800;white-space:nowrap}
+.s9-prod-bar{width:24px;border-radius:3px 3px 0 0;min-height:2px}
+.s9-prod-hit{background:#74c98d}.s9-prod-miss{background:#ef9a9a}
+.s9-prod-name{font-size:8px;color:var(--text2);white-space:nowrap;max-width:78px;overflow:hidden;text-overflow:ellipsis}
+.s9-prod-chart-legend{font-size:10px;color:var(--text2);margin:0 0 5px 8px}
+.s9-prod-chart-legend b:first-child{color:#74c98d}.s9-prod-chart-legend b:last-child{color:#ef9a9a}
+#s9 table.cal td.hit-cell{background:#b7e4c7!important;color:#12351f!important;font-weight:800!important}
+#s9 table.cal td.miss-cell{background:#f4b6b6!important;color:#5b1116!important;font-weight:800!important}
+#s9 table.cal th.metric-head{min-width:62px;background:#10263a;color:var(--amber2);z-index:10}
+#s9 table.cal td.metric-cell{min-width:62px;text-align:center;color:#fff;font-weight:800}
+#s9 table.cal td.hit-pct{background:#b7e4c7!important;color:#12351f!important}#s9 table.cal td.miss-pct{background:#f4b6b6!important;color:#5b1116!important}
+@media(max-width:900px){.s9-analysis-grid{grid-template-columns:1fr}.s9-analysis-card{min-height:210px}}
+
+
+/* === FINAL Slide 09 Priority Cell Colors === */
+#s9 table.cal tbody td.hit-cell{
+  background:#b7e4c7 !important;
+  color:#17351f !important;
+  font-weight:800 !important;
+}
+#s9 table.cal tbody td.miss-cell{
+  background:#f6c1c1 !important;
+  color:#681b1b !important;
+  font-weight:800 !important;
+}
+#s9 table.cal tbody td.off-cell{
+  background:#ffffff !important;
+  color:#000000 !important;
+}
+#s9 table.cal tbody td.hit-pct{
+  background:#b7e4c7 !important;
+  color:#17351f !important;
+}
+#s9 table.cal tbody td.miss-pct{
+  background:#f6c1c1 !important;
+  color:#681b1b !important;
+}
+
+/* === Slide 09 Day Wise Hit / Not Hit % === */
+.s9-day-card{grid-column:1/-1;min-height:235px}
+.s9-day-bars{display:flex;align-items:flex-end;gap:12px;height:180px;padding:8px 10px 0;border-left:1px solid #35516f;border-bottom:1px solid #35516f;overflow-x:auto}
+.s9-day-col{height:100%;min-width:58px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}
+.s9-day-pair{height:140px;display:flex;align-items:flex-end;gap:4px}
+.s9-day-one{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px}
+.s9-day-val{font-size:9px;color:#fff;font-weight:800;white-space:nowrap}
+.s9-day-bar{width:21px;border-radius:3px 3px 0 0;min-height:2px}
+.s9-day-hit{background:#74c98d}.s9-day-miss{background:#ef9a9a}
+.s9-day-name{font-size:9px;color:var(--text2);white-space:nowrap}
 
 </style>
 </head>
@@ -789,7 +989,10 @@ May-26,1,265100,M&S,Hoody,22,4500,4500,2026-05-15,2026-05-01,2026-05-15</div>
   </div>
   <div class="card">
     <div class="card-title">📊 Order QTY Range Analysis</div>
-    <div class="tbl-wrap" id="s2-tbl-wrap"></div>
+    <div class="s2-range-top">
+      <div class="tbl-wrap" id="s2-tbl-wrap"></div>
+      <div class="s2-top-pie" id="s2-top-pie"></div>
+    </div>
   </div>
   <div class="two-col">
     <div class="card">
@@ -848,7 +1051,7 @@ May-26,1,265100,M&S,Hoody,22,4500,4500,2026-05-15,2026-05-01,2026-05-15</div>
     </div>
   </div>
   <div class="card">
-    <div class="card-title">🏭 Plan vs HW Line Strength → Loading % <span class="ct-right">🔴 Over 100% &nbsp; 🟢 ≤100%</span></div>
+    <div class="card-title">🏭 Chassis Loading Summary <span class="ct-right">🔴 Over 100% &nbsp; 🟢 ≤100%</span></div>
     <div class="tbl-wrap"><table class="dt" id="s4-tbl">
       <thead><tr>
         <th>Chassis (Item)</th>
@@ -862,9 +1065,27 @@ May-26,1,265100,M&S,Hoody,22,4500,4500,2026-05-15,2026-05-01,2026-05-15</div>
       <tfoot><tr id="s4-foot"></tr></tfoot>
     </table></div>
   </div>
-  <div class="card">
-    <div class="card-title">📊 Line Loading Comparison</div>
-    <div id="s4-bar"></div>
+  <div class="card" id="s4-chart-card">
+    <div style="display:grid;grid-template-columns:1.45fr 1fr;border:2px solid #111;background:#fff;color:#111;min-height:315px">
+      <div style="border-right:2px solid #111;padding:8px 10px">
+        <div style="text-align:center;font-weight:800;font-size:16px;margin:2px 0 8px">EKWL-HW PLAN VS ACTUAL CHASSIS STATUS</div>
+        <canvas id="s4-chassis-canvas" style="width:100%;height:190px"></canvas>
+        <div class="tbl-wrap"><table id="s4-chart-detail" style="width:100%;border-collapse:collapse;font-size:11px;color:#111;background:#fff"></table></div>
+        <div style="display:flex;justify-content:center;gap:24px;font-size:11px;font-weight:700;margin-top:6px">
+          <span><i style="display:inline-block;width:9px;height:9px;background:#00b050;margin-right:4px"></i>HW Strength</span>
+          <span><i style="display:inline-block;width:9px;height:9px;border:2px solid #ff0000;margin-right:4px"></i>Line Plan</span>
+        </div>
+      </div>
+      <div style="padding:8px 10px">
+        <div style="text-align:center;font-weight:800;font-size:16px;margin:2px 0 8px">LINE PLAN</div>
+        <canvas id="s4-total-canvas" style="width:100%;height:190px"></canvas>
+        <div class="tbl-wrap"><table id="s4-chart-total" style="width:100%;border-collapse:collapse;font-size:11px;color:#111;background:#fff"></table></div>
+        <div style="display:flex;justify-content:center;gap:24px;font-size:11px;font-weight:700;margin-top:6px">
+          <span><i style="display:inline-block;width:9px;height:9px;background:#00b050;margin-right:4px"></i>HW Strength</span>
+          <span><i style="display:inline-block;width:9px;height:9px;border:2px solid #ff0000;margin-right:4px"></i>Line Plan</span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -998,6 +1219,11 @@ May-26,1,265100,M&S,Hoody,22,4500,4500,2026-05-15,2026-05-01,2026-05-15</div>
     </div>
   </div>
   <div class="cal-legend" id="s9-legend"></div>
+  <div class="s9-analysis-grid" id="s9-analysis-grid">
+    <div class="s9-analysis-card"><div class="s9-analysis-title">Priority Hit vs Not Hit</div><div id="s9-hit-chart"></div></div>
+    <div class="s9-analysis-card"><div class="s9-analysis-title">Product Wise Hit &amp; Not Hit %</div><div id="s9-product-chart"></div></div>
+    <div class="s9-analysis-card s9-day-card"><div class="s9-analysis-title">Day Wise Hit &amp; Not Hit %</div><div id="s9-day-chart"></div></div>
+  </div>
   <div class="card" style="padding:8px">
     <div class="cal-wrap">
       <table class="cal" id="s9-cal"></table>
@@ -1247,6 +1473,84 @@ function renderEfficiencyLadder(){
     </div>`;
 }
 
+
+const DEFAULT_CHASSIS_PRIORITY=[[1, "T-Shirt", "T-Shirt"], [2, "Polo / T-Shirt", "Hoody"], [3, "Polo", "Bottom"], [4, "Hoody", "Polo"], [5, "T-Shirt", "Sweat Shirt"], [6, "T-Shirt", "Sweat Shirt"], [7, "T-Shirt", "Sweat Shirt"], [8, "Bottom", "SHORTS / JOGGER"], [9, "Polo", "Hoody"], [10, "T-Shirt", "Sweat Shirt"], [11, "Polo", "Sweat Shirt"], [12, "Polo", "Sweat Shirt"], [13, "Polo", "Hoody"], [14, "T-Shirt", "Tanktop"], [15, "Polo", "Sweat Shirt"], [16, "T-Shirt", "Sweat Shirt"], [17, "Bottom", "SHORTS / JOGGER"], [18, "POLO", "Sweat Shirt"], [19, "Hoody", "Sweat Shirt"], [20, "Hoody", "Polo"], [21, "T-Shirt", "LEGGINGS"], [22, "T-Shirt", "TANKTOP"], [23, "T-Shirt", "LEGGINGS"], [24, "Pant", "Sweat Shirt"], [25, "Hoody", "Polo"], [26, "Hoody", "Polo"], [27, "Pant", "Sweat Shirt"], [28, "Pant", "Hoody"], [29, "Hoody", "Hoody"], [30, "Sweat Shirt", "T-Shirt"], [31, "Hoody", "Hoody"], [32, "T-Shirt", "Sweat Shirt"], [33, "Hoody", "Sweat Shirt"], [34, "Polo", "Polo"], [35, "T-Shirt", "Hoody"], [36, "Polo", "T-Shirt"], [37, "Polo", "Polo"], [38, "T-Shirt", "Sweat Shirt"], [39, "T-Shirt", "Sweat Shirt"], [40, "Polo", "T-Shirt"], [41, "Bottom", "Leggings"], [42, "Bottom", "Leggings"], [43, "T-Shirt", "Sweat Shirt"], [44, "T-Shirt", "Sweat Shirt"], [45, "T-Shirt", "Sweat Shirt"], [47, "BOTTOM", "Hoody"], [48, "Hoody", "Sweat Shirt"]];
+
+function getChassisMasterLines(){
+  return new Set(getChassisPriority().map(r=>Number(r[0])).filter(n=>Number.isFinite(n)&&n>0));
+}
+function isChassisMasterLine(v){
+  const n=lineNumber(v);
+  return n>0 && getChassisMasterLines().has(n);
+}
+
+function getChassisPriority(){
+  try{
+    const saved=localStorage.getItem('ekwl_line_wise_chassis_priority');
+    if(saved){
+      const parsed=JSON.parse(saved);
+      if(Array.isArray(parsed)&&parsed.length) return parsed;
+    }
+  }catch(e){}
+  return DEFAULT_CHASSIS_PRIORITY.map(r=>[...r]);
+}
+function saveChassisPriority(){
+  const rows=[...document.querySelectorAll('#chassis-priority-body tr')].map(tr=>{
+    const team=Number(tr.querySelector('.ch-team').value)||0;
+    const p1=tr.querySelector('.ch-p1').value.trim();
+    const p2=tr.querySelector('.ch-p2').value.trim();
+    return [team,p1,p2];
+  }).filter(r=>r[0]);
+  localStorage.setItem('ekwl_line_wise_chassis_priority',JSON.stringify(rows));
+  const msg=document.getElementById('chassis-save-msg');
+  if(msg){msg.textContent='✓ Saved';setTimeout(()=>msg.textContent='',1800);}
+}
+function resetChassisPriority(){
+  if(!confirm('Chassis Priority uploaded default data-তে reset করবেন?')) return;
+  localStorage.setItem('ekwl_line_wise_chassis_priority',JSON.stringify(DEFAULT_CHASSIS_PRIORITY));
+  renderChassisPriority();
+}
+function addChassisPriorityLine(){
+  const tbody=document.getElementById('chassis-priority-body');
+  if(!tbody)return;
+  const existing=[...tbody.querySelectorAll('.ch-team')].map(x=>Number(x.value)||0);
+  const next=(existing.length?Math.max(...existing):0)+1;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input class="ch-team" type="number" min="1" value="${next}"></td>
+    <td><input class="ch-p1" type="text" placeholder="1st Priority"></td>
+    <td><input class="ch-p2" type="text" placeholder="2nd Priority"></td>
+    <td><button class="eff-delete-btn" type="button" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+function renderChassisPriority(){
+  const rows=getChassisPriority();
+  document.getElementById('admin-setting-panel-title').textContent='🏭 Line Wise Chassis Priority';
+  document.getElementById('admin-setting-panel-body').innerHTML=`
+    <div class="chassis-master-note">
+      <div class="eff-note">Line-wise 1st & 2nd chassis priority</div>
+      <div class="eff-note2">এই Chassis list-ই পুরো dashboard-এর MASTER LINE LIST। এখানে যে line থাকবে শুধু সেটাই Order, Buyer, EWO, Feeding, Calendar, KPI, Chart ও সব Count/Sum-এ গণনা হবে। Line 46 list-এ নেই, তাই কোথাও count হবে না।</div>
+    </div>
+    <div class="tbl-wrap chassis-table-wrap">
+      <table class="dt chassis-priority-table">
+        <thead><tr><th>Team / Line</th><th>1st Priority</th><th>2nd Priority</th><th>Delete</th></tr></thead>
+        <tbody id="chassis-priority-body">
+          ${rows.map(r=>`<tr>
+            <td><input class="ch-team" type="number" min="1" value="${r[0]}"></td>
+            <td><input class="ch-p1" type="text" value="${esc(r[1])}"></td>
+            <td><input class="ch-p2" type="text" value="${esc(r[2])}"></td>
+            <td><button class="eff-delete-btn" type="button" onclick="this.closest('tr').remove()">✕</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="chassis-bottom-actions">
+      <span id="chassis-save-msg"></span>
+      <button class="top-btn" onclick="addChassisPriorityLine()">＋ Add Line</button>
+      <button class="top-btn" onclick="resetChassisPriority()">↺ Reset Default</button>
+      <button class="top-btn primary" onclick="saveChassisPriority()">💾 Save Changes</button>
+    </div>`;
+}
+
 const DEFAULT_ABP_TARGET={
   metrics:[
     ['Number of Workstation','1,960'],['Usage of Available Hour','94%'],['Efficiency','55%'],
@@ -1311,6 +1615,7 @@ function openAdminSetting(key){
     el.classList.toggle('active',keys[i]===key);
   });
   if(key==='efficiency'){renderEfficiencyLadder();return}
+  if(key==='chassis'){renderChassisPriority();return}
   if(key==='abp'){renderABPTarget();return}
   const title=ADMIN_SETTING_NAMES[key]||'Parameter Setting';
   document.getElementById('admin-setting-panel-title').textContent='⚙ '+title;
@@ -1392,6 +1697,9 @@ async function loadFromSupabase(){
       from+=pageSize;
     }
 
+    // Chassis Priority list is the MASTER line list for the whole dashboard.
+    rows=rows.filter(r=>isChassisMasterLine(r.line_no));
+
     // Raw Plan/Day values for Buyer Summary.
     BUYER_PLAN_DATA=rows.map(r=>({
       month:monthFromISO(r.psd || r.pfd || r.delivery),
@@ -1425,13 +1733,13 @@ async function loadFromSupabase(){
     let sahFrom=0;
     while(true){
       const {data:sahPart,error:sahErr}=await SB.from('plan_records')
-        .select('buyer,total,psd,pfd,delivery,is_summary_row')
+        .select('buyer,total,psd,pfd,delivery,line_no,is_summary_row')
         .eq('upload_id',upload.id)
         .eq('criteria','SAH/Day')
         .eq('is_summary_row',false)
         .range(sahFrom,sahFrom+pageSize-1);
       if(sahErr) throw sahErr;
-      SAH_DATA.push(...(sahPart||[]).map(r=>({month:monthFromISO(r.psd || r.pfd || r.delivery),buyer:r.buyer||'',total:N(r.total)})));
+      SAH_DATA.push(...(sahPart||[]).filter(r=>isChassisMasterLine(r.line_no)).map(r=>({month:monthFromISO(r.psd || r.pfd || r.delivery),buyer:r.buyer||'',total:N(r.total)})));
       if(!sahPart || sahPart.length<pageSize) break;
       sahFrom+=pageSize;
     }
@@ -1440,13 +1748,13 @@ async function loadFromSupabase(){
     let chFrom=0;
     while(true){
       const {data:chPart,error:chErr}=await SB.from('plan_records')
-        .select('buyer,total,psd,pfd,delivery,is_summary_row')
+        .select('buyer,total,psd,pfd,delivery,line_no,is_summary_row')
         .eq('upload_id',upload.id)
         .eq('criteria','Clock Hour/Day')
         .eq('is_summary_row',false)
         .range(chFrom,chFrom+pageSize-1);
       if(chErr) throw chErr;
-      CLOCK_HOUR_DATA.push(...(chPart||[]).map(r=>({month:monthFromISO(r.psd || r.pfd || r.delivery),buyer:r.buyer||'',total:N(r.total)})));
+      CLOCK_HOUR_DATA.push(...(chPart||[]).filter(r=>isChassisMasterLine(r.line_no)).map(r=>({month:monthFromISO(r.psd || r.pfd || r.delivery),buyer:r.buyer||'',total:N(r.total)})));
       if(!chPart || chPart.length<pageSize) break;
       chFrom+=pageSize;
     }
@@ -1523,7 +1831,7 @@ function parseCSV(text){
     const v=row[k];const plain=/^\d+(\.\d+)?$/.test(v);const grouped=/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(v);
     const n=Number(v.replace(/,/g,''));if(!(plain||grouped)||!Number.isFinite(n)||n<0)fail(k+' must be a non-negative number');row[k]=n;
    }
-   if(!Number.isInteger(row.line)||row.line<1||row.line>47)fail('Line must be an integer from 1 to 47');
+   if(!Number.isInteger(row.line)||!getChassisMasterLines().has(row.line))fail('Line '+row.line+' is not in Admin → Line Wise Chassis Priority master list');
    if(!Number.isInteger(row.orderqty)||!Number.isInteger(row.planqty))fail('Quantities must be whole pieces');
    for(const k of ['deliverydate','startdate','enddate'])if(row[k]&&!validDate(row[k]))fail(k+' must be a valid YYYY-MM-DD date');
    if(Boolean(row.startdate)!==Boolean(row.enddate))fail('Supply both StartDate and EndDate, or leave both empty');
@@ -1701,8 +2009,10 @@ function renderS2(data){
   const ms=sortedMonths(data);
   document.getElementById('s2-months').textContent=ms.join(' & ');
 
+  // One EWO = one style for this analysis. Order Qty is evaluated after
+  // deduplicating month + EWO, matching the rest of the dashboard logic.
   const RANGES=[
-    {lbl:'0-500',min:0,max:500},
+    {lbl:'Below 500',min:0,max:500},
     {lbl:'501-1000',min:501,max:1000},
     {lbl:'1001-2000',min:1001,max:2000},
     {lbl:'2001-3000',min:2001,max:3000},
@@ -1711,71 +2021,66 @@ function renderS2(data){
     {lbl:'Above 8000',min:8001,max:Infinity}
   ];
 
-  // Get unique EWOs per month
-  const ewosPerMonth={};
-  ms.forEach(m=>{ewosPerMonth[m]=getUniqueEWOs(data.filter(r=>r.month===m))});
-
-  // Build columns for each month
-  const thCols=ms.map(m=>`<th class="num">${esc(m)} No Of Style</th><th class="num">${esc(m)} In%</th>`).join('');
-  let html=`<table class="dt"><thead><tr>
-    <th>Order QTY Range</th>${thCols}<th class="num">No of EWO</th>
-  </tr></thead><tbody>`;
-
-  const totals=ms.map(m=>ewosPerMonth[m].length);
-
-  let smallMid={}, bigMid={};
-  ms.forEach(m=>{smallMid[m]=0;bigMid[m]=0});
-
   const allUniqueEWOs=getUniqueEWOs(data);
-  const grandEwoCount=allUniqueEWOs.length;
-
-  RANGES.forEach(range=>{
-    html+=`<tr><td><b>${range.lbl}</b></td>`;
-    ms.forEach((m,mi)=>{
-      const ewos=ewosPerMonth[m];
-      const cnt=ewos.filter(e=>e.orderqty>=range.min&&e.orderqty<=range.max).length;
-      // In% is based on EWO share, not a sum:
-      // EWO in this range / total EWO * 100
-      const p=grandEwoCount ? Math.round(cnt/grandEwoCount*100) : 0;
-      html+=`<td class="num">${cnt}</td><td class="num">${p}%</td>`;
-      if(range.max<=5000) smallMid[m]+=cnt;
-      else bigMid[m]+=cnt;
-    });
-    const uniqueEwoCount=allUniqueEWOs.filter(e=>e.orderqty>=range.min&&e.orderqty<=range.max).length;
-    html+=`<td class="num" style="font-weight:700">${uniqueEwoCount}</td></tr>`;
+  const totalStyles=allUniqueEWOs.length;
+  const stats=RANGES.map(r=>{
+    const count=allUniqueEWOs.filter(e=>e.orderqty>=r.min && e.orderqty<=r.max).length;
+    return {...r,count,pct:totalStyles ? count/totalStyles*100 : 0};
   });
+  const lowCount=stats.slice(0,5).reduce((s,r)=>s+r.count,0);
+  const highCount=stats.slice(5).reduce((s,r)=>s+r.count,0);
+  const lowPct=totalStyles ? lowCount/totalStyles*100 : 0;
+  const highPct=totalStyles ? highCount/totalStyles*100 : 0;
+  const pct=v=>`${Math.round(v)}%`;
 
-  html+=`<tr><td style="color:var(--amber2);font-weight:700">Total EWO</td>`;
-  ms.forEach((m,mi)=>{
-    const monthEwoCount=ewosPerMonth[m].length;
-    const monthPct=grandEwoCount ? Math.round(monthEwoCount/grandEwoCount*100) : 0;
-    html+=`<td class="num">${monthEwoCount}</td><td class="num">${monthPct}%</td>`;
+  let html=`<table class="qty-range-ref">
+    <thead><tr>
+      <th>Order QTY Range</th><th>No Of Style</th><th>Percentage</th><th>Summary</th>
+    </tr></thead><tbody>`;
+
+  stats.forEach((r,i)=>{
+    const low=i<5;
+    html+=`<tr class="${low?'range-low':'range-high'}">
+      <td>${esc(r.lbl)}</td>
+      <td class="num">${fmt(r.count)}</td>
+      <td class="num">${pct(r.pct)}</td>`;
+    if(i===0) html+=`<td class="summary-low" rowspan="5">${pct(lowPct)}</td>`;
+    if(i===5) html+=`<td class="summary-high" rowspan="2">${pct(highPct)}</td>`;
+    html+=`</tr>`;
   });
-  html+=`<td class="num" style="color:var(--amber2);font-weight:700">${grandEwoCount}</td>
-         </tr></tbody></table>`;
+  html+=`<tr class="range-total">
+    <td>Total Style</td><td class="num">${fmt(totalStyles)}</td><td class="num">100%</td><td class="num">100%</td>
+  </tr></tbody></table>`;
   document.getElementById('s2-tbl-wrap').innerHTML=html;
+  document.getElementById('s2-top-pie').innerHTML=`
+    <div class="s2-top-pie-title">📊 STYLE DISTRIBUTION</div>
+    <div class="s2-top-pie-body">
+      <div class="s2-top-donut" style="background:conic-gradient(#79c7df 0 ${lowPct}%, #58b63d ${lowPct}% 100%)">
+        <div class="s2-top-hole"><b>${fmt(totalStyles)}</b><span>Total Style</span></div>
+      </div>
+      <div class="s2-top-legend">
+        <div class="lg"><i style="background:#79c7df"></i><div>5000 or fewer<strong>${pct(lowPct)} (${fmt(lowCount)})</strong></div></div>
+        <div class="lg"><i style="background:#58b63d"></i><div>Above 5000<strong>${pct(highPct)} (${fmt(highCount)})</strong></div></div>
+      </div>
+    </div>`;
 
-  // Bar chart
-  const barData=RANGES.map(r=>({
-    lbl:r.lbl,
-    vals:ms.map(m=>ewosPerMonth[m].filter(e=>e.orderqty>=r.min&&e.orderqty<=r.max).length)
-  }));
-  const maxV=Math.max(...barData.flatMap(r=>r.vals),1);
-  document.getElementById('s2-bar').innerHTML=barData.map(r=>{
-    const rangeEWOs=allUniqueEWOs.filter(e=>e.orderqty>=RANGES.find(x=>x.lbl===r.lbl).min && e.orderqty<=RANGES.find(x=>x.lbl===r.lbl).max);
-    const rangeEwoSet=new Set(rangeEWOs.map(e=>String(e.ewo)));
+  // Keep the existing lower distribution section, but use the same range basis.
+  const maxV=Math.max(...stats.map(r=>r.count),1);
+  document.getElementById('s2-bar').innerHTML=stats.map(r=>{
+    const rangeEwoSet=new Set(allUniqueEWOs
+      .filter(e=>e.orderqty>=r.min && e.orderqty<=r.max)
+      .map(e=>String(e.ewo)));
     const lines=[...new Set(data
       .filter(x=>rangeEwoSet.has(String(x.ewo)))
-      .map(x=>String(x.line))
-      .filter(Boolean))]
+      .map(x=>String(x.line)).filter(Boolean))]
       .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
     return `<div class="bar-row" style="align-items:flex-start">
-      <div class="bar-lbl">${r.lbl}</div>
+      <div class="bar-lbl">${esc(r.lbl)}</div>
       <div style="flex:1;display:flex;flex-direction:column;gap:3px">
-        ${r.vals.map((v,i)=>`<div class="bar-wrap" style="height:14px">
-          <div class="bar-fill" style="width:${Math.round(v/maxV*100)}%;background:${i===0?'#f0a500':'#3aaa63'}"></div>
-          <div class="bar-val">${v}</div>
-        </div>`).join('')}
+        <div class="bar-wrap" style="height:14px">
+          <div class="bar-fill" style="width:${Math.round(r.count/maxV*100)}%"></div>
+          <div class="bar-val">${r.count}</div>
+        </div>
         <div class="range-lines"><span class="range-line-label">Lines:</span>
           ${lines.length?lines.map(l=>`<span class="range-line-chip">${esc(l)}</span>`).join(''):'<span class="range-line-label">—</span>'}
         </div>
@@ -1783,21 +2088,10 @@ function renderS2(data){
     </div>`;
   }).join('');
 
-  // Summary
-  let sumHtml='<div class="range-summary">';
-  ms.forEach(m=>{
-    const t=totals[ms.indexOf(m)];
-    const sm=smallMid[m], bm=bigMid[m];
-    sumHtml+=`
-      <div class="rsum-box"><div class="rsum-title">${esc(m)} 5000 or fewer</div>
-        <div class="rsum-val">${t?Math.round(sm/t*100):0}%</div>
-        <div class="rsum-sub">${sm} of ${t} styles</div></div>
-      <div class="rsum-box"><div class="rsum-title">${esc(m)} Above 5000</div>
-        <div class="rsum-val">${t?Math.round(bm/t*100):0}%</div>
-        <div class="rsum-sub">${bm} of ${t} styles</div></div>`;
-  });
-  sumHtml+='</div>';
-  document.getElementById('s2-summary').innerHTML=sumHtml;
+  document.getElementById('s2-summary').innerHTML=`<div class="range-summary">
+    <div class="rsum-box"><div class="rsum-title">5000 or fewer</div><div class="rsum-val">${pct(lowPct)}</div><div class="rsum-sub">${lowCount} of ${totalStyles} styles</div></div>
+    <div class="rsum-box"><div class="rsum-title">Above 5000</div><div class="rsum-val">${pct(highPct)}</div><div class="rsum-sub">${highCount} of ${totalStyles} styles</div></div>
+  </div>`;
 }
 
 /* ══ SLIDE 3: BUYER SUMMARY ═════════════════════ */
@@ -1918,15 +2212,79 @@ function renderS3(data){
 
 /* ══ SLIDE 4: LINE PLAN & LOADING ══════════════ */
 function renderS4(data){
- const ms=sortedMonths(data),hw=strengths(),chassis=[...Object.keys(hw),'Other'];
- document.getElementById('s4-month').textContent=ms.join(' & ');
- const count=(m,c)=>new Set(data.filter(r=>r.month===m&&(!c||chassisOf(r.style)===c)).map(r=>r.line)).size;
- document.querySelector('#s4-tbl thead').innerHTML='<tr><th>Chassis (Item)</th><th>HW Strength</th>'+ms.map(m=>'<th>'+esc(m)+' Lines</th><th>'+esc(m)+' Loading</th>').join('')+'</tr>';
- document.getElementById('s4-body').innerHTML=chassis.map(c=>'<tr><td>'+itemChip(c)+'</td><td class="num">'+(c==='Other'?'Unassigned':hw[c])+'</td>'+ms.map(m=>{const n=count(m,c),capacity=hw[c];return '<td class="num">'+n+'</td><td class="num">'+(capacity?Math.round(n/capacity*100)+'%':n?'No capacity':'—')+'</td>'}).join('')+'</tr>').join('');
- const totalHW=Object.values(hw).reduce((a,b)=>a+b,0);
- document.getElementById('s4-foot').innerHTML='<td>Unique lines (all chassis)</td><td class="num">'+totalHW+'</td>'+ms.map(m=>'<td class="num">'+count(m)+'</td><td class="num">'+pct(count(m),totalHW)+'</td>').join('');
- const bars=[{label:'HW Strength',value:totalHW},...ms.map(m=>({label:m+' Plan',value:count(m)}))];const max=Math.max(1,...bars.map(b=>b.value));
- document.getElementById('s4-bar').innerHTML=bars.map(b=>'<div class="bar-row"><div class="bar-lbl">'+esc(b.label)+'</div><div class="bar-wrap"><div class="bar-fill" style="background:#3aaa63;width:'+b.value/max*100+'%"></div><div class="bar-val">'+b.value+'</div></div></div>').join('');
+  const hw=strengths();
+  const chassis=Object.keys(hw); // Only configured chassis categories; exclude Other.
+  const selectedMonth=document.getElementById('month-filter').value;
+  const label=selectedMonth || monthLabel(data) || 'All Months';
+  document.getElementById('s4-month').textContent=label;
+
+  // A line is counted once inside each chassis for the currently filtered scope.
+  const linePlan=(c)=>new Set(
+    data.filter(r=>chassisOf(r.style)===c).map(r=>String(r.line||'').trim()).filter(Boolean)
+  ).size;
+
+  document.querySelector('#s4-tbl thead').innerHTML=`<tr>
+    <th>Chassis</th>
+    <th class="num">HW Strength</th>
+    <th class="num">Line Plan</th>
+    <th class="cen">Loading</th>
+  </tr>`;
+
+  document.getElementById('s4-body').innerHTML=chassis.map(c=>{
+    const strength=N(hw[c]);
+    const plan=linePlan(c);
+    const loading=strength ? (plan/strength*100) : 0;
+    const over=loading>100;
+    const bg=over?'#ff1717':'#66c88a';
+    const fg=over?'#ffffff':'#071a12';
+    return `<tr>
+      <td>${c}</td>
+      <td class="num">${fmt(strength)}</td>
+      <td class="num" style="background:#f6d3c0;color:#111;font-weight:800">${fmt(plan)}</td>
+      <td class="cen" style="background:${bg}!important;color:${fg}!important;font-weight:900">${Math.round(loading)}%</td>
+    </tr>`;
+  }).join('');
+
+  const totalHW=Object.values(hw).reduce((a,b)=>a+N(b),0);
+  const totalPlan=new Set(data.map(r=>String(r.line||'').trim()).filter(Boolean)).size;
+  document.getElementById('s4-foot').innerHTML=`
+    <td style="font-weight:900;color:#ff9d00">Grand Total</td>
+    <td class="num">${fmt(totalHW)}</td>
+    <td class="num" style="background:#f6d3c0;color:#111;font-weight:900">${fmt(totalPlan)}</td>
+    <td></td>`;
+
+  // Screenshot-style chassis chart: green HW Strength + red-outline Line Plan.
+  drawS4ChassisChart(chassis, chassis.map(c=>N(hw[c])), chassis.map(c=>linePlan(c)), totalHW, totalPlan);
+}
+
+
+function drawS4ChassisChart(labels, hwVals, planVals, totalHW, totalPlan){
+  function setup(id){
+    const c=document.getElementById(id); if(!c) return null;
+    const cssW=Math.max(320,c.parentElement.clientWidth-20), cssH=190, dpr=window.devicePixelRatio||1;
+    c.width=Math.round(cssW*dpr); c.height=Math.round(cssH*dpr); c.style.width=cssW+'px'; c.style.height=cssH+'px';
+    const x=c.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,cssW,cssH); return {c,x,W:cssW,H:cssH};
+  }
+  function chart(id,labs,a,b){
+    const z=setup(id); if(!z) return; const {x,W,H}=z;
+    const pad={l:22,r:12,t:18,b:26}, cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+    const max=Math.max(1,...a,...b)*1.22, gw=cw/Math.max(labs.length,1), bw=Math.min(22,gw*.24);
+    x.strokeStyle='#d9d9d9';x.lineWidth=1;x.beginPath();x.moveTo(pad.l,pad.t+ch);x.lineTo(W-pad.r,pad.t+ch);x.stroke();
+    labs.forEach((lab,i)=>{
+      const cx=pad.l+gw*(i+.5), h1=a[i]/max*ch, h2=b[i]/max*ch;
+      x.fillStyle='#00b050';x.fillRect(cx-bw-2,pad.t+ch-h1,bw,h1);
+      x.strokeStyle='#ff0000';x.lineWidth=2;x.strokeRect(cx+2,pad.t+ch-h2,bw,h2);
+      x.font='bold 10px Segoe UI';x.textAlign='center';
+      x.fillStyle='#111';x.fillText(a[i],cx-bw/2-2,pad.t+ch-h1-4);
+      x.fillStyle='#ff0000';x.fillText(b[i],cx+bw/2+2,pad.t+ch-h2-4);
+      x.fillStyle='#111';x.font='10px Segoe UI';x.fillText(lab,cx,H-7);
+    });
+  }
+  chart('s4-chassis-canvas',labels,hwVals,planVals);
+  chart('s4-total-canvas',['Grand Total'],[totalHW],[totalPlan]);
+  const cell='border:1px solid #111;padding:3px 5px;text-align:center';
+  document.getElementById('s4-chart-detail').innerHTML=`<tr><th style="${cell};text-align:left"></th>${labels.map(v=>`<th style="${cell}">${esc(v)}</th>`).join('')}</tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;background:#00b050;margin-right:3px"></span>HW Strength</td>${hwVals.map(v=>`<td style="${cell};font-weight:700">${v}</td>`).join('')}</tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;border:2px solid #f00;margin-right:3px"></span>Line Plan</td>${planVals.map(v=>`<td style="${cell};font-weight:700">${v}</td>`).join('')}</tr>`;
+  document.getElementById('s4-chart-total').innerHTML=`<tr><th style="${cell};text-align:left"></th><th style="${cell}">Grand Total</th></tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;background:#00b050;margin-right:3px"></span>HW Strength</td><td style="${cell};font-weight:700">${totalHW}</td></tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;border:2px solid #f00;margin-right:3px"></span>Line Plan</td><td style="${cell};font-weight:700">${totalPlan}</td></tr>`;
 }
 
 /* ══ SLIDE 5: ITEM STATUS ═══════════════════════ */
@@ -2196,78 +2554,90 @@ function renderS8(data){
 
 /* ══ SLIDE 9: LINE CALENDAR ═════════════════════ */
 function renderS9(data){
-  // Dates come ONLY from the uploaded CSV date columns stored in plan_daily.
+  // Date columns come only from uploaded Plan/Day data. A date with no positive plan on any master line is an Off Day and is hidden.
   const allDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(Boolean))].sort();
   const selected=document.getElementById('month-filter').value;
-  const dates=selected ? allDates.filter(d=>monthFromISO(d)===selected) : allDates;
+  const candidateDates=selected ? allDates.filter(d=>monthFromISO(d)===selected) : allDates;
+  const masterLines=getChassisMasterLines();
+  const activeDateSet=new Set(DAILY_PLAN.filter(d=>candidateDates.includes(d.date)&&d.value>0&&masterLines.has(Number(d.line))).map(d=>d.date));
+  const dates=candidateDates.filter(d=>activeDateSet.has(d));
 
   document.getElementById('s9-month').textContent=
     dates.length ? (selected||'Uploaded date range')+' · '+dates[0]+' → '+dates[dates.length-1] : 'No daily data';
 
   if(!dates.length){
-    document.getElementById('s9-cal').innerHTML='<tbody><tr><td>No date-wise Plan/Day data found in plan_daily.</td></tr></tbody>';
-    for(const id of ['s9-legend','s9-sum-head','s9-sum-body'])document.getElementById(id).innerHTML='';
+    document.getElementById('s9-cal').innerHTML='<tbody><tr><td>No active date-wise Plan/Day data found.</td></tr></tbody>';
+    for(const id of ['s9-legend','s9-sum-head','s9-sum-body','s9-hit-chart','s9-product-chart','s9-day-chart'])document.getElementById(id).innerHTML='';
     return;
   }
 
-  // Use Product Type (mapped into style) and only positive Plan/Day values.
-  // Same line + same date + multiple products => highest Plan/Day wins.
-  const daily=DAILY_PLAN.filter(d=>dates.includes(d.date) && d.value>0);
-  const lines=[...new Set(daily.map(d=>d.line).filter(n=>n>0))].sort((a,b)=>a-b);
+  const daily=DAILY_PLAN.filter(d=>dates.includes(d.date)&&d.value>0&&masterLines.has(Number(d.line)));
+  const lines=[...new Set(daily.map(d=>Number(d.line)).filter(n=>n>0&&masterLines.has(n)))].sort((a,b)=>a-b);
   const winner=new Map();
-  daily.forEach(d=>{
-    const k=d.line+'|'+d.date, old=winner.get(k);
-    if(!old || d.value>old.value) winner.set(k,d);
-  });
+  daily.forEach(d=>{const k=Number(d.line)+'|'+d.date,old=winner.get(k);if(!old||d.value>old.value)winner.set(k,d)});
+
+  const norm=v=>String(v||'').trim().toUpperCase().replace(/HOODIE/g,'HOODY').replace(/SWEATSHIRT/g,'SWEAT SHIRT').replace(/TANK TOP/g,'TANKTOP').replace(/RUGBY\s+POLO/g,'RUGBY POLO').replace(/\s+/g,' ');
+  const priorityTokens=v=>norm(v).split('/').map(x=>x.trim()).filter(Boolean);
+  const isPriorityHit=(style,pr)=>{
+    const st=norm(style); const allowed=[...priorityTokens(pr[1]),...priorityTokens(pr[2])];
+    return allowed.includes(st);
+  };
 
   const styles=[...new Set([...winner.values()].map(d=>d.style))].sort();
   const counts=Object.fromEntries(styles.map(s=>[s,dates.map(()=>0)]));
-  // Average Run Day = item Line-days / unique lines where that item runs.
   const linesByStyle=Object.fromEntries(styles.map(s=>[s,new Set()]));
-  winner.forEach((w,k)=>{
-    if(linesByStyle[w.style]) linesByStyle[w.style].add(Number(k.split('|')[0]));
-  });
+  winner.forEach((w,k)=>{if(linesByStyle[w.style])linesByStyle[w.style].add(Number(k.split('|')[0]))});
 
-  let out='<thead><tr><th>Line</th>'+
-    dates.map(d=>'<th title="'+esc(d)+'">'+Number(d.slice(8))+'<div style="font-size:8px;color:var(--text2);font-weight:400">'+esc(monthNames[Number(d.slice(5,7))-1])+'</div></th>').join('')+
-    '</tr></thead><tbody>';
+  const chassisPriorityMap=new Map(getChassisPriority().map(r=>[Number(r[0]),r]));
+  let totalHit=0,totalMiss=0;
+  const productCells={};
+  const productHitMiss={};
+  const dayHitMiss=Object.fromEntries(dates.map(d=>[d,{hit:0,miss:0}]));
+  let out='<thead><tr><th>Line</th><th class="priority-head">1st Priority</th><th class="priority-head">2nd Priority</th><th class="metric-head">Hit %</th><th class="metric-head">Not Hit %</th>'+dates.map(d=>'<th title="'+esc(d)+'">'+Number(d.slice(8))+'<div style="font-size:8px;color:var(--text2);font-weight:400">'+esc(monthNames[Number(d.slice(5,7))-1])+'</div></th>').join('')+'</tr></thead><tbody>';
 
   for(const line of lines){
-    out+='<tr><td>'+line+'</td>';
+    const pr=chassisPriorityMap.get(Number(line))||[line,'',''];
+    let lineHit=0,lineMiss=0;
+    const cells=[];
     dates.forEach((date,i)=>{
       const w=winner.get(line+'|'+date);
-      if(!w){out+='<td>—</td>';return}
+      if(!w){cells.push('<td class="off-cell">—</td>');return}
       counts[w.style][i]++;
-      out+='<td title="'+esc('EWO '+w.ewo+' · '+w.style+' · Plan/Day '+fmt(w.value))+
-        '" style="background:'+itemColor(w.style)+';color:#000;font-weight:700">'+
-        esc(w.style)+'</td>';
+      productCells[w.style]=(productCells[w.style]||0)+1;
+      const hit=isPriorityHit(w.style,pr);
+      if(!productHitMiss[w.style])productHitMiss[w.style]={hit:0,miss:0};
+      if(hit){productHitMiss[w.style].hit++;dayHitMiss[date].hit++;lineHit++;totalHit++}
+      else{productHitMiss[w.style].miss++;dayHitMiss[date].miss++;lineMiss++;totalMiss++}
+      cells.push('<td class="'+(hit?'hit-cell':'miss-cell')+'" style="'+(hit?'background:#b7e4c7!important;color:#17351f!important;':'background:#f6c1c1!important;color:#681b1b!important;')+'font-weight:800!important" title="'+esc('EWO '+w.ewo+' · '+w.style+' · Plan/Day '+fmt(w.value)+' · '+(hit?'Priority Hit':'Priority Not Hit'))+'">'+esc(w.style)+'</td>');
     });
-    out+='</tr>';
+    const denom=lineHit+lineMiss, hp=denom?lineHit/denom*100:0, mp=denom?lineMiss/denom*100:0;
+    out+='<tr><td class="line-td">'+line+'</td><td class="priority-cell priority-1">'+esc(pr[1]||'—')+'</td><td class="priority-cell priority-2">'+esc(pr[2]||'—')+'</td><td class="metric-cell hit-pct">'+hp.toFixed(0)+'%</td><td class="metric-cell miss-pct">'+mp.toFixed(0)+'%</td>'+cells.join('')+'</tr>';
   }
   out+='</tbody>';
   document.getElementById('s9-cal').innerHTML=out;
 
-  document.getElementById('s9-legend').innerHTML=
-    styles.map(itemChip).join(' ')+
-    '<span style="margin-left:8px;color:var(--text2)">Same line/date হলে highest Plan/Day product দেখানো হচ্ছে.</span>';
+  const total=totalHit+totalMiss, hitPct=total?totalHit/total*100:0, missPct=total?totalMiss/total*100:0;
+  document.getElementById('s9-hit-chart').innerHTML=`<div class="s9-hit-wrap"><div class="s9-hit-pie" style="background:conic-gradient(#3aaa63 0 ${hitPct}%,#d94a4a ${hitPct}% 100%)"><div class="s9-hit-center"><b>${hitPct.toFixed(0)}%</b><span>${fmt(total)} Plan Cells</span></div></div><div class="s9-hit-legend"><div><i class="s9-dot" style="background:#3aaa63"></i>Hit <b>${hitPct.toFixed(1)}% (${fmt(totalHit)})</b></div><div><i class="s9-dot" style="background:#d94a4a"></i>Not Hit <b>${missPct.toFixed(1)}% (${fmt(totalMiss)})</b></div></div></div>`;
 
-  document.getElementById('s9-sum-head').innerHTML=
-    '<tr><th>Product Type</th>'+
-    dates.map(d=>'<th title="'+esc(d)+'">'+Number(d.slice(8))+'</th>').join('')+
-    '<th>Line-days</th><th>AVG Run Day</th><th>In%</th></tr>';
+  const prod=Object.entries(productHitMiss).map(([name,v])=>{
+    const total=v.hit+v.miss;
+    return {name,hit:v.hit,miss:v.miss,total,hitPct:total?v.hit/total*100:0,missPct:total?v.miss/total*100:0};
+  }).sort((a,b)=>b.total-a.total);
+  document.getElementById('s9-product-chart').innerHTML=
+    '<div class="s9-prod-chart-legend"><b>■ Hit %</b> &nbsp;&nbsp; <b>■ Not Hit %</b></div>'+
+    '<div class="s9-prod-bars">'+prod.map(p=>`<div class="s9-prod-col" title="${esc(p.name)} · Hit ${p.hitPct.toFixed(1)}% (${p.hit}) · Not Hit ${p.missPct.toFixed(1)}% (${p.miss})"><div class="s9-prod-pair"><div class="s9-prod-one"><div class="s9-prod-val">${p.hitPct.toFixed(0)}%</div><div class="s9-prod-bar s9-prod-hit" style="height:${Math.max(2,p.hitPct/100*125)}px"></div></div><div class="s9-prod-one"><div class="s9-prod-val">${p.missPct.toFixed(0)}%</div><div class="s9-prod-bar s9-prod-miss" style="height:${Math.max(2,p.missPct/100*125)}px"></div></div></div><div class="s9-prod-name">${esc(p.name)}</div></div>`).join('')+'</div>';
 
-  const summaryRow=(name,values,uniqueLineCount)=>{
-    const total=values.reduce((a,b)=>a+b,0);
-    const avgRunDay=uniqueLineCount ? total/uniqueLineCount : 0;
-    return '<tr><td>'+esc(name)+'</td>'+
-      values.map(v=>'<td class="num">'+v+'</td>').join('')+
-      '<td class="num">'+total+'</td><td class="num">'+avgRunDay.toFixed(1)+'</td><td>'+pct(total,dates.length*Math.max(lines.length,1))+'</td></tr>';
-  };
-  const totals=dates.map((_,i)=>styles.reduce((n,s)=>n+counts[s][i],0));
-  document.getElementById('s9-sum-body').innerHTML=
-    styles.map(s=>summaryRow(s,counts[s],linesByStyle[s]?.size||0)).join('')+
-    summaryRow('Occupied line-days',totals,lines.length);
+  const dayStats=dates.map(date=>{const v=dayHitMiss[date]||{hit:0,miss:0};const total=v.hit+v.miss;return {date,hit:v.hit,miss:v.miss,total,hitPct:total?v.hit/total*100:0,missPct:total?v.miss/total*100:0};});
+  document.getElementById('s9-day-chart').innerHTML=
+    '<div class="s9-prod-chart-legend"><b>■ Hit %</b> &nbsp;&nbsp; <b>■ Not Hit %</b></div>'+
+    '<div class="s9-day-bars">'+dayStats.map(d=>`<div class="s9-day-col" title="${esc(d.date)} · Hit ${d.hitPct.toFixed(1)}% (${d.hit}) · Not Hit ${d.missPct.toFixed(1)}% (${d.miss})"><div class="s9-day-pair"><div class="s9-day-one"><div class="s9-day-val">${d.hitPct.toFixed(0)}%</div><div class="s9-day-bar s9-day-hit" style="height:${Math.max(2,d.hitPct/100*120)}px"></div></div><div class="s9-day-one"><div class="s9-day-val">${d.missPct.toFixed(0)}%</div><div class="s9-day-bar s9-day-miss" style="height:${Math.max(2,d.missPct/100*120)}px"></div></div></div><div class="s9-day-name">${Number(d.date.slice(8))} ${esc(monthNames[Number(d.date.slice(5,7))-1])}</div></div>`).join('')+'</div>';
 
+  document.getElementById('s9-legend').innerHTML='<span style="color:#6bd98b;font-weight:800">■ Hit</span> = Product matches 1st/2nd priority &nbsp; <span style="color:#ff6868;font-weight:800">■ Not Hit</span> = Product does not match priority &nbsp; <span style="color:var(--text2)">Off-day date columns are hidden. Same line/date হলে highest Plan/Day product দেখানো হচ্ছে.</span>';
+
+  document.getElementById('s9-sum-head').innerHTML='<tr><th>Product Type</th>'+dates.map(d=>'<th title="'+esc(d)+'">'+Number(d.slice(8))+'</th>').join('')+'<th>Line-days</th><th>AVG Run Day</th><th>In%</th></tr>';
+  const summaryRow=(name,values,uniqueLineCount)=>{const t=values.reduce((a,b)=>a+b,0),avg=uniqueLineCount?t/uniqueLineCount:0;return '<tr><td>'+esc(name)+'</td>'+values.map(v=>'<td class="num">'+v+'</td>').join('')+'<td class="num">'+t+'</td><td class="num">'+avg.toFixed(1)+'</td><td>'+pct(t,dates.length*Math.max(lines.length,1))+'</td></tr>'};
+  const totals=dates.map((_,i)=>styles.reduce((n,st)=>n+counts[st][i],0));
+  document.getElementById('s9-sum-body').innerHTML=styles.map(st=>summaryRow(st,counts[st],linesByStyle[st]?.size||0)).join('')+summaryRow('Occupied line-days',totals,lines.length);
 }
 
 /* ══ TEMPLATE DOWNLOAD ══════════════════════════ */
