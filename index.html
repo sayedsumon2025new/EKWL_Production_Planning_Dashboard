@@ -1364,7 +1364,8 @@ input,select,textarea{
     <div class="stab" onclick="goSlide(8)" data-s="8"><span class="tnum">08</span> Charts</div>
     <div class="stab" onclick="goSlide(9)" data-s="9"><span class="tnum">09</span> Feeding Analysis</div>
     <div class="stab" onclick="goSlide(10)" data-s="10"><span class="tnum">10</span> Line Calendar</div>
-    <div class="stab" onclick="goSlide(11)" data-s="11"><span class="tnum">11</span> Admin / Parameter Setting</div>
+    <div class="stab" onclick="goSlide(11)" data-s="11"><span class="tnum">11</span> Fabrics &amp; Cutting</div>
+    <div class="stab" onclick="goSlide(12)" data-s="12"><span class="tnum">12</span> Admin / Parameter Setting</div>
   </div>
   <div class="right">
     <select id="month-filter" onchange="applyFilter()"><option value="">All Months</option></select>
@@ -1395,6 +1396,20 @@ input,select,textarea{
     <button class="top-btn primary" style="width:100%;padding:9px" onclick="uploadNewPlan()">Upload & Import New Plan</button>
     <progress id="sb-progress" class="modal-progress" value="0" max="100"></progress>
     <div id="sb-upload-msg" class="modal-msg">নতুন raw Plan Data CSV select করুন। Upload complete হলে dashboard নিজে refresh হবে।</div>
+
+    <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
+    <div style="font-size:13px;font-weight:900;color:var(--amber2);margin-bottom:7px">🧵 Fabrics &amp; Cutting Info CSV</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">
+      Fabrics &amp; Cutting.csv upload করুন। EWO + Color Name সহ cutting/fabric information
+      <b>fabric_cutting_info</b> table-এ import হবে।
+    </div>
+    <input id="fc-csv-file" type="file" accept=".csv,text/csv">
+    <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text2);margin:3px 0 9px">
+      <input id="fc-replace" type="checkbox" checked> Upload-এর আগে পুরোনো Fabrics &amp; Cutting data replace করুন
+    </label>
+    <button class="top-btn primary" style="width:100%;padding:9px" onclick="uploadFabricCutting()">Upload Fabrics &amp; Cutting</button>
+    <progress id="fc-progress" class="modal-progress" value="0" max="100"></progress>
+    <div id="fc-upload-msg" class="modal-msg">Fabrics &amp; Cutting CSV select করুন। Empty Unnamed columns automatically ignore হবে।</div>
   </div>
 </div>
 
@@ -1410,6 +1425,7 @@ input,select,textarea{
         <button class="top-btn" onclick="downloadTemplate()">⬇ Template</button>
         <button class="top-btn" onclick="exportData()">⬇ Export</button>
         <button class="top-btn primary" onclick="openUploadModal()">☁ Upload New Plan</button>
+        <button class="top-btn" onclick="openFabricUpload()">🧵 Fabrics &amp; Cutting</button>
       </div>
     </div>
     <div class="home-grid">
@@ -1424,7 +1440,8 @@ input,select,textarea{
       <button class="home-card" onclick="goSlide(8)"><span class="home-no">08</span><span class="home-icon">📈</span><span class="home-card-title">Charts</span><span class="home-card-sub">Chassis, buyer and production planning visual analysis</span></button>
       <button class="home-card" onclick="goSlide(9)"><span class="home-no">09</span><span class="home-icon">🍽️</span><span class="home-card-title">Feeding Analysis</span><span class="home-card-sub">EWO feeding frequency plus buyer/product-wise feeding mix</span></button>
       <button class="home-card" onclick="goSlide(10)"><span class="home-no">10</span><span class="home-icon">🗓️</span><span class="home-card-title">Line Running Calendar</span><span class="home-card-sub">Day-wise line plan, priority Hit/Not Hit and product running calendar</span></button>
-      <button class="home-card" onclick="goSlide(11)"><span class="home-no">11</span><span class="home-icon">⚙️</span><span class="home-card-title">Admin / Parameter Setting</span><span class="home-card-sub">Efficiency ladder, chassis priority, ABP target and master parameters</span></button>
+      <button class="home-card" onclick="goSlide(11)"><span class="home-no">11</span><span class="home-icon">✂️</span><span class="home-card-title">Fabrics &amp; Cutting Analysis</span><span class="home-card-sub">Fabric receipt, stock, cutable qty, cutting progress, balance and difficulties</span></button>
+      <button class="home-card" onclick="goSlide(12)"><span class="home-no">12</span><span class="home-icon">⚙️</span><span class="home-card-title">Admin / Parameter Setting</span><span class="home-card-sub">Efficiency ladder, chassis priority, ABP target and master parameters</span></button>
     </div>
     <div class="home-status">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
@@ -1752,12 +1769,70 @@ input,select,textarea{
 </div>
 
 
+
+<!-- ─── SLIDE 11: FABRICS & CUTTING ANALYSIS ─────────────── -->
+<div class="slide" id="s12">
+  <div class="slide-header">
+    <div class="slide-title"><span class="snum">11</span> Fabrics &amp; Cutting Analysis</div>
+    <div class="pager-btns">
+      <button class="pg-btn" onclick="goSlide(10)">← Back</button>
+      <button class="pg-btn" onclick="goSlide(12)">Next →</button>
+    </div>
+  </div>
+  <div class="kpi-row" id="s12-kpi"></div>
+  <div class="card">
+    <div class="card-title">🔎 Fabric &amp; Cutting Filters <span class="ct-right" id="s12-count"></span></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:900;color:#002b5b">PLAN EWO FILTER:</span>
+      <select id="s12-plan-match" onchange="renderS12()" style="min-width:220px;border:2px solid #f59e0b;background:#fff8e7;font-weight:900;color:#002b5b;padding:6px 9px;border-radius:6px">
+        <option value="">All EWO</option>
+        <option value="match">✓ Plan EWO Match Only</option>
+        <option value="nomatch">✕ Not in Plan</option>
+      </select>
+      <span id="s12-match-note" style="font-size:10px;font-weight:800;color:#64748b"></span>
+    </div>
+    <div style="display:grid;grid-template-columns:1.35fr repeat(4,1fr);gap:8px">
+      <input id="s12-search" type="search" placeholder="Search EWO / Color / Buyer..." oninput="renderS12()">
+      <select id="s12-buyer" onchange="renderS12()"><option value="">All Buyers</option></select>
+      <select id="s12-product" onchange="renderS12()"><option value="">All Products</option></select>
+      <select id="s12-status" onchange="renderS12()"><option value="">All Status</option></select>
+      <select id="s12-difficulty" onchange="renderS12()"><option value="">All Cutting Difficulty</option></select>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">📊 Cutting Progress by Product</div>
+      <div class="bar-chart" id="s12-product-chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">⚠️ Cutting Difficulties</div>
+      <div class="bar-chart" id="s12-diff-chart"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">✂️ EWO + Color Fabric &amp; Cutting Detail</div>
+    <div class="tbl-wrap" style="max-height:560px">
+      <table class="dt" id="s12-tbl">
+        <thead><tr>
+          <th>Buyer</th><th>EWO</th><th>Color</th><th>Product</th><th>Style / Emb.</th>
+          <th class="num">Order Qty</th><th class="num">Fabric Booking</th><th class="num">Fabric Received</th>
+          <th class="num">Fabric Balance</th><th class="num">Stock After Cut</th><th class="num">Cutable Qty</th>
+          <th class="num">Total Cut Qty</th><th class="num">Cutting Balance</th><th class="num">Cutting %</th>
+          <th>Status</th><th>Cutting Difficulties</th>
+        </tr></thead>
+        <tbody id="s12-body"></tbody>
+        <tfoot><tr id="s12-foot"></tr></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- ─── SLIDE 10: ADMIN / PARAMETER SETTING ─────────────── -->
 <div class="slide" id="s10">
   <div class="slide-header">
-    <div class="slide-title"><span class="snum">10</span> Admin / Parameter Setting</div>
+    <div class="slide-title"><span class="snum">12</span> Admin / Parameter Setting</div>
     <div class="pager-btns">
-      <button class="pg-btn" onclick="goSlide(9)">← Back</button>
+      <button class="pg-btn" onclick="goSlide(11)">← Back</button>
       <button class="pg-btn" onclick="goSlide(0)">🏠 Home</button>
     </div>
   </div>
@@ -1856,6 +1931,7 @@ function csvCell(v){const s=String(v??'');return /[",\r\n]/.test(s)?'"'+s.replac
    GLOBALS
 ══════════════════════════════════════════════════ */
 let DATA = [];
+let FABRIC_CUTTING_DATA = [];
 let DAILY_PLAN = [];
 let SAH_DATA = [];
 let BUYER_PLAN_DATA = [];
@@ -2156,7 +2232,7 @@ function openAdminSetting(key){
 
 const ACTIVE_TAB_STORAGE_KEY='ekwlhw_active_tab_v1';
 function goSlide(n){
-  const maxSlide=11;
+  const maxSlide=12;
   n=Math.max(0,Math.min(Number(n)||0,maxSlide));
   document.querySelectorAll('.slide').forEach((s,i)=>s.classList.toggle('active',i===n));
   document.querySelectorAll('.stab').forEach(t=>t.classList.toggle('active',+t.dataset.s===n));
@@ -2173,7 +2249,7 @@ function restoreActiveTab(){
   let n=CURRENT_SLIDE;
   try{
     const saved=Number(localStorage.getItem(ACTIVE_TAB_STORAGE_KEY));
-    if(Number.isInteger(saved)&&saved>=0&&saved<=11)n=saved;
+    if(Number.isInteger(saved)&&saved>=0&&saved<=12)n=saved;
   }catch(e){}
   goSlide(n);
 }
@@ -2369,6 +2445,20 @@ async function loadFromSupabase(){
       MONTHS.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('');
     document.getElementById('month-filter').value='';
 
+    // Load Fabrics & Cutting analysis data.
+    FABRIC_CUTTING_DATA=[];
+    let fcFrom=0;
+    while(true){
+      const {data:fcPart,error:fcErr}=await SB.from('fabric_cutting_info')
+        .select('id,buyer,ewo,color_name,item_product_type,style_embellishment_type,pattern_update,color_order_qty,fabric_booking_qty,total_fabric_received,fabric_balance,fabric_stock_after_cut,cutable_qty,total_cut_qty,cutting_balance,cutting_percent,status,cutting_difficulties')
+        .order('id',{ascending:true})
+        .range(fcFrom,fcFrom+pageSize-1);
+      if(fcErr) throw fcErr;
+      FABRIC_CUTTING_DATA.push(...(fcPart||[]));
+      if(!fcPart || fcPart.length<pageSize)break;
+      fcFrom+=pageSize;
+    }
+
     renderAll();
     setStatus(true,
       'Supabase live data loaded: '+upload.file_name,
@@ -2549,8 +2639,88 @@ function renderHome(){
     '</div>';
 }
 
+
+function renderS12(){
+  const all=FABRIC_CUTTING_DATA||[];
+  const buyerEl=document.getElementById('s12-buyer'),prodEl=document.getElementById('s12-product'),
+        statusEl=document.getElementById('s12-status'),diffEl=document.getElementById('s12-difficulty');
+  if(!buyerEl)return;
+  const keep=(el)=>el.value;
+  const bv=keep(buyerEl),pv=keep(prodEl),sv=keep(statusEl),dv=keep(diffEl);
+  const opts=(arr)=>[...new Set(arr.map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const setOpts=(el,label,vals,val)=>{el.innerHTML='<option value="">'+label+'</option>'+vals.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');if(vals.includes(val))el.value=val};
+  setOpts(buyerEl,'All Buyers',opts(all.map(r=>r.buyer)),bv);
+  setOpts(prodEl,'All Products',opts(all.map(r=>r.item_product_type)),pv);
+  setOpts(statusEl,'All Status',opts(all.map(r=>r.status)),sv);
+  setOpts(diffEl,'All Cutting Difficulty',opts(all.map(r=>r.cutting_difficulties)),dv);
+
+  const q=String(document.getElementById('s12-search').value||'').trim().toLowerCase();
+  const planMatch=document.getElementById('s12-plan-match').value;
+  // Normalize both sources so values such as 271305 and 271305.0 match correctly.
+  const ewoKey=v=>{
+    let s=String(v??'').trim().toUpperCase();
+    if(/^\d+\.0+$/.test(s))s=s.replace(/\.0+$/,'');
+    return s;
+  };
+  const planEwoSet=new Set((DATA||[])
+    .filter(r=>!r.is_summary_row && ewoKey(r.ewo))
+    .map(r=>ewoKey(r.ewo)));
+  const rows=all.filter(r=>{
+    const isPlanEwo=planEwoSet.has(ewoKey(r.ewo));
+    return (!buyerEl.value||r.buyer===buyerEl.value)&&(!prodEl.value||r.item_product_type===prodEl.value)&&
+      (!statusEl.value||r.status===statusEl.value)&&(!diffEl.value||r.cutting_difficulties===diffEl.value)&&
+      (!planMatch||(planMatch==='match'?isPlanEwo:!isPlanEwo))&&
+      (!q||[r.ewo,r.color_name,r.buyer,r.item_product_type,r.style_embellishment_type].some(v=>String(v||'').toLowerCase().includes(q)));
+  });
+  const matchedCount=all.filter(r=>planEwoSet.has(ewoKey(r.ewo))).length;
+  const matchedEwoCount=new Set(all.filter(r=>planEwoSet.has(ewoKey(r.ewo))).map(r=>ewoKey(r.ewo))).size;
+  document.getElementById('s12-count').textContent=fmt(rows.length)+' rows • '+fmt(matchedCount)+' Plan-EWO matched rows';
+  const matchNote=document.getElementById('s12-match-note');
+  if(matchNote)matchNote.textContent=fmt(matchedEwoCount)+' matched EWO • '+fmt(matchedCount)+' matched rows';
+
+  const total=k=>rows.reduce((s,r)=>s+N(r[k]),0);
+  const order=total('color_order_qty'),book=total('fabric_booking_qty'),recv=total('total_fabric_received'),
+        cutable=total('cutable_qty'),cut=total('total_cut_qty'),bal=total('cutting_balance');
+  const cutPct=order>0?cut/order*100:0;
+  const uniqueEwo=new Set(rows.map(r=>String(r.ewo||'')).filter(Boolean)).size;
+  const kpis=[
+    ['Unique EWO',fmt(uniqueEwo),'Orders'],['Order Qty',fmt(order),'PCS'],['Fabric Booking',fmt(book),'KG'],
+    ['Fabric Received',fmt(recv),'KG'],['Cutable Qty',fmt(cutable),'PCS'],['Total Cut Qty',fmt(cut),'PCS'],
+    ['Cutting Balance',fmt(bal),'PCS'],['Cutting Progress',cutPct.toFixed(1)+'%','Cut ÷ Order']
+  ];
+  document.getElementById('s12-kpi').innerHTML=kpis.map(x=>'<div class="kpi"><div class="kpi-val">'+x[1]+'</div><div class="kpi-label">'+x[0]+'</div><div class="kpi-sub">'+x[2]+'</div></div>').join('');
+
+  const prod={};
+  rows.forEach(r=>{const k=r.item_product_type||'Other';if(!prod[k])prod[k]={o:0,c:0};prod[k].o+=N(r.color_order_qty);prod[k].c+=N(r.total_cut_qty)});
+  const prodRows=Object.entries(prod).map(([k,v])=>[k,v.o?v.c/v.o*100:0,v.c]).sort((a,b)=>b[1]-a[1]);
+  const maxP=Math.max(1,...prodRows.map(x=>x[1]));
+  document.getElementById('s12-product-chart').innerHTML=prodRows.slice(0,12).map(x=>
+    '<div class="bar-row"><div class="bar-label">'+esc(x[0])+'</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.min(100,x[1])+'%"><span>'+x[1].toFixed(1)+'%</span></div></div></div>'
+  ).join('')||'<div class="muted">No data</div>';
+
+  const dm={};rows.forEach(r=>{const k=String(r.cutting_difficulties||'No Difficulty').trim()||'No Difficulty';dm[k]=(dm[k]||0)+1});
+  const dr=Object.entries(dm).sort((a,b)=>b[1]-a[1]).slice(0,10),mx=Math.max(1,...dr.map(x=>x[1]));
+  document.getElementById('s12-diff-chart').innerHTML=dr.map(x=>
+    '<div class="bar-row"><div class="bar-label">'+esc(x[0])+'</div><div class="bar-track"><div class="bar-fill" style="width:'+x[1]/mx*100+'%"><span>'+fmt(x[1])+'</span></div></div></div>'
+  ).join('')||'<div class="muted">No data</div>';
+
+  document.getElementById('s12-body').innerHTML=rows.map(r=>'<tr>'+
+    '<td>'+esc(r.buyer||'')+'</td><td>'+esc(r.ewo||'')+'</td><td>'+esc(r.color_name||'')+'</td>'+
+    '<td>'+esc(r.item_product_type||'')+'</td><td>'+esc(r.style_embellishment_type||'')+'</td>'+
+    '<td class="num">'+fmt(N(r.color_order_qty))+'</td><td class="num">'+fmt(N(r.fabric_booking_qty))+'</td>'+
+    '<td class="num">'+fmt(N(r.total_fabric_received))+'</td><td class="num">'+fmt(N(r.fabric_balance))+'</td>'+
+    '<td class="num">'+fmt(N(r.fabric_stock_after_cut))+'</td><td class="num">'+fmt(N(r.cutable_qty))+'</td>'+
+    '<td class="num">'+fmt(N(r.total_cut_qty))+'</td><td class="num">'+fmt(N(r.cutting_balance))+'</td>'+
+    '<td class="num">'+N(r.cutting_percent).toFixed(1)+'%</td><td>'+esc(r.status||'')+'</td><td>'+esc(r.cutting_difficulties||'')+'</td></tr>').join('');
+
+  document.getElementById('s12-foot').innerHTML='<td colspan="5">TOTAL</td><td class="num">'+fmt(order)+'</td>'+
+    '<td class="num">'+fmt(book)+'</td><td class="num">'+fmt(recv)+'</td><td class="num">'+fmt(total('fabric_balance'))+'</td>'+
+    '<td class="num">'+fmt(total('fabric_stock_after_cut'))+'</td><td class="num">'+fmt(cutable)+'</td><td class="num">'+fmt(cut)+'</td>'+
+    '<td class="num">'+fmt(bal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td colspan="2"></td>';
+}
+
 function renderSlide(n){
-  const fns={1:renderS1,2:renderS2,3:renderS3,4:renderS4,5:renderS5,6:renderS6,7:renderS11,8:renderS7,9:renderS8,10:renderS9};
+  const fns={1:renderS1,2:renderS2,3:renderS3,4:renderS4,5:renderS5,6:renderS6,7:renderS11,8:renderS7,9:renderS8,10:renderS9,11:renderS12};
   if(fns[n])fns[n](getFiltered());
 }
 
@@ -3820,6 +3990,126 @@ async function uploadNewPlan(){
   console.error(error);sbMsg('sb-upload-msg',error?.message||String(error),false);
   if(uploadId)console.warn('Incomplete upload remains with processing status:',uploadId);
  }
+}
+
+
+/* ══ FABRICS & CUTTING CSV UPLOAD ═══════════════ */
+function openFabricUpload(){
+  openUploadModal();
+  setTimeout(()=>{
+    const f=document.getElementById('fc-csv-file');
+    if(f)f.scrollIntoView({behavior:'smooth',block:'center'});
+  },120);
+}
+function fcNormHeader(s){
+  return String(s||'').replace(/^\uFEFF/,'').trim().toLowerCase()
+    .replace(/[\r\n]+/g,' ').replace(/\s+/g,' ');
+}
+function fcPick(row, aliases){
+  const keys=Object.keys(row), map={};
+  keys.forEach(k=>map[fcNormHeader(k)]=k);
+  for(const a of aliases){
+    const k=map[fcNormHeader(a)];
+    if(k!==undefined)return row[k];
+  }
+  return '';
+}
+function fcText(v){
+  const s=String(v??'').trim();
+  return s===''?null:s;
+}
+function fcDate(v){
+  const s=String(v??'').trim();
+  if(!s)return null;
+  // Handles ISO, dd-MMM-yy/dd-MMM-yyyy and normal browser-readable dates.
+  let m=s.match(/^(\d{1,2})[-\/]([A-Za-z]{3})[-\/](\d{2,4})$/);
+  if(m){
+    const mons={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+    const mm=mons[m[2].toLowerCase()];
+    let yy=Number(m[3]); if(yy<100)yy+=2000;
+    if(mm)return `${yy}-${String(mm).padStart(2,'0')}-${String(Number(m[1])).padStart(2,'0')}`;
+  }
+  const d=new Date(s);
+  return Number.isNaN(d.getTime())?null:d.toISOString().slice(0,10);
+}
+async function parseFabricCuttingFile(file){
+  const text=await file.text(), records=parseRecords(text);
+  if(records.length<2)throw Error('Fabrics & Cutting CSV is empty.');
+  const fields=records.shift().map(x=>String(x??'').replace(/^\uFEFF/,'').trim());
+  const rows=records.map((cols,i)=>{
+    if(cols.length>fields.length)throw Error('Record '+(i+2)+': column count does not match header.');
+    return Object.fromEntries(fields.map((f,j)=>[f,cols[j]??'']));
+  });
+  const hasEwo=fields.some(x=>fcNormHeader(x)==='ewo');
+  const hasColor=fields.some(x=>['color name','color_name'].includes(fcNormHeader(x)));
+  if(!hasEwo||!hasColor)throw Error('Required columns EWO and Color Name were not found.');
+  return rows;
+}
+async function uploadFabricCutting(){
+  try{
+    const user=await refreshSbAuth();
+    if(!user)throw Error('Please sign in first.');
+    const file=document.getElementById('fc-csv-file').files[0];
+    if(!file)throw Error('Choose Fabrics & Cutting CSV first.');
+    const prog=document.getElementById('fc-progress'); prog.value=3;
+    sbMsg('fc-upload-msg','CSV reading & cleaning...');
+    const rows=await parseFabricCuttingFile(file);
+
+    const payload=rows.map((r,i)=>({
+      buyer:fcText(fcPick(r,['Buyer'])),
+      ewo:fcText(fcPick(r,['EWO','Ewo'])),
+      color_name:fcText(fcPick(r,['Color name','Color Name','Color'])),
+      item_product_type:fcText(fcPick(r,['Item/Product Type','Item / Product Type','Product Type'])),
+      style_embellishment_type:fcText(fcPick(r,['Style /Embellishment Type','Style / Embellishment Type','Style/Embellishment Type'])),
+      pattern_update:fcText(fcPick(r,['Pattern update','Pattern Update'])),
+      pattern_received_date:fcDate(fcPick(r,['Pattern rerceived Date','Pattern received Date','Pattern Received Date'])),
+      pattern_received_time:fcText(fcPick(r,['Pattern rerceived Time','Pattern received Time','Pattern Received Time'])),
+      color_order_qty:csvNum(fcPick(r,['Color wise order qty (pcs)','Color wise order qty','Color Order Qty'])),
+      fabric_booking_qty:csvNum(fcPick(r,['Fabric booking qty (kg)','Fabric Booking Qty'])),
+      replace_ask_qty:csvNum(fcPick(r,['Replace Ask qty(kg).','Replace Ask qty (kg)','Replace Ask Qty'])),
+      replacement_settlement_qty:csvNum(fcPick(r,['Rep.Setl.Qty','Rep. Setl. Qty','Replacement Settlement Qty'])),
+      replacement_receive_commitment_date:fcDate(fcPick(r,['Rep. RCV Comitment date','Rep. RCV Commitment date','Replacement Receive Commitment Date'])),
+      fabrication:fcText(fcPick(r,['Fabrication'])),
+      gsm:csvNum(fcPick(r,['GSM'])),
+      width:fcText(fcPick(r,['width','Width'])),
+      day_received:csvNum(fcPick(r,['Day Recvd','Day Received'])),
+      total_fabric_received:csvNum(fcPick(r,['Total Fabric Recvd (kg)','Total Fabric Received (kg)','Total Fabric Recvd'])),
+      fabric_balance:csvNum(fcPick(r,['Fabric Balance (kg)','Fabric Balance'])),
+      bc_consumption:csvNum(fcPick(r,['B.C (kg/Mtr/yds.Pcs)','B.C','BC Consumption'])),
+      fabric_stock_after_cut:csvNum(fcPick(r,['Fabric stock after cut(kg)','Fabric stock after cut (kg)','Fabric Stock After Cut'])),
+      cutable_qty:csvNum(fcPick(r,['Cutable qty','Cutable Qty'])),
+      day_cut:csvNum(fcPick(r,['Day Cut'])),
+      total_cut_qty:csvNum(fcPick(r,['Total Cut Qty (pcs)','Total Cut Qty'])),
+      cutting_balance:csvNum(fcPick(r,['Cutting bal','Cutting Balance'])),
+      cutting_percent:csvNum(fcPick(r,['Cutting %','Cutting%','Cutting Percent'])),
+      status:fcText(fcPick(r,['Status'])),
+      cutting_difficulties:fcText(fcPick(r,['Cutting difficulties','Cutting Difficulties'])),
+      source_row:i+2
+    })).filter(r=>r.ewo||r.buyer||r.color_name||r.item_product_type);
+
+    if(!payload.length)throw Error('No usable Fabrics & Cutting rows found.');
+    prog.value=12;
+
+    if(document.getElementById('fc-replace').checked){
+      sbMsg('fc-upload-msg','Removing previous Fabrics & Cutting rows...');
+      const {error:de}=await SB.from('fabric_cutting_info').delete().gt('id',0);
+      if(de)throw de;
+    }
+
+    let done=0;
+    for(const batch of csvChunks(payload,300)){
+      const {error}=await SB.from('fabric_cutting_info').insert(batch);
+      if(error)throw error;
+      done+=batch.length;
+      prog.value=15+Math.round(85*done/payload.length);
+      sbMsg('fc-upload-msg',`Fabrics & Cutting rows: ${done}/${payload.length}`);
+    }
+    prog.value=100;
+    sbMsg('fc-upload-msg',`Upload complete — ${payload.length.toLocaleString()} rows imported to fabric_cutting_info.`,true);
+  }catch(error){
+    console.error(error);
+    sbMsg('fc-upload-msg',error?.message||String(error),false);
+  }
 }
 
 /* ══ KEYBOARD NAV ═══════════════════════════════ */
