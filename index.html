@@ -303,7 +303,7 @@ table.dt tfoot td{
 /* ══ LOADING % CELL ══════════════════════════════ */
 
 /* Live Supabase multi-report loading status */
-.load-panel{margin-top:10px;width:100%}
+.load-panel{margin-top:10px;width:100%;display:none!important}
 .load-track{height:8px;border-radius:999px;background:rgba(120,147,189,.18);overflow:hidden;border:1px solid rgba(120,147,189,.28)}
 .load-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#22c55e,#38bdf8,#f59e0b);transition:width .32s ease;position:relative}
 .load-fill.loading::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:loadShine 1.1s linear infinite}
@@ -2133,7 +2133,7 @@ input,select,textarea{
       <div><label class="setting-label">STATUS</label><select id="new-user-status" style="width:100%"><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
       <button class="pg-btn" style="height:34px" onclick="addNewSiteUser()">＋ Add User</button>
     </div>
-    <div style="font-size:10px;color:var(--text3);margin-top:8px">New user Supabase Authentication-এ তৈরি হবে এবং <b>Auth User ID</b> সফলভাবে <b>site_users</b>-এর সাথে link হওয়ার পরেই success দেখাবে। Auth creation fail হলে নতুন pending row automatically rollback হবে।</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:8px">Admin এখান থেকে Email + Password দিয়ে সরাসরি confirmed Supabase Auth user তৈরি করতে পারবেন। <b>admin-create-user</b> Edge Function account create + email confirm + <b>site_users</b> link করবে; তারপর dashboard permission save হবে।</div>
   </div>
 
   <div class="card" style="margin-top:14px">
@@ -2174,7 +2174,9 @@ input,select,textarea{
 <script>
 const SUPABASE_URL = "https://rdslpcazdzqjlenbezaf.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Vp8l2awmxvWpiqXOVabT_w_iZYX-faF";
-const SB = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const SB = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,{
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+});
 
 const esc = v => String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -3180,7 +3182,8 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     // Keep whichever tab the user is currently working on.
     goSlide(CURRENT_SLIDE);
     // Preload other Planning sequences in the background so first selection is also instant.
-    setTimeout(()=>prefetchPlanningVersions(),50);
+    // Performance: do not download every historical planning version in background.
+    // A version is fetched only when the user explicitly selects it.
   }catch(error){
     console.error(error);
     const lf=document.getElementById('load-fill');if(lf)lf.classList.remove('loading');
@@ -4794,66 +4797,49 @@ async function addNewSiteUser(){
 
   if(!email){if(msg)msg.innerHTML='<span style="color:#dc2626">✕ Email দিন</span>';return}
   if(password.length<6){if(msg)msg.innerHTML='<span style="color:#dc2626">✕ Password কমপক্ষে 6 characters দিন</span>';return}
-  if(!SITE_USER_PROFILE || SITE_USER_PROFILE.role!=='admin'){
+  if(!SITE_USER_PROFILE || String(SITE_USER_PROFILE.role||'').toLowerCase()!=='admin'){
     if(msg)msg.innerHTML='<span style="color:#dc2626">✕ Admin access required</span>';return;
   }
 
-  const permissions = role==='admin'
+  const permissions = String(role).toLowerCase()==='admin'
     ? Object.fromEntries(USER_PERM_KEYS.map(k=>[k,true]))
     : Object.fromEntries(USER_PERM_KEYS.map(k=>[k,false]));
 
-  let createdPendingRow=false;
   try{
-    if(msg)msg.innerHTML='<span style="color:#d97706">Checking user...</span>';
+    if(msg)msg.innerHTML='<span style="color:#d97706">Creating confirmed Auth user...</span>';
 
-    const existingRes=await SB.from('site_users')
-      .select('id,email,auth_user_id,role,status,permissions')
-      .ilike('email',email).limit(1);
-    if(existingRes.error)throw existingRes.error;
-    let row=existingRes.data?.[0]||null;
-
-    if(row?.auth_user_id){
-      throw Error('এই email-এর Auth account already linked আছে।');
-    }
-
-    if(row){
-      const upd=await SB.from('site_users').update({role,status,permissions}).eq('id',row.id).select('id').single();
-      if(upd.error)throw upd.error;
-    }else{
-      const ins=await SB.from('site_users').insert({email,role,status,permissions})
-        .select('id,email,auth_user_id').single();
-      if(ins.error)throw ins.error;
-      row=ins.data;
-      createdPendingRow=true;
-    }
-
-    if(msg)msg.innerHTML='<span style="color:#d97706">Creating Supabase Auth user...</span>';
-
-    // Separate non-persistent client keeps the Admin session untouched.
-    const secondary=supabase.createClient(SB_URL,SB_KEY,{
-      auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+    // Server-side Edge Function creates the Auth account with email_confirm:true.
+    // The current Admin JWT is sent automatically by the Supabase client.
+    const {data,error}=await SB.functions.invoke('admin-create-user',{
+      body:{email,password,role,status}
     });
-    const {data:authData,error:authErr}=await secondary.auth.signUp({email,password});
-    if(authErr)throw authErr;
-    if(!authData?.user?.id)throw Error('Supabase Auth user ID পাওয়া যায়নি।');
+    if(error)throw error;
+    if(!data?.success)throw Error(data?.error||'User creation failed.');
 
-    const link=await SB.from('site_users')
-      .update({auth_user_id:authData.user.id,role,status,permissions})
-      .eq('email',email).select('id,auth_user_id').single();
-    if(link.error)throw link.error;
-    if(!link.data?.auth_user_id)throw Error('Auth user তৈরি হয়েছে, কিন্তু site_users link হয়নি।');
+    // Keep this dashboard's existing permission model exactly as before.
+    const permRes=await SB.from('site_users')
+      .update({role,status,permissions})
+      .ilike('email',email)
+      .select('id,auth_user_id,email')
+      .single();
+    if(permRes.error)throw Error('User created, but permission save failed: '+permRes.error.message);
+    if(!permRes.data?.auth_user_id)throw Error('User created, but Auth User ID link পাওয়া যায়নি।');
 
     document.getElementById('new-user-email').value='';
     document.getElementById('new-user-password').value='';
-    if(msg)msg.innerHTML='<span style="color:#16a34a;font-weight:900">✓ Auth User Created & Linked</span>';
+    if(msg)msg.innerHTML='<span style="color:#16a34a;font-weight:900">✓ User Created · Email Confirmed · Login Ready</span>';
     await loadSiteUsers();
   }catch(e){
     console.error(e);
-    // Remove only a brand-new pending access row created by this attempt.
-    if(createdPendingRow){
-      try{await SB.from('site_users').delete().eq('email',email).is('auth_user_id',null)}catch(_){}
-    }
-    if(msg)msg.innerHTML='<span style="color:#dc2626;font-weight:900">✕ Failed: '+umEsc(e?.message||e)+'</span>';
+    let detail=e?.message||String(e);
+    // functions.invoke may expose the function response body through context.
+    try{
+      if(e?.context && typeof e.context.json==='function'){
+        const j=await e.context.json();
+        if(j?.error)detail=j.error;
+      }
+    }catch(_){ }
+    if(msg)msg.innerHTML='<span style="color:#dc2626;font-weight:900">✕ Failed: '+umEsc(detail)+'</span>';
     await loadSiteUsers();
   }
 }
@@ -5319,7 +5305,11 @@ async function uploadFabricCutting(){
       sbMsg('fc-upload-msg',`Fabrics & Cutting rows: ${done}/${payload.length}`);
     }
     prog.value=100;
-    sbMsg('fc-upload-msg',`Upload complete — ${payload.length.toLocaleString()} rows imported to fabric_cutting_info.`,true);
+    FABRIC_CUTTING_DATA=payload.map((r,i)=>({...r,id:r.id??(i+1)}));
+    await saveDashboardCache();
+    refreshPermittedSlides('fabric');
+    if(CURRENT_SLIDE===11 && canAccessSlide(11))renderSlide(11);
+    sbMsg('fc-upload-msg',`Upload complete — ${payload.length.toLocaleString()} rows imported. Local dashboard cache updated; no reload required.`,true);
   }catch(error){
     console.error(error);
     sbMsg('fc-upload-msg',error?.message||String(error),false);
@@ -5402,7 +5392,16 @@ async function uploadSewingIO(){
       sbMsg('sio-upload-msg',`Sewing Input & Output rows: ${done}/${payload.length}`);
     }
     prog.value=100;
-    sbMsg('sio-upload-msg',`Upload complete — ${payload.length.toLocaleString()} rows imported to sewing_input_output.`,true);
+    SEWING_IO_DATA=payload.map(r=>({
+      ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
+      color:r.color||'', line_no:Number(r.line_no)||lineNumber(r.line),
+      input:N(r.total_input_qty), output:N(r.total_output_qty),
+      wip:N(r.total_wip_qty), reject:N(r.total_reject_qty)
+    }));
+    await saveDashboardCache();
+    refreshPermittedSlides('sewing');
+    if(CURRENT_SLIDE===7 && canAccessSlide(7))renderSlide(7);
+    sbMsg('sio-upload-msg',`Upload complete — ${payload.length.toLocaleString()} rows imported. Local dashboard cache updated; no reload required.`,true);
   }catch(error){
     console.error(error);
     sbMsg('sio-upload-msg',error?.message||String(error),false);
@@ -5445,11 +5444,19 @@ async function uploadDateWiseProduction(){
     for(let i=0;i<dates.length;i++){const {error}=await SB.from('date_wise_production').delete().eq('output_date',dates[i]);if(error)throw error;prog.value=15+Math.round(20*(i+1)/dates.length);}
     for(let i=0;i<rows.length;i+=300){const {error}=await SB.from('date_wise_production').insert(rows.slice(i,i+300));if(error)throw error;prog.value=35+Math.round(65*Math.min(i+300,rows.length)/rows.length);}
     prog.value=100;
-    msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. অন্য date-এর data unchanged. Dashboard refresh হচ্ছে...`;
-    DATE_WISE_PRODUCTION_DATA=[];
-    await clearDashboardCache();
-    await loadFromSupabase(null,true);
-    msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. Dashboard count refreshed.`;
+    msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. Local cache update হচ্ছে...`;
+    const uploadedDates=new Set(dates);
+    DATE_WISE_PRODUCTION_DATA=(DATE_WISE_PRODUCTION_DATA||[]).filter(r=>!uploadedDates.has(r.output_date));
+    DATE_WISE_PRODUCTION_DATA.push(...rows.map((r,i)=>({
+      ...r,id:r.id??('local-'+Date.now()+'-'+i),
+      ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
+      line_no:Number(r.line_no)||lineNumber(r.line),total_qty:N(r.total_qty)
+    })));
+    DATE_WISE_PRODUCTION_DATA.sort((a,b)=>String(a.output_date).localeCompare(String(b.output_date)));
+    await saveDashboardCache();
+    refreshPermittedSlides('production');
+    if(CURRENT_SLIDE===7 && canAccessSlide(7))renderSlide(7);
+    msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. Dashboard cache updated; no reload required.`;
   }catch(e){console.error(e);msg.textContent='Upload failed: '+(e?.message||e);prog.value=0;}
 }
 
@@ -5491,22 +5498,16 @@ function loadCapacitySettings(){
 }
 
 window.addEventListener('DOMContentLoaded',async()=>{
-  // SECURITY: every fresh page open / browser refresh must start at Login.
-  // Dashboard data can still restore from local cache AFTER a successful login,
-  // so this does not force a fresh Supabase report download on every refresh.
   document.body.classList.add('site-locked');
   document.getElementById('site-login-gate')?.classList.remove('hidden');
   SITE_AUTH_USER=null;
   SITE_USER_PROFILE=null;
   SITE_BOOTED=false;
 
-  // Normal fresh open still forces Login. A Supabase PASSWORD_RECOVERY link is the
-  // only exception, because signing out here would destroy the recovery session.
   if(siteRecoveryInUrl()){
     showSiteLogin();
     siteLoginMessage('Recovery link verify হচ্ছে...');
     try{
-      // Give Supabase a moment to exchange/restore the recovery session.
       await new Promise(r=>setTimeout(r,350));
       const {data:{session}}=await SB.auth.getSession();
       if(session?.user) siteShowNewPassword();
@@ -5515,21 +5516,38 @@ window.addEventListener('DOMContentLoaded',async()=>{
       console.error('Recovery startup:',e);
       siteLoginMessage(e?.message||'Recovery link verify করা যায়নি।','err');
     }
-  }else{
-    try{
-      const {data:{session}}=await SB.auth.getSession();
-      if(session) await SB.auth.signOut();
-    }catch(e){
-      console.warn('Startup sign-out:',e);
-    }
-    showSiteLogin();
-    siteLoginMessage('Email এবং password দিয়ে sign in করুন।');
-    setTimeout(()=>document.getElementById('site-login-email')?.focus(),50);
+    return;
   }
+
+  // Persistent login: browser refresh/reopen keeps the valid Supabase session.
+  try{
+    const {data:{session},error}=await SB.auth.getSession();
+    if(error)throw error;
+    if(session?.user){
+      const profile=await getAuthorizedSiteUser(session.user);
+      unlockSite(session.user,profile);
+      SITE_BOOTED=true;
+      loadCapacitySettings();
+
+      // Normal refresh is local-first: no Supabase report download when cache exists.
+      const cached=await restoreDashboardFromCache();
+      if(!cached) await loadFromSupabase();
+      applySitePermissions();
+      restoreActiveTab();
+      refreshPermittedSlides('all');
+      return;
+    }
+  }catch(e){
+    console.error('Persistent session restore failed',e);
+  }
+
+  showSiteLogin();
+  siteLoginMessage('Email এবং password দিয়ে sign in করুন।');
+  setTimeout(()=>document.getElementById('site-login-email')?.focus(),50);
 });
 
 
-document.addEventListener('change',e=>{
+document.addEventListener('change' ,e=>{
   if(e.target?.id==='sb-planning-month')updateNextPlanningSequence();
 });
 
