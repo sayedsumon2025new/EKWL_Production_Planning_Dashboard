@@ -301,6 +301,16 @@ table.dt tfoot td{
 .bar-val{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:10px;font-family:monospace;color:rgba(255,255,255,.8)}
 
 /* ══ LOADING % CELL ══════════════════════════════ */
+
+/* Live Supabase multi-report loading status */
+.load-panel{margin-top:10px;width:100%}
+.load-track{height:8px;border-radius:999px;background:rgba(120,147,189,.18);overflow:hidden;border:1px solid rgba(120,147,189,.28)}
+.load-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#22c55e,#38bdf8,#f59e0b);transition:width .32s ease;position:relative}
+.load-fill.loading::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:loadShine 1.1s linear infinite}
+@keyframes loadShine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.load-reports{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.load-chip{font-size:10px;font-weight:800;padding:4px 8px;border-radius:999px;border:1px solid var(--border);color:var(--text2);background:rgba(255,255,255,.03)}
+.load-chip.loading{color:#f59e0b}.load-chip.ok{color:#22c55e}.load-chip.err{color:#ef4444}
 .loading-cell{
   padding:4px 8px!important;
   font-weight:700;
@@ -1341,6 +1351,35 @@ input,select,textarea{
 <style id="calendar-hover-zoom-same-as-gantt">
 #s9 table.cal tbody td:not(.line-td):not(.priority-cell):not(.hit-pct):not(.miss-pct){position:relative;transition:transform .14s ease,box-shadow .14s ease,background-color .14s ease,color .14s ease;transform-origin:center;cursor:default}
 #s9 table.cal tbody td:not(.line-td):not(.priority-cell):not(.hit-pct):not(.miss-pct):hover{transform:scale(1.16);z-index:30!important;background:#fff3bf!important;color:#002b5b!important;box-shadow:0 0 0 2px #f59e0b,0 6px 16px rgba(0,0,0,.22)!important;font-size:calc(100% + 1px)!important;font-weight:900!important}
+
+/* Upload/Data Control modal — compact and fully usable on laptop screens */
+.modal-overlay{align-items:center!important;padding:12px!important;overflow:hidden!important}
+.modal-box{
+  width:min(620px,calc(100vw - 24px))!important;
+  max-height:calc(100vh - 24px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:14px 16px!important;
+  border-radius:10px!important;
+  scrollbar-width:thin;
+  scrollbar-color:var(--amber2) var(--navy3);
+}
+.modal-box::-webkit-scrollbar{width:8px}
+.modal-box::-webkit-scrollbar-track{background:var(--navy3);border-radius:8px}
+.modal-box::-webkit-scrollbar-thumb{background:var(--amber2);border-radius:8px}
+.modal-head{position:sticky;top:-14px;z-index:5;background:var(--navy2);padding:4px 0 8px;margin-bottom:8px!important}
+.modal-head h3{font-size:14px!important}
+.modal-box input[type=file]{padding:7px!important;margin:3px 0 6px!important;min-height:36px}
+.modal-box .top-btn{min-height:34px!important;padding:7px 9px!important}
+.modal-box hr{margin:11px 0!important}
+.modal-box .modal-msg{margin-top:5px!important;line-height:1.35!important}
+.modal-box progress{margin-top:6px!important;margin-bottom:3px!important}
+@media (max-height:760px){
+  .modal-overlay{align-items:flex-start!important;padding:7px!important}
+  .modal-box{max-height:calc(100vh - 14px)!important;padding:10px 13px!important}
+  .modal-head{top:-10px}
+  .modal-box hr{margin:8px 0!important}
+}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -1368,7 +1407,10 @@ input,select,textarea{
     <div class="stab" onclick="goSlide(12)" data-s="12"><span class="tnum">12</span> Admin / Parameter Setting</div>
   </div>
   <div class="right">
-    <select id="month-filter" onchange="applyFilter()"><option value="">All Months</option></select>
+    <select id="month-filter" onchange="planningMonthChanged()"><option value="">Latest Month</option></select>
+    <select id="planning-sequence-filter" onchange="planningSequenceChanged()" title="Planning upload sequence">
+      <option value="">Latest Sequence</option>
+    </select>
     <button class="top-btn" onclick="downloadTemplate()">⬇ Template</button>
     <button class="top-btn" onclick="exportData()">⬇ Export</button>
     <button class="top-btn primary" onclick="openUploadModal()">☁ Upload New Plan</button>
@@ -1392,6 +1434,28 @@ input,select,textarea{
     </div>
     <div id="sb-auth-msg" class="modal-msg">Checking login...</div>
     <hr style="border:0;border-top:1px solid var(--border);margin:14px 0">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:7px">
+      <div>
+        <div style="font-size:10px;font-weight:800;color:var(--text2);margin-bottom:3px">PLANNING MONTH</div>
+        <div style="display:flex;gap:5px">
+          <input id="sb-planning-month" type="text" readonly placeholder="Select Month" title="Planning Month" style="width:100%;box-sizing:border-box;cursor:pointer" onclick="openPlanningMonthPicker()">
+          <button type="button" class="top-btn" onclick="openPlanningMonthPicker()" title="Select month" style="padding:5px 9px">📅</button>
+        </div>
+        <div id="planning-month-picker" style="display:none;position:absolute;z-index:10020;background:var(--navy2);border:1px solid var(--border);border-radius:8px;padding:10px;box-shadow:0 12px 35px rgba(0,0,0,.45);width:270px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:8px">
+            <button type="button" class="top-btn" onclick="changePlanningPickerYear(-1)">‹</button>
+            <b id="planning-picker-year" style="color:var(--amber2)"></b>
+            <button type="button" class="top-btn" onclick="changePlanningPickerYear(1)">›</button>
+          </div>
+          <div id="planning-picker-months" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:800;color:var(--text2);margin-bottom:3px">PLANNING ID / SERIAL</div>
+        <input id="sb-planning-id" type="text" placeholder="Auto: P01" title="Auto-generated month-wise; চাইলে edit করতে পারবেন" style="width:100%;box-sizing:border-box">
+      </div>
+    </div>
+    <div id="sb-sequence-preview" class="modal-msg" style="margin-bottom:7px">Month select করলে next sequence দেখাবে।</div>
     <input id="sb-csv-file" type="file" accept=".csv,text/csv">
     <button class="top-btn primary" style="width:100%;padding:9px" onclick="uploadNewPlan()">Upload & Import New Plan</button>
     <progress id="sb-progress" class="modal-progress" value="0" max="100"></progress>
@@ -1410,6 +1474,31 @@ input,select,textarea{
     <button class="top-btn primary" style="width:100%;padding:9px" onclick="uploadFabricCutting()">Upload Fabrics &amp; Cutting</button>
     <progress id="fc-progress" class="modal-progress" value="0" max="100"></progress>
     <div id="fc-upload-msg" class="modal-msg">Fabrics &amp; Cutting CSV select করুন। Empty Unnamed columns automatically ignore হবে।</div>
+
+    <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
+    <div style="font-size:13px;font-weight:900;color:var(--amber2);margin-bottom:7px">🧵 Sewing Input &amp; Output CSV</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">
+      Line Wise Reconcilation CSV upload করুন। Buyer, EWO, PO, Color, Line এবং Input/Output/Reject/WIP Qty
+      <b>sewing_input_output</b> table-এ import হবে।
+    </div>
+    <input id="sio-csv-file" type="file" accept=".csv,text/csv">
+    <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text2);margin:3px 0 9px">
+      <input id="sio-replace" type="checkbox" checked> Upload-এর আগে পুরোনো Sewing Input &amp; Output data replace করুন
+    </label>
+    <button class="top-btn primary" style="width:100%;padding:9px" onclick="uploadSewingIO()">Upload Sewing Input &amp; Output</button>
+    <progress id="sio-progress" class="modal-progress" value="0" max="100"></progress>
+
+    <div id="sio-upload-msg" class="modal-msg">Line Wise Reconcilation CSV select করুন। Empty Unnamed columns automatically ignore হবে।</div>
+
+    <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
+    <div style="font-size:13px;font-weight:900;color:var(--amber2);margin-bottom:7px">📅 Date Wise Production Report CSV</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">
+      Daily production CSV upload করুন। CSV-তে থাকা <b>Output Date</b> অনুযায়ী শুধু সেই date-এর পুরোনো data replace হবে; অন্য date-এর data থাকবে।
+    </div>
+    <input id="dwp-csv-file" type="file" accept=".csv,text/csv">
+    <button class="top-btn primary" style="width:100%;padding:9px;margin-top:9px" onclick="uploadDateWiseProduction()">Upload Date Wise Production</button>
+    <progress id="dwp-progress" class="modal-progress" value="0" max="100"></progress>
+    <div id="dwp-upload-msg" class="modal-msg">Output Date ভিত্তিক replace হবে — full table delete হবে না।</div>
   </div>
 </div>
 
@@ -1443,8 +1532,17 @@ input,select,textarea{
       <button class="home-card" onclick="goSlide(11)"><span class="home-no">11</span><span class="home-icon">✂️</span><span class="home-card-title">Fabrics &amp; Cutting Analysis</span><span class="home-card-sub">Fabric receipt, stock, cutable qty, cutting progress, balance and difficulties</span></button>
       <button class="home-card" onclick="goSlide(12)"><span class="home-no">12</span><span class="home-icon">⚙️</span><span class="home-card-title">Admin / Parameter Setting</span><span class="home-card-sub">Efficiency ladder, chassis priority, ABP target and master parameters</span></button>
     </div>
-    <div class="home-status">
+    <div class="home-status" style="flex-wrap:wrap">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
+      <div class="load-panel" id="load-panel">
+        <div class="load-track"><div class="load-fill loading" id="load-fill"></div></div>
+        <div class="load-reports">
+          <span class="load-chip" id="load-plan">Planning</span>
+          <span class="load-chip" id="load-fabric">Fabrics &amp; Cutting</span>
+          <span class="load-chip" id="load-sewing">Sewing I/O</span>
+          <span class="load-chip" id="load-production">Date Wise Production</span>
+        </div>
+      </div>
     </div>
     <div class="home-quick">
       <div class="home-quick-title">📊 LIVE PLANNING SUMMARY <span id="home-live-month" style="color:var(--text2);font-weight:600"></span></div>
@@ -1932,6 +2030,10 @@ function csvCell(v){const s=String(v??'');return /[",\r\n]/.test(s)?'"'+s.replac
 ══════════════════════════════════════════════════ */
 let DATA = [];
 let FABRIC_CUTTING_DATA = [];
+let SEWING_IO_DATA = [];
+let DATE_WISE_PRODUCTION_DATA = [];
+let PLAN_UPLOAD_CATALOG=[];
+let ACTIVE_PLAN_UPLOAD=null;
 let DAILY_PLAN = [];
 let SAH_DATA = [];
 let BUYER_PLAN_DATA = [];
@@ -2281,19 +2383,105 @@ function dashboardStyle(v){
   };
   return map[s] || String(v??'').trim() || 'Other';
 }
-async function loadFromSupabase(){
+
+function setLoadProgress(percent,msg){
+  const f=document.getElementById('load-fill');
+  if(f){f.style.width=Math.max(0,Math.min(100,percent))+'%';f.classList.toggle('loading',percent<100);}
+  if(msg)document.getElementById('status-msg').textContent=msg;
+}
+function setLoadChip(id,state,label){
+  const el=document.getElementById(id);if(!el)return;
+  el.className='load-chip '+state;
+  el.textContent=(state==='ok'?'✓ ':state==='loading'?'⟳ ':state==='err'?'✕ ':'')+label;
+}
+function resetLoadUI(){
+  setLoadProgress(3,'Supabase reports load শুরু হচ্ছে...');
+  setLoadChip('load-plan','loading','Planning');
+  setLoadChip('load-fabric','','Fabrics & Cutting');
+  setLoadChip('load-sewing','','Sewing I/O');
+  setLoadChip('load-production','','Date Wise Production');
+}
+
+function planningMonthLabel(ym){
+  if(!ym)return '';
+  const [y,m]=String(ym).split('-').map(Number);
+  if(!y||!m)return String(ym);
+  return new Date(y,m-1,1).toLocaleString('en-US',{month:'short',year:'numeric'});
+}
+function uploadMonthKey(u){
+  if(u?.planning_month)return String(u.planning_month).slice(0,7);
+  if(u?.uploaded_at)return String(u.uploaded_at).slice(0,7);
+  return '';
+}
+function uploadSeq(u){return Number(u?.sequence_no)||0;}
+function activePlanningLabel(){
+  if(!ACTIVE_PLAN_UPLOAD)return 'No Planning Selected';
+  const m=planningMonthLabel(uploadMonthKey(ACTIVE_PLAN_UPLOAD));
+  const seq=uploadSeq(ACTIVE_PLAN_UPLOAD);
+  const pid=String(ACTIVE_PLAN_UPLOAD.planning_id||'').trim();
+  return m+' · Seq '+(seq||'-')+(pid?' · '+pid:'');
+}
+function rebuildPlanningFilters(preferredMonth,preferredUploadId){
+  const mf=document.getElementById('month-filter'), sf=document.getElementById('planning-sequence-filter');
+  if(!mf||!sf)return;
+  const months=[...new Set(PLAN_UPLOAD_CATALOG.map(uploadMonthKey).filter(Boolean))].sort().reverse();
+  const month=preferredMonth||mf.value||months[0]||'';
+  mf.innerHTML=months.map(m=>`<option value="${esc(m)}">${esc(planningMonthLabel(m))}</option>`).join('') || '<option value="">No Planning</option>';
+  if(months.includes(month))mf.value=month;
+  const list=PLAN_UPLOAD_CATALOG.filter(u=>uploadMonthKey(u)===mf.value)
+    .sort((a,b)=>(uploadSeq(b)-uploadSeq(a))||String(b.uploaded_at).localeCompare(String(a.uploaded_at)));
+  sf.innerHTML=list.map(u=>{
+    const id=u.planning_id?` · ${u.planning_id}`:'';
+    return `<option value="${u.id}">Seq ${uploadSeq(u)||'-'}${esc(id)} · ${esc(u.file_name||'')}</option>`;
+  }).join('') || '<option value="">No upload</option>';
+  const wanted=String(preferredUploadId||'');
+  if(wanted && list.some(u=>String(u.id)===wanted))sf.value=wanted;
+  else if(list[0])sf.value=String(list[0].id);
+}
+async function planningMonthChanged(){
+  rebuildPlanningFilters(document.getElementById('month-filter').value,'');
+  setLoadProgress(12,'Planning sequence দ্রুত load হচ্ছে...');
+  await loadFromSupabase(document.getElementById('planning-sequence-filter').value,true);
+}
+async function planningSequenceChanged(){
+  setLoadProgress(12,'Planning sequence দ্রুত load হচ্ছে...');
+  await loadFromSupabase(document.getElementById('planning-sequence-filter').value,true);
+}
+async function updateNextPlanningSequence(){
+  const month=getPlanningMonthValue();
+  const box=document.getElementById('sb-sequence-preview');
+  if(!month||!box)return;
+  const {data,error}=await SB.from('plan_uploads').select('sequence_no,planning_id')
+    .eq('status','complete').eq('planning_month',month+'-01').order('sequence_no',{ascending:false}).limit(1);
+  if(error){box.textContent='Sequence check failed: '+error.message;return;}
+  const next=(data?.[0]?.sequence_no||0)+1;
+  const autoId='P'+String(next).padStart(2,'0');
+  const idBox=document.getElementById('sb-planning-id');
+  if(idBox && (!idBox.value.trim() || idBox.dataset.auto==='1')){
+    idBox.value=autoId;
+    idBox.dataset.auto='1';
+  }
+  box.textContent=`${planningMonthLabel(month)} → Sequence ${next} · Auto ID: ${autoId} (editable)`;
+}
+async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
   try{
-    setStatus(true,'Supabase থেকে latest planning data load হচ্ছে...','Please wait');
+    setStatus(true,'Supabase থেকে reports load হচ্ছে...','3%');
+    resetLoadUI();
 
     const {data:uploads,error:upErr}=await SB.from('plan_uploads')
-      .select('id,file_name,uploaded_at,row_count')
+      .select('id,file_name,uploaded_at,row_count,planning_month,sequence_no,planning_id')
       .eq('status','complete')
-      .order('uploaded_at',{ascending:false})
-      .limit(1);
+      .order('uploaded_at',{ascending:false});
     if(upErr) throw upErr;
     if(!uploads || !uploads.length) throw Error('Supabase-এ কোনো completed upload পাওয়া যায়নি.');
+    PLAN_UPLOAD_CATALOG=uploads;
 
-    const upload=uploads[0], pageSize=1000;
+    const oldMonth=preserveFilters?document.getElementById('month-filter')?.value:'';
+    rebuildPlanningFilters(oldMonth,requestedUploadId);
+    const selectedId=requestedUploadId || document.getElementById('planning-sequence-filter')?.value || uploads[0].id;
+    const upload=uploads.find(u=>String(u.id)===String(selectedId)) || uploads[0];
+    ACTIVE_PLAN_UPLOAD=upload;
+    const pageSize=1000;
     let rows=[], from=0;
     while(true){
       const {data:part,error}=await SB.from('plan_records')
@@ -2435,15 +2623,22 @@ async function loadFromSupabase(){
       from+=pageSize;
     }
 
-    // Month filter follows the actual uploaded date columns in plan_daily.
+    // The top Month filter is the Planning History month.
+    // Dashboard data is already scoped to the selected planning upload/sequence.
     MONTHS=[...new Set(DAILY_PLAN.map(d=>monthFromISO(d.date)).filter(Boolean))]
       .sort((a,b)=>monthTime(a)-monthTime(b));
-    if(!MONTHS.length) MONTHS=sortedMonths(DATA);
 
-    document.getElementById('month-filter').innerHTML=
-      '<option value="">All Months</option>'+
-      MONTHS.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('');
-    document.getElementById('month-filter').value='';
+    setLoadChip('load-plan','ok','Planning ('+DATA.length.toLocaleString()+')');
+
+    const reuseShared = preserveFilters && (FABRIC_CUTTING_DATA.length || SEWING_IO_DATA.length || DATE_WISE_PRODUCTION_DATA.length);
+    if(reuseShared){
+      setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
+      setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
+      setLoadChip('load-production','ok','Date Wise Production ('+DATE_WISE_PRODUCTION_DATA.length.toLocaleString()+')');
+      setLoadProgress(92,'Planning version loaded · cached reports reused');
+    }else{
+    setLoadProgress(58,'Planning data loaded · Fabrics & Cutting load হচ্ছে...');
+    setLoadChip('load-fabric','loading','Fabrics & Cutting');
 
     // Load Fabrics & Cutting analysis data.
     FABRIC_CUTTING_DATA=[];
@@ -2459,15 +2654,69 @@ async function loadFromSupabase(){
       fcFrom+=pageSize;
     }
 
+    setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
+    setLoadProgress(72,'Fabrics & Cutting loaded · Sewing I/O load হচ্ছে...');
+    setLoadChip('load-sewing','loading','Sewing I/O');
+
+    // Load Sewing Input & Output data for EWO Gantt hover.
+    SEWING_IO_DATA=[];
+    let sioFrom=0;
+    while(true){
+      const {data:sioPart,error:sioErr}=await SB.from('sewing_input_output')
+        .select('id,ewo,line,line_no,total_input_qty,total_output_qty,total_wip_qty,total_reject_qty')
+        .order('id',{ascending:true})
+        .range(sioFrom,sioFrom+pageSize-1);
+      if(sioErr) throw sioErr;
+      SEWING_IO_DATA.push(...(sioPart||[]).map(r=>({
+        ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
+        line_no:Number(r.line_no)||lineNumber(r.line),
+        input:N(r.total_input_qty),
+        output:N(r.total_output_qty),
+        wip:N(r.total_wip_qty),
+        reject:N(r.total_reject_qty)
+      })));
+      if(!sioPart || sioPart.length<pageSize)break;
+      sioFrom+=pageSize;
+    }
+
+    setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
+    setLoadProgress(84,'Sewing I/O loaded · Date Wise Production load হচ্ছে...');
+    setLoadChip('load-production','loading','Date Wise Production');
+
+    DATE_WISE_PRODUCTION_DATA=[];
+    let dwpFrom=0;
+    while(true){
+      const {data:dwpPart,error:dwpErr}=await SB.from('date_wise_production')
+        .select('id,code,buyer,ewo,po_no,color,line,line_no,output_date,total_qty')
+        .order('output_date',{ascending:true})
+        .order('id',{ascending:true})
+        .range(dwpFrom,dwpFrom+pageSize-1);
+      if(dwpErr)throw dwpErr;
+      DATE_WISE_PRODUCTION_DATA.push(...(dwpPart||[]).map(r=>({
+        id:r.id,code:r.code||'',buyer:r.buyer||'',
+        ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
+        po_no:r.po_no||'',color:r.color||'',line:r.line||'',
+        line_no:Number(r.line_no)||lineNumber(r.line),
+        output_date:r.output_date,total_qty:N(r.total_qty)
+      })));
+      if(!dwpPart || dwpPart.length<pageSize)break;
+      dwpFrom+=pageSize;
+    }
+    setLoadChip('load-production','ok','Date Wise Production ('+DATE_WISE_PRODUCTION_DATA.length.toLocaleString()+')');
+    setLoadProgress(96,'সব report loaded · Dashboard render হচ্ছে...');
+    }
+
     renderAll();
+    setLoadProgress(100,'সব Supabase report successfully loaded');
     setStatus(true,
-      'Supabase live data loaded: '+upload.file_name,
-      DATA.length+' Plan/Day rows · '+DAILY_PLAN.length+' date values'
+      'সব Supabase report successfully loaded',
+      activePlanningLabel()+' · '+DATA.length+' Plan/Day · '+FABRIC_CUTTING_DATA.length+' Fabric/Cutting · '+SEWING_IO_DATA.length+' Sewing I/O · '+DATE_WISE_PRODUCTION_DATA.length+' Production'
     );
     // Keep whichever tab the user is currently working on.
     goSlide(CURRENT_SLIDE);
   }catch(error){
     console.error(error);
+    const lf=document.getElementById('load-fill');if(lf)lf.classList.remove('loading');
     setStatus(false,'Supabase load failed: '+(error?.message||error)+'. CSV upload এখনও ব্যবহার করা যাবে.');
   }
 }
@@ -2512,9 +2761,8 @@ function parseCSV(text){
    metadata.set(key,row);candidates.push(row);
   });
   DATA=candidates;MONTHS=sortedMonths(DATA);
-  document.getElementById('month-filter').innerHTML='<option value="">All Months</option>'+MONTHS.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('');
-  document.getElementById('month-filter').value='';
-  renderAll();goSlide(CURRENT_SLIDE);setStatus(true,DATA.length+' rows loaded successfully',DATA.length+' rows · '+MONTHS.length+' months');return true;
+  // Legacy local CSV preview must not overwrite the Supabase Planning History filters.
+  renderAll();goSlide(CURRENT_SLIDE);setStatus(true,DATA.length+' rows loaded successfully',DATA.length+' rows · '+MONTHS.length+' data months');return true;
  }catch(error){setStatus(false,error.message+' — previous data retained.');return false}
 }
 
@@ -2525,7 +2773,7 @@ function setStatus(ok,msg,count=''){
 }
 
 function getFiltered(){
-  const m=document.getElementById('month-filter').value;
+  const m='';
   if(!m) return DATA;
 
   // Global month filter source of truth = actual Plan/Day dates.
@@ -2540,7 +2788,7 @@ function getFiltered(){
 
 
 function getMonthFilteredAux(arr){
-  const m=document.getElementById('month-filter').value;
+  const m='';
   return m ? arr.filter(r=>r.month===m) : arr;
 }
 
@@ -2569,8 +2817,8 @@ function renderHome(){
   if(!host||!detail)return;
 
   const data=getFiltered();
-  const selected=document.getElementById('month-filter').value;
-  if(monthEl) monthEl.textContent=selected?'· '+selected:'· All Months';
+  const selected='';
+  if(monthEl) monthEl.textContent='· '+activePlanningLabel();
 
   if(!data.length){
     host.innerHTML='<div class="home-quick-box"><b class="home-live-kpi-val">0</b><span>No planning data loaded</span></div>';
@@ -2971,7 +3219,7 @@ function renderS3(data){
 
 
   const byBuyer=groupBy(data,'buyer');
-  const selectedMonth=document.getElementById('month-filter').value;
+  const selectedMonth='';
   const activeBuyers=new Set(data.map(r=>String(r.buyer)));
   const buyerPlanScope=BUYER_PLAN_DATA.filter(r=>
     activeBuyers.has(String(r.buyer)) && (!selectedMonth || r.month===selectedMonth)
@@ -3084,8 +3332,8 @@ function renderS3(data){
 function renderS4(data){
   const hw=strengths();
   const baseChassis=Object.keys(hw);
-  const selectedMonth=document.getElementById('month-filter').value;
-  document.getElementById('s4-month').textContent=selectedMonth||'All Months';
+  const selectedMonth='';
+  document.getElementById('s4-month').textContent=ACTIVE_PLAN_UPLOAD?planningMonthLabel(uploadMonthKey(ACTIVE_PLAN_UPLOAD)):'All Months';
 
   // EXACT SAME SOURCE / SCOPE AS LINE RUNNING CALENDAR + ITEM COUNT PER DAY.
   const masterLines=getChassisMasterLines();
@@ -3298,14 +3546,14 @@ function renderS6(data){
 
 /* ══ SLIDE 7: CHARTS (Canvas) ═══════════════════ */
 function renderS11(data){
-  const selected=document.getElementById('month-filter').value;
+  const selected='';
   const master=getChassisMasterLines();
   const allDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(Boolean))].sort();
   const candidateDates=selected ? allDates.filter(d=>monthFromISO(d)===selected) : allDates;
   const activeDateSet=new Set(DAILY_PLAN.filter(d=>candidateDates.includes(d.date)&&d.value>0&&master.has(Number(d.line))).map(d=>d.date));
   const dates=candidateDates.filter(d=>activeDateSet.has(d));
   const scope=DAILY_PLAN.filter(d=>dates.includes(d.date)&&d.value>0&&master.has(Number(d.line)));
-  document.getElementById('s11-month').textContent=selected||'All Months';
+  document.getElementById('s11-month').textContent=activePlanningLabel();
 
   // Aggregate same Line + Date + EWO. Highest Plan Qty EWO wins.
   const ewoQty=new Map(), metaMap=new Map();
@@ -3314,7 +3562,7 @@ function renderS11(data){
     if(!line||!date||!ewo)return;
     const k=line+'|'+date+'|'+ewo;
     ewoQty.set(k,(ewoQty.get(k)||0)+N(d.value));
-    if(!metaMap.has(k))metaMap.set(k,{buyer:d.buyer||'',style:d.style||'',color:d.color||''});
+    if(!metaMap.has(k))metaMap.set(k,{buyer:d.buyer||'',style:d.style||'',color:d.color||'',smv:N(d.smv)});
   });
 
   const metricSum=(arr,line,ewo,month)=>arr
@@ -3326,15 +3574,51 @@ function renderS11(data){
     const p=k.split('|'),line=Number(p[0]),date=p[1],ewo=p.slice(2).join('|');
     const cellKey=line+'|'+date,old=winner.get(cellKey),m=metaMap.get(k)||{};
     const month=monthFromISO(date);
-    const sah=metricSum(SAH_DATA,line,ewo,month);
+    // Exact hovered Line + Date Plan SAH:
+    // Plan SAH = this Gantt cell's Plan Qty × SMV / 60.
+    // Do NOT use monthly SAH/Day total here.
+    let smv=N(m.smv);
+    if(smv<=0){
+      const dp=scope.find(x=>Number(x.line)===line&&x.date===date&&String(x.ewo||'').trim()===ewo&&N(x.smv)>0);
+      if(dp)smv=N(dp.smv);
+    }
+    const sah=qty*smv/60;
     const clock=metricSum(CLOCK_HOUR_DATA,line,ewo,month);
-    const eff=clock>0?sah/clock*100:0; // SAH/Day ÷ Clock Hour/Day × 100
+    const eff=clock>0?sah/clock*100:0;
     let color=m.color||'';
     if(!color){
       const sr=SAH_DATA.find(x=>Number(x.line)===line&&String(x.ewo)===String(ewo)&&(!month||x.month===month));
       if(sr)color=sr.color||'';
     }
-    const item={ewo,qty,buyer:m.buyer||'',style:m.style||'',color,sah,clock,eff};
+    // Sewing reconciliation is matched by SAME Line + EWO.
+    // Count each uploaded reconciliation row once; sum all matching color/PO rows.
+    const sio=SEWING_IO_DATA.filter(x=>Number(x.line_no)===line&&String(x.ewo)===String(ewo));
+    const sewingInput=sio.reduce((a,x)=>a+N(x.input),0);
+    const sewingOutput=sio.reduce((a,x)=>a+N(x.output),0);
+    const sewingWip=sio.reduce((a,x)=>a+N(x.wip),0);
+    const sewingReject=sio.reduce((a,x)=>a+N(x.reject),0);
+
+    // EWO + Color wise Cut Qty from Fabrics & Cutting.
+    // Normalize EWO and color so harmless formatting/case differences still match.
+    const normEwo=v=>{
+      let z=String(v??'').trim().toUpperCase();
+      if(/^\d+\.0+$/.test(z))z=z.replace(/\.0+$/,'');
+      return z;
+    };
+    const normColor=v=>String(v??'')
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g,' ')
+      .replace(/\s*([\/-])\s*/g,'$1');
+    const ganttColor=normColor(color);
+    const fcMatches=(FABRIC_CUTTING_DATA||[]).filter(x=>
+      normEwo(x.ewo)===normEwo(ewo) && normColor(x.color_name)===ganttColor
+    );
+    const cutQty=fcMatches.reduce((a,x)=>a+N(x.total_cut_qty),0);
+
+    const item={ewo,qty,buyer:m.buyer||'',style:m.style||'',color,sah,clock,eff,
+      sewingInput,sewingOutput,sewingWip,sewingReject,sewingRows:sio.length,
+      cutQty,cutRows:fcMatches.length};
     if(!old||qty>old.qty||(qty===old.qty&&ewo.localeCompare(old.ewo,undefined,{numeric:true})<0))winner.set(cellKey,item);
   });
 
@@ -3358,11 +3642,17 @@ function renderS11(data){
       tip.innerHTML=
         '<div class="gt-title">EWO '+esc(w.ewo)+' · Line '+w.line+' · '+esc(w.date)+'</div>'+
         '<div class="gt-row"><span class="gt-lbl">Plan Qty</span><span class="gt-val qty">'+fmt(w.qty)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Plan SAH</span><span class="gt-val sah">'+Number(w.sah).toFixed(1)+'</span></div>'+
+
         '<div class="gt-row"><span class="gt-lbl">Buyer Name</span><span class="gt-val buyer">'+esc(w.buyer||'—')+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Product Name</span><span class="gt-val prod">'+esc(w.style||'—')+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Color Name</span><span class="gt-val colorname">'+esc(w.color||'—')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Plan Efficiency</span><span class="gt-val '+effClass+'">'+(w.clock>0?w.eff.toFixed(1)+'%':'—')+'</span></div>';
+        '<div class="gt-row"><span class="gt-lbl">Cut Qty ('+esc(w.color||'Color')+')</span><span class="gt-val eff-good">'+fmt(w.cutQty)+'</span></div>'+
+
+        '<div style="margin:7px 0 3px;border-top:1px solid #36536e"></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Sewing Input</span><span class="gt-val qty">'+fmt(w.sewingInput)+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Sewing Output</span><span class="gt-val eff-good">'+fmt(w.sewingOutput)+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Sewing WIP</span><span class="gt-val sah">'+fmt(w.sewingWip)+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Sewing Reject</span><span class="gt-val eff-low">'+fmt(w.sewingReject)+'</span></div>';
       tip.style.display='block';
     };
     td.onmousemove=e=>{
@@ -3543,14 +3833,14 @@ function renderS8(data){
 function renderS9(data){
   // Date columns come only from uploaded Plan/Day data. A date with no positive plan on any master line is an Off Day and is hidden.
   const allDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(Boolean))].sort();
-  const selected=document.getElementById('month-filter').value;
+  const selected='';
   const candidateDates=selected ? allDates.filter(d=>monthFromISO(d)===selected) : allDates;
   const masterLines=getChassisMasterLines();
   const activeDateSet=new Set(DAILY_PLAN.filter(d=>candidateDates.includes(d.date)&&d.value>0&&masterLines.has(Number(d.line))).map(d=>d.date));
   const dates=candidateDates.filter(d=>activeDateSet.has(d));
 
   document.getElementById('s9-month').textContent=
-    dates.length ? (selected||'Uploaded date range')+' · '+dates[0]+' → '+dates[dates.length-1] : 'No daily data';
+    dates.length ? activePlanningLabel()+' · '+dates[0]+' → '+dates[dates.length-1] : 'No daily data';
 
   if(!dates.length){
     document.getElementById('s9-cal').innerHTML='<tbody><tr><td>No active date-wise Plan/Day data found.</td></tr></tbody>';
@@ -3949,10 +4239,21 @@ async function uploadNewPlan(){
  try{
   const user=await refreshSbAuth();if(!user)throw Error('Please sign in first.');
   const file=document.getElementById('sb-csv-file').files[0];if(!file)throw Error('Choose Plan Data CSV first.');
+  const planningMonth=getPlanningMonthValue();
+  let planningId=String(document.getElementById('sb-planning-id')?.value||'').trim();
+  if(!planningMonth)throw Error('Planning Month select করুন.');
   const prog=document.getElementById('sb-progress');prog.value=3;sbMsg('sb-upload-msg','CSV reading & validation...');
   const {rows,dateFields}=await parseRawPlanFile(file);
+  const {data:lastSeq,error:seqErr}=await SB.from('plan_uploads').select('sequence_no')
+    .eq('planning_month',planningMonth+'-01').order('sequence_no',{ascending:false}).limit(1);
+  if(seqErr)throw seqErr;
+  const sequenceNo=(lastSeq?.[0]?.sequence_no||0)+1;
+  if(!planningId)planningId='P'+String(sequenceNo).padStart(2,'0');
 
-  const {data:up,error:ue}=await SB.from('plan_uploads').insert({file_name:file.name,row_count:rows.length,status:'processing'}).select('id').single();
+  const {data:up,error:ue}=await SB.from('plan_uploads').insert({
+    file_name:file.name,row_count:rows.length,status:'processing',
+    planning_month:planningMonth+'-01',sequence_no:sequenceNo,planning_id:planningId
+  }).select('id').single();
   if(ue)throw ue; uploadId=up.id; prog.value=8;
 
   const safeName=`${uploadId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
@@ -3984,7 +4285,7 @@ async function uploadNewPlan(){
   }
   const {error:fe}=await SB.from('plan_uploads').update({status:'complete'}).eq('id',uploadId);if(fe)throw fe;
   prog.value=100;sbMsg('sb-upload-msg','Upload complete. Dashboard refreshing...',true);
-  await loadFromSupabase();
+  await loadFromSupabase(uploadId,true);
   setTimeout(closeUploadModal,900);
  }catch(error){
   console.error(error);sbMsg('sb-upload-msg',error?.message||String(error),false);
@@ -4112,7 +4413,130 @@ async function uploadFabricCutting(){
   }
 }
 
+
+/* ══ SEWING INPUT & OUTPUT CSV UPLOAD ═══════════ */
+function sioLineNo(v){
+  const s=String(v??'').trim();
+  if(!s)return null;
+  const m=s.match(/(\d+)\s*$/);
+  return m?Number(m[1]):null;
+}
+function sioEwo(v){
+  let s=String(v??'').trim();
+  if(!s)return null;
+  if(/^\d+\.0+$/.test(s))s=s.replace(/\.0+$/,'');
+  return s||null;
+}
+async function parseSewingIOFile(file){
+  const text=await file.text(), records=parseRecords(text);
+  if(records.length<2)throw Error('Sewing Input & Output CSV is empty.');
+  const fields=records.shift().map(x=>String(x??'').replace(/^\uFEFF/,'').trim());
+  const rows=records.map((cols,i)=>{
+    if(cols.length>fields.length)throw Error('Record '+(i+2)+': column count does not match header.');
+    return Object.fromEntries(fields.map((f,j)=>[f,cols[j]??'']));
+  });
+  const norm=fields.map(fcNormHeader);
+  const required=['buyer','ewo no','po no','color','line','order qty','total input qty','total output qty','total reject qty','total wip qty'];
+  const missing=required.filter(x=>!norm.includes(x));
+  if(missing.length)throw Error('Required column(s) not found: '+missing.join(', '));
+  return rows;
+}
+async function uploadSewingIO(){
+  try{
+    const user=await refreshSbAuth();
+    if(!user)throw Error('Please sign in first.');
+    const el=document.getElementById('sio-csv-file');
+    const file=el&&el.files&&el.files[0];
+    if(!file)throw Error('Choose Sewing Input & Output CSV first.');
+    const prog=document.getElementById('sio-progress'); prog.value=3;
+    sbMsg('sio-upload-msg','CSV reading & cleaning...');
+
+    const rows=await parseSewingIOFile(file);
+    const payload=rows.map((r,i)=>{
+      const line=fcText(fcPick(r,['Line']));
+      return {
+        buyer:fcText(fcPick(r,['Buyer'])),
+        ewo:sioEwo(fcPick(r,['EWO No','EWO','Ewo No'])),
+        po_no:fcText(fcPick(r,['PO No','PO','PO Number'])),
+        color:fcText(fcPick(r,['Color','Color Name'])),
+        line:line,
+        line_no:sioLineNo(line),
+        order_qty:csvNum(fcPick(r,['Order Qty','Order QTY'])),
+        total_input_qty:csvNum(fcPick(r,['Total Input Qty','TotalInput Qty','Total Input QTY'])),
+        total_output_qty:csvNum(fcPick(r,['Total Output Qty','TotalOutput Qty','Total Output QTY'])),
+        total_reject_qty:csvNum(fcPick(r,['Total Reject Qty','TotalReject Qty','Total Reject QTY'])),
+        total_wip_qty:csvNum(fcPick(r,['Total WIP Qty','TotalWIP Qty','Total WIP QTY'])),
+        source_row:i+2
+      };
+    }).filter(r=>r.ewo||r.buyer||r.line||r.po_no||r.color);
+
+    if(!payload.length)throw Error('No usable Sewing Input & Output rows found.');
+    prog.value=12;
+
+    if(document.getElementById('sio-replace').checked){
+      sbMsg('sio-upload-msg','Removing previous Sewing Input & Output rows...');
+      const {error:de}=await SB.from('sewing_input_output').delete().gt('id',0);
+      if(de)throw de;
+    }
+
+    let done=0;
+    for(const batch of csvChunks(payload,300)){
+      const {error}=await SB.from('sewing_input_output').insert(batch);
+      if(error)throw error;
+      done+=batch.length;
+      prog.value=15+Math.round(85*done/payload.length);
+      sbMsg('sio-upload-msg',`Sewing Input & Output rows: ${done}/${payload.length}`);
+    }
+    prog.value=100;
+    sbMsg('sio-upload-msg',`Upload complete — ${payload.length.toLocaleString()} rows imported to sewing_input_output.`,true);
+  }catch(error){
+    console.error(error);
+    sbMsg('sio-upload-msg',error?.message||String(error),false);
+  }
+}
+
 /* ══ KEYBOARD NAV ═══════════════════════════════ */
+
+// ===== Date Wise Production Report: replace uploaded date(s) only =====
+function dwpEwo(v){let z=String(v??'').trim();if(/^\d+\.0+$/.test(z))z=z.replace(/\.0+$/,'');return z;}
+function dwpDate(v){
+  const z=String(v??'').trim(); if(!z)return '';
+  let m=z.match(/^(\d{1,2})[-\/]([A-Za-z]{3})[-\/](\d{4})$/);
+  if(m){const mon={JAN:'01',FEB:'02',MAR:'03',APR:'04',MAY:'05',JUN:'06',JUL:'07',AUG:'08',SEP:'09',OCT:'10',NOV:'11',DEC:'12'}[m[2].toUpperCase()];if(mon)return `${m[3]}-${mon}-${String(m[1]).padStart(2,'0')}`;}
+  m=z.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/); if(m)return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+  m=z.match(/^(\d{4})-(\d{2})-(\d{2})/); return m?`${m[1]}-${m[2]}-${m[3]}`:'';
+}
+function dwpLineNo(v){const m=String(v??'').trim().match(/(\d+)\s*$/);return m?Number(m[1]):0;}
+async function parseDateWiseProductionFile(file){
+  const rows=parseRecords(await file.text()); if(!rows||rows.length<2)throw new Error('CSV-তে data পাওয়া যায়নি।');
+  const hdr=rows[0].map(fcNormHeader);
+  const col=(...ns)=>{for(const n of ns){const i=hdr.indexOf(fcNormHeader(n));if(i>=0)return i;}return -1;};
+  const ix={code:col('Code'),buyer:col('Buyer'),ewo:col('EWO No','EWO'),po:col('PO No','PO'),color:col('Color'),line:col('Line'),date:col('Output Date'),qty:col('Total Qty')};
+  if(ix.date<0||ix.qty<0||ix.ewo<0||ix.line<0)throw new Error('Required columns: EWO No, Line, Output Date, Total Qty');
+  const data=[];
+  for(let r=1;r<rows.length;r++){const a=rows[r], output_date=dwpDate(a[ix.date]), ewo=dwpEwo(a[ix.ewo]), line=String(a[ix.line]??'').trim(), total_qty=csvNum(a[ix.qty]);
+    if(!output_date||(!ewo&&!line&&!total_qty))continue;
+    data.push({code:ix.code>=0?String(a[ix.code]??'').trim():'',buyer:ix.buyer>=0?String(a[ix.buyer]??'').trim():'',ewo,po_no:ix.po>=0?String(a[ix.po]??'').trim():'',color:ix.color>=0?String(a[ix.color]??'').trim():'',line,line_no:dwpLineNo(line),output_date,total_qty,source_row:r+1});
+  }
+  if(!data.length)throw new Error('Valid production row পাওয়া যায়নি।'); return data;
+}
+async function uploadDateWiseProduction(){
+  const file=document.getElementById('dwp-csv-file')?.files?.[0],msg=document.getElementById('dwp-upload-msg'),prog=document.getElementById('dwp-progress');
+  if(!file){msg.textContent='প্রথমে Date Wise Production CSV select করুন।';return;}
+  try{
+    msg.textContent='CSV reading...';prog.value=5;await refreshSbAuth();
+    const rows=await parseDateWiseProductionFile(file),dates=[...new Set(rows.map(x=>x.output_date))].sort();
+    msg.textContent=`${rows.length.toLocaleString()} rows | ${dates.join(', ')} — uploaded date(s) replacing...`;prog.value=15;
+    for(let i=0;i<dates.length;i++){const {error}=await SB.from('date_wise_production').delete().eq('output_date',dates[i]);if(error)throw error;prog.value=15+Math.round(20*(i+1)/dates.length);}
+    for(let i=0;i<rows.length;i+=300){const {error}=await SB.from('date_wise_production').insert(rows.slice(i,i+300));if(error)throw error;prog.value=35+Math.round(65*Math.min(i+300,rows.length)/rows.length);}
+    prog.value=100;
+    msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. অন্য date-এর data unchanged. Dashboard refresh হচ্ছে...`;
+    DATE_WISE_PRODUCTION_DATA=[];
+    await loadFromSupabase(null,true);
+    msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. Dashboard count refreshed.`;
+  }catch(e){console.error(e);msg.textContent='Upload failed: '+(e?.message||e);prog.value=0;}
+}
+
 document.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
   if(e.key==='ArrowRight')goSlide(Math.min(CURRENT_SLIDE+1,11));
@@ -4156,6 +4580,44 @@ window.addEventListener('DOMContentLoaded',()=>{
   loadFromSupabase();
 });
 
+
+document.addEventListener('change',e=>{
+  if(e.target?.id==='sb-planning-month')updateNextPlanningSequence();
+});
+
+let planningPickerYear=new Date().getFullYear();
+function openPlanningMonthPicker(){
+  const p=document.getElementById('planning-month-picker');
+  const inp=document.getElementById('sb-planning-month');
+  if(!p||!inp)return;
+  const m=String(inp.dataset.value||'').match(/^(\d{4})-(\d{2})$/);
+  planningPickerYear=m?Number(m[1]):new Date().getFullYear();
+  renderPlanningMonthPicker();
+  p.style.display=p.style.display==='block'?'none':'block';
+}
+function changePlanningPickerYear(n){planningPickerYear+=n;renderPlanningMonthPicker();}
+function renderPlanningMonthPicker(){
+  const y=document.getElementById('planning-picker-year'),box=document.getElementById('planning-picker-months');
+  if(!y||!box)return;y.textContent=planningPickerYear;
+  const names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  box.innerHTML=names.map((n,i)=>`<button type="button" class="top-btn" style="padding:7px 4px" onclick="selectPlanningMonth(${i+1})">${n}</button>`).join('');
+}
+function selectPlanningMonth(month){
+  const inp=document.getElementById('sb-planning-month');
+  const value=planningPickerYear+'-'+String(month).padStart(2,'0');
+  inp.dataset.value=value;
+  inp.value=new Date(planningPickerYear,month-1,1).toLocaleString('en-US',{month:'long',year:'numeric'});
+  document.getElementById('planning-month-picker').style.display='none';
+  updateNextPlanningSequence();
+}
+function getPlanningMonthValue(){
+  const inp=document.getElementById('sb-planning-month');
+  return inp?.dataset?.value||'';
+}
+
+document.addEventListener('input',e=>{
+  if(e.target?.id==='sb-planning-id')e.target.dataset.auto='0';
+});
 </script>
 <div id="ewo-gantt-tip"></div>
 <div id="cal-detail-modal" aria-hidden="true">
