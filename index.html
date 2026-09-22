@@ -906,6 +906,15 @@ table.cal td.priority-2{color:#ffd166}
 #site-login-msg{min-height:18px;margin-top:10px;font-size:11px;color:#64748b;text-align:center;line-height:1.45}
 #site-login-msg.err{color:#c0392b;font-weight:700}
 #site-login-msg.ok{color:#1a6b3c;font-weight:700}
+
+.site-login-link{display:block;margin:10px auto 0;border:0;background:transparent;color:#1565c0;
+  font-size:11px;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.site-login-link:hover{color:#e07800}
+#site-reset-panel{display:none}
+#site-reset-panel.open{display:block}
+#site-signin-panel.reset-hidden{display:none}
+.site-reset-note{font-size:11px;color:#64748b;line-height:1.5;margin:0 0 10px}
+
 #site-user-pill{display:none;align-items:center;gap:7px;padding:5px 9px;border:1px solid var(--border);border-radius:6px;
   color:var(--text2);font-size:10px;white-space:nowrap}
 #site-user-pill b{color:var(--amber2);max-width:150px;overflow:hidden;text-overflow:ellipsis}
@@ -1429,11 +1438,33 @@ input,select,textarea{
         <p>Production Planning Dashboard · Authorized User Login</p>
       </div>
     </div>
-    <label class="site-login-label" for="site-login-email">EMAIL</label>
-    <input class="site-login-input" id="site-login-email" type="email" autocomplete="username" placeholder="name@company.com">
-    <label class="site-login-label" for="site-login-password">PASSWORD</label>
-    <input class="site-login-input" id="site-login-password" type="password" autocomplete="current-password" placeholder="Password">
-    <button class="site-login-btn" id="site-login-btn" type="button" onclick="siteLogin()">Sign in to Dashboard</button>
+    <div id="site-signin-panel">
+      <label class="site-login-label" for="site-login-email">EMAIL</label>
+      <input class="site-login-input" id="site-login-email" type="email" autocomplete="username" placeholder="name@company.com">
+      <label class="site-login-label" for="site-login-password">PASSWORD</label>
+      <input class="site-login-input" id="site-login-password" type="password" autocomplete="current-password" placeholder="Password">
+      <button class="site-login-btn" id="site-login-btn" type="button" onclick="siteLogin()">Sign in to Dashboard</button>
+      <button class="site-login-link" type="button" onclick="siteForgotPassword()">Forgot password?</button>
+    </div>
+
+    <div id="site-reset-panel">
+      <div id="site-reset-request">
+        <div class="site-reset-note">আপনার login email দিন। Password reset link email-এ পাঠানো হবে।</div>
+        <label class="site-login-label" for="site-reset-email">EMAIL</label>
+        <input class="site-login-input" id="site-reset-email" type="email" autocomplete="email" placeholder="name@company.com">
+        <button class="site-login-btn" id="site-reset-send-btn" type="button" onclick="siteSendResetEmail()">Send Reset Link</button>
+        <button class="site-login-link" type="button" onclick="siteBackToLogin()">← Back to Sign in</button>
+      </div>
+
+      <div id="site-reset-password-box" style="display:none">
+        <div class="site-reset-note">নতুন password দিন। কমপক্ষে 6 characters ব্যবহার করুন।</div>
+        <label class="site-login-label" for="site-new-password">NEW PASSWORD</label>
+        <input class="site-login-input" id="site-new-password" type="password" autocomplete="new-password" placeholder="New password">
+        <label class="site-login-label" for="site-confirm-password">CONFIRM PASSWORD</label>
+        <input class="site-login-input" id="site-confirm-password" type="password" autocomplete="new-password" placeholder="Confirm new password">
+        <button class="site-login-btn" id="site-reset-update-btn" type="button" onclick="siteUpdatePassword()">Update Password</button>
+      </div>
+    </div>
     <div id="site-login-msg">Use your Supabase Authentication email and password.</div>
   </div>
 </div>
@@ -4784,6 +4815,84 @@ async function authorizeSiteSession(){
     return false;
   }
 }
+
+function siteRecoveryInUrl(){
+  const q=new URLSearchParams(location.search);
+  const h=new URLSearchParams(String(location.hash||'').replace(/^#/,''));
+  return q.has('code') || q.get('type')==='recovery' || h.get('type')==='recovery' || h.has('access_token');
+}
+function siteForgotPassword(){
+  const email=document.getElementById('site-login-email')?.value?.trim()||'';
+  document.getElementById('site-signin-panel')?.classList.add('reset-hidden');
+  document.getElementById('site-reset-panel')?.classList.add('open');
+  document.getElementById('site-reset-request').style.display='block';
+  document.getElementById('site-reset-password-box').style.display='none';
+  document.getElementById('site-reset-email').value=email;
+  siteLoginMessage('Reset link পেতে আপনার email confirm করুন।');
+  setTimeout(()=>document.getElementById('site-reset-email')?.focus(),30);
+}
+function siteBackToLogin(){
+  document.getElementById('site-reset-panel')?.classList.remove('open');
+  document.getElementById('site-signin-panel')?.classList.remove('reset-hidden');
+  document.getElementById('site-reset-request').style.display='block';
+  document.getElementById('site-reset-password-box').style.display='none';
+  siteLoginMessage('Email এবং password দিয়ে sign in করুন।');
+  setTimeout(()=>document.getElementById('site-login-email')?.focus(),30);
+}
+function siteShowNewPassword(){
+  document.body.classList.add('site-locked');
+  document.getElementById('site-login-gate')?.classList.remove('hidden');
+  document.getElementById('site-signin-panel')?.classList.add('reset-hidden');
+  document.getElementById('site-reset-panel')?.classList.add('open');
+  document.getElementById('site-reset-request').style.display='none';
+  document.getElementById('site-reset-password-box').style.display='block';
+  siteLoginMessage('Recovery link verified. এখন নতুন password সেট করুন।','ok');
+  setTimeout(()=>document.getElementById('site-new-password')?.focus(),30);
+}
+async function siteSendResetEmail(){
+  const email=document.getElementById('site-reset-email')?.value?.trim()||'';
+  const btn=document.getElementById('site-reset-send-btn');
+  if(!email){siteLoginMessage('Email দিন।','err');return}
+  btn.disabled=true; siteLoginMessage('Reset link পাঠানো হচ্ছে...');
+  try{
+    // Return to this exact dashboard URL; Supabase must allow this URL in Auth Redirect URLs.
+    const redirectTo=location.origin+location.pathname;
+    const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo});
+    if(error)throw error;
+    siteLoginMessage('Password reset link পাঠানো হয়েছে। Email inbox/spam check করুন।','ok');
+  }catch(e){
+    console.error(e);
+    siteLoginMessage(e?.message||'Reset email পাঠানো যায়নি।','err');
+  }finally{btn.disabled=false}
+}
+async function siteUpdatePassword(){
+  const p1=document.getElementById('site-new-password')?.value||'';
+  const p2=document.getElementById('site-confirm-password')?.value||'';
+  const btn=document.getElementById('site-reset-update-btn');
+  if(p1.length<6){siteLoginMessage('Password কমপক্ষে 6 characters হতে হবে।','err');return}
+  if(p1!==p2){siteLoginMessage('Confirm password মিলছে না।','err');return}
+  btn.disabled=true; siteLoginMessage('Password update হচ্ছে...');
+  try{
+    const {error}=await SB.auth.updateUser({password:p1});
+    if(error)throw error;
+    await SB.auth.signOut();
+    // Remove recovery tokens/code from the address bar without reloading.
+    history.replaceState({},document.title,location.pathname);
+    document.getElementById('site-new-password').value='';
+    document.getElementById('site-confirm-password').value='';
+    siteBackToLogin();
+    siteLoginMessage('Password updated successfully. নতুন password দিয়ে sign in করুন।','ok');
+  }catch(e){
+    console.error(e);
+    siteLoginMessage(e?.message||'Password update failed. Reset link আবার request করুন।','err');
+  }finally{btn.disabled=false}
+}
+
+// Supabase recovery event can arrive after the page has loaded.
+SB.auth.onAuthStateChange((event,session)=>{
+  if(event==='PASSWORD_RECOVERY') siteShowNewPassword();
+});
+
 async function siteLogin(){
   const email=document.getElementById('site-login-email').value.trim();
   const password=document.getElementById('site-login-password').value;
@@ -5249,16 +5358,32 @@ window.addEventListener('DOMContentLoaded',async()=>{
   SITE_USER_PROFILE=null;
   SITE_BOOTED=false;
 
-  try{
-    const {data:{session}}=await SB.auth.getSession();
-    if(session) await SB.auth.signOut();
-  }catch(e){
-    console.warn('Startup sign-out:',e);
+  // Normal fresh open still forces Login. A Supabase PASSWORD_RECOVERY link is the
+  // only exception, because signing out here would destroy the recovery session.
+  if(siteRecoveryInUrl()){
+    showSiteLogin();
+    siteLoginMessage('Recovery link verify হচ্ছে...');
+    try{
+      // Give Supabase a moment to exchange/restore the recovery session.
+      await new Promise(r=>setTimeout(r,350));
+      const {data:{session}}=await SB.auth.getSession();
+      if(session?.user) siteShowNewPassword();
+      else siteLoginMessage('Recovery session পাওয়া যায়নি। Reset link আবার request করুন।','err');
+    }catch(e){
+      console.error('Recovery startup:',e);
+      siteLoginMessage(e?.message||'Recovery link verify করা যায়নি।','err');
+    }
+  }else{
+    try{
+      const {data:{session}}=await SB.auth.getSession();
+      if(session) await SB.auth.signOut();
+    }catch(e){
+      console.warn('Startup sign-out:',e);
+    }
+    showSiteLogin();
+    siteLoginMessage('Email এবং password দিয়ে sign in করুন।');
+    setTimeout(()=>document.getElementById('site-login-email')?.focus(),50);
   }
-
-  showSiteLogin();
-  siteLoginMessage('Email এবং password দিয়ে sign in করুন।');
-  setTimeout(()=>document.getElementById('site-login-email')?.focus(),50);
 });
 
 
