@@ -920,6 +920,52 @@ table.cal td.priority-2{color:#ffd166}
 #site-user-pill b{color:var(--amber2);max-width:150px;overflow:hidden;text-overflow:ellipsis}
 body.site-locked #topnav,body.site-locked #slides-wrap{visibility:hidden!important}
 
+
+/* === Friendly top navigation: dedicated Home + account moved to far right === */
+#topnav .right{overflow-x:auto;scrollbar-width:none}
+#topnav .right::-webkit-scrollbar{display:none}
+.nav-home-btn{
+  border-color:#d7e1ec!important;
+  background:#fff!important;
+  color:#18324d!important;
+  font-weight:800!important;
+}
+.nav-home-btn:hover{
+  border-color:var(--amber)!important;
+  color:#b96b00!important;
+  background:#fffaf2!important;
+}
+.nav-account-pill{
+  order:90;
+  display:none;
+  align-items:center;
+  gap:6px;
+  max-width:245px;
+  padding:5px 10px;
+  border:1px solid #cbd7e4;
+  border-radius:6px;
+  background:#f8fbff;
+  color:#20364f;
+  white-space:nowrap;
+  font-size:11px;
+}
+.nav-account-pill b{
+  max-width:155px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#b96b00;
+}
+.nav-account-pill #site-user-role{
+  color:#526176;
+  font-weight:800;
+}
+#site-signout-btn{order:91}
+@media(max-width:1100px){
+  .nav-account-pill{max-width:180px}
+  .nav-account-pill b{max-width:95px}
+}
+
 </style>
 
 <style id="optical-white-professional-theme">
@@ -1350,6 +1396,8 @@ input,select,textarea{
 #s11 .gantt thead .sticky-team{z-index:7;background:#07506d!important}
 #s11 .gantt td.g-ewo{background:#fff!important;color:#073b7a!important;font-weight:900!important;min-width:96px}
 #s11 .gantt td.g-empty{background:#fff!important;color:#fff!important;min-width:96px}
+#s11 .gantt td.g-ewo.g-wip-covered{background:#b7e4c7!important;color:#17351f!important;font-weight:900!important}
+#s11 .gantt td.g-ewo.g-wip-short{background:#ffe66d!important;color:#5b4300!important;font-weight:900!important}
 #s11 .gantt .g-date{min-width:96px;font-size:10px}
 #s11 .gantt-legend{font-size:10px;margin:0 0 9px 2px;color:#526176;font-weight:700}
 #s11 .gantt-note{color:#5a6a7d}
@@ -1492,8 +1540,7 @@ input,select,textarea{
     <div class="stab" onclick="goSlide(13)" data-s="13" data-slide-access="13"><span class="tnum">13</span> User Module</div>
   </div>
   <div class="right">
-    <div id="site-user-pill"><span>👤</span><b id="site-user-email"></b><span id="site-user-role"></span></div>
-    <button class="top-btn" id="site-signout-btn" style="display:none" onclick="siteLogout()">Sign out</button>
+    <button class="top-btn nav-home-btn" type="button" onclick="goSlide(0)" title="Go to Home">🏠 Home</button>
     <select id="month-filter" onchange="planningMonthChanged()"><option value="">Latest Month</option></select>
     <select id="planning-sequence-filter" onchange="planningSequenceChanged()" title="Planning upload sequence">
       <option value="">Latest Sequence</option>
@@ -1501,6 +1548,8 @@ input,select,textarea{
     <button class="top-btn" onclick="downloadTemplate()">⬇ Template</button>
     <button class="top-btn" onclick="exportData()">⬇ Export</button>
     <button class="top-btn primary" data-upload-launch="1" onclick="openUploadModal()">☁ Upload New Plan</button>
+    <div id="site-user-pill" class="nav-account-pill" title="Signed-in account"><span>👤</span><b id="site-user-email"></b><span id="site-user-role"></span></div>
+    <button class="top-btn" id="site-signout-btn" style="display:none" onclick="siteLogout()">Sign out</button>
     <input type="file" id="file-input" accept=".csv,text/csv" onchange="handleFile(this)">
   </div>
 </div>
@@ -2797,7 +2846,7 @@ async function updateNextPlanningSequence(){
 }
 
 // ===== Persistent browser cache: refresh does NOT re-download Supabase data =====
-const DASH_CACHE_DB='EKWL_Planning_Cache_v1', DASH_CACHE_STORE='snapshots', DASH_CACHE_KEY='dashboard';
+const DASH_CACHE_DB='EKWL_Planning_Cache_v2', DASH_CACHE_STORE='snapshots', DASH_CACHE_KEY='dashboard';
 function openDashCache(){
   return new Promise((resolve,reject)=>{
     const r=indexedDB.open(DASH_CACHE_DB,1);
@@ -3040,7 +3089,8 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
 
     setLoadChip('load-plan','ok','Planning ('+DATA.length.toLocaleString()+')');
 
-    const reuseShared = preserveFilters && (FABRIC_CUTTING_DATA.length || SEWING_IO_DATA.length || DATE_WISE_PRODUCTION_DATA.length);
+    const sewingColorReady=!SEWING_IO_DATA.length || SEWING_IO_DATA.every(r=>Object.prototype.hasOwnProperty.call(r,'color'));
+    const reuseShared = preserveFilters && sewingColorReady && (FABRIC_CUTTING_DATA.length || SEWING_IO_DATA.length || DATE_WISE_PRODUCTION_DATA.length);
     if(reuseShared){
       setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
       setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
@@ -3075,12 +3125,13 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     let sioFrom=0;
     while(true){
       const {data:sioPart,error:sioErr}=await SB.from('sewing_input_output')
-        .select('id,ewo,line,line_no,total_input_qty,total_output_qty,total_wip_qty,total_reject_qty')
+        .select('id,ewo,color,line,line_no,total_input_qty,total_output_qty,total_wip_qty,total_reject_qty')
         .order('id',{ascending:true})
         .range(sioFrom,sioFrom+pageSize-1);
       if(sioErr) throw sioErr;
       SEWING_IO_DATA.push(...(sioPart||[]).map(r=>({
         ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
+        color:r.color||'',
         line_no:Number(r.line_no)||lineNumber(r.line),
         input:N(r.total_input_qty),
         output:N(r.total_output_qty),
@@ -3993,13 +4044,15 @@ function renderS11(data){
   document.getElementById('s11-month').textContent=activePlanningLabel();
 
   // Aggregate same Line + Date + EWO. Highest Plan Qty EWO wins.
-  const ewoQty=new Map(), metaMap=new Map();
+  const ewoQty=new Map(), metaMap=new Map(), planColorQty=new Map();
   scope.forEach(d=>{
     const line=Number(d.line),date=d.date,ewo=String(d.ewo||'').trim();
     if(!line||!date||!ewo)return;
     const k=line+'|'+date+'|'+ewo;
     ewoQty.set(k,(ewoQty.get(k)||0)+N(d.value));
     if(!metaMap.has(k))metaMap.set(k,{buyer:d.buyer||'',style:d.style||'',color:d.color||'',smv:N(d.smv)});
+    const ck=k+'|'+String(d.color||'').trim();
+    planColorQty.set(ck,(planColorQty.get(ck)||0)+N(d.value));
   });
 
   const metricSum=(arr,line,ewo,month)=>arr
@@ -4022,21 +4075,21 @@ function renderS11(data){
     const sah=qty*smv/60;
     const clock=metricSum(CLOCK_HOUR_DATA,line,ewo,month);
     const eff=clock>0?sah/clock*100:0;
-    let color=m.color||'';
+    // Resolve Color from THIS exact Plan Line + Date + EWO cell.
+    // If the same EWO has multiple colors on the same line/date, use the color
+    // carrying the highest Plan Qty for that cell (stable alphabetical tie-break).
+    const colorPrefix=k+'|';
+    const colorCandidates=[];
+    planColorQty.forEach((cq,ck)=>{
+      if(ck.startsWith(colorPrefix))colorCandidates.push({color:ck.slice(colorPrefix.length),qty:N(cq)});
+    });
+    colorCandidates.sort((a,b)=>b.qty-a.qty || String(a.color).localeCompare(String(b.color)));
+    let color=colorCandidates.length?colorCandidates[0].color:(m.color||'');
     if(!color){
       const sr=SAH_DATA.find(x=>Number(x.line)===line&&String(x.ewo)===String(ewo)&&(!month||x.month===month));
       if(sr)color=sr.color||'';
     }
-    // Sewing reconciliation is matched by SAME Line + EWO.
-    // Count each uploaded reconciliation row once; sum all matching color/PO rows.
-    const sio=SEWING_IO_DATA.filter(x=>Number(x.line_no)===line&&String(x.ewo)===String(ewo));
-    const sewingInput=sio.reduce((a,x)=>a+N(x.input),0);
-    const sewingOutput=sio.reduce((a,x)=>a+N(x.output),0);
-    const sewingWip=sio.reduce((a,x)=>a+N(x.wip),0);
-    const sewingReject=sio.reduce((a,x)=>a+N(x.reject),0);
-
-    // EWO + Color wise Cut Qty from Fabrics & Cutting.
-    // Normalize EWO and color so harmless formatting/case differences still match.
+    // Common normalization for exact EWO + Color matching.
     const normEwo=v=>{
       let z=String(v??'').trim().toUpperCase();
       if(/^\d+\.0+$/.test(z))z=z.replace(/\.0+$/,'');
@@ -4048,14 +4101,59 @@ function renderS11(data){
       .replace(/\s+/g,' ')
       .replace(/\s*([\/-])\s*/g,'$1');
     const ganttColor=normColor(color);
+
+    // Reconciliation hover metrics follow the hovered PLAN cell:
+    // exact Plan Line + EWO + resolved Plan Color. The hovered Date selects the
+    // plan cell itself; sewing_input_output has no date field, so a date filter
+    // cannot be truthfully applied to reconciliation source rows.
+    const sio=SEWING_IO_DATA.filter(x=>
+      Number(x.line_no)===line &&
+      normEwo(x.ewo)===normEwo(ewo) &&
+      normColor(x.color)===ganttColor
+    );
+    const sewingInput=sio.reduce((a,x)=>a+N(x.input),0);
+    const sewingOutput=sio.reduce((a,x)=>a+N(x.output),0);
+    const sewingWip=sio.reduce((a,x)=>a+N(x.wip),0);
+    const sewingReject=sio.reduce((a,x)=>a+N(x.reject),0);
+
+    // Exact Date Wise Production match:
+    // SAME Line + SAME Output Date + SAME EWO.
+    // The production report may contain multiple PO / Color rows for that key,
+    // therefore Total Qty is summed once across every exact matching source row.
+    const normProdEwo=v=>{
+      let z=String(v??'').trim().toUpperCase();
+      if(/^\d+\.0+$/.test(z))z=z.replace(/\.0+$/,'');
+      return z;
+    };
+    const productionMatches=(DATE_WISE_PRODUCTION_DATA||[]).filter(x=>
+      Number(x.line_no)===Number(line) &&
+      String(x.output_date||'').slice(0,10)===String(date||'').slice(0,10) &&
+      normProdEwo(x.ewo)===normProdEwo(ewo) &&
+      normColor(x.color)===ganttColor
+    );
+    const productionQty=productionMatches.reduce((a,x)=>a+N(x.total_qty),0);
+
+    // Cut Qty is EWO + Color wise only (not line/date scoped).
     const fcMatches=(FABRIC_CUTTING_DATA||[]).filter(x=>
       normEwo(x.ewo)===normEwo(ewo) && normColor(x.color_name)===ganttColor
     );
     const cutQty=fcMatches.reduce((a,x)=>a+N(x.total_cut_qty),0);
 
+    // Cutting WIP — STRICT EWO + COLOR, ALL LINES combined.
+    // Example: EWO 271436 + Black Cut 4264; inputs from Line 03/05/08/... are
+    // all summed for 271436 + Black, then deducted once from 4264.
+    // IMPORTANT: no hovered Line filter and no Date filter in this calculation.
+    const cuttingInputMatches=(SEWING_IO_DATA||[]).filter(x=>
+      normEwo(x.ewo)===normEwo(ewo) &&
+      normColor(x.color)===ganttColor
+    );
+    const cuttingTotalSewingInput=cuttingInputMatches.reduce((sum,x)=>sum+N(x.input),0);
+    const cuttingWip=cutQty-cuttingTotalSewingInput;
+
     const item={ewo,qty,buyer:m.buyer||'',style:m.style||'',color,sah,clock,eff,
       sewingInput,sewingOutput,sewingWip,sewingReject,sewingRows:sio.length,
-      cutQty,cutRows:fcMatches.length};
+      productionQty,productionRows:productionMatches.length,
+      cutQty,cutRows:fcMatches.length,cuttingTotalSewingInput,cuttingWip};
     if(!old||qty>old.qty||(qty===old.qty&&ewo.localeCompare(old.ewo,undefined,{numeric:true})<0))winner.set(cellKey,item);
   });
 
@@ -4068,7 +4166,46 @@ function renderS11(data){
     const w=winner.get(line+'|'+date);
     if(!w)return '<td class="g-empty">&nbsp;</td>';
     const payload=encodeURIComponent(JSON.stringify({line,date,...w}));
-    return '<td class="g-ewo" data-gantt="'+payload+'">'+esc(w.ewo)+'</td>';
+    // Available WIP coverage starts AFTER the latest Date Wise Production date.
+    // For the SAME Line + EWO, consume available Sewing WIP chronologically
+    // against each future Gantt Plan Qty. Fully covered dates stay GREEN;
+    // from the first date where cumulative Plan Qty exceeds available WIP,
+    // that cell and later uncovered cells become YELLOW.
+    const latestProductionDate=(DATE_WISE_PRODUCTION_DATA||[])
+      .map(x=>String(x.output_date||'').slice(0,10))
+      .filter(Boolean)
+      .sort()
+      .pop()||'';
+    const thisDate=String(date||'').slice(0,10);
+    const afterProductionCutoff=!!latestProductionDate && thisDate>latestProductionDate;
+
+    let wipCovered=false,wipShort=false;
+    if(afterProductionCutoff){
+      const sameLineEwoFuture=[];
+      winner.forEach((cw,ck)=>{
+        const cp=String(ck).split('|');
+        const cLine=Number(cp[0]),cDate=String(cp[1]||'').slice(0,10);
+        if(cLine===Number(line) &&
+           cDate>latestProductionDate &&
+           String(cw.ewo||'').trim()===String(w.ewo||'').trim()){
+          sameLineEwoFuture.push({date:cDate,qty:N(cw.qty)});
+        }
+      });
+      sameLineEwoFuture.sort((a,b)=>a.date.localeCompare(b.date));
+      let cumulativePlan=0;
+      for(const fp of sameLineEwoFuture){
+        cumulativePlan+=N(fp.qty);
+        if(fp.date===thisDate)break;
+      }
+      wipCovered=cumulativePlan<=N(w.sewingWip);
+      wipShort=!wipCovered;
+      // Remaining usable WIP after deducting date-wise plan cumulatively.
+      w.consumableWip=Math.max(0,N(w.sewingWip)-cumulativePlan);
+    }
+    if(!afterProductionCutoff)w.consumableWip=N(w.sewingWip);
+
+    const payloadWithWip=encodeURIComponent(JSON.stringify({line,date,...w}));
+    return '<td class="g-ewo'+(wipCovered?' g-wip-covered':wipShort?' g-wip-short':'')+'" data-gantt="'+payloadWithWip+'">'+esc(w.ewo)+'</td>';
   }).join('')+'</tr>').join('');
 
   const tip=document.getElementById('ewo-gantt-tip');
@@ -4079,16 +4216,21 @@ function renderS11(data){
       tip.innerHTML=
         '<div class="gt-title">EWO '+esc(w.ewo)+' · Line '+w.line+' · '+esc(w.date)+'</div>'+
         '<div class="gt-row"><span class="gt-lbl">Plan Qty</span><span class="gt-val qty">'+fmt(w.qty)+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Production Qty</span><span class="gt-val eff-good">'+fmt(w.productionQty)+'</span></div>'+
 
         '<div class="gt-row"><span class="gt-lbl">Buyer Name</span><span class="gt-val buyer">'+esc(w.buyer||'—')+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Product Name</span><span class="gt-val prod">'+esc(w.style||'—')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Color Name</span><span class="gt-val colorname">'+esc(w.color||'—')+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Plan Color</span><span class="gt-val">'+esc(w.color||'—')+'</span></div>'+
+
         '<div class="gt-row"><span class="gt-lbl">Cut Qty ('+esc(w.color||'Color')+')</span><span class="gt-val eff-good">'+fmt(w.cutQty)+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Color-wise Total Input</span><span class="gt-val qty">'+fmt(w.cuttingTotalSewingInput)+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Cutting WIP</span><span class="gt-val sah">'+fmt(w.cuttingWip)+'</span></div>'+
 
         '<div style="margin:7px 0 3px;border-top:1px solid #36536e"></div>'+
         '<div class="gt-row"><span class="gt-lbl">Sewing Input</span><span class="gt-val qty">'+fmt(w.sewingInput)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Sewing Output</span><span class="gt-val eff-good">'+fmt(w.sewingOutput)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Sewing WIP</span><span class="gt-val sah">'+fmt(w.sewingWip)+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Consumable WIP</span><span class="gt-val qty">'+fmt(w.consumableWip)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Sewing Reject</span><span class="gt-val eff-low">'+fmt(w.sewingReject)+'</span></div>';
       tip.style.display='block';
     };
