@@ -2824,7 +2824,10 @@ async function restoreDashboardFromCache(){
   SEWING_IO_DATA=c.SEWING_IO_DATA||[];
   DATE_WISE_PRODUCTION_DATA=c.DATE_WISE_PRODUCTION_DATA||[];
   rebuildPlanningFilters(uploadMonthKey(ACTIVE_PLAN_UPLOAD),ACTIVE_PLAN_UPLOAD?.id);
-  renderAll();goSlide(CURRENT_SLIDE);
+  applySitePermissions();
+  renderAll();
+  refreshPermittedSlides('all');
+  goSlide(CURRENT_SLIDE);
   setLoadChip('load-plan','ok','Planning ('+DATA.length.toLocaleString()+')');
   setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
   setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
@@ -2999,6 +3002,11 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     MONTHS=[...new Set(DAILY_PLAN.map(d=>monthFromISO(d.date)).filter(Boolean))]
       .sort((a,b)=>monthTime(a)-monthTime(b));
 
+    // Do not wait for Fabric/Sewing/Production reports before showing Planning slides.
+    // This applies to every permitted Planning slide, including Line Calendar.
+    refreshPermittedSlides('planning');
+    if(CURRENT_SLIDE>=1 && CURRENT_SLIDE<=10 && canAccessSlide(CURRENT_SLIDE))goSlide(CURRENT_SLIDE);
+
     setLoadChip('load-plan','ok','Planning ('+DATA.length.toLocaleString()+')');
 
     const reuseShared = preserveFilters && (FABRIC_CUTTING_DATA.length || SEWING_IO_DATA.length || DATE_WISE_PRODUCTION_DATA.length);
@@ -3026,6 +3034,8 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     }
 
     setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
+    refreshPermittedSlides('fabric');
+    if(CURRENT_SLIDE===11 && canAccessSlide(11))goSlide(11);
     setLoadProgress(72,'Fabrics & Cutting loaded · Sewing I/O load হচ্ছে...');
     setLoadChip('load-sewing','loading','Sewing I/O');
 
@@ -3180,7 +3190,8 @@ function renderAll(){
  document.title=factory+' Production Planning Dashboard';
  const brand=document.querySelector('#topnav .brand'); if(brand)brand.textContent=factory+' · Production Planning';
  try{renderHome()}catch(e){console.error('Home render failed',e)}
- for(let i=1;i<=9;i++){
+ for(let i=1;i<=11;i++){
+   if(!canAccessSlide(i))continue;
    try{renderSlide(i)}catch(e){console.error('Slide '+i+' render failed',e)}
  }
 }
@@ -3343,8 +3354,28 @@ function renderS12(){
 }
 
 function renderSlide(n){
+  if(!canAccessSlide(n))return;
   const fns={1:renderS1,2:renderS2,3:renderS3,4:renderS4,5:renderS5,6:renderS6,7:renderS11,8:renderS7,9:renderS8,10:renderS9,11:renderS12};
   if(fns[n])fns[n](getFiltered());
+}
+
+// Permission-aware progressive rendering.
+// Planning-backed slides (01-10) refresh as soon as Planning + Plan Daily are ready.
+// Fabric slide (11) refreshes as soon as Fabric data is ready.
+// Admin/User modules remain independent from report loading.
+function refreshPermittedSlides(stage='all'){
+  try{
+    if(stage==='planning' || stage==='all'){
+      for(let n=1;n<=10;n++){
+        if(canAccessSlide(n))renderSlide(n);
+      }
+    }
+    if((stage==='fabric' || stage==='all') && canAccessSlide(11))renderSlide(11);
+    if(CURRENT_SLIDE>0 && canAccessSlide(CURRENT_SLIDE)){
+      if(CURRENT_SLIDE<=10 && (stage==='planning'||stage==='all')) renderSlide(CURRENT_SLIDE);
+      if(CURRENT_SLIDE===11 && (stage==='fabric'||stage==='all')) renderSlide(11);
+    }
+  }catch(e){console.error('Progressive permitted render failed',e)}
 }
 
 /* ══ UTILITIES ══════════════════════════════════ */
@@ -4769,9 +4800,15 @@ async function siteLogin(){
     if(!SITE_BOOTED){
       SITE_BOOTED=true;
       loadCapacitySettings();
-      restoreActiveTab();
+
+      // Data-first boot for every permission/slide:
+      // restore cached datasets before opening the saved tab.
       const ok=await restoreDashboardFromCache();
       if(!ok)await loadFromSupabase();
+
+      applySitePermissions();
+      restoreActiveTab();
+      refreshPermittedSlides('all');
     }
   }catch(e){
     console.error(e);
