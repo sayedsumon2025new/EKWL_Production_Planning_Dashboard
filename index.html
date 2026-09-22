@@ -1446,19 +1446,19 @@ input,select,textarea{
   </div>
   <div id="slide-tabs">
     <div class="stab active" onclick="goSlide(0)" data-s="0"><span class="tnum">00</span> Home</div>
-    <div class="stab" onclick="goSlide(1)" data-s="1"><span class="tnum">01</span> Order Table</div>
-    <div class="stab" onclick="goSlide(2)" data-s="2"><span class="tnum">02</span> Plan Qty Analysis</div>
-    <div class="stab" onclick="goSlide(3)" data-s="3"><span class="tnum">03</span> Buyer Summary</div>
-    <div class="stab" onclick="goSlide(4)" data-s="4"><span class="tnum">04</span> Line Plan & Loading</div>
-    <div class="stab" onclick="goSlide(5)" data-s="5"><span class="tnum">05</span> Item Status</div>
-    <div class="stab" onclick="goSlide(6)" data-s="6"><span class="tnum">06</span> EWO Details</div>
-    <div class="stab" onclick="goSlide(7)" data-s="7"><span class="tnum">07</span> EWO Gantt Chart</div>
-    <div class="stab" onclick="goSlide(8)" data-s="8"><span class="tnum">08</span> Charts</div>
-    <div class="stab" onclick="goSlide(9)" data-s="9"><span class="tnum">09</span> Feeding Analysis</div>
-    <div class="stab" onclick="goSlide(10)" data-s="10"><span class="tnum">10</span> Line Calendar</div>
-    <div class="stab" onclick="goSlide(11)" data-s="11"><span class="tnum">11</span> Fabrics &amp; Cutting</div>
-    <div class="stab" onclick="goSlide(12)" data-s="12"><span class="tnum">12</span> Admin / Parameter Setting</div>
-    <div class="stab" onclick="goSlide(13)" data-s="13"><span class="tnum">13</span> User Module</div>
+    <div class="stab" onclick="goSlide(1)" data-s="1" data-slide-access="1"><span class="tnum">01</span> Order Table</div>
+    <div class="stab" onclick="goSlide(2)" data-s="2" data-slide-access="2"><span class="tnum">02</span> Plan Qty Analysis</div>
+    <div class="stab" onclick="goSlide(3)" data-s="3" data-slide-access="3"><span class="tnum">03</span> Buyer Summary</div>
+    <div class="stab" onclick="goSlide(4)" data-s="4" data-slide-access="4"><span class="tnum">04</span> Line Plan & Loading</div>
+    <div class="stab" onclick="goSlide(5)" data-s="5" data-slide-access="5"><span class="tnum">05</span> Item Status</div>
+    <div class="stab" onclick="goSlide(6)" data-s="6" data-slide-access="6"><span class="tnum">06</span> EWO Details</div>
+    <div class="stab" onclick="goSlide(7)" data-s="7" data-slide-access="7"><span class="tnum">07</span> EWO Gantt Chart</div>
+    <div class="stab" onclick="goSlide(8)" data-s="8" data-slide-access="8"><span class="tnum">08</span> Charts</div>
+    <div class="stab" onclick="goSlide(9)" data-s="9" data-slide-access="9"><span class="tnum">09</span> Feeding Analysis</div>
+    <div class="stab" onclick="goSlide(10)" data-s="10" data-slide-access="10"><span class="tnum">10</span> Line Calendar</div>
+    <div class="stab" onclick="goSlide(11)" data-s="11" data-slide-access="11"><span class="tnum">11</span> Fabrics &amp; Cutting</div>
+    <div class="stab" onclick="goSlide(12)" data-s="12" data-slide-access="12"><span class="tnum">12</span> Admin / Parameter Setting</div>
+    <div class="stab" onclick="goSlide(13)" data-s="13" data-slide-access="13"><span class="tnum">13</span> User Module</div>
   </div>
   <div class="right">
     <div id="site-user-pill"><span>👤</span><b id="site-user-email"></b><span id="site-user-role"></span></div>
@@ -1469,7 +1469,7 @@ input,select,textarea{
     </select>
     <button class="top-btn" onclick="downloadTemplate()">⬇ Template</button>
     <button class="top-btn" onclick="exportData()">⬇ Export</button>
-    <button class="top-btn primary" onclick="openUploadModal()">☁ Upload New Plan</button>
+    <button class="top-btn primary" data-upload-launch="1" onclick="openUploadModal()">☁ Upload New Plan</button>
     <input type="file" id="file-input" accept=".csv,text/csv" onchange="handleFile(this)">
   </div>
 </div>
@@ -1569,27 +1569,27 @@ input,select,textarea{
       <div class="home-actions">
         <button class="top-btn" onclick="downloadTemplate()">⬇ Template</button>
         <button class="top-btn" onclick="exportData()">⬇ Export</button>
-        <button class="top-btn primary" onclick="openUploadModal()">☁ Upload New Plan</button>
-        <button class="top-btn" onclick="openFabricUpload()">🧵 Fabrics &amp; Cutting</button>
+        <button class="top-btn primary" data-upload-launch="1" onclick="openUploadModal()">☁ Upload New Plan</button>
+        <button class="top-btn" data-admin-home-extra="1" onclick="openFabricUpload()">🧵 Fabrics &amp; Cutting</button>
       </div>
     </div>
     <div class="home-grid">
-      <button class="home-card" onclick="openUploadModal()"><span class="home-no">00</span><span class="home-icon">☁️</span><span class="home-card-title">Upload / Data Control</span><span class="home-card-sub">New production plan upload, import and live data refresh</span></button>
-      <button class="home-card" onclick="goSlide(1)"><span class="home-no">01</span><span class="home-icon">📋</span><span class="home-card-title">Order Table</span><span class="home-card-sub">Order, EWO, buyer, product, quantity and planning details</span></button>
-      <button class="home-card" onclick="goSlide(2)"><span class="home-no">02</span><span class="home-icon">📊</span><span class="home-card-title">Plan Qty Analysis</span><span class="home-card-sub">Order quantity range, EWO distribution and planning analysis</span></button>
-      <button class="home-card" onclick="goSlide(3)"><span class="home-no">03</span><span class="home-icon">🧑‍💼</span><span class="home-card-title">Buyer Summary</span><span class="home-card-sub">Buyer-wise order, plan, PO, efficiency and contribution summary</span></button>
-      <button class="home-card" onclick="goSlide(4)"><span class="home-no">04</span><span class="home-icon">🏭</span><span class="home-card-title">Line Plan & Loading</span><span class="home-card-sub">Chassis strength, line plan, loading and utilization view</span></button>
-      <button class="home-card" onclick="goSlide(5)"><span class="home-no">05</span><span class="home-icon">🧵</span><span class="home-card-title">Item Status</span><span class="home-card-sub">Product/item-wise line allocation and percentage status</span></button>
-      <button class="home-card" onclick="goSlide(6)"><span class="home-no">06</span><span class="home-icon">🔎</span><span class="home-card-title">EWO Details</span><span class="home-card-sub">Unique EWO, line split, feeding and quantity detail analysis</span></button>
-      <button class="home-card" onclick="goSlide(7)"><span class="home-no">07</span><span class="home-icon">📅</span><span class="home-card-title">EWO Gantt Chart</span><span class="home-card-sub">EWO-wise day-by-day production running timeline and line activity</span></button>
-      <button class="home-card" onclick="goSlide(8)"><span class="home-no">08</span><span class="home-icon">📈</span><span class="home-card-title">Charts</span><span class="home-card-sub">Chassis, buyer and production planning visual analysis</span></button>
-      <button class="home-card" onclick="goSlide(9)"><span class="home-no">09</span><span class="home-icon">🍽️</span><span class="home-card-title">Feeding Analysis</span><span class="home-card-sub">EWO feeding frequency plus buyer/product-wise feeding mix</span></button>
-      <button class="home-card" onclick="goSlide(10)"><span class="home-no">10</span><span class="home-icon">🗓️</span><span class="home-card-title">Line Running Calendar</span><span class="home-card-sub">Day-wise line plan, priority Hit/Not Hit and product running calendar</span></button>
-      <button class="home-card" onclick="goSlide(11)"><span class="home-no">11</span><span class="home-icon">✂️</span><span class="home-card-title">Fabrics &amp; Cutting Analysis</span><span class="home-card-sub">Fabric receipt, stock, cutable qty, cutting progress, balance and difficulties</span></button>
-      <button class="home-card" onclick="goSlide(12)"><span class="home-no">12</span><span class="home-icon">⚙️</span><span class="home-card-title">Admin / Parameter Setting</span><span class="home-card-sub">Efficiency ladder, chassis priority, ABP target and master parameters</span></button>
-      <button class="home-card" onclick="goSlide(13)"><span class="home-no">13</span><span class="home-icon">👥</span><span class="home-card-title">User Module</span><span class="home-card-sub">Admin/User role, account status and module-wise permission control</span></button>
+      <button class="home-card" data-upload-launch="1" onclick="openUploadModal()"><span class="home-no">00</span><span class="home-icon">☁️</span><span class="home-card-title">Upload / Data Control</span><span class="home-card-sub">New production plan upload, import and live data refresh</span></button>
+      <button class="home-card" data-slide-access="1" onclick="goSlide(1)"><span class="home-no">01</span><span class="home-icon">📋</span><span class="home-card-title">Order Table</span><span class="home-card-sub">Order, EWO, buyer, product, quantity and planning details</span></button>
+      <button class="home-card" data-slide-access="2" onclick="goSlide(2)"><span class="home-no">02</span><span class="home-icon">📊</span><span class="home-card-title">Plan Qty Analysis</span><span class="home-card-sub">Order quantity range, EWO distribution and planning analysis</span></button>
+      <button class="home-card" data-slide-access="3" onclick="goSlide(3)"><span class="home-no">03</span><span class="home-icon">🧑‍💼</span><span class="home-card-title">Buyer Summary</span><span class="home-card-sub">Buyer-wise order, plan, PO, efficiency and contribution summary</span></button>
+      <button class="home-card" data-slide-access="4" onclick="goSlide(4)"><span class="home-no">04</span><span class="home-icon">🏭</span><span class="home-card-title">Line Plan & Loading</span><span class="home-card-sub">Chassis strength, line plan, loading and utilization view</span></button>
+      <button class="home-card" data-slide-access="5" onclick="goSlide(5)"><span class="home-no">05</span><span class="home-icon">🧵</span><span class="home-card-title">Item Status</span><span class="home-card-sub">Product/item-wise line allocation and percentage status</span></button>
+      <button class="home-card" data-slide-access="6" onclick="goSlide(6)"><span class="home-no">06</span><span class="home-icon">🔎</span><span class="home-card-title">EWO Details</span><span class="home-card-sub">Unique EWO, line split, feeding and quantity detail analysis</span></button>
+      <button class="home-card" data-slide-access="7" onclick="goSlide(7)"><span class="home-no">07</span><span class="home-icon">📅</span><span class="home-card-title">EWO Gantt Chart</span><span class="home-card-sub">EWO-wise day-by-day production running timeline and line activity</span></button>
+      <button class="home-card" data-slide-access="8" onclick="goSlide(8)"><span class="home-no">08</span><span class="home-icon">📈</span><span class="home-card-title">Charts</span><span class="home-card-sub">Chassis, buyer and production planning visual analysis</span></button>
+      <button class="home-card" data-slide-access="9" onclick="goSlide(9)"><span class="home-no">09</span><span class="home-icon">🍽️</span><span class="home-card-title">Feeding Analysis</span><span class="home-card-sub">EWO feeding frequency plus buyer/product-wise feeding mix</span></button>
+      <button class="home-card" data-slide-access="10" onclick="goSlide(10)"><span class="home-no">10</span><span class="home-icon">🗓️</span><span class="home-card-title">Line Running Calendar</span><span class="home-card-sub">Day-wise line plan, priority Hit/Not Hit and product running calendar</span></button>
+      <button class="home-card" data-slide-access="11" onclick="goSlide(11)"><span class="home-no">11</span><span class="home-icon">✂️</span><span class="home-card-title">Fabrics &amp; Cutting Analysis</span><span class="home-card-sub">Fabric receipt, stock, cutable qty, cutting progress, balance and difficulties</span></button>
+      <button class="home-card" data-slide-access="12" onclick="goSlide(12)"><span class="home-no">12</span><span class="home-icon">⚙️</span><span class="home-card-title">Admin / Parameter Setting</span><span class="home-card-sub">Efficiency ladder, chassis priority, ABP target and master parameters</span></button>
+      <button class="home-card" data-slide-access="13" onclick="goSlide(13)"><span class="home-no">13</span><span class="home-icon">👥</span><span class="home-card-title">User Module</span><span class="home-card-sub">Admin/User role, account status and module-wise permission control</span></button>
     </div>
-    <div class="home-status" style="flex-wrap:wrap">
+    <div class="home-status" data-admin-home-extra="1" style="flex-wrap:wrap">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
       <div class="load-panel" id="load-panel">
         <div class="load-track"><div class="load-fill loading" id="load-fill"></div></div>
@@ -2057,14 +2057,19 @@ input,select,textarea{
   </div>
 
   <div class="card" style="margin-top:14px">
-    <div class="card-title">👤 USER INFORMATION <span class="ct-right" id="user-module-msg">Ready</span></div>
+    <div class="card-title">👤 USER INFORMATION <span class="ct-right" id="user-module-msg">Ready</span></div><div style="font-size:10px;color:#b45309;font-weight:800;margin:6px 0 10px">
+      Slide permission এখন individual: 01–11 থেকে যেটি/যেগুলি check করবেন, User শুধু সেগুলিই দেখতে/খুলতে পারবে। পুরোনো Planning View permission আর slide access দেয় না।
+    </div>
     <div class="tbl-wrap">
       <table class="dt">
         <thead><tr>
-          <th>Email</th><th>Auth Status</th><th>Role</th><th>Status</th><th>Planning View</th><th>Planning Upload</th>
-          <th>Fabric</th><th>Sewing</th><th>Production</th><th>Admin Setting</th><th>User Admin</th><th>Action</th>
+          <th>Email</th><th>Auth Status</th><th>Role</th><th>Status</th>
+          <th>01 Order</th><th>02 Plan Qty</th><th>03 Buyer</th><th>04 Line Plan</th><th>05 Item</th>
+          <th>06 EWO</th><th>07 Gantt</th><th>08 Charts</th><th>09 Feeding</th><th>10 Calendar</th><th>11 Fabric Analysis</th>
+          <th>Plan Upload</th><th>Fabric Upload</th><th>Sewing Upload</th><th>Production Upload</th>
+          <th>Admin Setting</th><th>User Admin</th><th>Action</th>
         </tr></thead>
-        <tbody id="site-users-body"><tr><td colspan="12" class="cen">Open User Module to load users.</td></tr></tbody>
+        <tbody id="site-users-body"><tr><td colspan="22" class="cen">Open User Module to load users.</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -2432,10 +2437,85 @@ function openAdminSetting(key){
 }
 
 const ACTIVE_TAB_STORAGE_KEY='ekwlhw_active_tab_v1';
+
+function siteIsAdmin(){
+  return String(SITE_USER_PROFILE?.role||'').toLowerCase()==='admin';
+}
+function siteHasPerm(key){
+  if(siteIsAdmin())return true;
+  const p=SITE_USER_PROFILE?.permissions||{};
+  return p[key]===true || p[key]==='true';
+}
+function slidePermissionKey(n){
+  n=Number(n)||0;
+  if(n===0)return null;                 // Home is only a launcher
+  if(n>=1 && n<=11)return 'slide_'+n;  // TRUE slide-wise permission
+  if(n===12)return 'admin_settings';
+  if(n===13)return 'user_admin';
+  return null;
+}
+function canAccessSlide(n){
+  const key=slidePermissionKey(n);
+  return !key || siteHasPerm(key);
+}
+function applySitePermissions(){
+  if(!SITE_USER_PROFILE)return;
+
+  // User Home is a permission launcher only. Do not expose cross-module totals/status.
+  if(!siteIsAdmin()){
+    // Requested clean User Home: hide Fabrics & Cutting quick button
+    // and the complete Supabase/cache loading-status panel.
+    document.querySelectorAll('[data-admin-home-extra="1"]').forEach(el=>el.style.display='none');
+
+    const home=document.getElementById('s0');
+    if(home){
+      home.querySelectorAll('.load-status-wrap,.live-summary,.summary-grid').forEach(el=>el.style.display='none');
+    }
+    // Template/Export can expose broader planning data, so keep them Admin-only.
+    document.querySelectorAll('button').forEach(b=>{
+      const t=(b.textContent||'').trim().toLowerCase();
+      if(t.includes('template') || t.includes('export')) b.style.display='none';
+    });
+  }
+
+  // Hide every navigation tab/home card the signed-in user is not allowed to open.
+  document.querySelectorAll('[data-slide-access]').forEach(el=>{
+    const n=Number(el.getAttribute('data-slide-access'));
+    el.style.display=canAccessSlide(n)?'':'none';
+  });
+
+  // Upload/Data Control is visible only when at least one upload permission exists.
+  const canAnyUpload=siteHasPerm('planning_upload')||siteHasPerm('fabric')||siteHasPerm('sewing')||siteHasPerm('production');
+  document.querySelectorAll('[data-upload-launch]').forEach(el=>el.style.display=canAnyUpload?'':'none');
+
+  // Admin/User modules are additionally role protected.
+  if(!siteIsAdmin()){
+    document.querySelectorAll('[data-slide-access="12"],[data-slide-access="13"]').forEach(el=>{
+      const n=Number(el.getAttribute('data-slide-access'));
+      if(!canAccessSlide(n))el.style.display='none';
+    });
+  }
+
+  // If a restored slide is forbidden, force Home.
+  if(typeof CURRENT_SLIDE!=='undefined' && !canAccessSlide(CURRENT_SLIDE)){
+    CURRENT_SLIDE=0;
+    try{localStorage.setItem(ACTIVE_TAB_STORAGE_KEY,'0')}catch(_){}
+  }
+}
+function requireSitePerm(key,label='এই module'){
+  if(siteHasPerm(key))return true;
+  alert(label+' access আপনার জন্য অনুমোদিত নয়।');
+  return false;
+}
+
 function goSlide(n){
-  if(n===13)setTimeout(()=>loadSiteUsers(),0);
   const maxSlide=13;
   n=Math.max(0,Math.min(Number(n)||0,maxSlide));
+  if(!canAccessSlide(n)){
+    console.warn('Permission denied for slide',n);
+    n=0;
+  }
+  if(n===13)setTimeout(()=>loadSiteUsers(),0);
   document.querySelectorAll('.slide').forEach((s,i)=>s.classList.toggle('active',i===n));
   document.querySelectorAll('.stab').forEach(t=>t.classList.toggle('active',+t.dataset.s===n));
   CURRENT_SLIDE=n;
@@ -2451,7 +2531,8 @@ function restoreActiveTab(){
   let n=CURRENT_SLIDE;
   try{
     const saved=Number(localStorage.getItem(ACTIVE_TAB_STORAGE_KEY));
-    if(Number.isInteger(saved)&&saved>=0&&saved<=12)n=saved;
+    if(Number.isInteger(saved)&&saved>=0&&saved<=13)n=saved;
+    if(!canAccessSlide(n))n=0;
   }catch(e){}
   goSlide(n);
 }
@@ -4492,11 +4573,15 @@ May-26,21,265400,Tommy,Hoody,20,8500,4250,2026-05-22,2026-05-08,2026-05-22`;
 
 
 /* === USER MODULE MANAGEMENT === */
-const USER_PERM_KEYS=['planning_view','planning_upload','fabric','sewing','production','admin_settings','user_admin'];
+const USER_PERM_KEYS=[
+  'slide_1','slide_2','slide_3','slide_4','slide_5','slide_6','slide_7','slide_8','slide_9','slide_10','slide_11',
+  'planning_upload','fabric','sewing','production','admin_settings','user_admin'
+];
 function umEsc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function umOn(p,k){return !!(p&&(p[k]===true||p[k]==='true'))}
 
 async function addNewSiteUser(){
+  if(!requireSitePerm('user_admin','User Admin'))return;
   const email=String(document.getElementById('new-user-email')?.value||'').trim().toLowerCase();
   const password=String(document.getElementById('new-user-password')?.value||'');
   const role=document.getElementById('new-user-role')?.value||'user';
@@ -4510,8 +4595,8 @@ async function addNewSiteUser(){
   }
 
   const permissions = role==='admin'
-    ? {planning_view:true,planning_upload:true,fabric:true,sewing:true,production:true,admin_settings:true,user_admin:true}
-    : {planning_view:true,planning_upload:false,fabric:false,sewing:false,production:false,admin_settings:false,user_admin:false};
+    ? Object.fromEntries(USER_PERM_KEYS.map(k=>[k,true]))
+    : Object.fromEntries(USER_PERM_KEYS.map(k=>[k,false]));
 
   let createdPendingRow=false;
   try{
@@ -4570,9 +4655,10 @@ async function addNewSiteUser(){
 }
 
 async function loadSiteUsers(){
+  if(!requireSitePerm('user_admin','User Admin'))return;
   const body=document.getElementById('site-users-body'),msg=document.getElementById('user-module-msg');
   if(!body)return;
-  body.innerHTML='<tr><td colspan="12" class="cen">Loading...</td></tr>'; if(msg)msg.textContent='Loading from Supabase...';
+  body.innerHTML='<tr><td colspan="22" class="cen">Loading...</td></tr>'; if(msg)msg.textContent='Loading from Supabase...';
   try{
     const {data,error}=await SB.from('site_users').select('id,auth_user_id,email,role,status,permissions,created_at').order('created_at',{ascending:true});
     if(error)throw error;
@@ -4585,11 +4671,16 @@ async function loadSiteUsers(){
         <td class="cen">${authLinked?'<span style="color:#16a34a;font-weight:900">✓ Auth Linked</span>':'<span style="color:#dc2626;font-weight:900">✕ Not Linked</span>'}</td>
         <td><select class="usr-role"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td>
         <td><select class="usr-status"><option value="active" ${u.status==='active'?'selected':''}>Active</option><option value="disabled" ${u.status==='disabled'?'selected':''}>Disabled</option></select></td>
-        <td class="cen">${ck('planning_view')}</td><td class="cen">${ck('planning_upload')}</td><td class="cen">${ck('fabric')}</td><td class="cen">${ck('sewing')}</td><td class="cen">${ck('production')}</td><td class="cen">${ck('admin_settings')}</td><td class="cen">${ck('user_admin')}</td>
+        <td class="cen">${ck('slide_1')}</td><td class="cen">${ck('slide_2')}</td><td class="cen">${ck('slide_3')}</td>
+        <td class="cen">${ck('slide_4')}</td><td class="cen">${ck('slide_5')}</td><td class="cen">${ck('slide_6')}</td>
+        <td class="cen">${ck('slide_7')}</td><td class="cen">${ck('slide_8')}</td><td class="cen">${ck('slide_9')}</td>
+        <td class="cen">${ck('slide_10')}</td><td class="cen">${ck('slide_11')}</td>
+        <td class="cen">${ck('planning_upload')}</td><td class="cen">${ck('fabric')}</td><td class="cen">${ck('sewing')}</td>
+        <td class="cen">${ck('production')}</td><td class="cen">${ck('admin_settings')}</td><td class="cen">${ck('user_admin')}</td>
         <td><button class="pg-btn" onclick="saveSiteUser(${u.id},this)">Save</button></td></tr>`;
-    }).join(''):'<tr><td colspan="12" class="cen">No users found.</td></tr>';
+    }).join(''):'<tr><td colspan="22" class="cen">No users found.</td></tr>';
     if(msg)msg.textContent=`${rows.length} user(s) loaded`;
-  }catch(e){console.error(e);body.innerHTML=`<tr><td colspan="12" class="cen" style="color:#ef4444">${umEsc(e.message)}</td></tr>`;if(msg)msg.textContent='Load failed'}
+  }catch(e){console.error(e);body.innerHTML=`<tr><td colspan="22" class="cen" style="color:#ef4444">${umEsc(e.message)}</td></tr>`;if(msg)msg.textContent='Load failed'}
 }
 async function saveSiteUser(id,btn){
   const tr=btn.closest('tr'),msg=document.getElementById('user-module-msg'),permissions={};
@@ -4630,6 +4721,7 @@ function unlockSite(user,profile){
   document.getElementById('site-user-role').textContent='· '+String(profile?.role||'user').toUpperCase();
   pill.style.display='flex';
   document.getElementById('site-signout-btn').style.display='inline-block';
+  applySitePermissions();
 }
 async function getAuthorizedSiteUser(user){
   if(!user)return null;
@@ -4700,7 +4792,32 @@ document.addEventListener('keydown',e=>{
 
 
 /* ══ INTEGRATED SUPABASE CSV UPLOAD ════════════ */
-function openUploadModal(){document.getElementById('upload-modal').classList.add('open');refreshSbAuth()}
+function openUploadModal(){
+  const canAny=siteHasPerm('planning_upload')||siteHasPerm('fabric')||siteHasPerm('sewing')||siteHasPerm('production');
+  if(!canAny){alert('Upload / Data Control access আপনার জন্য অনুমোদিত নয়।');return}
+  document.getElementById('upload-modal').classList.add('open');
+  refreshSbAuth();
+  setTimeout(()=>{
+    const rules=[
+      ['uploadNewPlan','planning_upload'],
+      ['uploadFabricCutting','fabric'],
+      ['uploadSewingIO','sewing'],
+      ['uploadDateWiseProduction','production']
+    ];
+    rules.forEach(([fn,key])=>{
+      const btn=document.querySelector(`#upload-modal button[onclick="${fn}()"]`);
+      if(!btn)return;
+      // Hide the relevant section content while preserving modal layout.
+      const allowed=siteHasPerm(key);
+      btn.disabled=!allowed;
+      btn.style.display=allowed?'':'none';
+      if(!allowed){
+        const file=btn.parentElement?.querySelector('input[type=file]');
+        if(file)file.style.display='none';
+      }
+    });
+  },0);
+}
 function closeUploadModal(){document.getElementById('upload-modal').classList.remove('open')}
 function sbMsg(id,msg,ok=null){const e=document.getElementById(id);e.textContent=msg;e.style.color=ok===true?'#3aaa63':ok===false?'#ff8a80':'var(--text2)'}
 function csvNum(v){if(v===undefined||v===null||String(v).trim()==='')return null;const x=Number(String(v).replace(/,/g,''));return Number.isFinite(x)?x:null}
@@ -4739,6 +4856,7 @@ async function parseRawPlanFile(file){
  return {rows,dateFields};
 }
 async function uploadNewPlan(){
+ if(!requireSitePerm('planning_upload','Planning Upload'))return;
  let uploadId=null;
  try{
   const user=await refreshSbAuth();if(!user)throw Error('Please sign in first.');
@@ -4853,6 +4971,7 @@ async function parseFabricCuttingFile(file){
   return rows;
 }
 async function uploadFabricCutting(){
+ if(!requireSitePerm('fabric','Fabrics & Cutting'))return;
   try{
     const user=await refreshSbAuth();
     if(!user)throw Error('Please sign in first.');
@@ -4948,6 +5067,7 @@ async function parseSewingIOFile(file){
   return rows;
 }
 async function uploadSewingIO(){
+ if(!requireSitePerm('sewing','Sewing I/O'))return;
   try{
     const user=await refreshSbAuth();
     if(!user)throw Error('Please sign in first.');
@@ -5027,6 +5147,7 @@ async function parseDateWiseProductionFile(file){
   if(!data.length)throw new Error('Valid production row পাওয়া যায়নি।'); return data;
 }
 async function uploadDateWiseProduction(){
+ if(!requireSitePerm('production','Date Wise Production'))return;
   const file=document.getElementById('dwp-csv-file')?.files?.[0],msg=document.getElementById('dwp-upload-msg'),prog=document.getElementById('dwp-progress');
   if(!file){msg.textContent='প্রথমে Date Wise Production CSV select করুন।';return;}
   try{
@@ -5082,13 +5203,25 @@ function loadCapacitySettings(){
 }
 
 window.addEventListener('DOMContentLoaded',async()=>{
-  const ok=await authorizeSiteSession();
-  if(!ok)return;
-  SITE_BOOTED=true;
-  loadCapacitySettings();
-  restoreActiveTab();
-  const cached=await restoreDashboardFromCache();
-  if(!cached)await loadFromSupabase();
+  // SECURITY: every fresh page open / browser refresh must start at Login.
+  // Dashboard data can still restore from local cache AFTER a successful login,
+  // so this does not force a fresh Supabase report download on every refresh.
+  document.body.classList.add('site-locked');
+  document.getElementById('site-login-gate')?.classList.remove('hidden');
+  SITE_AUTH_USER=null;
+  SITE_USER_PROFILE=null;
+  SITE_BOOTED=false;
+
+  try{
+    const {data:{session}}=await SB.auth.getSession();
+    if(session) await SB.auth.signOut();
+  }catch(e){
+    console.warn('Startup sign-out:',e);
+  }
+
+  showSiteLogin();
+  siteLoginMessage('Email এবং password দিয়ে sign in করুন।');
+  setTimeout(()=>document.getElementById('site-login-email')?.focus(),50);
 });
 
 
