@@ -2034,6 +2034,8 @@ let SEWING_IO_DATA = [];
 let DATE_WISE_PRODUCTION_DATA = [];
 let PLAN_UPLOAD_CATALOG=[];
 let ACTIVE_PLAN_UPLOAD=null;
+const PLAN_VERSION_CACHE=new Map();
+let PLAN_FILTER_TOKEN=0;
 let DAILY_PLAN = [];
 let SAH_DATA = [];
 let BUYER_PLAN_DATA = [];
@@ -2438,14 +2440,133 @@ function rebuildPlanningFilters(preferredMonth,preferredUploadId){
   if(wanted && list.some(u=>String(u.id)===wanted))sf.value=wanted;
   else if(list[0])sf.value=String(list[0].id);
 }
+
+function capturePlanningState(){
+  return {
+    DATA,DAILY_PLAN,SAH_DATA,CLOCK_HOUR_DATA,BUYER_PLAN_DATA,
+    CLOCK_HOUR_DAILY:typeof CLOCK_HOUR_DAILY!=='undefined'?CLOCK_HOUR_DAILY:[],
+    MONTHS
+  };
+}
+function restorePlanningState(c){
+  DATA=c.DATA||[];DAILY_PLAN=c.DAILY_PLAN||[];SAH_DATA=c.SAH_DATA||[];
+  CLOCK_HOUR_DATA=c.CLOCK_HOUR_DATA||[];BUYER_PLAN_DATA=c.BUYER_PLAN_DATA||[];
+  if(typeof CLOCK_HOUR_DAILY!=='undefined')CLOCK_HOUR_DAILY=c.CLOCK_HOUR_DAILY||[];
+  MONTHS=c.MONTHS||[];
+}
+
+let PLAN_PREFETCH_RUNNING=false;
+async function sbAll(table,select,filters=[]){
+  const out=[],size=1000;
+  for(let from=0;;from+=size){
+    let q=SB.from(table).select(select);
+    for(const [k,v] of filters)q=q.eq(k,v);
+    const {data,error}=await q.range(from,from+size-1);
+    if(error)throw error;
+    out.push(...(data||[]));
+    if(!data||data.length<size)break;
+  }
+  return out;
+}
+async function fetchPlanningSnapshot(upload){
+  const [records,daily]=await Promise.all([
+    sbAll('plan_records',
+      'id,source_row,line_no,buyer,product_type,product,ewo,po,col,order_qty,pcd,delivery,psd,pfd,manpower,smv,criteria,total,is_summary_row',
+      [['upload_id',upload.id]]),
+    sbAll('plan_daily','record_id,plan_date,value',[['upload_id',upload.id]])
+  ]);
+  const valid=records.filter(r=>!r.is_summary_row&&isChassisMasterLine(r.line_no));
+  const planRows=valid.filter(r=>r.criteria==='Plan/Day');
+  const sahRows=valid.filter(r=>r.criteria==='SAH/Day');
+  const clockRows=valid.filter(r=>r.criteria==='Clock Hour/Day');
+
+  const BUYER_PLAN_DATA_LOCAL=planRows.map(r=>({
+    month:monthFromISO(r.psd||r.pfd||r.delivery),buyer:r.buyer||'',
+    ewo:String(r.ewo??'').replace(/\.0$/,'').trim(),po:String(r.po||'').trim(),
+    color:String(r.col||'').trim(),orderqty:N(r.order_qty),planqty:N(r.total)
+  }));
+  const DATA_LOCAL=planRows.map(r=>({
+    record_id:r.id,month:monthFromISO(r.psd||r.pfd||r.delivery),line:lineNumber(r.line_no),
+    ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),buyer:r.buyer||'',color:r.col||'',po:r.po||'',
+    style:dashboardStyle(r.product_type||r.product),manpower:N(r.manpower),smv:N(r.smv),
+    orderqty:N(r.order_qty),planqty:N(r.total),deliverydate:r.delivery||'',pcddate:r.pcd||'',
+    startdate:r.psd||'',enddate:r.pfd||''
+  })).filter(r=>r.line>0);
+  const SAH_LOCAL=sahRows.map(r=>({
+    month:monthFromISO(r.psd||r.pfd||r.delivery),line:lineNumber(r.line_no),
+    ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),buyer:r.buyer||'',
+    style:dashboardStyle(r.product_type||r.product),color:r.col||'',total:N(r.total)
+  }));
+  const CLOCK_LOCAL=clockRows.map(r=>({
+    record_id:r.id,month:monthFromISO(r.psd||r.pfd||r.delivery),line:lineNumber(r.line_no),
+    ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),buyer:r.buyer||'',
+    style:dashboardStyle(r.product_type||r.product),color:r.col||'',total:N(r.total)
+  }));
+  const planMeta=new Map(DATA_LOCAL.map(r=>[String(r.record_id),r]));
+  const clockMeta=new Map(CLOCK_LOCAL.map(r=>[String(r.record_id),r]));
+  const DAILY_LOCAL=[],CLOCK_DAILY_LOCAL=[];
+  for(const d of daily){
+    const p=planMeta.get(String(d.record_id));
+    if(p)DAILY_LOCAL.push({record_id:d.record_id,date:d.plan_date,value:N(d.value),
+      line:p.line,ewo:p.ewo,buyer:p.buyer,style:p.style,color:p.color||'',smv:p.smv});
+    const c=clockMeta.get(String(d.record_id));
+    if(c)CLOCK_DAILY_LOCAL.push({record_id:d.record_id,date:d.plan_date,value:N(d.value),
+      line:c.line,ewo:c.ewo,buyer:c.buyer,style:c.style});
+  }
+  return {DATA:DATA_LOCAL,DAILY_PLAN:DAILY_LOCAL,SAH_DATA:SAH_LOCAL,CLOCK_HOUR_DATA:CLOCK_LOCAL,
+    CLOCK_HOUR_DAILY:CLOCK_DAILY_LOCAL,BUYER_PLAN_DATA:BUYER_PLAN_DATA_LOCAL,
+    MONTHS:[...new Set(DAILY_LOCAL.map(d=>monthFromISO(d.date)).filter(Boolean))].sort((a,b)=>monthTime(a)-monthTime(b))};
+}
+async function prefetchPlanningVersions(){
+  if(PLAN_PREFETCH_RUNNING)return;
+  PLAN_PREFETCH_RUNNING=true;
+  try{
+    const current=String(ACTIVE_PLAN_UPLOAD?.id||'');
+    const queue=PLAN_UPLOAD_CATALOG
+      .filter(u=>String(u.id)!==current&&!PLAN_VERSION_CACHE.has(String(u.id)))
+      .sort((a,b)=>String(b.uploaded_at).localeCompare(String(a.uploaded_at)));
+    for(let i=0;i<queue.length;i++){
+      const u=queue[i];
+      try{
+        setLoadProgress(100,'Ready · background cache '+(i+1)+'/'+queue.length);
+        const snap=await fetchPlanningSnapshot(u);
+        PLAN_VERSION_CACHE.set(String(u.id),snap);
+      }catch(e){console.warn('Planning prefetch skipped',u.id,e);}
+      await new Promise(r=>setTimeout(r,0));
+    }
+  }finally{
+    PLAN_PREFETCH_RUNNING=false;
+    setLoadProgress(100,'Planning versions ready');
+  }
+}
+async function switchPlanningInstant(uploadId){
+  if(!uploadId)return;
+  const token=++PLAN_FILTER_TOKEN;
+  const upload=PLAN_UPLOAD_CATALOG.find(u=>String(u.id)===String(uploadId));
+  if(upload)ACTIVE_PLAN_UPLOAD=upload;
+
+  // Previously opened versions are restored instantly with zero Supabase requests.
+  if(PLAN_VERSION_CACHE.has(String(uploadId))){
+    restorePlanningState(PLAN_VERSION_CACHE.get(String(uploadId)));
+    renderAll();
+    if(CURRENT_SLIDE>9){try{renderSlide(CURRENT_SLIDE)}catch(e){console.error(e)}}
+    setLoadProgress(100,'Planning version cache থেকে instantly loaded');
+    setStatus(true,'Planning filter applied instantly',
+      activePlanningLabel()+' · '+DATA.length+' Plan/Day · '+FABRIC_CUTTING_DATA.length+' Fabric/Cutting · '+SEWING_IO_DATA.length+' Sewing I/O · '+DATE_WISE_PRODUCTION_DATA.length+' Production');
+    return;
+  }
+
+  setLoadProgress(18,'Selected Planning version load হচ্ছে...');
+  await loadFromSupabase(uploadId,true);
+  if(token!==PLAN_FILTER_TOKEN)return;
+  PLAN_VERSION_CACHE.set(String(uploadId),capturePlanningState());
+}
 async function planningMonthChanged(){
   rebuildPlanningFilters(document.getElementById('month-filter').value,'');
-  setLoadProgress(12,'Planning sequence দ্রুত load হচ্ছে...');
-  await loadFromSupabase(document.getElementById('planning-sequence-filter').value,true);
+  await switchPlanningInstant(document.getElementById('planning-sequence-filter').value);
 }
 async function planningSequenceChanged(){
-  setLoadProgress(12,'Planning sequence দ্রুত load হচ্ছে...');
-  await loadFromSupabase(document.getElementById('planning-sequence-filter').value,true);
+  await switchPlanningInstant(document.getElementById('planning-sequence-filter').value);
 }
 async function updateNextPlanningSequence(){
   const month=getPlanningMonthValue();
@@ -2707,6 +2828,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     }
 
     renderAll();
+    PLAN_VERSION_CACHE.set(String(upload.id),capturePlanningState());
     setLoadProgress(100,'সব Supabase report successfully loaded');
     setStatus(true,
       'সব Supabase report successfully loaded',
@@ -2714,6 +2836,8 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     );
     // Keep whichever tab the user is currently working on.
     goSlide(CURRENT_SLIDE);
+    // Preload other Planning sequences in the background so first selection is also instant.
+    setTimeout(()=>prefetchPlanningVersions(),50);
   }catch(error){
     console.error(error);
     const lf=document.getElementById('load-fill');if(lf)lf.classList.remove('loading');
@@ -4617,6 +4741,18 @@ function getPlanningMonthValue(){
 
 document.addEventListener('input',e=>{
   if(e.target?.id==='sb-planning-id')e.target.dataset.auto='0';
+});
+
+document.addEventListener('input',e=>{
+  if(e.target?.id==='planning-sequence-filter'){
+    const u=PLAN_UPLOAD_CATALOG.find(x=>String(x.id)===String(e.target.value));
+    if(u){
+      const old=ACTIVE_PLAN_UPLOAD;ACTIVE_PLAN_UPLOAD=u;
+      const sm=document.getElementById('status-msg');
+      if(sm)sm.textContent='Switching → '+activePlanningLabel();
+      ACTIVE_PLAN_UPLOAD=old;
+    }
+  }
 });
 </script>
 <div id="ewo-gantt-tip"></div>
