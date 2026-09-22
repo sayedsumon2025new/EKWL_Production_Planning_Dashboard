@@ -2531,6 +2531,7 @@ async function prefetchPlanningVersions(){
         setLoadProgress(100,'Ready · background cache '+(i+1)+'/'+queue.length);
         const snap=await fetchPlanningSnapshot(u);
         PLAN_VERSION_CACHE.set(String(u.id),snap);
+        await saveDashboardCache();
       }catch(e){console.warn('Planning prefetch skipped',u.id,e);}
       await new Promise(r=>setTimeout(r,0));
     }
@@ -2583,6 +2584,76 @@ async function updateNextPlanningSequence(){
     idBox.dataset.auto='1';
   }
   box.textContent=`${planningMonthLabel(month)} → Sequence ${next} · Auto ID: ${autoId} (editable)`;
+}
+
+// ===== Persistent browser cache: refresh does NOT re-download Supabase data =====
+const DASH_CACHE_DB='EKWL_Planning_Cache_v1', DASH_CACHE_STORE='snapshots', DASH_CACHE_KEY='dashboard';
+function openDashCache(){
+  return new Promise((resolve,reject)=>{
+    const r=indexedDB.open(DASH_CACHE_DB,1);
+    r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(DASH_CACHE_STORE))r.result.createObjectStore(DASH_CACHE_STORE);};
+    r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error);
+  });
+}
+async function saveDashboardCache(){
+  try{
+    const db=await openDashCache();
+    const payload={
+      savedAt:Date.now(),PLAN_UPLOAD_CATALOG,ACTIVE_PLAN_UPLOAD,
+      activeSnapshot:capturePlanningState(),
+      planVersions:[...PLAN_VERSION_CACHE.entries()],
+      FABRIC_CUTTING_DATA,SEWING_IO_DATA,DATE_WISE_PRODUCTION_DATA
+    };
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction(DASH_CACHE_STORE,'readwrite');
+      tx.objectStore(DASH_CACHE_STORE).put(payload,DASH_CACHE_KEY);
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+    });
+    db.close();
+  }catch(e){console.warn('Persistent dashboard cache save failed',e);}
+}
+async function readDashboardCache(){
+  try{
+    const db=await openDashCache();
+    const val=await new Promise((resolve,reject)=>{
+      const tx=db.transaction(DASH_CACHE_STORE,'readonly');
+      const r=tx.objectStore(DASH_CACHE_STORE).get(DASH_CACHE_KEY);
+      r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);
+    });
+    db.close();return val;
+  }catch(e){console.warn('Persistent dashboard cache read failed',e);return null;}
+}
+async function clearDashboardCache(){
+  try{
+    const db=await openDashCache();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction(DASH_CACHE_STORE,'readwrite');
+      tx.objectStore(DASH_CACHE_STORE).delete(DASH_CACHE_KEY);
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+    });db.close();
+  }catch(e){console.warn(e);}
+}
+async function restoreDashboardFromCache(){
+  const c=await readDashboardCache();
+  if(!c?.activeSnapshot)return false;
+  PLAN_UPLOAD_CATALOG=c.PLAN_UPLOAD_CATALOG||[];
+  ACTIVE_PLAN_UPLOAD=c.ACTIVE_PLAN_UPLOAD||null;
+  PLAN_VERSION_CACHE.clear();
+  for(const [k,v] of (c.planVersions||[]))PLAN_VERSION_CACHE.set(String(k),v);
+  restorePlanningState(c.activeSnapshot);
+  FABRIC_CUTTING_DATA=c.FABRIC_CUTTING_DATA||[];
+  SEWING_IO_DATA=c.SEWING_IO_DATA||[];
+  DATE_WISE_PRODUCTION_DATA=c.DATE_WISE_PRODUCTION_DATA||[];
+  rebuildPlanningFilters(uploadMonthKey(ACTIVE_PLAN_UPLOAD),ACTIVE_PLAN_UPLOAD?.id);
+  renderAll();goSlide(CURRENT_SLIDE);
+  setLoadChip('load-plan','ok','Planning ('+DATA.length.toLocaleString()+')');
+  setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
+  setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
+  setLoadChip('load-production','ok','Date Wise Production ('+DATE_WISE_PRODUCTION_DATA.length.toLocaleString()+')');
+  setLoadProgress(100,'Browser cache থেকে instantly loaded');
+  setStatus(true,'Cached Supabase reports instantly loaded',
+    activePlanningLabel()+' · '+DATA.length+' Plan/Day · '+FABRIC_CUTTING_DATA.length+' Fabric/Cutting · '+SEWING_IO_DATA.length+' Sewing I/O · '+DATE_WISE_PRODUCTION_DATA.length+' Production');
+  return true;
 }
 async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
   try{
@@ -2829,6 +2900,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
 
     renderAll();
     PLAN_VERSION_CACHE.set(String(upload.id),capturePlanningState());
+    await saveDashboardCache();
     setLoadProgress(100,'সব Supabase report successfully loaded');
     setStatus(true,
       'সব Supabase report successfully loaded',
@@ -4409,6 +4481,8 @@ async function uploadNewPlan(){
   }
   const {error:fe}=await SB.from('plan_uploads').update({status:'complete'}).eq('id',uploadId);if(fe)throw fe;
   prog.value=100;sbMsg('sb-upload-msg','Upload complete. Dashboard refreshing...',true);
+  await clearDashboardCache();
+  PLAN_VERSION_CACHE.clear();
   await loadFromSupabase(uploadId,true);
   setTimeout(closeUploadModal,900);
  }catch(error){
@@ -4656,6 +4730,7 @@ async function uploadDateWiseProduction(){
     prog.value=100;
     msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. অন্য date-এর data unchanged. Dashboard refresh হচ্ছে...`;
     DATE_WISE_PRODUCTION_DATA=[];
+    await clearDashboardCache();
     await loadFromSupabase(null,true);
     msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. Dashboard count refreshed.`;
   }catch(e){console.error(e);msg.textContent='Upload failed: '+(e?.message||e);prog.value=0;}
@@ -4701,7 +4776,7 @@ function loadCapacitySettings(){
 window.addEventListener('DOMContentLoaded',()=>{
   loadCapacitySettings();
   restoreActiveTab();
-  loadFromSupabase();
+  restoreDashboardFromCache().then(ok=>{if(!ok)loadFromSupabase();});
 });
 
 
