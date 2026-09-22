@@ -877,6 +877,40 @@ table.cal td.priority-2{color:#ffd166}
 #cal-detail-box .cd-close{border:0;background:#eef3f8;color:#334155;border-radius:8px;width:30px;height:30px;font-size:20px;cursor:pointer;font-weight:900}
 #cal-detail-box .cd-row{display:flex;justify-content:space-between;gap:18px;padding:7px 2px;border-bottom:1px dashed #e6edf4}
 #cal-detail-box .cd-lbl{font-size:11px;font-weight:800;color:#64748b}#cal-detail-box .cd-val{font-size:12px;font-weight:900;text-align:right;color:#10263e}
+
+/* === SECURE SITE LOGIN GATE === */
+#site-login-gate{
+  position:fixed;inset:0;z-index:200000;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:
+  radial-gradient(circle at 20% 15%,rgba(240,165,0,.10),transparent 30%),
+  radial-gradient(circle at 85% 80%,rgba(21,101,192,.14),transparent 34%),
+  #081522;
+}
+#site-login-gate.hidden{display:none!important}
+.site-login-card{
+  width:min(430px,94vw);background:#fff;color:#10233c;border-radius:18px;padding:28px;
+  box-shadow:0 28px 80px rgba(0,0,0,.45);border:1px solid #dbe5ef;
+}
+.site-login-brand{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.site-login-logo{width:48px;height:48px;border-radius:12px;background:#f0a500;color:#07111d;
+  display:grid;place-items:center;font-weight:1000;font-size:18px;box-shadow:0 8px 22px rgba(240,165,0,.25)}
+.site-login-brand h1{font-size:18px;margin:0;color:#0d2b49}
+.site-login-brand p{font-size:11px;margin:3px 0 0;color:#6b7c90}
+.site-login-label{display:block;font-size:10px;font-weight:900;letter-spacing:.7px;color:#53657a;margin:12px 0 5px}
+.site-login-input{width:100%;box-sizing:border-box;border:1px solid #c9d6e3;border-radius:9px;padding:11px 12px;
+  font:inherit;color:#10233c;background:#f8fbfe;outline:none}
+.site-login-input:focus{border-color:#e07800;box-shadow:0 0 0 3px rgba(224,120,0,.10)}
+.site-login-btn{width:100%;border:0;border-radius:9px;padding:11px 14px;margin-top:16px;background:#e07800;color:#fff;
+  font-weight:900;cursor:pointer;font-size:13px}
+.site-login-btn:disabled{opacity:.6;cursor:wait}
+#site-login-msg{min-height:18px;margin-top:10px;font-size:11px;color:#64748b;text-align:center;line-height:1.45}
+#site-login-msg.err{color:#c0392b;font-weight:700}
+#site-login-msg.ok{color:#1a6b3c;font-weight:700}
+#site-user-pill{display:none;align-items:center;gap:7px;padding:5px 9px;border:1px solid var(--border);border-radius:6px;
+  color:var(--text2);font-size:10px;white-space:nowrap}
+#site-user-pill b{color:var(--amber2);max-width:150px;overflow:hidden;text-overflow:ellipsis}
+body.site-locked #topnav,body.site-locked #slides-wrap{visibility:hidden!important}
+
 </style>
 
 <style id="optical-white-professional-theme">
@@ -1384,7 +1418,26 @@ input,select,textarea{
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
-<body>
+<body class="site-locked">
+
+<div id="site-login-gate">
+  <div class="site-login-card">
+    <div class="site-login-brand">
+      <div class="site-login-logo">EK</div>
+      <div>
+        <h1>EKWL · HW Planning</h1>
+        <p>Production Planning Dashboard · Authorized User Login</p>
+      </div>
+    </div>
+    <label class="site-login-label" for="site-login-email">EMAIL</label>
+    <input class="site-login-input" id="site-login-email" type="email" autocomplete="username" placeholder="name@company.com">
+    <label class="site-login-label" for="site-login-password">PASSWORD</label>
+    <input class="site-login-input" id="site-login-password" type="password" autocomplete="current-password" placeholder="Password">
+    <button class="site-login-btn" id="site-login-btn" type="button" onclick="siteLogin()">Sign in to Dashboard</button>
+    <div id="site-login-msg">Use your Supabase Authentication email and password.</div>
+  </div>
+</div>
+
 
 <!-- ══ TOP NAV ════════════════════════════════ -->
 <div id="topnav">
@@ -1405,8 +1458,11 @@ input,select,textarea{
     <div class="stab" onclick="goSlide(10)" data-s="10"><span class="tnum">10</span> Line Calendar</div>
     <div class="stab" onclick="goSlide(11)" data-s="11"><span class="tnum">11</span> Fabrics &amp; Cutting</div>
     <div class="stab" onclick="goSlide(12)" data-s="12"><span class="tnum">12</span> Admin / Parameter Setting</div>
+    <div class="stab" onclick="goSlide(13)" data-s="13"><span class="tnum">13</span> User Module</div>
   </div>
   <div class="right">
+    <div id="site-user-pill"><span>👤</span><b id="site-user-email"></b><span id="site-user-role"></span></div>
+    <button class="top-btn" id="site-signout-btn" style="display:none" onclick="siteLogout()">Sign out</button>
     <select id="month-filter" onchange="planningMonthChanged()"><option value="">Latest Month</option></select>
     <select id="planning-sequence-filter" onchange="planningSequenceChanged()" title="Planning upload sequence">
       <option value="">Latest Sequence</option>
@@ -1531,6 +1587,7 @@ input,select,textarea{
       <button class="home-card" onclick="goSlide(10)"><span class="home-no">10</span><span class="home-icon">🗓️</span><span class="home-card-title">Line Running Calendar</span><span class="home-card-sub">Day-wise line plan, priority Hit/Not Hit and product running calendar</span></button>
       <button class="home-card" onclick="goSlide(11)"><span class="home-no">11</span><span class="home-icon">✂️</span><span class="home-card-title">Fabrics &amp; Cutting Analysis</span><span class="home-card-sub">Fabric receipt, stock, cutable qty, cutting progress, balance and difficulties</span></button>
       <button class="home-card" onclick="goSlide(12)"><span class="home-no">12</span><span class="home-icon">⚙️</span><span class="home-card-title">Admin / Parameter Setting</span><span class="home-card-sub">Efficiency ladder, chassis priority, ABP target and master parameters</span></button>
+      <button class="home-card" onclick="goSlide(13)"><span class="home-no">13</span><span class="home-icon">👥</span><span class="home-card-title">User Module</span><span class="home-card-sub">Admin/User role, account status and module-wise permission control</span></button>
     </div>
     <div class="home-status" style="flex-wrap:wrap">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
@@ -1973,6 +2030,46 @@ input,select,textarea{
   </div>
 </div>
 
+
+<!-- ─── SLIDE 13: USER MODULE ───────────────────────────── -->
+<div class="slide" id="s13">
+  <div class="slide-header">
+    <div>
+      <div class="slide-title"><span class="snum">13</span> 👥 User Module</div>
+      <div class="slide-subtitle">USER INFORMATION · ADD USER · ROLE · STATUS · PERMISSION</div>
+    </div>
+    <div class="pager-btns">
+      <button class="pg-btn" onclick="loadSiteUsers()">↻ Refresh</button>
+      <button class="pg-btn" onclick="goSlide(0)">🏠 Home</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">➕ ADD NEW USER <span class="ct-right" id="user-add-msg"></span></div>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr .7fr .8fr auto;gap:9px;align-items:end;margin-top:10px">
+      <div><label class="setting-label">USER EMAIL</label><input id="new-user-email" type="email" placeholder="user@company.com" style="width:100%"></div>
+      <div><label class="setting-label">TEMP PASSWORD</label><input id="new-user-password" type="password" placeholder="Minimum 6 characters" style="width:100%"></div>
+      <div><label class="setting-label">ROLE</label><select id="new-user-role" style="width:100%"><option value="user">User</option><option value="admin">Admin</option></select></div>
+      <div><label class="setting-label">STATUS</label><select id="new-user-status" style="width:100%"><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
+      <button class="pg-btn" style="height:34px" onclick="addNewSiteUser()">＋ Add User</button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:8px">New user Supabase Authentication-এ তৈরি হবে এবং <b>Auth User ID</b> সফলভাবে <b>site_users</b>-এর সাথে link হওয়ার পরেই success দেখাবে। Auth creation fail হলে নতুন pending row automatically rollback হবে।</div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-title">👤 USER INFORMATION <span class="ct-right" id="user-module-msg">Ready</span></div>
+    <div class="tbl-wrap">
+      <table class="dt">
+        <thead><tr>
+          <th>Email</th><th>Auth Status</th><th>Role</th><th>Status</th><th>Planning View</th><th>Planning Upload</th>
+          <th>Fabric</th><th>Sewing</th><th>Production</th><th>Admin Setting</th><th>User Admin</th><th>Action</th>
+        </tr></thead>
+        <tbody id="site-users-body"><tr><td colspan="12" class="cen">Open User Module to load users.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 </div><!-- /slides-wrap -->
 <!-- Compatibility parameters used by the original audited calculation engine.
      Hidden because the Unified Home replaces the old Upload/settings panel UI. -->
@@ -2336,7 +2433,8 @@ function openAdminSetting(key){
 
 const ACTIVE_TAB_STORAGE_KEY='ekwlhw_active_tab_v1';
 function goSlide(n){
-  const maxSlide=12;
+  if(n===13)setTimeout(()=>loadSiteUsers(),0);
+  const maxSlide=13;
   n=Math.max(0,Math.min(Number(n)||0,maxSlide));
   document.querySelectorAll('.slide').forEach((s,i)=>s.classList.toggle('active',i===n));
   document.querySelectorAll('.stab').forEach(t=>t.classList.toggle('active',+t.dataset.s===n));
@@ -4391,6 +4489,216 @@ May-26,21,265400,Tommy,Hoody,20,8500,4250,2026-05-22,2026-05-08,2026-05-22`;
 }
 
 
+
+
+/* === USER MODULE MANAGEMENT === */
+const USER_PERM_KEYS=['planning_view','planning_upload','fabric','sewing','production','admin_settings','user_admin'];
+function umEsc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function umOn(p,k){return !!(p&&(p[k]===true||p[k]==='true'))}
+
+async function addNewSiteUser(){
+  const email=String(document.getElementById('new-user-email')?.value||'').trim().toLowerCase();
+  const password=String(document.getElementById('new-user-password')?.value||'');
+  const role=document.getElementById('new-user-role')?.value||'user';
+  const status=document.getElementById('new-user-status')?.value||'active';
+  const msg=document.getElementById('user-add-msg');
+
+  if(!email){if(msg)msg.innerHTML='<span style="color:#dc2626">✕ Email দিন</span>';return}
+  if(password.length<6){if(msg)msg.innerHTML='<span style="color:#dc2626">✕ Password কমপক্ষে 6 characters দিন</span>';return}
+  if(!SITE_USER_PROFILE || SITE_USER_PROFILE.role!=='admin'){
+    if(msg)msg.innerHTML='<span style="color:#dc2626">✕ Admin access required</span>';return;
+  }
+
+  const permissions = role==='admin'
+    ? {planning_view:true,planning_upload:true,fabric:true,sewing:true,production:true,admin_settings:true,user_admin:true}
+    : {planning_view:true,planning_upload:false,fabric:false,sewing:false,production:false,admin_settings:false,user_admin:false};
+
+  let createdPendingRow=false;
+  try{
+    if(msg)msg.innerHTML='<span style="color:#d97706">Checking user...</span>';
+
+    const existingRes=await SB.from('site_users')
+      .select('id,email,auth_user_id,role,status,permissions')
+      .ilike('email',email).limit(1);
+    if(existingRes.error)throw existingRes.error;
+    let row=existingRes.data?.[0]||null;
+
+    if(row?.auth_user_id){
+      throw Error('এই email-এর Auth account already linked আছে।');
+    }
+
+    if(row){
+      const upd=await SB.from('site_users').update({role,status,permissions}).eq('id',row.id).select('id').single();
+      if(upd.error)throw upd.error;
+    }else{
+      const ins=await SB.from('site_users').insert({email,role,status,permissions})
+        .select('id,email,auth_user_id').single();
+      if(ins.error)throw ins.error;
+      row=ins.data;
+      createdPendingRow=true;
+    }
+
+    if(msg)msg.innerHTML='<span style="color:#d97706">Creating Supabase Auth user...</span>';
+
+    // Separate non-persistent client keeps the Admin session untouched.
+    const secondary=supabase.createClient(SB_URL,SB_KEY,{
+      auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+    });
+    const {data:authData,error:authErr}=await secondary.auth.signUp({email,password});
+    if(authErr)throw authErr;
+    if(!authData?.user?.id)throw Error('Supabase Auth user ID পাওয়া যায়নি।');
+
+    const link=await SB.from('site_users')
+      .update({auth_user_id:authData.user.id,role,status,permissions})
+      .eq('email',email).select('id,auth_user_id').single();
+    if(link.error)throw link.error;
+    if(!link.data?.auth_user_id)throw Error('Auth user তৈরি হয়েছে, কিন্তু site_users link হয়নি।');
+
+    document.getElementById('new-user-email').value='';
+    document.getElementById('new-user-password').value='';
+    if(msg)msg.innerHTML='<span style="color:#16a34a;font-weight:900">✓ Auth User Created & Linked</span>';
+    await loadSiteUsers();
+  }catch(e){
+    console.error(e);
+    // Remove only a brand-new pending access row created by this attempt.
+    if(createdPendingRow){
+      try{await SB.from('site_users').delete().eq('email',email).is('auth_user_id',null)}catch(_){}
+    }
+    if(msg)msg.innerHTML='<span style="color:#dc2626;font-weight:900">✕ Failed: '+umEsc(e?.message||e)+'</span>';
+    await loadSiteUsers();
+  }
+}
+
+async function loadSiteUsers(){
+  const body=document.getElementById('site-users-body'),msg=document.getElementById('user-module-msg');
+  if(!body)return;
+  body.innerHTML='<tr><td colspan="12" class="cen">Loading...</td></tr>'; if(msg)msg.textContent='Loading from Supabase...';
+  try{
+    const {data,error}=await SB.from('site_users').select('id,auth_user_id,email,role,status,permissions,created_at').order('created_at',{ascending:true});
+    if(error)throw error;
+    const rows=data||[];
+    body.innerHTML=rows.length?rows.map(u=>{
+      const p=u.permissions||{}, ck=k=>`<input type="checkbox" data-perm="${k}" ${umOn(p,k)?'checked':''}>`;
+      const authLinked=!!u.auth_user_id;
+      return `<tr data-user-id="${u.id}">
+        <td>${umEsc(u.email)}</td>
+        <td class="cen">${authLinked?'<span style="color:#16a34a;font-weight:900">✓ Auth Linked</span>':'<span style="color:#dc2626;font-weight:900">✕ Not Linked</span>'}</td>
+        <td><select class="usr-role"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td>
+        <td><select class="usr-status"><option value="active" ${u.status==='active'?'selected':''}>Active</option><option value="disabled" ${u.status==='disabled'?'selected':''}>Disabled</option></select></td>
+        <td class="cen">${ck('planning_view')}</td><td class="cen">${ck('planning_upload')}</td><td class="cen">${ck('fabric')}</td><td class="cen">${ck('sewing')}</td><td class="cen">${ck('production')}</td><td class="cen">${ck('admin_settings')}</td><td class="cen">${ck('user_admin')}</td>
+        <td><button class="pg-btn" onclick="saveSiteUser(${u.id},this)">Save</button></td></tr>`;
+    }).join(''):'<tr><td colspan="12" class="cen">No users found.</td></tr>';
+    if(msg)msg.textContent=`${rows.length} user(s) loaded`;
+  }catch(e){console.error(e);body.innerHTML=`<tr><td colspan="12" class="cen" style="color:#ef4444">${umEsc(e.message)}</td></tr>`;if(msg)msg.textContent='Load failed'}
+}
+async function saveSiteUser(id,btn){
+  const tr=btn.closest('tr'),msg=document.getElementById('user-module-msg'),permissions={};
+  const selectedRole=tr.querySelector('.usr-role').value;
+  USER_PERM_KEYS.forEach(k=>permissions[k]=selectedRole==='admin' ? true : !!tr.querySelector(`[data-perm="${k}"]`)?.checked);
+  btn.disabled=true;if(msg)msg.textContent='Saving...';
+  try{
+    const {error}=await SB.from('site_users').update({role:selectedRole,status:tr.querySelector('.usr-status').value,permissions}).eq('id',id);
+    if(error)throw error;if(msg)msg.textContent='✓ Saved';await loadSiteUsers();
+  }catch(e){console.error(e);if(msg)msg.textContent='Save failed: '+e.message}
+  finally{btn.disabled=false}
+}
+
+/* === SECURE SITE LOGIN / site_users AUTHORIZATION === */
+let SITE_AUTH_USER=null;
+let SITE_USER_PROFILE=null;
+let SITE_BOOTED=false;
+
+function siteLoginMessage(msg,type=''){
+  const el=document.getElementById('site-login-msg');
+  if(!el)return;
+  el.textContent=msg||'';
+  el.className=type?type:'';
+}
+function showSiteLogin(msg=''){
+  document.body.classList.add('site-locked');
+  document.getElementById('site-login-gate')?.classList.remove('hidden');
+  document.getElementById('site-user-pill').style.display='none';
+  document.getElementById('site-signout-btn').style.display='none';
+  if(msg)siteLoginMessage(msg,'err');
+}
+function unlockSite(user,profile){
+  SITE_AUTH_USER=user; SITE_USER_PROFILE=profile;
+  document.body.classList.remove('site-locked');
+  document.getElementById('site-login-gate')?.classList.add('hidden');
+  const pill=document.getElementById('site-user-pill');
+  document.getElementById('site-user-email').textContent=user?.email||profile?.email||'User';
+  document.getElementById('site-user-role').textContent='· '+String(profile?.role||'user').toUpperCase();
+  pill.style.display='flex';
+  document.getElementById('site-signout-btn').style.display='inline-block';
+}
+async function getAuthorizedSiteUser(user){
+  if(!user)return null;
+  let q=SB.from('site_users').select('id,auth_user_id,email,role,status,permissions').eq('auth_user_id',user.id).limit(1);
+  let {data,error}=await q;
+  if(error)throw error;
+  let profile=data?.[0]||null;
+  if(!profile && user.email){
+    const r=await SB.from('site_users').select('id,auth_user_id,email,role,status,permissions').ilike('email',user.email).limit(1);
+    if(r.error)throw r.error;
+    profile=r.data?.[0]||null;
+  }
+  if(!profile)throw Error('This account is not registered in site_users.');
+  if(String(profile.status||'').toLowerCase()!=='active')throw Error('This user is disabled. Contact Admin.');
+  return profile;
+}
+async function authorizeSiteSession(){
+  try{
+    const {data:{session},error}=await SB.auth.getSession();
+    if(error)throw error;
+    if(!session?.user){showSiteLogin();return false}
+    const profile=await getAuthorizedSiteUser(session.user);
+    unlockSite(session.user,profile);
+    return true;
+  }catch(e){
+    console.error('Authorization failed',e);
+    try{await SB.auth.signOut()}catch(_){}
+    showSiteLogin(e?.message||'Authorization failed.');
+    return false;
+  }
+}
+async function siteLogin(){
+  const email=document.getElementById('site-login-email').value.trim();
+  const password=document.getElementById('site-login-password').value;
+  const btn=document.getElementById('site-login-btn');
+  if(!email||!password){siteLoginMessage('Email এবং password দিন।','err');return}
+  btn.disabled=true; siteLoginMessage('Signing in...');
+  try{
+    const {data,error}=await SB.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    const profile=await getAuthorizedSiteUser(data.user);
+    unlockSite(data.user,profile);
+    document.getElementById('site-login-password').value='';
+    siteLoginMessage('Login successful.','ok');
+    if(!SITE_BOOTED){
+      SITE_BOOTED=true;
+      loadCapacitySettings();
+      restoreActiveTab();
+      const ok=await restoreDashboardFromCache();
+      if(!ok)await loadFromSupabase();
+    }
+  }catch(e){
+    console.error(e);
+    try{await SB.auth.signOut()}catch(_){}
+    showSiteLogin(e?.message||'Login failed.');
+  }finally{btn.disabled=false}
+}
+async function siteLogout(){
+  try{await SB.auth.signOut()}catch(e){console.error(e)}
+  SITE_AUTH_USER=null; SITE_USER_PROFILE=null; SITE_BOOTED=false;
+  document.getElementById('site-login-password').value='';
+  showSiteLogin('Signed out. Please sign in again.');
+}
+document.addEventListener('keydown',e=>{
+  if(!document.body.classList.contains('site-locked'))return;
+  if(e.key==='Enter' && (e.target?.id==='site-login-email'||e.target?.id==='site-login-password'))siteLogin();
+});
+
+
 /* ══ INTEGRATED SUPABASE CSV UPLOAD ════════════ */
 function openUploadModal(){document.getElementById('upload-modal').classList.add('open');refreshSbAuth()}
 function closeUploadModal(){document.getElementById('upload-modal').classList.remove('open')}
@@ -4738,7 +5046,7 @@ async function uploadDateWiseProduction(){
 
 document.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
-  if(e.key==='ArrowRight')goSlide(Math.min(CURRENT_SLIDE+1,11));
+  if(e.key==='ArrowRight')goSlide(Math.min(CURRENT_SLIDE+1,13));
   if(e.key==='ArrowLeft')goSlide(Math.max(CURRENT_SLIDE-1,0));
 });
 
@@ -4773,10 +5081,14 @@ function loadCapacitySettings(){
   }catch(e){ console.warn('Could not restore capacity settings',e); }
 }
 
-window.addEventListener('DOMContentLoaded',()=>{
+window.addEventListener('DOMContentLoaded',async()=>{
+  const ok=await authorizeSiteSession();
+  if(!ok)return;
+  SITE_BOOTED=true;
   loadCapacitySettings();
   restoreActiveTab();
-  restoreDashboardFromCache().then(ok=>{if(!ok)loadFromSupabase();});
+  const cached=await restoreDashboardFromCache();
+  if(!cached)await loadFromSupabase();
 });
 
 
