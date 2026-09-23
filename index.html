@@ -4,6 +4,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EKWL · HW Production Planning Dashboard</title>
+<!-- RENDERING FIX: removed accidental recursive authoritativeOrderQty override -->
+<!-- CROSS-CHECKED ORDER QTY: all slide totals/details/charts use direct SUM of filtered valid-line Plan/Day rows -->
+<!-- CROSS-CHECKED: Slide03 ABP Target Efficiency comes from abp_target/ABP_MATRIX_2026_27/config.metrics[Efficiency] -->
+<!-- SLIDE03 ABP TARGET EFFICIENCY: live SQL dashboard_master_settings/buyer_efficiency_target -->
+<!-- MASTER LINE HARD FIX: only 1-45,47,48 can enter any planning calculation; Line 50 excluded even if present in SQL/source -->
+<!-- SLIDE 01 FINAL: Order Qty = direct SUM(order_qty) after Plan/Day + hard valid-line filter 1-45,47,48 -->
+<!-- AUDIT FIX: no slide/calculation settings are sourced from localStorage; remaining master settings centralized in Supabase -->
+<!-- LIVE SYNC FIX: SQL admin settings load before planning filters; Supabase always revalidated after cache bootstrap -->
+<!-- ABP TARGET MATRIX: centralized Supabase SQL-backed -->
+<!-- LINE WISE CHASSIS PRIORITY: centralized Supabase SQL-backed -->
+<!-- EFFICIENCY RUN DAY LADDER: centralized Supabase SQL-backed -->
+<!-- FLOOR ALLOCATION MOVED TO SLIDE 12 ADMIN/PARAMETER SETTING -->
+<!-- FLOOR ALLOCATION: dropdown uploader + atomic SQL replacement RPC -->
+<!-- FRIENDLY UPLOAD CONTROL: report-name dropdown with Plan/Fabric/Sewing/Production/Order Bank uploaders under Home 00 -->
+<!-- ORDER BANK UPLOAD FINAL: Slide 14, 40-column validation, staging, RPC finalize, row-count audit -->
+<!-- SLIDE 03 BUYER ORDER QTY FIX:
+     Buyer/Total Order Qty = direct SUM of Plan/Day Order Qty rows (no EWO+PO+Color dedupe). -->
+<!-- DONUT CENTER EXACT CLASS FIX: .s2-top-hole text forced white/high-contrast. -->
+<!-- SLIDE 02 DONUT VISIBILITY: center Total EWO rendered high-contrast white. -->
+<!-- SLIDE 02 CROSS-CHECK: Order Qty column added by range; total row includes Total Order Qty. -->
+<!-- SLIDE 02 DATA VISIBLE FIX:
+     renderS2(data) already receives normalized Plan/Day rows.
+     Do not filter on missing runtime `criteria`; Total Order Qty sums loaded Plan/Day Order Qty. -->
+<!-- SLIDE 02 ORDER QTY FIX:
+     EWO Total Order Qty = SUM unique Month+EWO+PO+Color order components.
+     Added Total Order Qty cross-check KPI above range table. -->
+<!-- SEQUENTIAL CONSUMABLE WIP: Sewing -> Cutting -> Cutable; Light Blue / Dark Indigo coverage -->
+<!-- PLAN/DAY DEDUP-SUM FINAL: sum unique record_id+date Plan/Day source rows per Line+Date+EWO -->
+<!-- PLAN/DAY EXACT FIX: Line+Date+EWO uses authoritative raw plan_daily.value; duplicate/detail rows are not summed; winner remains highest Plan/Day -->
+<!-- DATE UPLOAD ERROR FIX: upload handler uses global dwpDisplayDate; no dependency on Gantt-local dateLabel -->
+<!-- PERMANENT PRODUCTION DATE PARSER FIX: DD/MM, unambiguous MM/DD, DD-MMM-YY/YYYY, ISO, Excel serial -->
+<!-- ACTUAL REPORT DATE FINAL:
+     coverage cutoff = MAX(output_date) physically present in Date Wise Actual Production Report;
+     coverage applies only to plan dates strictly AFTER that date. -->
+<!-- POSITIVE PRODUCTION UPDATED-DATE FINAL: cutoff uses latest output_date with total_qty > 0; ACTUAL PRODUCTION CUTOFF FINAL: coverage colors only after global latest Date Wise Production date; RUNTIME AUDIT FINAL BUILD: scope-safe Gantt helpers + guarded render targets; DEEP AUDIT FIX BUILD: Line+EWO cutoff, winner-cell coverage, nonnegative Cutting WIP, strict dates, server-side user updates -->
 <!-- FINAL BUILD: persistent session, cache-first refresh, optimized uploads, Edge Function user creation, user access removal -->
 <style>
 /* ══ TOKENS ══════════════════════════════════════ */
@@ -750,8 +785,9 @@ table.cal td.priority-2{color:#ffd166}
 .s2-top-pie-title{color:#ffb000;font-size:13px;font-weight:800;letter-spacing:.7px;margin-bottom:8px}
 .s2-top-pie-body{display:flex;align-items:center;justify-content:center;gap:18px;width:100%}
 .s2-top-donut{width:170px;height:170px;border-radius:50%;position:relative;flex:0 0 170px}
-.s2-top-hole{position:absolute;inset:36px;border-radius:50%;background:#172a43;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#10233c;}
-.s2-top-hole b{font-size:25px;line-height:1}.s2-top-hole span{font-size:10px;color:#91aac7;margin-top:5px}
+.s2-top-hole{position:absolute;inset:36px;border-radius:50%;background:#172a43;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffffff!important;}
+.s2-top-hole b{font-size:28px;line-height:1;color:#ffffff!important;font-weight:900!important;text-shadow:0 1px 3px #000}
+.s2-top-hole span{font-size:11px;color:#dbeafe!important;font-weight:700!important;margin-top:5px;text-shadow:0 1px 2px #000}
 .s2-top-legend{display:flex;flex-direction:column;gap:14px;font-size:12px;color:#dce9f7}
 .s2-top-legend .lg{display:grid;grid-template-columns:11px 1fr;gap:7px;align-items:start}
 .s2-top-legend i{width:10px;height:10px;border-radius:50%;margin-top:3px}
@@ -967,6 +1003,11 @@ body.site-locked #topnav,body.site-locked #slides-wrap{visibility:hidden!importa
   .nav-account-pill b{max-width:95px}
 }
 
+
+#supabase-live-badge{position:fixed;right:14px;bottom:12px;z-index:9998;background:#0f172a;color:#e2e8f0;
+border:1px solid #334155;border-radius:8px;padding:6px 10px;font-size:10px;font-weight:800;box-shadow:0 3px 12px #0002}
+#supabase-live-badge.ok{background:#064e3b;border-color:#10b981;color:#ecfdf5}
+#supabase-live-badge.err{background:#7f1d1d;border-color:#ef4444;color:#fff}
 </style>
 
 <style id="optical-white-professional-theme">
@@ -1398,8 +1439,8 @@ input,select,textarea{
 #s11 .gantt td.g-ewo{background:#fff!important;color:#073b7a!important;font-weight:900!important;min-width:96px}
 #s11 .gantt td.g-empty{background:#fff!important;color:#fff!important;min-width:96px}
 #s11 .gantt td.g-ewo.g-wip-covered{background:#b7e4c7!important;color:#17351f!important;font-weight:900!important}
-#s11 .gantt td.g-ewo.g-cutting-covered{background:#93c5fd!important;color:#102a43!important;font-weight:900!important}
-#s11 .gantt td.g-ewo.g-cutable-covered{background:#c7d2fe!important;color:#312e81!important;font-weight:900!important}
+#s11 .gantt td.g-ewo.g-cutting-covered{background:#bae6fd!important;color:#0c4a6e!important;font-weight:900!important}
+#s11 .gantt td.g-ewo.g-cutable-covered{background:#312e81!important;color:#ffffff!important;font-weight:900!important}
 #s11 .gantt td.g-ewo.g-material-short{background:#fecaca!important;color:#7f1d1d!important;font-weight:900!important}
 #s11 .gantt td.g-ewo.g-wip-short{background:#ffe66d!important;color:#5b4300!important;font-weight:900!important}
 #s11 .gantt .g-date{min-width:96px;font-size:10px}
@@ -1478,8 +1519,11 @@ input,select,textarea{
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+
 </head>
 <body class="site-locked">
+<div id="supabase-live-badge">Supabase · waiting</div>
 
 <div id="site-login-gate">
   <div class="site-login-card">
@@ -1563,7 +1607,7 @@ input,select,textarea{
 <!-- Supabase Upload Modal -->
 <div id="upload-modal" class="modal-bg" onclick="if(event.target===this)closeUploadModal()">
   <div class="modal-box">
-    <div class="modal-head"><h3>☁ Upload New Plan to Supabase</h3><button class="modal-close" onclick="closeUploadModal()">×</button></div>
+    <div class="modal-head"><h3>☁ Upload / Data Control</h3><button class="modal-close" onclick="closeUploadModal()">×</button></div>
     <div id="login-fields">
       <input id="sb-email" type="email" placeholder="Admin email">
       <input id="sb-password" type="password" placeholder="Password">
@@ -1573,7 +1617,19 @@ input,select,textarea{
       <button class="top-btn" id="sb-logout-btn" onclick="sbLogout()">Sign out</button>
     </div>
     <div id="sb-auth-msg" class="modal-msg">Checking login...</div>
+    <div style="margin:12px 0 14px;padding:10px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.03)">
+      <div style="font-size:10px;font-weight:900;color:var(--text2);margin-bottom:5px">SELECT REPORT / DATA SOURCE</div>
+      <select id="upload-report-select" onchange="selectUploadReport(this.value)" style="width:100%;padding:9px;border-radius:7px;font-weight:800">
+        <option value="plan">📋 Planning Data / Plan Data.csv</option>
+        <option value="fabric">✂ Fabrics &amp; Cutting.csv</option>
+        <option value="sewing">🧵 Line Wise Reconcilation / Sewing I-O.csv</option>
+        <option value="production">📅 Date Wise Actual Production Report.csv</option>
+        <option value="orderbank">📦 Order Bank.csv</option>
+      </select>
+      <div id="upload-report-help" class="modal-msg" style="margin-top:6px">Report name select করুন — শুধু selected uploader দেখাবে।</div>
+    </div>
     <hr style="border:0;border-top:1px solid var(--border);margin:14px 0">
+    <div id="upload-panel-plan" class="upload-report-panel">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:7px">
       <div>
         <div style="font-size:10px;font-weight:800;color:var(--text2);margin-bottom:3px">PLANNING MONTH</div>
@@ -1601,6 +1657,8 @@ input,select,textarea{
     <progress id="sb-progress" class="modal-progress" value="0" max="100"></progress>
     <div id="sb-upload-msg" class="modal-msg">নতুন raw Plan Data CSV select করুন। Upload complete হলে dashboard নিজে refresh হবে।</div>
 
+    </div>
+    <div id="upload-panel-fabric" class="upload-report-panel" style="display:none">
     <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
     <div style="font-size:13px;font-weight:900;color:var(--amber2);margin-bottom:7px">🧵 Fabrics &amp; Cutting Info CSV</div>
     <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">
@@ -1615,6 +1673,8 @@ input,select,textarea{
     <progress id="fc-progress" class="modal-progress" value="0" max="100"></progress>
     <div id="fc-upload-msg" class="modal-msg">Fabrics &amp; Cutting CSV select করুন। Empty Unnamed columns automatically ignore হবে।</div>
 
+    </div>
+    <div id="upload-panel-sewing" class="upload-report-panel" style="display:none">
     <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
     <div style="font-size:13px;font-weight:900;color:var(--amber2);margin-bottom:7px">🧵 Sewing Input &amp; Output CSV</div>
     <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">
@@ -1630,6 +1690,8 @@ input,select,textarea{
 
     <div id="sio-upload-msg" class="modal-msg">Line Wise Reconcilation CSV select করুন। Empty Unnamed columns automatically ignore হবে।</div>
 
+    </div>
+    <div id="upload-panel-production" class="upload-report-panel" style="display:none">
     <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
     <div style="font-size:13px;font-weight:900;color:var(--amber2);margin-bottom:7px">📅 Date Wise Production Report CSV</div>
     <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">
@@ -1639,6 +1701,19 @@ input,select,textarea{
     <button class="top-btn primary" style="width:100%;padding:9px;margin-top:9px" onclick="uploadDateWiseProduction()">Upload Date Wise Production</button>
     <progress id="dwp-progress" class="modal-progress" value="0" max="100"></progress>
     <div id="dwp-upload-msg" class="modal-msg">Output Date ভিত্তিক replace হবে — full table delete হবে না।</div>
+    </div>
+    <div id="upload-panel-orderbank" class="upload-report-panel" style="display:none">
+      <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
+      <div style="font-size:13px;font-weight:900;color:var(--amber2);margin-bottom:7px">📦 Order Bank CSV</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">
+        Daily Order Bank.csv upload করুন। 40 source columns validate হবে, staging → SQL raw snapshot → row-count audit হবে।
+        Historical successful snapshots delete হবে না।
+      </div>
+      <input id="ob-file" type="file" accept=".csv,text/csv">
+      <button class="top-btn primary" style="width:100%;padding:9px;margin-top:9px" onclick="uploadOrderBank()">Upload &amp; Validate Order Bank</button>
+      <div id="ob-msg" class="modal-msg">Order Bank.csv select করুন। Missing Rows = 0 হলে upload valid.</div>
+      <div id="ob-audit" class="tbl-wrap" style="margin-top:10px"></div>
+    </div>
   </div>
 </div>
 
@@ -1905,8 +1980,8 @@ input,select,textarea{
     <div class="gantt-legend">Team/Line × Date · <span class="gantt-note">একই Line/Date-এ একাধিক EWO থাকলে সর্বোচ্চ Plan Qty-এর EWO দেখানো হবে।</span></div>
     <div class="gantt-coverage-legend" style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0 10px;padding:9px 12px;background:#f8fafc;border:1px solid #dbe4ee;border-radius:8px;font-size:12px;font-weight:700;color:#243447">
 <span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#4ade80;margin-right:6px"></b>Green → Sewing WIP cumulative Plan cover করে</span>
-<span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#3b82f6;margin-right:6px"></b>Blue → Sewing WIP fail, কিন্তু Cutting WIP cover করে</span>
-<span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#818cf8;margin-right:6px"></b>Indigo → Sewing WIP + Cutting WIP fail, কিন্তু Cutable Qty cover করে</span>
+<span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#bae6fd;margin-right:6px"></b>Light Blue → Sewing WIP fail, কিন্তু remaining Plan Cutting WIP cover করে</span>
+<span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#312e81;margin-right:6px"></b>Dark Indigo → Sewing WIP + Cutting WIP fail, কিন্তু remaining Plan Cutable Qty cover করে</span>
 <span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#ef4444;margin-right:6px"></b>Red → Cutable Qty-ও cumulative Plan cover করতে পারে না</span>
 </div>
 <div class="gantt-wrap"><table class="gantt"><thead id="s11-head"></thead><tbody id="s11-body"></tbody></table></div>
@@ -2116,6 +2191,24 @@ input,select,textarea{
       উপরের ৪টি setting-এর যেকোনো একটি select করুন।
     </div>
   </div>
+
+
+    <div class="admin-setting-card" style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:14px;font-weight:900">🏢 Floor Allocation</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:4px">Line-wise Level, IE Name &amp; Line Block and ID · SQL centralized master</div>
+        </div>
+        <button class="top-btn" onclick="loadFloorAllocationAdmin()">↻ Refresh Current Data</button>
+      </div>
+      <div style="margin-top:12px">
+        <input id="floor-file" type="file" accept=".csv,text/csv">
+        <button class="top-btn primary" style="margin-left:8px" onclick="uploadFloorAllocation()">Upload &amp; Replace Floor Allocation</button>
+        <div id="floor-msg" class="modal-msg" style="margin-top:8px">Required: Line, Level, IE Name &amp; Line Block, ID. Line 46 is blocked.</div>
+      </div>
+      <div id="floor-admin-table" class="tbl-wrap" style="margin-top:12px;max-height:360px;overflow:auto"></div>
+    </div>
+
 </div>
 
 
@@ -2162,6 +2255,8 @@ input,select,textarea{
     </div>
   </div>
 </div>
+
+
 
 </div><!-- /slides-wrap -->
 <!-- Compatibility parameters used by the original audited calculation engine.
@@ -2294,30 +2389,82 @@ const DEFAULT_EFF_LADDER=[
  ['Trousers',40,45,48,50,55,60]
 ];
 
+let EFF_LADDER_CACHE=null;
+
 function getEfficiencyLadder(){
-  try{
-    const saved=localStorage.getItem('ekwl_efficiency_run_day_ladder');
-    if(saved){
-      const parsed=JSON.parse(saved);
-      if(Array.isArray(parsed)&&parsed.length) return parsed;
-    }
-  }catch(e){}
+  if(Array.isArray(EFF_LADDER_CACHE)&&EFF_LADDER_CACHE.length)
+    return EFF_LADDER_CACHE.map(r=>[...r]);
   return DEFAULT_EFF_LADDER.map(r=>[...r]);
 }
-function saveEfficiencyLadder(){
-  const rows=[...document.querySelectorAll('#eff-ladder-body tr')].map(tr=>{
-    const item=tr.querySelector('.eff-item').value.trim();
-    const vals=[...tr.querySelectorAll('.eff-val')].map(i=>{
-      const n=Math.max(0,Math.min(100,Number(i.value)||0));
-      i.value=n;
-      return n;
-    });
-    return [item,...vals];
-  }).filter(r=>r[0]);
-  localStorage.setItem('ekwl_efficiency_run_day_ladder',JSON.stringify(rows));
+
+async function loadEfficiencyLadderFromSQL(render=true){
+  try{
+    const {data,error}=await SB.from('efficiency_run_day_ladder')
+      .select('item,day_1,day_2,day_3,day_4,day_5,day_6_plus')
+      .order('item');
+    if(error)throw error;
+    if(Array.isArray(data)&&data.length){
+      EFF_LADDER_CACHE=data.map(r=>[
+        r.item,N(r.day_1),N(r.day_2),N(r.day_3),N(r.day_4),N(r.day_5),N(r.day_6_plus)
+      ]);
+    }else{
+      EFF_LADDER_CACHE=DEFAULT_EFF_LADDER.map(r=>[...r]);
+    }
+    if(render && document.getElementById('eff-ladder-body')) renderEfficiencyLadder();
+    return EFF_LADDER_CACHE;
+  }catch(e){
+    console.error('Efficiency ladder SQL load failed',e);
+    const msg=document.getElementById('eff-save-msg');
+    if(msg)msg.textContent='SQL load failed: '+(e?.message||e);
+    return getEfficiencyLadder();
+  }
+}
+
+async function saveEfficiencyLadder(){
   const msg=document.getElementById('eff-save-msg');
-  msg.textContent='✓ Saved';
-  setTimeout(()=>{if(msg)msg.textContent=''},1800);
+  try{
+    const rows=[...document.querySelectorAll('#eff-ladder-body tr')].map((tr,idx)=>{
+      const item=tr.querySelector('.eff-item').value.trim();
+      const vals=[...tr.querySelectorAll('.eff-val')].map(i=>{
+        const n=Number(i.value);
+        if(!Number.isFinite(n)||n<0||n>100)throw Error(`Row ${idx+1}: efficiency must be 0–100`);
+        i.value=n;
+        return n;
+      });
+      return [item,...vals];
+    }).filter(r=>r[0]);
+    if(!rows.length)throw Error('At least one Item is required');
+    const keys=new Set();
+    rows.forEach(r=>{
+      const k=r[0].toLowerCase();
+      if(keys.has(k))throw Error('Duplicate Item: '+r[0]);
+      keys.add(k);
+    });
+    if(msg)msg.textContent='Saving to SQL…';
+
+    // Upsert current rows, then remove items deleted from the UI.
+    const payload=rows.map(r=>({
+      item:r[0],day_1:r[1],day_2:r[2],day_3:r[3],
+      day_4:r[4],day_5:r[5],day_6_plus:r[6],
+      updated_at:new Date().toISOString()
+    }));
+    const {error:upErr}=await SB.from('efficiency_run_day_ladder').upsert(payload,{onConflict:'item'});
+    if(upErr)throw upErr;
+
+    const {data:existing,error:readErr}=await SB.from('efficiency_run_day_ladder').select('item');
+    if(readErr)throw readErr;
+    const keep=new Set(rows.map(r=>r[0].toLowerCase()));
+    const deleted=(existing||[]).map(x=>x.item).filter(x=>!keep.has(String(x).toLowerCase()));
+    if(deleted.length){
+      const {error:delErr}=await SB.from('efficiency_run_day_ladder').delete().in('item',deleted);
+      if(delErr)throw delErr;
+    }
+    EFF_LADDER_CACHE=rows.map(r=>[...r]);
+    if(msg)msg.textContent='✓ Saved to SQL';
+    setTimeout(()=>{if(msg)msg.textContent=''},2200);
+  }catch(e){
+    if(msg)msg.textContent='Save failed: '+(e?.message||e);
+  }
 }
 
 function addEfficiencyLadderItem(){
@@ -2339,10 +2486,11 @@ function deleteEfficiencyLadderItem(btn){
   const tr=btn.closest('tr');
   if(tr) tr.remove();
 }
-function resetEfficiencyLadder(){
+async function resetEfficiencyLadder(){
   if(!confirm('Efficiency & Run Day Ladder default values-এ reset করবেন?')) return;
-  localStorage.setItem('ekwl_efficiency_run_day_ladder',JSON.stringify(DEFAULT_EFF_LADDER));
+  EFF_LADDER_CACHE=DEFAULT_EFF_LADDER.map(r=>[...r]);
   renderEfficiencyLadder();
+  await saveEfficiencyLadder();
 }
 function renderEfficiencyLadder(){
   const rows=getEfficiencyLadder();
@@ -2351,7 +2499,7 @@ function renderEfficiencyLadder(){
     <div class="eff-toolbar">
       <div>
         <div class="eff-note">Item-wise running day efficiency target (%)</div>
-        <div class="eff-note2">Value edit করে Save Changes চাপুন। Browser refresh/close হলেও saved value থাকবে।</div>
+        <div class="eff-note2">Value edit করে Save Changes চাপুন। Data centralized Supabase SQL-এ save হবে এবং সব device একই value ব্যবহার করবে।</div>
       </div>
       <div class="eff-actions">
         <span id="eff-save-msg"></span>
@@ -2377,47 +2525,104 @@ function renderEfficiencyLadder(){
 }
 
 
+const EKWL_VALID_LINE_SET=new Set([...Array.from({length:45},(_,i)=>i+1),47,48]);
 const DEFAULT_CHASSIS_PRIORITY=[[1, "T-Shirt", "T-Shirt"], [2, "Polo / T-Shirt", "Hoody"], [3, "Polo", "Bottom"], [4, "Hoody", "Polo"], [5, "T-Shirt", "Sweat Shirt"], [6, "T-Shirt", "Sweat Shirt"], [7, "T-Shirt", "Sweat Shirt"], [8, "Bottom", "SHORTS / JOGGER"], [9, "Polo", "Hoody"], [10, "T-Shirt", "Sweat Shirt"], [11, "Polo", "Sweat Shirt"], [12, "Polo", "Sweat Shirt"], [13, "Polo", "Hoody"], [14, "T-Shirt", "Tanktop"], [15, "Polo", "Sweat Shirt"], [16, "T-Shirt", "Sweat Shirt"], [17, "Bottom", "SHORTS / JOGGER"], [18, "POLO", "Sweat Shirt"], [19, "Hoody", "Sweat Shirt"], [20, "Hoody", "Polo"], [21, "T-Shirt", "LEGGINGS"], [22, "T-Shirt", "TANKTOP"], [23, "T-Shirt", "LEGGINGS"], [24, "Pant", "Sweat Shirt"], [25, "Hoody", "Polo"], [26, "Hoody", "Polo"], [27, "Pant", "Sweat Shirt"], [28, "Pant", "Hoody"], [29, "Hoody", "Hoody"], [30, "Sweat Shirt", "T-Shirt"], [31, "Hoody", "Hoody"], [32, "T-Shirt", "Sweat Shirt"], [33, "Hoody", "Sweat Shirt"], [34, "Polo", "Polo"], [35, "T-Shirt", "Hoody"], [36, "Polo", "T-Shirt"], [37, "Polo", "Polo"], [38, "T-Shirt", "Sweat Shirt"], [39, "T-Shirt", "Sweat Shirt"], [40, "Polo", "T-Shirt"], [41, "Bottom", "Leggings"], [42, "Bottom", "Leggings"], [43, "T-Shirt", "Sweat Shirt"], [44, "T-Shirt", "Sweat Shirt"], [45, "T-Shirt", "Sweat Shirt"], [47, "BOTTOM", "Hoody"], [48, "Hoody", "Sweat Shirt"]];
 
 function getChassisMasterLines(){
-  return new Set(getChassisPriority().map(r=>Number(r[0])).filter(n=>Number.isFinite(n)&&n>0));
+  // Business rule: EKWL Highway has only Lines 1–45, 47 and 48.
+  // SQL Chassis Priority may configure these lines, but can never introduce Line 46, 49, 50, etc.
+  const configured=new Set(getChassisPriority().map(r=>Number(r[0]))
+    .filter(n=>EKWL_VALID_LINE_SET.has(n)));
+  return configured.size?configured:new Set(EKWL_VALID_LINE_SET);
 }
 function isChassisMasterLine(v){
   const n=lineNumber(v);
-  return n>0 && getChassisMasterLines().has(n);
+  return EKWL_VALID_LINE_SET.has(n) && getChassisMasterLines().has(n);
 }
 
+let CHASSIS_PRIORITY_CACHE=null;
+
 function getChassisPriority(){
-  try{
-    const saved=localStorage.getItem('ekwl_line_wise_chassis_priority');
-    if(saved){
-      const parsed=JSON.parse(saved);
-      if(Array.isArray(parsed)&&parsed.length) return parsed;
-    }
-  }catch(e){}
+  if(Array.isArray(CHASSIS_PRIORITY_CACHE)&&CHASSIS_PRIORITY_CACHE.length)
+    return CHASSIS_PRIORITY_CACHE.map(r=>[...r]);
   return DEFAULT_CHASSIS_PRIORITY.map(r=>[...r]);
 }
-function saveChassisPriority(){
-  const rows=[...document.querySelectorAll('#chassis-priority-body tr')].map(tr=>{
-    const team=Number(tr.querySelector('.ch-team').value)||0;
-    const p1=tr.querySelector('.ch-p1').value.trim();
-    const p2=tr.querySelector('.ch-p2').value.trim();
-    return [team,p1,p2];
-  }).filter(r=>r[0]);
-  localStorage.setItem('ekwl_line_wise_chassis_priority',JSON.stringify(rows));
+
+async function loadChassisPriorityFromSQL(render=true){
+  try{
+    const {data,error}=await SB.from('line_chassis_priority')
+      .select('line_no,priority_order,product_name')
+      .order('line_no').order('priority_order');
+    if(error)throw error;
+    const byLine=new Map();
+    (data||[]).forEach(r=>{
+      const line=Number(r.line_no);
+      if(!EKWL_VALID_LINE_SET.has(line))return;
+      if(!byLine.has(line))byLine.set(line,[line,'','']);
+      const row=byLine.get(line);
+      if(Number(r.priority_order)===1)row[1]=r.product_name||'';
+      if(Number(r.priority_order)===2)row[2]=r.product_name||'';
+    });
+    if(byLine.size) CHASSIS_PRIORITY_CACHE=[...byLine.values()].sort((a,b)=>a[0]-b[0]);
+    else CHASSIS_PRIORITY_CACHE=DEFAULT_CHASSIS_PRIORITY.map(r=>[...r]);
+    if(render && document.getElementById('chassis-priority-body'))renderChassisPriority();
+    return CHASSIS_PRIORITY_CACHE;
+  }catch(e){
+    console.error('Chassis Priority SQL load failed',e);
+    const msg=document.getElementById('chassis-save-msg');
+    if(msg)msg.textContent='SQL load failed: '+(e?.message||e);
+    return getChassisPriority();
+  }
+}
+
+async function saveChassisPriority(){
   const msg=document.getElementById('chassis-save-msg');
-  if(msg){msg.textContent='✓ Saved';setTimeout(()=>msg.textContent='',1800);}
+  try{
+    const rows=[...document.querySelectorAll('#chassis-priority-body tr')].map((tr,i)=>{
+      const line=Number(tr.querySelector('.ch-team').value)||0;
+      const p1=tr.querySelector('.ch-p1').value.trim();
+      const p2=tr.querySelector('.ch-p2').value.trim();
+      if(!EKWL_VALID_LINE_SET.has(line))
+        throw Error(`Line ${line||'(blank)'} is not a valid EKWL line. Allowed: 1–45, 47, 48`);
+      return [line,p1,p2];
+    });
+    if(!rows.length)throw Error('At least one Line is required');
+    const seen=new Set();
+    rows.forEach(r=>{if(seen.has(r[0]))throw Error('Duplicate Line: '+r[0]);seen.add(r[0]);});
+    if(msg)msg.textContent='Saving to SQL…';
+
+    // Replace through authenticated RLS operations. Existing rows are removed only after validation.
+    const {error:delErr}=await SB.from('line_chassis_priority').delete().gt('id',0);
+    if(delErr)throw delErr;
+    const payload=[];
+    rows.forEach(r=>{
+      if(r[1])payload.push({line_no:r[0],priority_order:1,product_name:r[1],updated_at:new Date().toISOString()});
+      if(r[2])payload.push({line_no:r[0],priority_order:2,product_name:r[2],updated_at:new Date().toISOString()});
+    });
+    if(payload.length){
+      const {error:insErr}=await SB.from('line_chassis_priority').insert(payload);
+      if(insErr)throw insErr;
+    }
+    CHASSIS_PRIORITY_CACHE=rows.map(r=>[...r]);
+    if(msg){msg.textContent='✓ Saved to SQL';setTimeout(()=>{if(msg)msg.textContent=''},2200);}
+  }catch(e){
+    if(msg)msg.textContent='Save failed: '+(e?.message||e);
+  }
 }
-function resetChassisPriority(){
-  if(!confirm('Chassis Priority uploaded default data-তে reset করবেন?')) return;
-  localStorage.setItem('ekwl_line_wise_chassis_priority',JSON.stringify(DEFAULT_CHASSIS_PRIORITY));
+
+async function resetChassisPriority(){
+  if(!confirm('Chassis Priority default data-তে reset করবেন?')) return;
+  CHASSIS_PRIORITY_CACHE=DEFAULT_CHASSIS_PRIORITY.map(r=>[...r]);
   renderChassisPriority();
+  await saveChassisPriority();
 }
+
 function addChassisPriorityLine(){
   const tbody=document.getElementById('chassis-priority-body');
   if(!tbody)return;
-  const existing=[...tbody.querySelectorAll('.ch-team')].map(x=>Number(x.value)||0);
-  const next=(existing.length?Math.max(...existing):0)+1;
+  const existing=new Set([...tbody.querySelectorAll('.ch-team')].map(x=>Number(x.value)||0));
+  const next=[...EKWL_VALID_LINE_SET].sort((a,b)=>a-b).find(n=>!existing.has(n));
+  if(!next){alert('All valid EKWL lines (1–45, 47, 48) are already configured.');return;}
   const tr=document.createElement('tr');
   tr.innerHTML=`<td><input class="ch-team" type="number" min="1" value="${next}"></td>
     <td><input class="ch-p1" type="text" placeholder="1st Priority"></td>
@@ -2431,7 +2636,7 @@ function renderChassisPriority(){
   document.getElementById('admin-setting-panel-body').innerHTML=`
     <div class="chassis-master-note">
       <div class="eff-note">Line-wise 1st & 2nd chassis priority</div>
-      <div class="eff-note2">এই Chassis list-ই পুরো dashboard-এর MASTER LINE LIST। এখানে যে line থাকবে শুধু সেটাই Order, Buyer, EWO, Feeding, Calendar, KPI, Chart ও সব Count/Sum-এ গণনা হবে। Line 46 list-এ নেই, তাই কোথাও count হবে না।</div>
+      <div class="eff-note2">এই Chassis list-ই পুরো dashboard-এর MASTER LINE LIST এবং এখন Supabase SQL থেকে load হয়। এখানে যে line থাকবে শুধু সেটাই Order, Buyer, EWO, Feeding, Calendar, KPI, Chart ও সব Count/Sum-এ গণনা হবে। শুধু Line 1–45, 47 এবং 48 valid। Line 46, 49, 50 বা অন্য কোনো line Dashboard calculation-এ allow করা হয় না।</div>
     </div>
     <div class="tbl-wrap chassis-table-wrap">
       <table class="dt chassis-priority-table">
@@ -2474,27 +2679,71 @@ const DEFAULT_ABP_TARGET={
     ['Varner',2.94,86,15176463,550331,18]
   ]
 };
+let ABP_TARGET_CACHE=null;
+
 function getABPTarget(){
-  try{const x=JSON.parse(localStorage.getItem('ekwl_abp_target_2026_27')||'null');if(x)return x}catch(e){}
+  if(ABP_TARGET_CACHE) return JSON.parse(JSON.stringify(ABP_TARGET_CACHE));
   return JSON.parse(JSON.stringify(DEFAULT_ABP_TARGET));
 }
-function saveABPTarget(){
-  const d=getABPTarget();
-  document.querySelectorAll('[data-abp-metric]').forEach(el=>d.metrics[+el.dataset.abpMetric][1]=el.value);
-  document.querySelectorAll('[data-abp-month]').forEach(el=>d.months[+el.dataset.abpMonth][1]=Number(el.value)||0);
-  document.querySelectorAll('[data-abp-eid]').forEach(el=>d.eid[+el.dataset.abpEid][1]=Number(el.value)||0);
-  document.querySelectorAll('#abp-buyers tbody tr').forEach((tr,i)=>{
-    const a=[...tr.querySelectorAll('input')];
-    d.buyers[i]=[a[0].value,Number(a[1].value)||0,Number(a[2].value)||0,Number(a[3].value)||0,Number(a[4].value)||0,Number(a[5].value)||0];
-  });
-  localStorage.setItem('ekwl_abp_target_2026_27',JSON.stringify(d));
-  const m=document.getElementById('abp-save-msg'); if(m){m.textContent='✓ Saved';setTimeout(()=>m.textContent='',1600)}
+
+async function loadABPTargetFromSQL(render=true){
+  try{
+    const {data,error}=await SB.from('abp_target')
+      .select('parameter_name,config')
+      .eq('parameter_name','ABP_MATRIX_2026_27')
+      .maybeSingle();
+    if(error)throw error;
+    if(data?.config && typeof data.config==='object'){
+      ABP_TARGET_CACHE=JSON.parse(JSON.stringify(data.config));
+    }else{
+      ABP_TARGET_CACHE=JSON.parse(JSON.stringify(DEFAULT_ABP_TARGET));
+    }
+    if(render)renderABPTarget();
+    return ABP_TARGET_CACHE;
+  }catch(e){
+    console.error('ABP Target SQL load failed',e);
+    const m=document.getElementById('abp-save-msg');
+    if(m)m.textContent='SQL load failed: '+(e?.message||e);
+    return getABPTarget();
+  }
 }
-function resetABPTarget(){
+
+async function saveABPTarget(){
+  const m=document.getElementById('abp-save-msg');
+  try{
+    const d=getABPTarget();
+    document.querySelectorAll('[data-abp-metric]').forEach(el=>d.metrics[+el.dataset.abpMetric][1]=el.value);
+    document.querySelectorAll('[data-abp-month]').forEach(el=>d.months[+el.dataset.abpMonth][1]=Number(el.value)||0);
+    document.querySelectorAll('[data-abp-eid]').forEach(el=>d.eid[+el.dataset.abpEid][1]=Number(el.value)||0);
+    const buyerRows=[...document.querySelectorAll('#abp-buyers tbody tr')].filter(tr=>!tr.classList.contains('abp-total'));
+    d.buyers=buyerRows.map(tr=>{
+      const a=[...tr.querySelectorAll('input')];
+      return [a[0].value,Number(a[1].value)||0,Number(a[2].value)||0,Number(a[3].value)||0,Number(a[4].value)||0,Number(a[5].value)||0];
+    });
+    if(m)m.textContent='Saving to SQL…';
+    const {error}=await SB.from('abp_target').upsert({
+      parameter_name:'ABP_MATRIX_2026_27',
+      target_value:0,
+      config:d,
+      updated_at:new Date().toISOString()
+    },{onConflict:'parameter_name'});
+    if(error)throw error;
+    ABP_TARGET_CACHE=JSON.parse(JSON.stringify(d));
+    const effRow=(d.metrics||[]).find(r=>Array.isArray(r)&&String(r[0]||'').trim().toLowerCase()==='efficiency');
+    if(effRow)LIVE_ABP_TARGET_EFF=parsePercentNumber(effRow[1],LIVE_ABP_TARGET_EFF);
+    if(m){m.textContent='✓ Saved to SQL';setTimeout(()=>{if(m)m.textContent=''},2200);}
+  }catch(e){
+    if(m)m.textContent='Save failed: '+(e?.message||e);
+  }
+}
+
+async function resetABPTarget(){
   if(!confirm('ABP Target default matrix-এ reset করবেন?'))return;
-  localStorage.setItem('ekwl_abp_target_2026_27',JSON.stringify(DEFAULT_ABP_TARGET));
+  ABP_TARGET_CACHE=JSON.parse(JSON.stringify(DEFAULT_ABP_TARGET));
   renderABPTarget();
+  await saveABPTarget();
 }
+
 function renderABPTarget(){
  const d=getABPTarget();
  const sales=d.buyers.reduce((s,r)=>s+(+r[3]||0),0), hrs=d.buyers.reduce((s,r)=>s+(+r[4]||0),0);
@@ -2517,11 +2766,25 @@ function openAdminSetting(key){
     const keys=['efficiency','chassis','abp','master'];
     el.classList.toggle('active',keys[i]===key);
   });
-  if(key==='efficiency'){renderEfficiencyLadder();return}
-  if(key==='chassis'){renderChassisPriority();return}
-  if(key==='abp'){renderABPTarget();return}
+  if(key==='efficiency'){renderEfficiencyLadder();loadEfficiencyLadderFromSQL(true);return}
+  if(key==='chassis'){renderChassisPriority();loadChassisPriorityFromSQL(true);return}
+  if(key==='abp'){renderABPTarget();loadABPTargetFromSQL(true);return}
   const title=ADMIN_SETTING_NAMES[key]||'Parameter Setting';
   document.getElementById('admin-setting-panel-title').textContent='⚙ '+title;
+  if(key==='master'){
+    const factory=document.getElementById('cfg-name')?.value||'EKWL · HW';
+    const eff=document.getElementById('cfg-eff')?.value||'65';
+    document.getElementById('admin-setting-panel-body').innerHTML=`
+      <div class="abp-box" style="max-width:520px">
+        <h4>Central SQL Master Settings</h4>
+        <label><span>Factory Name</span><input id="master-factory-name" value="${esc(factory)}"></label>
+        <label><span>Buyer Efficiency Target</span><span class="abp-num"><input id="master-eff-target" type="number" min="0" max="100" value="${esc(eff)}"> %</span></label>
+        <div style="margin-top:12px"><span id="master-setting-msg"></span>
+          <button class="top-btn primary" onclick="saveMasterAnalysisSettings()">💾 Save Changes</button>
+        </div>
+      </div>`;
+    return;
+  }
   document.getElementById('admin-setting-panel-body').innerHTML=
     `<div style="text-align:center"><div style="color:var(--amber2);font-weight:800;font-size:14px;margin-bottom:8px">${esc(title)}</div><div>This setting panel is ready for its parameters.</div></div>`;
 }
@@ -2542,6 +2805,7 @@ function slidePermissionKey(n){
   if(n>=1 && n<=11)return 'slide_'+n;  // TRUE slide-wise permission
   if(n===12)return 'admin_settings';
   if(n===13)return 'user_admin';
+  if(n===14)return 'admin_settings';
   return null;
 }
 function canAccessSlide(n){
@@ -2575,7 +2839,7 @@ function applySitePermissions(){
   });
 
   // Upload/Data Control is visible only when at least one upload permission exists.
-  const canAnyUpload=siteHasPerm('planning_upload')||siteHasPerm('fabric')||siteHasPerm('sewing')||siteHasPerm('production');
+  const canAnyUpload=siteHasPerm('planning_upload')||siteHasPerm('fabric')||siteHasPerm('sewing')||siteHasPerm('production')||siteIsAdmin()||siteHasPerm('admin_settings');
   document.querySelectorAll('[data-upload-launch]').forEach(el=>el.style.display=canAnyUpload?'':'none');
 
   // Admin/User modules are additionally role protected.
@@ -2599,7 +2863,8 @@ function requireSitePerm(key,label='এই module'){
 }
 
 function goSlide(n){
-  const maxSlide=13;
+  if(Number(n)===12){setTimeout(loadFloorAllocationAdmin,0);setTimeout(()=>loadEfficiencyLadderFromSQL(false),0);setTimeout(()=>loadChassisPriorityFromSQL(false),0);setTimeout(()=>loadABPTargetFromSQL(false),0);}
+  const maxSlide=14;
   n=Math.max(0,Math.min(Number(n)||0,maxSlide));
   if(!canAccessSlide(n)){
     console.warn('Permission denied for slide',n);
@@ -2855,6 +3120,44 @@ async function updateNextPlanningSequence(){
   box.textContent=`${planningMonthLabel(month)} → Sequence ${next} · Auto ID: ${autoId} (editable)`;
 }
 
+
+function setSupabaseLiveBadge(state,text){
+  const el=document.getElementById('supabase-live-badge');
+  if(!el)return;
+  el.className=state==='ok'?'ok':state==='err'?'err':'';
+  el.textContent=text;
+}
+async function loadCentralAdminSettingsBeforeData(){
+  // Master-line configuration must be known BEFORE plan_records are filtered.
+  await loadChassisPriorityFromSQL(false);
+  await Promise.allSettled([
+    loadEfficiencyLadderFromSQL(false),
+    loadABPTargetFromSQL(false)
+  ]);
+}
+async function bootLiveSupabaseData(){
+  setSupabaseLiveBadge('','Supabase · checking live data…');
+  await loadCentralAdminSettingsBeforeData();
+  await loadDashboardMasterSettingsFromSQL();
+  await loadABPTargetEfficiencyLive();
+
+  // Cache is only an instant visual bootstrap; it is never treated as the live authority.
+  let cached=restoreFastBootCache();
+  if(!cached) cached=await restoreDashboardFromCache();
+
+  try{
+    const keepId=ACTIVE_PLAN_UPLOAD?.id||null;
+    await loadFromSupabase(keepId,true);
+    setSupabaseLiveBadge('ok','Supabase Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+    return true;
+  }catch(e){
+    console.error('Live Supabase verification failed',e);
+    setSupabaseLiveBadge('err',cached?'Supabase check failed · cached data':'Supabase sync failed');
+    if(!cached)throw e;
+    return false;
+  }
+}
+
 // ===== Instant same-browser refresh cache =====
 const FAST_BOOT_KEY='EKWL_FAST_BOOT_v1';
 function saveFastBootCache(){
@@ -2891,7 +3194,7 @@ function restoreFastBootCache(){
   }catch(e){console.warn('Fast boot cache restore failed',e);return false;}
 }
 
-// ===== Persistent browser cache: refresh does NOT re-download Supabase data =====
+// ===== Persistent browser cache: instant bootstrap only; live Supabase is always verified =====
 const DASH_CACHE_DB='EKWL_Planning_Cache_v2', DASH_CACHE_STORE='snapshots', DASH_CACHE_KEY='dashboard';
 function openDashCache(){
   return new Promise((resolve,reject)=>{
@@ -3342,7 +3645,7 @@ function renderHome(){
     return;
   }
 
-  const orderQty=uniqueOrderQty(data);
+  const orderQty=authoritativeOrderQty(data);
   const planQty=sum(data,'planqty');
   const ewos=getUniqueEWOs(data).length;
   const buyers=new Set(data.map(r=>String(r.buyer||'').trim()).filter(Boolean)).size;
@@ -3487,6 +3790,11 @@ function renderSlide(n){
   if(!canAccessSlide(n))return;
   const fns={1:renderS1,2:renderS2,3:renderS3,4:renderS4,5:renderS5,6:renderS6,7:renderS11,8:renderS7,9:renderS8,10:renderS9,11:renderS12};
   if(fns[n])fns[n](getFiltered());
+  if(n===3){
+    loadABPTargetEfficiencyLive()
+      .then(()=>{ if(CURRENT_SLIDE===3) renderS3(getFiltered()); })
+      .catch(e=>console.error('ABP Target live SQL refresh failed',e));
+  }
 }
 
 // Permission-aware progressive rendering.
@@ -3546,7 +3854,8 @@ function getUniqueOrderComponents(data){
   });
   return [...map.values()];
 }
-function uniqueOrderQty(data){return getUniqueOrderComponents(data).reduce((s,r)=>s+N(r.orderqty),0)}
+function authoritativeOrderQty(data){return (data||[]).reduce((s,r)=>s+N(r.orderqty),0)}
+function uniqueOrderQty(data){return authoritativeOrderQty(data)}
 
 /* ══ SLIDE 1: ORDER TABLE ═══════════════════════ */
 function s1Fill(id,values,label){
@@ -3630,7 +3939,11 @@ function renderS1(data){
   document.getElementById('s1-count').textContent=
     view.length===data.length ? `${view.length} rows` : `${view.length} filtered / ${data.length} rows`;
 
-  const totOrd=uniqueOrderQty(view);
+  // Correct source rule verified against Planning Data:
+  // after Criteria=Plan/Day and valid EKWL lines (1–45,47,48), Order Qty is
+  // the direct SUM of column M / order_qty. Do NOT deduplicate Order Qty.
+  // Invalid source lines (46,49,50,51+) are excluded upstream by isChassisMasterLine().
+  const totOrd=authoritativeOrderQty(view);
   const totPlan=sum(view,'planqty');
   const ewos=getUniqueEWOs(view).length;
   const buyers=unique(view,'buyer').length;
@@ -3639,7 +3952,7 @@ function renderS1(data){
   document.getElementById('s1-kpi').innerHTML=`
     <div class="kpi"><div class="kpi-lbl">Total Rows</div><div class="kpi-val">${view.length}</div><div class="kpi-sub">Filtered entries</div></div>
     <div class="kpi"><div class="kpi-lbl">Unique EWOs</div><div class="kpi-val">${ewos}</div><div class="kpi-sub">Work orders</div></div>
-    <div class="kpi"><div class="kpi-lbl">Total Order</div><div class="kpi-val">${fmt(totOrd)}</div><div class="kpi-sub">PCS</div></div>
+    <div class="kpi"><div class="kpi-lbl">Total Order</div><div class="kpi-val">${fmt(totOrd)}</div><div class="kpi-sub">PCS · Valid Lines Plan/Day SUM</div></div>
     <div class="kpi"><div class="kpi-lbl">Total Plan</div><div class="kpi-val">${fmt(totPlan)}</div><div class="kpi-sub">PCS</div></div>
     <div class="kpi"><div class="kpi-lbl">Buyers</div><div class="kpi-val">${buyers}</div><div class="kpi-sub">Active</div></div>
     <div class="kpi"><div class="kpi-lbl">Lines Used</div><div class="kpi-val">${lines}</div><div class="kpi-sub">Sewing lines</div></div>`;
@@ -3663,8 +3976,27 @@ function renderS2(data){
   const ms=sortedMonths(data);
   document.getElementById('s2-months').textContent=ms.join(' & ');
 
-  // One EWO = one style for this analysis. Order Qty is evaluated after
-  // deduplicating month + EWO, matching the rest of the dashboard logic.
+  // Slide 02 authoritative source = Planning Data rows where Criteria = Plan/Day.
+  // This matches the Excel cross-check: Order qty column filtered to Plan/Day.
+  // `data` is already the normalized Plan/Day planning dataset used by this dashboard.
+  // Do not re-filter on r.criteria here: that field is not retained in this runtime view.
+  const s2Source=data;
+
+  // EWO Total Order Qty = SUM of Order qty from Plan/Day rows for the same Month + EWO.
+  const ewoOrderMap=new Map();
+  s2Source.forEach(r=>{
+    const k=JSON.stringify([r.month,String(r.ewo??'').trim()]);
+    if(!ewoOrderMap.has(k)) ewoOrderMap.set(k,{
+      month:r.month,ewo:String(r.ewo??'').trim(),buyer:r.buyer||'',style:r.style||'',
+      orderqty:0,lines:[]
+    });
+    const e=ewoOrderMap.get(k);
+    e.orderqty+=N(r.orderqty);
+    if(r.line!=null && String(r.line).trim()!=='') e.lines.push(String(r.line));
+  });
+  const allUniqueEWOs=[...ewoOrderMap.values()];
+  const totalOrderQty=authoritativeOrderQty(s2Source);
+
   const RANGES=[
     {lbl:'Below 500',min:0,max:500},
     {lbl:'501-1000',min:501,max:1000},
@@ -3675,11 +4007,12 @@ function renderS2(data){
     {lbl:'Above 8000',min:8001,max:Infinity}
   ];
 
-  const allUniqueEWOs=getUniqueEWOs(data);
   const totalStyles=allUniqueEWOs.length;
   const stats=RANGES.map(r=>{
-    const count=allUniqueEWOs.filter(e=>e.orderqty>=r.min && e.orderqty<=r.max).length;
-    return {...r,count,pct:totalStyles ? count/totalStyles*100 : 0};
+    const matched=allUniqueEWOs.filter(e=>e.orderqty>=r.min && e.orderqty<=r.max);
+    const count=matched.length;
+    const orderQty=matched.reduce((s,e)=>s+N(e.orderqty),0);
+    return {...r,count,orderQty,pct:totalStyles ? count/totalStyles*100 : 0};
   });
   const lowCount=stats.slice(0,5).reduce((s,r)=>s+r.count,0);
   const highCount=stats.slice(5).reduce((s,r)=>s+r.count,0);
@@ -3689,7 +4022,7 @@ function renderS2(data){
 
   let html=`<table class="qty-range-ref">
     <thead><tr>
-      <th>Order QTY Range</th><th>No Of EWO</th><th>Percentage</th><th>Summary</th>
+      <th>Order QTY Range</th><th>No Of EWO</th><th>Order Qty</th><th>Percentage</th><th>Summary</th>
     </tr></thead><tbody>`;
 
   stats.forEach((r,i)=>{
@@ -3697,15 +4030,22 @@ function renderS2(data){
     html+=`<tr class="${low?'range-low':'range-high'}">
       <td>${esc(r.lbl)}</td>
       <td class="num">${fmt(r.count)}</td>
+      <td class="num">${fmt(r.orderQty)}</td>
       <td class="num">${pct(r.pct)}</td>`;
     if(i===0) html+=`<td class="summary-low" rowspan="5">${pct(lowPct)}</td>`;
     if(i===5) html+=`<td class="summary-high" rowspan="2">${pct(highPct)}</td>`;
     html+=`</tr>`;
   });
   html+=`<tr class="range-total">
-    <td>Total EWO</td><td class="num">${fmt(totalStyles)}</td><td class="num">100%</td><td class="num">100%</td>
+    <td>Total EWO</td><td class="num">${fmt(totalStyles)}</td><td class="num">${fmt(totalOrderQty)}</td><td class="num">100%</td><td class="num">100%</td>
   </tr></tbody></table>`;
-  document.getElementById('s2-tbl-wrap').innerHTML=html;
+  document.getElementById('s2-tbl-wrap').innerHTML=`
+    <div style="display:flex;justify-content:flex-end;align-items:center;margin:0 0 8px">
+      <div style="border:1px solid #c9d8e8;border-radius:7px;background:#f5f9fd;padding:7px 12px;font-size:12px;color:#28445f">
+        <span style="font-weight:700">Total Order Qty</span>
+        <strong style="margin-left:8px;font-size:15px;color:#0d3157">${fmt(totalOrderQty)} pcs</strong>
+      </div>
+    </div>`+html;
   document.getElementById('s2-top-pie').innerHTML=`
     <div class="s2-top-pie-title">📊 STYLE DISTRIBUTION</div>
     <div class="s2-top-pie-body">
@@ -3723,9 +4063,9 @@ function renderS2(data){
   document.getElementById('s2-bar').innerHTML=stats.map(r=>{
     const rangeEwoSet=new Set(allUniqueEWOs
       .filter(e=>e.orderqty>=r.min && e.orderqty<=r.max)
-      .map(e=>String(e.ewo)));
-    const lines=[...new Set(data
-      .filter(x=>rangeEwoSet.has(String(x.ewo)))
+      .map(e=>JSON.stringify([e.month,String(e.ewo)])));
+    const lines=[...new Set(s2Source
+      .filter(x=>rangeEwoSet.has(JSON.stringify([x.month,String(x.ewo??'').trim()])))
       .map(x=>String(x.line)).filter(Boolean))]
       .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
     return `<div class="bar-row" style="align-items:flex-start">
@@ -3762,13 +4102,15 @@ function renderS3(data){
   );
   const sahScope=SAH_DATA.filter(r=>!selectedMonth || r.month===selectedMonth);
   const clockScope=CLOCK_HOUR_DATA.filter(r=>!selectedMonth || r.month===selectedMonth);
-  const totOrd=uniqueOrderQty(buyerPlanScope);
+  // Buyer Summary Order Qty: direct SUM of Order Qty from Plan/Day rows.
+  // This intentionally matches the Planning Data / Excel Plan/Day cross-check.
+  const totOrd=authoritativeOrderQty(buyerPlanScope);
   const totPlan=sum(buyerPlanScope,'planqty');
   let totHrs=0,rows=[];
 
   Object.entries(byBuyer).forEach(([buyer,rws])=>{
     const buyerPlanRows=buyerPlanScope.filter(x=>String(x.buyer)===String(buyer));
-    const ordQty=uniqueOrderQty(buyerPlanRows);
+    const ordQty=authoritativeOrderQty(buyerPlanRows);
     const planQty=sum(buyerPlanRows,'planqty');
     const totalPOQty=new Set(buyerPlanRows.map(x=>x.po).filter(Boolean)).size;
     const dummyRows=buyerPlanRows.filter(x=>/^D-/i.test(x.po));
@@ -3782,7 +4124,7 @@ function renderS3(data){
       .filter(s=>String(s.buyer)===String(buyer))
       .reduce((sum,s)=>sum+N(s.total),0);
     const planEff=clockHrs>0 ? planHrs/clockHrs*100 : 0;
-    const effEl=document.getElementById('cfg-eff'); const abpTargetEff=Math.min(100,Math.max(0,N(effEl?effEl.value:65)));
+    const abpTargetEff=LIVE_ABP_TARGET_EFF;
     const effDiff=planEff-abpTargetEff;
     totHrs+=planHrs;
     const planPct=totPlan?Math.round(planQty/totPlan*100):0;
@@ -3820,7 +4162,7 @@ function renderS3(data){
   const totalDummyPOQty=new Set(totalDummyRows.map(r=>r.po).filter(Boolean)).size;
   const totalDummyPOPlanQty=sum(totalDummyRows,'planqty');
   const totalDummyPlanPct=totPlan>0 ? totalDummyPOPlanQty/totPlan*100 : 0;
-  const totalEffEl=document.getElementById('cfg-eff'); const totalABPTarget=Math.min(100,Math.max(0,N(totalEffEl?totalEffEl.value:65)));
+  const totalABPTarget=LIVE_ABP_TARGET_EFF;
   const totalEffDiff=totalPlanEff-totalABPTarget;
   document.getElementById('s3-foot').innerHTML=`
     <td colspan="2">Total</td>
@@ -4038,10 +4380,10 @@ function renderS6(data){
 
   const rows=Object.values(ewoMap).map(r=>({
     ...r,
-    orderqty: uniqueOrderQty(source.filter(x=>String(x.ewo??'').trim()===r.ewo)),
+    orderqty: authoritativeOrderQty(source.filter(x=>String(x.ewo??'').trim()===r.ewo)),
     month:[...r.monthSet].sort((a,b)=>monthTime(a)-monthTime(b)).join(' & ')
   }));
-  const totOrd=uniqueOrderQty(source);
+  const totOrd=authoritativeOrderQty(source);
   const totPlan=rows.reduce((s,r)=>s+r.planqty,0);
   document.getElementById('s6-count').textContent=`${rows.length} unique EWOs`;
   document.getElementById('s6-kpi').innerHTML=`
@@ -4091,11 +4433,26 @@ function renderS11(data){
   const scope=DAILY_PLAN.filter(d=>dates.includes(d.date)&&d.value>0&&master.has(Number(d.line)));
   document.getElementById('s11-month').textContent=activePlanningLabel();
 
-  // Aggregate same Line + Date + EWO. Highest Plan Qty EWO wins.
+  // Shared Gantt normalizers: function scope, available to aggregation, indexing and rendering.
+  const normEwo=v=>{
+    let z=String(v??'').trim().toUpperCase();
+    if(/^\d+\.0+$/.test(z))z=z.replace(/\.0+$/,'');
+    return z;
+  };
+  const normColor=v=>String(v??'')
+    .trim().toUpperCase().replace(/\s+/g,' ').replace(/\s*([\/-])\s*/g,'$1');
+
+  // Correct Plan/Day aggregation: legitimate PO/Color Plan/Day rows are summed,
+  // but an accidental duplicate plan_daily row for the same record_id + date counts once.
+  // Example: Line 5 / 23-Sep / EWO 271774 = 846 + 150 = 996.
   const ewoQty=new Map(), metaMap=new Map(), planColorQty=new Map();
+  const seenPlanDailyRecordDate=new Set();
   scope.forEach(d=>{
     const line=Number(d.line),date=d.date,ewo=String(d.ewo||'').trim();
     if(!line||!date||!ewo)return;
+    const rdKey=String(d.record_id??'')+'|'+date;
+    if(d.record_id!=null && seenPlanDailyRecordDate.has(rdKey))return;
+    if(d.record_id!=null)seenPlanDailyRecordDate.add(rdKey);
     const k=line+'|'+date+'|'+ewo;
     ewoQty.set(k,(ewoQty.get(k)||0)+N(d.value));
     if(!metaMap.has(k))metaMap.set(k,{buyer:d.buyer||'',style:d.style||'',color:d.color||'',smv:N(d.smv)});
@@ -4137,17 +4494,6 @@ function renderS11(data){
       const sr=SAH_DATA.find(x=>Number(x.line)===line&&String(x.ewo)===String(ewo)&&(!month||x.month===month));
       if(sr)color=sr.color||'';
     }
-    // Common normalization for exact EWO + Color matching.
-    const normEwo=v=>{
-      let z=String(v??'').trim().toUpperCase();
-      if(/^\d+\.0+$/.test(z))z=z.replace(/\.0+$/,'');
-      return z;
-    };
-    const normColor=v=>String(v??'')
-      .trim()
-      .toUpperCase()
-      .replace(/\s+/g,' ')
-      .replace(/\s*([\/-])\s*/g,'$1');
     const ganttColor=normColor(color);
 
     // EWO-wise reconciliation: Color is informational only, never a calculation key.
@@ -4190,7 +4536,7 @@ function renderS11(data){
       normEwo(x.ewo)===normEwo(ewo)
     );
     const cuttingTotalSewingInput=cuttingInputMatches.reduce((sum,x)=>sum+N(x.input),0);
-    const cuttingWip=cutQty-cuttingTotalSewingInput;
+    const cuttingWip=Math.max(0,cutQty-cuttingTotalSewingInput);
 
     // Informational only: show every known color for this EWO.
     const ewoColors=[...new Set([
@@ -4208,62 +4554,88 @@ function renderS11(data){
   });
 
   const lines=[...master].map(Number).filter(n=>n>0&&n!==46).sort((a,b)=>a-b);
-  document.getElementById('s11-count').textContent=lines.length+' Teams · '+dates.length+' active days';
-  const dateLabel=d=>{const dt=new Date(d+'T00:00:00');return String(dt.getDate()).padStart(2,'0')+'-'+dt.toLocaleString('en-US',{month:'short'})+'-'+String(dt.getFullYear()).slice(-2)};
-  document.getElementById('s11-head').innerHTML='<tr><th class="sticky-team">Team</th>'+dates.map(d=>'<th class="g-date">'+dateLabel(d)+'</th>').join('')+'</tr>';
 
-  document.getElementById('s11-body').innerHTML=lines.map(line=>'<tr><td class="sticky-team">'+line+'</td>'+dates.map(date=>{
+  // Pre-index latest production date once per Line+EWO.
+  // This avoids rescanning thousands of production rows for every Gantt cell.
+  const latestProdByLineEwo=new Map();
+  let actualProductionDate='';
+  for(const x of (DATE_WISE_PRODUCTION_DATA||[])){
+    const ln=Number(x.line_no);
+    const ew=normEwo(x.ewo);
+    const dt=String(x.output_date||'').slice(0,10);
+    // ACTUAL PRODUCTION REPORT CUTOFF:
+    // The latest valid output_date present in the uploaded Date Wise Actual Production Report
+    // is the official "production updated through" date. Qty is NOT used to decide the cutoff.
+    if(dt && (!actualProductionDate || dt>actualProductionDate))actualProductionDate=dt;
+    if(!ln||!ew||!dt)continue;
+    const k=ln+'|'+ew;
+    if(!latestProdByLineEwo.has(k)||dt>latestProdByLineEwo.get(k))latestProdByLineEwo.set(k,dt);
+  }
+
+  // Precompute cumulative Plan Qty from approved Gantt winner cells, grouped by Line+EWO.
+  const winnerCoverage=new Map();
+  winner.forEach((cw,ck)=>{
+    const p=String(ck).split('|');
+    const ln=Number(p[0]),dt=String(p[1]||'').slice(0,10),ew=normEwo(cw.ewo);
+    if(!ln||!dt||!ew)return;
+    const k=ln+'|'+ew;
+    if(!winnerCoverage.has(k))winnerCoverage.set(k,[]);
+    winnerCoverage.get(k).push({date:dt,qty:N(cw.qty)});
+  });
+  winnerCoverage.forEach(arr=>arr.sort((a,b)=>a.date.localeCompare(b.date)));
+
+  const dateLabel=d=>{const dt=new Date(d+'T00:00:00');return String(dt.getDate()).padStart(2,'0')+'-'+dt.toLocaleString('en-US',{month:'short'})+'-'+String(dt.getFullYear()).slice(-2)};
+  const s11Count=document.getElementById('s11-count'); if(s11Count)s11Count.textContent=lines.length+' Teams · '+dates.length+' active days'+(actualProductionDate?' · Actual Production Report updated through: '+dateLabel(actualProductionDate):'');
+  const s11Head=document.getElementById('s11-head'); if(s11Head)s11Head.innerHTML='<tr><th class="sticky-team">Team</th>'+dates.map(d=>'<th class="g-date">'+dateLabel(d)+'</th>').join('')+'</tr>';
+
+  const s11Body=document.getElementById('s11-body'); if(!s11Body)return; s11Body.innerHTML=lines.map(line=>'<tr><td class="sticky-team">'+line+'</td>'+dates.map(date=>{
     const w=winner.get(line+'|'+date);
     if(!w)return '<td class="g-empty">&nbsp;</td>';
     const payload=encodeURIComponent(JSON.stringify({line,date,...w}));
-    // Available WIP coverage starts AFTER the latest Date Wise Production date.
-    // For the SAME Line + EWO, consume available Sewing WIP chronologically
-    // against each future Gantt Plan Qty. Fully covered dates stay GREEN;
-    // from the first date where cumulative Plan Qty exceeds available WIP,
-    // that cell and later uncovered cells become YELLOW.
-    const latestProductionDate=(DATE_WISE_PRODUCTION_DATA||[])
-      .map(x=>String(x.output_date||'').slice(0,10))
-      .filter(Boolean)
-      .sort()
-      .pop()||'';
+    // WIP coverage starts AFTER this exact Line + EWO's latest production date.
+    // Gantt winner cells remain the approved source for cumulative future Plan Qty.
+    const coverageKey=Number(line)+'|'+normEwo(w.ewo);
+    const lineEwoLatestProductionDate=latestProdByLineEwo.get(coverageKey)||'';
     const thisDate=String(date||'').slice(0,10);
-    const afterProductionCutoff=!!latestProductionDate && thisDate>latestProductionDate;
+    // Material coverage colors are allowed only AFTER the latest date physically present
+    // in the uploaded Date Wise Actual Production Report. Dates through that report date
+    // keep the normal Gantt color; coverage begins strictly on the next plan date.
+    const latestProductionDate=actualProductionDate;
+    const afterProductionCutoff=!!actualProductionDate && thisDate>actualProductionDate;
 
     let wipCovered=false,cuttingCovered=false,cutableCovered=false,materialShort=false;
     if(afterProductionCutoff){
-      const sameLineEwoFuture=[];
-      winner.forEach((cw,ck)=>{
-        const cp=String(ck).split('|');
-        const cLine=Number(cp[0]),cDate=String(cp[1]||'').slice(0,10);
-        if(cLine===Number(line) &&
-           cDate>latestProductionDate &&
-           String(cw.ewo||'').trim()===String(w.ewo||'').trim()){
-          sameLineEwoFuture.push({date:cDate,qty:N(cw.qty)});
-        }
-      });
-      sameLineEwoFuture.sort((a,b)=>a.date.localeCompare(b.date));
+      const sameLineEwoFuture=(winnerCoverage.get(coverageKey)||[]);
       let cumulativePlan=0;
       for(const fp of sameLineEwoFuture){
+        if(latestProductionDate && fp.date<=latestProductionDate)continue;
+        if(fp.date>thisDate)break;
         cumulativePlan+=N(fp.qty);
-        if(fp.date===thisDate)break;
       }
-      // Sequential coverage priority:
-      // GREEN  = Line+EWO Sewing WIP covers cumulative plan.
-      // BLUE   = Sewing WIP fails, but EWO Cutting WIP covers it.
-      // INDIGO = Sewing/Cutting WIP fail, but EWO Cutable Qty covers it.
-      // RED    = even EWO Cutable Qty cannot cover cumulative plan.
-      wipCovered=cumulativePlan<=N(w.sewingWip);
-      if(!wipCovered){
-        cuttingCovered=cumulativePlan<=N(w.cuttingWip);
-        if(!cuttingCovered){
-          cutableCovered=cumulativePlan<=N(w.cutableQty);
-          materialShort=!cutableCovered;
-        }
-      }
-      // Remaining usable Sewing WIP after deducting date-wise plan cumulatively.
-      w.consumableWip=Math.max(0,N(w.sewingWip)-cumulativePlan);
+      // Sequential/additive stock consumption:
+      // 1) cumulative Plan consumes Sewing WIP first;
+      // 2) only the uncovered balance consumes Cutting WIP;
+      // 3) only the still-uncovered balance consumes Cutable Qty.
+      const sewingStock=N(w.sewingWip);
+      const cuttingStock=N(w.cuttingWip);
+      const cutableStock=N(w.cutableQty);
+      const planRequiringCutting=Math.max(0,cumulativePlan-sewingStock);
+      const planRequiringCutable=Math.max(0,cumulativePlan-sewingStock-cuttingStock);
+
+      w.consumableWip=Math.max(0,sewingStock-cumulativePlan);
+      w.consumableCuttingWip=Math.max(0,cuttingStock-planRequiringCutting);
+      w.consumableCutableQty=Math.max(0,cutableStock-planRequiringCutable);
+
+      wipCovered=cumulativePlan<=sewingStock;
+      cuttingCovered=!wipCovered && cumulativePlan<=sewingStock+cuttingStock;
+      cutableCovered=!wipCovered && !cuttingCovered && cumulativePlan<=sewingStock+cuttingStock+cutableStock;
+      materialShort=!wipCovered && !cuttingCovered && !cutableCovered;
     }
-    if(!afterProductionCutoff)w.consumableWip=N(w.sewingWip);
+    if(!afterProductionCutoff){
+      w.consumableWip=null;
+      w.consumableCuttingWip=null;
+      w.consumableCutableQty=null;
+    }
 
     const payloadWithWip=encodeURIComponent(JSON.stringify({line,date,...w}));
     const coverageClass=wipCovered?' g-wip-covered':cuttingCovered?' g-cutting-covered':cutableCovered?' g-cutable-covered':materialShort?' g-material-short':'';
@@ -4288,12 +4660,14 @@ function renderS11(data){
         '<div class="gt-row"><span class="gt-lbl">EWO Total Cut Qty</span><span class="gt-val eff-good">'+fmt(w.cutQty)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">EWO Total Sewing Input</span><span class="gt-val qty">'+fmt(w.cuttingTotalSewingInput)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Cutting WIP</span><span class="gt-val sah">'+fmt(w.cuttingWip)+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Consumable Cutting WIP</span><span class="gt-val qty">'+(w.consumableCuttingWip==null?'—':fmt(w.consumableCuttingWip))+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Consumable Cutable Qty</span><span class="gt-val qty">'+(w.consumableCutableQty==null?'—':fmt(w.consumableCutableQty))+'</span></div>'+
 
         '<div style="margin:7px 0 3px;border-top:1px solid #36536e"></div>'+
         '<div class="gt-row"><span class="gt-lbl">Sewing Input</span><span class="gt-val qty">'+fmt(w.sewingInput)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Sewing Output</span><span class="gt-val eff-good">'+fmt(w.sewingOutput)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Sewing WIP</span><span class="gt-val sah">'+fmt(w.sewingWip)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Consumable WIP</span><span class="gt-val qty">'+fmt(w.consumableWip)+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">Consumable WIP</span><span class="gt-val qty">'+(w.consumableWip==null?'—':fmt(w.consumableWip))+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Sewing Reject</span><span class="gt-val eff-low">'+fmt(w.sewingReject)+'</span></div>';
       tip.style.display='block';
     };
@@ -4315,7 +4689,7 @@ function renderS7(data){
  const plans=ms.map((m,i)=>({lbl:m+' Plan',vals:chassis.map(c=>new Set(data.filter(r=>r.month===m&&chassisOf(r.style)===c).map(r=>r.line)).size),color:colors[i%colors.length]}));
  drawGroupedBar('s7-canvas1',chassis,[{lbl:'HW Strength',vals:chassis.map(c=>hw[c]||0),color:'#3aaa63'},...plans]);
  drawGroupedBar('s7-canvas2',['Grand Total'],[{lbl:'HW Strength',vals:[Object.values(hw).reduce((a,b)=>a+b,0)],color:'#3aaa63'},...ms.map((m,i)=>({lbl:m+' Plan',vals:[new Set(data.filter(r=>r.month===m).map(r=>r.line)).size],color:colors[i%colors.length]}))]);
- const buyers=unique(data,'buyer');drawGroupedBar('s7-canvas3',buyers,[{lbl:'Order Qty',vals:buyers.map(b=>uniqueOrderQty(data.filter(r=>r.buyer===b))),color:'#4fc3f7'},{lbl:'Plan Qty',vals:buyers.map(b=>sum(data.filter(r=>r.buyer===b),'planqty')),color:'#3aaa63'}]);
+ const buyers=unique(data,'buyer');drawGroupedBar('s7-canvas3',buyers,[{lbl:'Order Qty',vals:buyers.map(b=>authoritativeOrderQty(data.filter(r=>r.buyer===b))),color:'#4fc3f7'},{lbl:'Plan Qty',vals:buyers.map(b=>sum(data.filter(r=>r.buyer===b),'planqty')),color:'#3aaa63'}]);
 }
 
 function drawGroupedBar(canvasId,labels,datasets){
@@ -4823,7 +5197,6 @@ Apr-26,42,265010,Tommy,Sweat Shirt,16,11400,5700,2026-04-25,2026-04-05,2026-04-2
 Apr-26,43,265010,Tommy,Sweat Shirt,16,11400,5700,2026-04-25,2026-04-10,2026-04-25
 Apr-26,44,265020,Tommy,T-Shirt,10,14000,7000,2026-04-28,2026-04-08,2026-04-28
 Apr-26,45,265020,Tommy,T-Shirt,10,14000,7000,2026-04-28,2026-04-12,2026-04-28
-Apr-26,46,265030,Carhartt,Hoody,23,9200,4600,2026-04-25,2026-04-05,2026-04-25
 Apr-26,47,265030,Carhartt,Hoody,23,9200,4600,2026-04-25,2026-04-10,2026-04-25
 May-26,1,265100,Tommy,Sweat Shirt,16,9000,4500,2026-05-20,2026-05-01,2026-05-15
 May-26,2,265100,Tommy,Sweat Shirt,16,9000,4500,2026-05-20,2026-05-10,2026-05-20
@@ -4941,8 +5314,15 @@ async function saveSiteUser(id,btn){
   USER_PERM_KEYS.forEach(k=>permissions[k]=selectedRole==='admin' ? true : !!tr.querySelector(`[data-perm="${k}"]`)?.checked);
   btn.disabled=true;if(msg)msg.textContent='Saving...';
   try{
-    const {error}=await SB.from('site_users').update({role:selectedRole,status:tr.querySelector('.usr-status').value,permissions}).eq('id',id);
-    if(error)throw error;if(msg)msg.textContent='✓ Saved';await loadSiteUsers();
+    const {data:{session}}=await SB.auth.getSession();
+    if(!session?.access_token)throw Error('Admin session expired. Please sign in again.');
+    const {data,error}=await SB.functions.invoke('admin-create-user',{
+      headers:{Authorization:`Bearer ${session.access_token}`},
+      body:{action:'update',site_user_id:id,role:selectedRole,status:tr.querySelector('.usr-status').value,permissions}
+    });
+    if(error)throw error;
+    if(!data?.success)throw Error(data?.error||'User update failed.');
+    if(msg)msg.textContent='✓ Saved to Supabase';await loadSiteUsers();
   }catch(e){console.error(e);if(msg)msg.textContent='Save failed: '+e.message}
   finally{btn.disabled=false}
 }
@@ -5132,12 +5512,9 @@ async function siteLogin(){
     siteLoginMessage('Login successful.','ok');
     if(!SITE_BOOTED){
       SITE_BOOTED=true;
-      loadCapacitySettings();
 
-      // Data-first boot for every permission/slide:
-      // restore cached datasets before opening the saved tab.
-      const ok=await restoreDashboardFromCache();
-      if(!ok)await loadFromSupabase();
+      // Load centralized SQL settings first, then always verify/reload live Supabase reports.
+      await bootLiveSupabaseData();
 
       applySitePermissions();
       restoreActiveTab();
@@ -5163,6 +5540,7 @@ document.addEventListener('keydown',e=>{
 
 /* ══ INTEGRATED SUPABASE CSV UPLOAD ════════════ */
 function openUploadModal(){
+  setTimeout(refreshUploadReportOptions,0);
   const canAny=siteHasPerm('planning_upload')||siteHasPerm('fabric')||siteHasPerm('sewing')||siteHasPerm('production');
   if(!canAny){alert('Upload / Data Control access আপনার জন্য অনুমোদিত নয়।');return}
   document.getElementById('upload-modal').classList.add('open');
@@ -5546,10 +5924,22 @@ async function uploadSewingIO(){
 function dwpEwo(v){let z=String(v??'').trim();if(/^\d+\.0+$/.test(z))z=z.replace(/\.0+$/,'');return z;}
 function dwpDate(v){
   const z=String(v??'').trim(); if(!z)return '';
-  let m=z.match(/^(\d{1,2})[-\/]([A-Za-z]{3})[-\/](\d{4})$/);
-  if(m){const mon={JAN:'01',FEB:'02',MAR:'03',APR:'04',MAY:'05',JUN:'06',JUL:'07',AUG:'08',SEP:'09',OCT:'10',NOV:'11',DEC:'12'}[m[2].toUpperCase()];if(mon)return `${m[3]}-${mon}-${String(m[1]).padStart(2,'0')}`;}
-  m=z.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/); if(m)return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
-  m=z.match(/^(\d{4})-(\d{2})-(\d{2})/); return m?`${m[1]}-${m[2]}-${m[3]}`:'';
+  const yy=y=>{y=Number(y);return y<100?(y>=70?1900+y:2000+y):y;};
+  const valid=(y,m,d)=>{y=yy(y);m=Number(m);d=Number(d);if(y<1900||y>2100||m<1||m>12||d<1||d>31)return '';const dt=new Date(Date.UTC(y,m-1,d));return dt.getUTCFullYear()===y&&dt.getUTCMonth()===m-1&&dt.getUTCDate()===d?`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';};
+  const mons={JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12};
+  let m=z.match(/^(\d{1,2})[-\/]([A-Za-z]{3})[-\/](\d{2}|\d{4})$/); if(m)return valid(m[3],mons[m[2].toUpperCase()],m[1]);
+  m=z.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T].*)?$/); if(m)return valid(m[1],m[2],m[3]);
+  m=z.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2}|\d{4})$/);
+  if(m){const a=Number(m[1]),b=Number(m[2]),y=m[3];if(a>12&&b<=12)return valid(y,b,a);if(b>12&&a<=12)return valid(y,a,b);return valid(y,b,a);}
+  if(/^\d{5}(?:\.0+)?$/.test(z)){const serial=Math.floor(Number(z));const dt=new Date(Date.UTC(1899,11,30)+serial*86400000);return valid(dt.getUTCFullYear(),dt.getUTCMonth()+1,dt.getUTCDate());}
+  return '';
+}
+function dwpDisplayDate(v){
+  const s=String(v||'').slice(0,10);
+  const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m)return s||'—';
+  const mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(m[2])-1]||m[2];
+  return `${m[3]}-${mon}-${String(m[1]).slice(-2)}`;
 }
 function dwpLineNo(v){const m=String(v??'').trim().match(/(\d+)\s*$/);return m?Number(m[1]):0;}
 async function parseDateWiseProductionFile(file){
@@ -5589,7 +5979,7 @@ async function uploadDateWiseProduction(){
     await saveDashboardCache();
     refreshPermittedSlides('production');
     if(CURRENT_SLIDE===7 && canAccessSlide(7))renderSlide(7);
-    msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. Dashboard cache updated; no reload required.`;
+    msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Actual Production Report: ${dwpDisplayDate(dates[0])} → ${dwpDisplayDate(dates[dates.length-1])}. Live Supabase data updated; local cache refreshed.`;
   }catch(e){console.error(e);msg.textContent='Upload failed: '+(e?.message||e);prog.value=0;}
 }
 
@@ -5602,32 +5992,43 @@ document.addEventListener('keydown',e=>{
 /* ══ RESIZE CHARTS ══════════════════════════════ */
 window.addEventListener('resize',()=>{if(DATA.length&&CURRENT_SLIDE===8)renderS7(getFiltered())});
 
-/* Persist Upload-page capacity settings in this browser until the user edits them. */
-const SETTINGS_STORAGE_KEY='ekwlhw_capacity_settings_v1';
-const SETTINGS_IDS=['hw-TShirt','hw-HoodyJacket','hw-SweatShirt','hw-Polo','hw-Tops','hw-Bottom','cfg-name','cfg-eff'];
+/* Centralized runtime settings: source of truth is Supabase, never localStorage. */
+let LIVE_ABP_TARGET_EFF=55;
+function parsePercentNumber(v,fallback=55){
+  const n=Number(String(v??'').replace(/[^0-9.+-]/g,''));
+  return Number.isFinite(n)?Math.min(100,Math.max(0,n)):fallback;
+}
+async function loadABPTargetEfficiencyLive(){
+  const {data,error}=await SB.from('abp_target')
+    .select('config')
+    .eq('parameter_name','ABP_MATRIX_2026_27')
+    .maybeSingle();
+  if(error)throw error;
 
-function saveCapacitySettings(){
-  try{
-    const values={};
-    SETTINGS_IDS.forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) values[id]=el.value;
-    });
-    localStorage.setItem(SETTINGS_STORAGE_KEY,JSON.stringify(values));
-  }catch(e){ console.warn('Could not save capacity settings',e); }
+  const metrics=Array.isArray(data?.config?.metrics)?data.config.metrics:[];
+  const effRow=metrics.find(r=>Array.isArray(r) && String(r[0]||'').trim().toLowerCase()==='efficiency');
+  if(effRow) LIVE_ABP_TARGET_EFF=parsePercentNumber(effRow[1],LIVE_ABP_TARGET_EFF);
+
+  return LIVE_ABP_TARGET_EFF;
 }
 
-function loadCapacitySettings(){
-  try{
-    const saved=JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY)||'{}');
-    SETTINGS_IDS.forEach(id=>{
-      const el=document.getElementById(id);
-      if(!el) return;
-      if(saved[id]!==undefined && saved[id]!==null) el.value=saved[id];
-      el.addEventListener('input',saveCapacitySettings);
-      el.addEventListener('change',saveCapacitySettings);
-    });
-  }catch(e){ console.warn('Could not restore capacity settings',e); }
+async function loadDashboardMasterSettingsFromSQL(){
+  const {data,error}=await SB.from('dashboard_master_settings')
+    .select('setting_key,setting_value');
+  if(error)throw error;
+  const m=new Map((data||[]).map(r=>[String(r.setting_key),String(r.setting_value??'')]));
+  const factory=document.getElementById('cfg-name');
+  const eff=document.getElementById('cfg-eff');
+  if(factory && m.has('factory_name')) factory.value=m.get('factory_name');
+  if(eff && m.has('buyer_efficiency_target')) eff.value=m.get('buyer_efficiency_target');
+  return true;
+}
+
+async function saveDashboardMasterSetting(key,value){
+  const {error}=await SB.from('dashboard_master_settings').upsert({
+    setting_key:key,setting_value:String(value),updated_at:new Date().toISOString()
+  },{onConflict:'setting_key'});
+  if(error)throw error;
 }
 
 window.addEventListener('DOMContentLoaded',async()=>{
@@ -5660,12 +6061,9 @@ window.addEventListener('DOMContentLoaded',async()=>{
       const profile=await getAuthorizedSiteUser(session.user);
       unlockSite(session.user,profile);
       SITE_BOOTED=true;
-      loadCapacitySettings();
 
-      // Refresh is cache-only first: synchronous same-tab cache -> IndexedDB -> network fallback.
-      let cached=restoreFastBootCache();
-      if(!cached) cached=await restoreDashboardFromCache();
-      if(!cached) await loadFromSupabase();
+      // Cache may paint instantly, but Supabase is always checked and reloaded.
+      await bootLiveSupabaseData();
       applySitePermissions();
       restoreActiveTab();
       return;
@@ -5729,6 +6127,142 @@ document.addEventListener('input',e=>{
     }
   }
 });
+
+const ORDER_BANK_HEADERS=["Code-EWO","Code","Buyer","Dept","EWO","PO","GmtColor","EWO&Color","Stroke","Description","Destination","TechPackDate","FOB","RevisedFOB","EFD","FRDate","CostingSMV","UpdatedSMV","TotalHour","FRHour","OrderQty","OrderRate","Ordervalue","Season","ContractNo","ContractUnit","ExecutionUnit","Gender","ConsumptionQtyInHouse","ConsumptionQtyOutSource","FabrickgInHouse","FabrickgOutSource","TotalFabricinKG","Ordertype","OrderStatus","TNADays","MMTeam","CancelReason","Remarks","Month"];
+
+async function uploadOrderBank(){
+ const f=document.getElementById('ob-file')?.files?.[0],msg=document.getElementById('ob-msg'),audit=document.getElementById('ob-audit');
+ if(!f){msg.textContent='Please select Order Bank.csv';return;}
+ try{
+  msg.textContent='Reading and validating CSV…'; audit.innerHTML='';
+  const records=parseRecords(await f.text());
+  if(!records.length)throw Error('CSV is empty');
+  const headers=records.shift().map(x=>String(x??'').trim().replace(/^\uFEFF/,''));
+  const missing=ORDER_BANK_HEADERS.filter(x=>!headers.includes(x));
+  if(missing.length)throw Error('Missing columns: '+missing.join(', '));
+  if(headers.length!==ORDER_BANK_HEADERS.length)throw Error(`Expected 40 columns; found ${headers.length}.`);
+  const rows=records.map((cols,i)=>{
+    if(cols.length!==headers.length)throw Error(`Record ${i+2}: column count does not match header.`);
+    const o={}; ORDER_BANK_HEADERS.forEach(k=>o[k]=String(cols[headers.indexOf(k)]??'')); return o;
+  });
+  msg.textContent=`Validated ${rows.length.toLocaleString()} source rows. Clearing staging…`;
+  const {error:de}=await SB.from('order_bank_staging').delete().gt('staging_id',0); if(de)throw de;
+  for(let i=0;i<rows.length;i+=500){
+    const {error}=await SB.from('order_bank_staging').insert(rows.slice(i,i+500));
+    if(error)throw Error(`Staging upload failed near source row ${i+2}: ${error.message}`);
+    msg.textContent=`Uploading… ${Math.min(i+500,rows.length).toLocaleString()} / ${rows.length.toLocaleString()} rows`;
+  }
+  const {data,error}=await SB.rpc('finalize_order_bank_upload',{p_file_name:f.name}); if(error)throw error;
+  const a=Array.isArray(data)?data[0]:data;
+  if(!a||a.status!=='SUCCESS'||Number(a.staging_rows)!==Number(a.raw_rows))throw Error('SQL row-count validation failed.');
+  msg.textContent='✓ Order Bank Upload Successful';
+  audit.innerHTML=`<table class="dt"><tbody>
+   <tr><td>CSV / Staging Rows</td><td class="num">${Number(a.staging_rows).toLocaleString()}</td></tr>
+   <tr><td>SQL Raw Rows</td><td class="num">${Number(a.raw_rows).toLocaleString()}</td></tr>
+   <tr><td>Nonblank Rows</td><td class="num">${Number(a.nonblank_rows).toLocaleString()}</td></tr>
+   <tr><td>Missing Rows</td><td class="num">${(Number(a.staging_rows)-Number(a.raw_rows)).toLocaleString()}</td></tr>
+   <tr><td>Upload Batch</td><td class="num">#${a.batch_id}</td></tr>
+   <tr><td>Status</td><td class="num">${a.status}</td></tr>
+  </tbody></table>`;
+ }catch(e){msg.textContent='Upload failed: '+(e?.message||e);}
+}
+
+
+function selectUploadReport(type){
+  const types=['plan','fabric','sewing','production','orderbank'];
+  types.forEach(t=>{
+    const el=document.getElementById('upload-panel-'+t);
+    if(el)el.style.display=(t===type)?'block':'none';
+  });
+  const help={
+    plan:'Planning Data / Plan Data.csv → planning upload & import',
+    fabric:'Fabrics & Cutting.csv → fabric_cutting_info',
+    sewing:'Line Wise Reconcilation.csv → sewing_input_output',
+    production:'Date Wise Actual Production Report.csv → date-wise replace',
+    orderbank:'Order Bank.csv → staging → lossless SQL snapshot → validation'
+  };
+  const x=document.getElementById('upload-report-help'); if(x)x.textContent=help[type]||'';
+}
+function refreshUploadReportOptions(){
+  const sel=document.getElementById('upload-report-select'); if(!sel)return;
+  const allowed={
+    plan:siteHasPerm('planning_upload'),
+    fabric:siteHasPerm('fabric'),
+    sewing:siteHasPerm('sewing'),
+    production:siteHasPerm('production'),
+    orderbank:siteIsAdmin()||siteHasPerm('admin_settings')
+  };
+  [...sel.options].forEach(o=>o.hidden=!allowed[o.value]);
+  let chosen=[...sel.options].find(o=>!o.hidden);
+  if(chosen){sel.value=chosen.value;selectUploadReport(chosen.value);}
+}
+
+
+async function uploadFloorAllocation(){
+  const f=document.getElementById('floor-file')?.files?.[0],msg=document.getElementById('floor-msg');
+  if(!f){msg.textContent='Please select Flore Allocation.csv';return;}
+  try{
+    msg.textContent='Reading and validating Floor Allocation…';
+    const rec=parseRecords(await f.text());
+    if(!rec.length)throw Error('CSV is empty');
+    const headers=rec.shift().map(x=>String(x??'').trim().replace(/^\uFEFF/,''));
+    const required=['Line','Level','IE Name & Line Block','ID'];
+    const missing=required.filter(x=>!headers.includes(x));
+    if(missing.length)throw Error('Missing columns: '+missing.join(', '));
+    const rows=rec.filter(cols=>cols.some(v=>String(v??'').trim()!=='')).map((cols,i)=>{
+      const o={}; required.forEach(k=>o[k]=String(cols[headers.indexOf(k)]??'').trim());
+      if(required.some(k=>!o[k]))throw Error(`Row ${i+2}: blank required field`);
+      if(!/^\d+$/.test(o.Line)||Number(o.Line)<=0||Number(o.Line)===46)throw Error(`Row ${i+2}: invalid Line ${o.Line}`);
+      return o;
+    });
+    const seen=new Set();
+    rows.forEach(r=>{if(seen.has(r.Line))throw Error('Duplicate Line: '+r.Line);seen.add(r.Line);});
+    msg.textContent=`Validated ${rows.length.toLocaleString()} rows. Replacing SQL master allocation…`;
+    const {data,error}=await SB.rpc('replace_floor_allocation',{p_rows:rows});
+    if(error)throw error;
+    const a=Array.isArray(data)?data[0]:data;
+    if(!a||a.status!=='SUCCESS'||Number(a.inserted_rows)!==rows.length)throw Error('SQL row-count validation failed');
+    msg.textContent=`✓ Floor Allocation updated: ${Number(a.inserted_rows).toLocaleString()} rows | Missing Rows: 0 | Status: SUCCESS`;
+  }catch(e){msg.textContent='Upload failed: '+(e?.message||e);}
+}
+
+
+async function loadFloorAllocationAdmin(){
+  const box=document.getElementById('floor-admin-table');
+  if(!box)return;
+  box.innerHTML='<div class="modal-msg">Loading Floor Allocation…</div>';
+  try{
+    const {data,error}=await SB.from('floor_allocation').select('line_no,level,ie_name_line_block,employee_id,updated_at').order('line_no');
+    if(error)throw error;
+    const rows=data||[];
+    box.innerHTML=`<table class="dt"><thead><tr><th>Line</th><th>Level</th><th>IE Name & Line Block</th><th>ID</th></tr></thead><tbody>${
+      rows.map(r=>`<tr><td class="num">${r.line_no}</td><td>${esc(r.level||'')}</td><td>${esc(r.ie_name_line_block||'')}</td><td>${esc(r.employee_id||'')}</td></tr>`).join('')
+    }</tbody></table><div class="modal-msg" style="margin-top:6px">Total Lines: ${rows.length.toLocaleString()}</div>`;
+  }catch(e){box.innerHTML=`<div class="modal-msg">Load failed: ${esc(e?.message||String(e))}</div>`;}
+}
+
+
+
+
+
+async function saveMasterAnalysisSettings(){
+  const msg=document.getElementById('master-setting-msg');
+  try{
+    const factory=(document.getElementById('master-factory-name')?.value||'').trim()||'EKWL · HW';
+    const eff=Number(document.getElementById('master-eff-target')?.value);
+    if(!Number.isFinite(eff)||eff<0||eff>100)throw Error('Efficiency Target must be 0–100');
+    if(msg)msg.textContent='Saving to SQL…';
+    await Promise.all([
+      saveDashboardMasterSetting('factory_name',factory),
+      saveDashboardMasterSetting('buyer_efficiency_target',eff)
+    ]);
+    document.getElementById('cfg-name').value=factory;
+    document.getElementById('cfg-eff').value=eff;
+    renderAll();
+    if(msg){msg.textContent='✓ Saved to SQL';setTimeout(()=>{if(msg)msg.textContent=''},2000);}
+  }catch(e){if(msg)msg.textContent='Save failed: '+(e?.message||e);}
+}
+
 </script>
 <div id="ewo-gantt-tip"></div>
 <div id="cal-detail-modal" aria-hidden="true">
