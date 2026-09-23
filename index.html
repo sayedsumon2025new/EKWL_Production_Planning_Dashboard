@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EKWL · HW Production Planning Dashboard</title>
+<!-- GANTT HOVER: informational Style/Emb, Status, Cutting Difficulties matched by exact EWO + Color only -->
+<!-- GANTT: exact EWO search + valid master Line filter; approved Gantt calculations unchanged -->
+<!-- ORDER BANK: dedicated exact EWO search integrated with indexed cascading filters -->
+<!-- ALL UPLOADS: automatic authoritative Supabase reload after successful upload -->
+<!-- ORDER BANK PERFORMANCE: pre-indexed cascading filters + 100-row DOM pagination; totals remain full filtered scope -->
+<!-- ORDER BANK: complete paged raw snapshot + total cells + cascading filters -->
+<!-- ORDER BANK RAW AS-IS: order_bank_latest_all, 40 CSV source columns, exact source order, no aggregation/transformation -->
+<!-- HOME FIX: cards 14 Order Bank and 15 Efficiency Ladder Analysis added to Home grid -->
+<!-- Added Slide 14 Order Bank + Slide 15 Efficiency Ladder Analysis; both live Supabase SQL -->
 <!-- RENDERING FIX: removed accidental recursive authoritativeOrderQty override -->
 <!-- CROSS-CHECKED ORDER QTY: all slide totals/details/charts use direct SUM of filtered valid-line Plan/Day rows -->
 <!-- CROSS-CHECKED: Slide03 ABP Target Efficiency comes from abp_target/ABP_MATRIX_2026_27/config.metrics[Efficiency] -->
@@ -1008,6 +1017,36 @@ body.site-locked #topnav,body.site-locked #slides-wrap{visibility:hidden!importa
 border:1px solid #334155;border-radius:8px;padding:6px 10px;font-size:10px;font-weight:800;box-shadow:0 3px 12px #0002}
 #supabase-live-badge.ok{background:#064e3b;border-color:#10b981;color:#ecfdf5}
 #supabase-live-badge.err{background:#7f1d1d;border-color:#ef4444;color:#fff}
+
+#order-bank-table{overflow:auto;max-height:620px}
+.order-bank-raw-table{min-width:5200px}
+.order-bank-raw-table th,.order-bank-raw-table td{white-space:nowrap}
+
+.order-bank-filterbar{display:grid;grid-template-columns:repeat(7,minmax(130px,1fr));gap:7px;margin:8px 0 10px}
+.order-bank-filterbar label{display:flex;flex-direction:column;gap:3px;font-size:9px;font-weight:800;color:#475569}
+.order-bank-filterbar select{height:30px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;padding:0 6px;font-size:10px}
+.order-bank-filterbar button{align-self:end;height:30px}
+.order-bank-totalbar{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:7px;margin:0 0 10px}
+.ob-total-cell{border:1px solid #cbd5e1;border-top:2px solid #f59e0b;border-radius:6px;background:#f8fafc;padding:7px 10px}
+.ob-total-cell span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:#64748b;font-weight:800}
+.ob-total-cell b{display:block;margin-top:3px;font-size:15px;color:#0f172a}
+@media(max-width:1000px){.order-bank-filterbar{grid-template-columns:repeat(3,minmax(130px,1fr))}.order-bank-totalbar{grid-template-columns:repeat(2,minmax(130px,1fr))}}
+
+.ob-pagination{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;padding:10px 4px;font-size:10px;font-weight:700;color:#475569}
+.ob-pagination .pg-btn.active{background:#0f2748;color:#fff;border-color:#0f2748}
+.ob-pagination .pg-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.ob-ewo-search{display:inline-flex;align-items:center;gap:5px;margin-left:12px;vertical-align:middle}
+.ob-ewo-search input{width:170px;height:29px;border:1px solid #f59e0b;border-radius:4px;padding:0 9px;font-size:11px;background:#fff}
+.ob-ewo-search button{height:29px;padding:0 12px}
+
+.gantt-filter-tools{display:inline-flex;align-items:center;gap:6px;margin-left:14px;vertical-align:middle}
+.gantt-filter-tools input,.gantt-filter-tools select{height:30px;border:1px solid #f59e0b;border-radius:4px;background:#fff;padding:0 8px;font-size:11px}
+.gantt-filter-tools input{width:180px}.gantt-filter-tools select{width:125px}
+.gantt-filter-tools button{height:30px;padding:0 12px}
+
+.gt-cut-comment{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.28)}
+.gt-cut-title{font-size:10px;font-weight:900;letter-spacing:.5px;margin-bottom:5px}
 </style>
 
 <style id="optical-white-professional-theme">
@@ -1586,6 +1625,8 @@ input,select,textarea{
     <div class="stab" onclick="goSlide(11)" data-s="11" data-slide-access="11"><span class="tnum">11</span> Fabrics &amp; Cutting</div>
     <div class="stab" onclick="goSlide(12)" data-s="12" data-slide-access="12"><span class="tnum">12</span> Admin / Parameter Setting</div>
     <div class="stab" onclick="goSlide(13)" data-s="13" data-slide-access="13"><span class="tnum">13</span> User Module</div>
+    <div class="stab" onclick="goSlide(14)" data-s="14" data-slide-access="14"><span class="tnum">14</span> Order Bank</div>
+    <div class="stab" onclick="goSlide(15)" data-s="15" data-slide-access="15"><span class="tnum">15</span> Efficiency Ladder Analysis</div>
   </div>
   <div class="right">
     <button class="top-btn nav-home-btn" type="button" onclick="goSlide(0)" title="Go to Home">🏠 Home</button>
@@ -1747,6 +1788,8 @@ input,select,textarea{
       <button class="home-card" data-slide-access="11" onclick="goSlide(11)"><span class="home-no">11</span><span class="home-icon">✂️</span><span class="home-card-title">Fabrics &amp; Cutting Analysis</span><span class="home-card-sub">Fabric receipt, stock, cutable qty, cutting progress, balance and difficulties</span></button>
       <button class="home-card" data-slide-access="12" onclick="goSlide(12)"><span class="home-no">12</span><span class="home-icon">⚙️</span><span class="home-card-title">Admin / Parameter Setting</span><span class="home-card-sub">Efficiency ladder, chassis priority, ABP target and master parameters</span></button>
       <button class="home-card" data-slide-access="13" onclick="goSlide(13)"><span class="home-no">13</span><span class="home-icon">👥</span><span class="home-card-title">User Module</span><span class="home-card-sub">Admin/User role, account status and module-wise permission control</span></button>
+      <button class="home-card" data-slide-access="14" onclick="goSlide(14)"><span class="home-no">14</span><span class="home-icon">📦</span><span class="home-card-title">Order Bank</span><span class="home-card-sub">Latest successful Order Bank snapshot from live Supabase SQL</span></button>
+      <button class="home-card" data-slide-access="15" onclick="goSlide(15)"><span class="home-no">15</span><span class="home-icon">📈</span><span class="home-card-title">Efficiency Ladder Analysis</span><span class="home-card-sub">Item-wise Day-1 to Day-6+ efficiency ladder analysis from live SQL</span></button>
     </div>
     <div class="home-status" data-admin-home-extra="1" style="flex-wrap:wrap">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
@@ -1976,7 +2019,15 @@ input,select,textarea{
     </div>
   </div>
   <div class="card">
-    <div class="card-title">📅 EWO GANTT CHART <span class="ct-right" id="s11-count"></span></div>
+    <div class="card-title">📅 EWO GANTT CHART
+      <div class="gantt-filter-tools">
+        <input id="gantt-ewo-search" type="search" inputmode="numeric" placeholder="Search EWO..." autocomplete="off">
+        <button class="top-btn primary" id="gantt-ewo-search-btn" type="button">Search</button>
+        <select id="gantt-line-filter" title="Filter Team / Line"><option value="">All Lines</option></select>
+        <button class="top-btn" id="gantt-filter-clear" type="button">Clear</button>
+      </div>
+      <span class="ct-right" id="s11-count"></span>
+    </div>
     <div class="gantt-legend">Team/Line × Date · <span class="gantt-note">একই Line/Date-এ একাধিক EWO থাকলে সর্বোচ্চ Plan Qty-এর EWO দেখানো হবে।</span></div>
     <div class="gantt-coverage-legend" style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0 10px;padding:9px 12px;background:#f8fafc;border:1px solid #dbe4ee;border-radius:8px;font-size:12px;font-weight:700;color:#243447">
 <span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#4ade80;margin-right:6px"></b>Green → Sewing WIP cumulative Plan cover করে</span>
@@ -2272,6 +2323,48 @@ input,select,textarea{
   <input type="number" id="cfg-eff" value="65">
 </div>
 
+
+
+<!-- ─── SLIDE 14: ORDER BANK ───────────────────────────── -->
+<div class="slide" id="s14">
+  <div class="slide-header">
+    <div>
+      <div class="slide-title"><span class="snum">14</span> 📦 Order Bank</div>
+      <div class="slide-subtitle">LIVE SUPABASE · RAW LATEST SNAPSHOT · SAME 40 COLUMNS AS ORDER BANK.CSV</div>
+    </div>
+    <div class="pager-btns"><button class="pg-btn" onclick="loadOrderBankSlide()">↻ Refresh</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+  </div>
+  <div id="order-bank-kpis" class="kpi-row"></div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-title">📦 ORDER BANK DETAILS
+      <div class="ob-ewo-search">
+        <input id="order-bank-ewo-search" type="search" inputmode="numeric" placeholder="Search EWO..." autocomplete="off">
+        <button class="top-btn primary" id="order-bank-ewo-search-btn">Search</button>
+      </div>
+      <span class="ct-right" id="order-bank-msg">Loading…</span>
+    </div>
+    <div id="order-bank-filters" class="order-bank-filterbar"></div>
+    <div id="order-bank-total-cells" class="order-bank-totalbar"></div>
+    <div class="tbl-wrap" id="order-bank-table" style="max-height:620px;overflow:auto"></div>
+    <div id="order-bank-pagination" class="ob-pagination"></div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 15: EFFICIENCY LADDER ANALYSIS ───────────── -->
+<div class="slide" id="s15">
+  <div class="slide-header">
+    <div>
+      <div class="slide-title"><span class="snum">15</span> 📈 Efficiency Ladder Analysis</div>
+      <div class="slide-subtitle">LIVE SUPABASE · ITEM-WISE RUN DAY EFFICIENCY LADDER</div>
+    </div>
+    <div class="pager-btns"><button class="pg-btn" onclick="loadEfficiencyAnalysisSlide()">↻ Refresh</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+  </div>
+  <div id="eff-analysis-kpis" class="kpi-row"></div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-title">📈 EFFICIENCY LADDER MATRIX <span class="ct-right" id="eff-analysis-msg">Loading…</span></div>
+    <div class="tbl-wrap" id="eff-analysis-table"></div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -3795,6 +3888,8 @@ function renderSlide(n){
       .then(()=>{ if(CURRENT_SLIDE===3) renderS3(getFiltered()); })
       .catch(e=>console.error('ABP Target live SQL refresh failed',e));
   }
+  if(n===14)loadOrderBankSlide();
+  if(n===15)loadEfficiencyAnalysisSlide();
 }
 
 // Permission-aware progressive rendering.
@@ -4423,6 +4518,9 @@ function renderS6(data){
 }
 
 /* ══ SLIDE 7: CHARTS (Canvas) ═══════════════════ */
+let GANTT_EWO_SEARCH='';
+let GANTT_LINE_FILTER='';
+
 function renderS11(data){
   const selected='';
   const master=getChassisMasterLines();
@@ -4546,14 +4644,42 @@ function renderS11(data){
       ...(DATE_WISE_PRODUCTION_DATA||[]).filter(x=>normEwo(x.ewo)===normEwo(ewo)).map(x=>String(x.color||'').trim())
     ].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
 
+    // Informational Cutting comments ONLY: exact EWO + exact Gantt Color.
+    // These fields do not participate in any quantity, WIP, coverage, winner or color calculation.
+    const exactColorCuttingMatches=(FABRIC_CUTTING_DATA||[]).filter(x=>
+      normEwo(x.ewo)===normEwo(ewo) &&
+      normColor(x.color_name)===ganttColor
+    );
+    const uniqueCutText=field=>[...new Set(exactColorCuttingMatches
+      .map(x=>String(x[field]??'').trim()).filter(Boolean))].join(' | ')||'—';
+    const cuttingComment={
+      styleEmb:uniqueCutText('style_embellishment_type'),
+      status:uniqueCutText('status'),
+      difficulties:uniqueCutText('cutting_difficulties')
+    };
+
     const item={ewo,qty,buyer:m.buyer||'',style:m.style||'',color,ewoColors,sah,clock,eff,
       sewingInput,sewingOutput,sewingWip,sewingReject,sewingRows:sio.length,
       productionQty,productionRows:productionMatches.length,
-      cutableQty,cutQty,cutRows:fcMatches.length,cuttingTotalSewingInput,cuttingWip};
+      cutableQty,cutQty,cutRows:fcMatches.length,cuttingTotalSewingInput,cuttingWip,
+      cuttingComment};
     if(!old||qty>old.qty||(qty===old.qty&&ewo.localeCompare(old.ewo,undefined,{numeric:true})<0))winner.set(cellKey,item);
   });
 
-  const lines=[...master].map(Number).filter(n=>n>0&&n!==46).sort((a,b)=>a-b);
+  const allLines=[...master].map(Number).filter(n=>n>0&&n!==46).sort((a,b)=>a-b);
+  const searchEwo=String(GANTT_EWO_SEARCH||'').trim().toUpperCase();
+  const selectedLine=Number(GANTT_LINE_FILTER)||0;
+  const lines=allLines.filter(line=>{
+    if(selectedLine && line!==selectedLine)return false;
+    if(!searchEwo)return true;
+    return dates.some(date=>{
+      const w=winner.get(line+'|'+date);
+      return w && normEwo(w.ewo)===searchEwo;
+    });
+  });
+  const displayDates=searchEwo
+    ? dates.filter(date=>lines.some(line=>{const w=winner.get(line+'|'+date);return w&&normEwo(w.ewo)===searchEwo;}))
+    : dates;
 
   // Pre-index latest production date once per Line+EWO.
   // This avoids rescanning thousands of production rows for every Gantt cell.
@@ -4585,12 +4711,29 @@ function renderS11(data){
   winnerCoverage.forEach(arr=>arr.sort((a,b)=>a.date.localeCompare(b.date)));
 
   const dateLabel=d=>{const dt=new Date(d+'T00:00:00');return String(dt.getDate()).padStart(2,'0')+'-'+dt.toLocaleString('en-US',{month:'short'})+'-'+String(dt.getFullYear()).slice(-2)};
-  const s11Count=document.getElementById('s11-count'); if(s11Count)s11Count.textContent=lines.length+' Teams · '+dates.length+' active days'+(actualProductionDate?' · Actual Production Report updated through: '+dateLabel(actualProductionDate):'');
-  const s11Head=document.getElementById('s11-head'); if(s11Head)s11Head.innerHTML='<tr><th class="sticky-team">Team</th>'+dates.map(d=>'<th class="g-date">'+dateLabel(d)+'</th>').join('')+'</tr>';
+  const s11Count=document.getElementById('s11-count'); if(s11Count)s11Count.textContent=lines.length+' Teams · '+displayDates.length+' active days'+(actualProductionDate?' · Actual Production Report updated through: '+dateLabel(actualProductionDate):'');
+  const s11Head=document.getElementById('s11-head'); if(s11Head)s11Head.innerHTML='<tr><th class="sticky-team">Team</th>'+displayDates.map(d=>'<th class="g-date">'+dateLabel(d)+'</th>').join('')+'</tr>';
 
-  const s11Body=document.getElementById('s11-body'); if(!s11Body)return; s11Body.innerHTML=lines.map(line=>'<tr><td class="sticky-team">'+line+'</td>'+dates.map(date=>{
+  const ewoInput=document.getElementById('gantt-ewo-search');
+  const ewoBtn=document.getElementById('gantt-ewo-search-btn');
+  const lineSel=document.getElementById('gantt-line-filter');
+  const clearBtn=document.getElementById('gantt-filter-clear');
+  if(lineSel){
+    const current=String(GANTT_LINE_FILTER||'');
+    lineSel.innerHTML='<option value="">All Lines</option>'+allLines.map(x=>'<option value="'+x+'" '+(String(x)===current?'selected':'')+'>Line '+x+'</option>').join('');
+    lineSel.onchange=()=>{GANTT_LINE_FILTER=lineSel.value;renderS11(data);};
+  }
+  if(ewoInput){
+    ewoInput.value=GANTT_EWO_SEARCH;
+    const runSearch=()=>{GANTT_EWO_SEARCH=String(ewoInput.value||'').trim();renderS11(data);};
+    ewoInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();runSearch();}};
+    if(ewoBtn)ewoBtn.onclick=runSearch;
+  }
+  if(clearBtn)clearBtn.onclick=()=>{GANTT_EWO_SEARCH='';GANTT_LINE_FILTER='';renderS11(data);};
+
+  const s11Body=document.getElementById('s11-body'); if(!s11Body)return; s11Body.innerHTML=lines.map(line=>'<tr><td class="sticky-team">'+line+'</td>'+displayDates.map(date=>{
     const w=winner.get(line+'|'+date);
-    if(!w)return '<td class="g-empty">&nbsp;</td>';
+    if(!w || (searchEwo && normEwo(w.ewo)!==searchEwo))return '<td class="g-empty">&nbsp;</td>';
     const payload=encodeURIComponent(JSON.stringify({line,date,...w}));
     // WIP coverage starts AFTER this exact Line + EWO's latest production date.
     // Gantt winner cells remain the approved source for cumulative future Plan Qty.
@@ -4668,7 +4811,13 @@ function renderS11(data){
         '<div class="gt-row"><span class="gt-lbl">Sewing Output</span><span class="gt-val eff-good">'+fmt(w.sewingOutput)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Sewing WIP</span><span class="gt-val sah">'+fmt(w.sewingWip)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Consumable WIP</span><span class="gt-val qty">'+(w.consumableWip==null?'—':fmt(w.consumableWip))+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Sewing Reject</span><span class="gt-val eff-low">'+fmt(w.sewingReject)+'</span></div>';
+        '<div class="gt-row"><span class="gt-lbl">Sewing Reject</span><span class="gt-val eff-low">'+fmt(w.sewingReject)+'</span></div>'+
+        '<div class="gt-cut-comment">'+
+          '<div class="gt-cut-title">CUTTING COMMENT — EWO + COLOR</div>'+
+          '<div class="gt-row"><span class="gt-lbl">Style / Emb.</span><span class="gt-val">'+esc(w.cuttingComment?.styleEmb||'—')+'</span></div>'+
+          '<div class="gt-row"><span class="gt-lbl">Status</span><span class="gt-val">'+esc(w.cuttingComment?.status||'—')+'</span></div>'+
+          '<div class="gt-row"><span class="gt-lbl">Cutting Difficulties</span><span class="gt-val">'+esc(w.cuttingComment?.difficulties||'—')+'</span></div>'+
+        '</div>';
       tip.style.display='block';
     };
     td.onmousemove=e=>{
@@ -5655,9 +5804,7 @@ async function uploadNewPlan(){
   }
   const {error:fe}=await SB.from('plan_uploads').update({status:'complete'}).eq('id',uploadId);if(fe)throw fe;
   prog.value=100;sbMsg('sb-upload-msg','Upload complete. Dashboard refreshing...',true);
-  await clearDashboardCache();
-  PLAN_VERSION_CACHE.clear();
-  await loadFromSupabase(uploadId,true);
+  await refreshDashboardAfterSuccessfulUpload('plan',{planUploadId:uploadId});
   setTimeout(closeUploadModal,900);
  }catch(error){
   console.error(error);sbMsg('sb-upload-msg',error?.message||String(error),false);
@@ -5665,6 +5812,20 @@ async function uploadNewPlan(){
  }
 }
 
+
+async function refreshDashboardAfterSuccessfulUpload(source,options={}){
+  setSupabaseLiveBadge('','Supabase · refreshing after upload…');
+  await clearDashboardCache();
+  PLAN_VERSION_CACHE.clear();
+  await loadFromSupabase(options.planUploadId||null,true);
+  if(source==='orderbank'){
+    ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];ORDER_BANK_FILTERS={};ORDER_BANK_EWO_SEARCH='';ORDER_BANK_PAGE=1;
+    if(CURRENT_SLIDE===14)await loadOrderBankSlide();
+  }
+  if(source==='floor' && typeof loadFloorAllocationAdmin==='function')await loadFloorAllocationAdmin();
+  if(CURRENT_SLIDE!==14 && canAccessSlide(CURRENT_SLIDE))renderSlide(CURRENT_SLIDE);
+  setSupabaseLiveBadge('ok','Supabase Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+}
 
 /* ══ FABRICS & CUTTING CSV UPLOAD ═══════════════ */
 function openFabricUpload(){
@@ -5813,11 +5974,7 @@ async function uploadFabricCutting(){
       sbMsg('fc-upload-msg',`Fabrics & Cutting rows: ${done}/${payload.length}`);
     }
     prog.value=100;
-    FABRIC_CUTTING_DATA=payload.map((r,i)=>({...r,id:r.id??(i+1)}));
-    saveFastBootCache();
-    await saveDashboardCache();
-    refreshPermittedSlides('fabric');
-    if(CURRENT_SLIDE===11 && canAccessSlide(11))renderSlide(11);
+    await refreshDashboardAfterSuccessfulUpload('fabric');
     sbMsg('fc-upload-msg',`Upload complete — ${payload.length.toLocaleString()} rows imported. Local dashboard cache updated; no reload required.`,true);
   }catch(error){
     console.error(error);
@@ -5901,16 +6058,7 @@ async function uploadSewingIO(){
       sbMsg('sio-upload-msg',`Sewing Input & Output rows: ${done}/${payload.length}`);
     }
     prog.value=100;
-    SEWING_IO_DATA=payload.map(r=>({
-      ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
-      color:r.color||'', line_no:Number(r.line_no)||lineNumber(r.line),
-      input:N(r.total_input_qty), output:N(r.total_output_qty),
-      wip:N(r.total_wip_qty), reject:N(r.total_reject_qty)
-    }));
-    saveFastBootCache();
-    await saveDashboardCache();
-    refreshPermittedSlides('sewing');
-    if(CURRENT_SLIDE===7 && canAccessSlide(7))renderSlide(7);
+    await refreshDashboardAfterSuccessfulUpload('sewing');
     sbMsg('sio-upload-msg',`Upload complete — ${payload.length.toLocaleString()} rows imported. Local dashboard cache updated; no reload required.`,true);
   }catch(error){
     console.error(error);
@@ -5967,18 +6115,7 @@ async function uploadDateWiseProduction(){
     for(let i=0;i<rows.length;i+=300){const {error}=await SB.from('date_wise_production').insert(rows.slice(i,i+300));if(error)throw error;prog.value=35+Math.round(65*Math.min(i+300,rows.length)/rows.length);}
     prog.value=100;
     msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. Local cache update হচ্ছে...`;
-    const uploadedDates=new Set(dates);
-    DATE_WISE_PRODUCTION_DATA=(DATE_WISE_PRODUCTION_DATA||[]).filter(r=>!uploadedDates.has(r.output_date));
-    DATE_WISE_PRODUCTION_DATA.push(...rows.map((r,i)=>({
-      ...r,id:r.id??('local-'+Date.now()+'-'+i),
-      ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
-      line_no:Number(r.line_no)||lineNumber(r.line),total_qty:N(r.total_qty)
-    })));
-    DATE_WISE_PRODUCTION_DATA.sort((a,b)=>String(a.output_date).localeCompare(String(b.output_date)));
-    saveFastBootCache();
-    await saveDashboardCache();
-    refreshPermittedSlides('production');
-    if(CURRENT_SLIDE===7 && canAccessSlide(7))renderSlide(7);
+    await refreshDashboardAfterSuccessfulUpload('production');
     msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Actual Production Report: ${dwpDisplayDate(dates[0])} → ${dwpDisplayDate(dates[dates.length-1])}. Live Supabase data updated; local cache refreshed.`;
   }catch(e){console.error(e);msg.textContent='Upload failed: '+(e?.message||e);prog.value=0;}
 }
@@ -6164,7 +6301,10 @@ async function uploadOrderBank(){
    <tr><td>Upload Batch</td><td class="num">#${a.batch_id}</td></tr>
    <tr><td>Status</td><td class="num">${a.status}</td></tr>
   </tbody></table>`;
- }catch(e){msg.textContent='Upload failed: '+(e?.message||e);}
+ msg.textContent='✓ Order Bank Upload Successful · refreshing live dashboard…';
+   await refreshDashboardAfterSuccessfulUpload('orderbank');
+   msg.textContent='✓ Order Bank Upload Successful · Live Supabase data refreshed';
+  }catch(e){msg.textContent='Upload failed: '+(e?.message||e);}
 }
 
 
@@ -6223,6 +6363,9 @@ async function uploadFloorAllocation(){
     const a=Array.isArray(data)?data[0]:data;
     if(!a||a.status!=='SUCCESS'||Number(a.inserted_rows)!==rows.length)throw Error('SQL row-count validation failed');
     msg.textContent=`✓ Floor Allocation updated: ${Number(a.inserted_rows).toLocaleString()} rows | Missing Rows: 0 | Status: SUCCESS`;
+  msg.textContent=msg.textContent+' · refreshing live dashboard…';
+     await refreshDashboardAfterSuccessfulUpload('floor');
+     msg.textContent=msg.textContent.replace(' · refreshing live dashboard…','')+' · Live Supabase refreshed';
   }catch(e){msg.textContent='Upload failed: '+(e?.message||e);}
 }
 
@@ -6261,6 +6404,204 @@ async function saveMasterAnalysisSettings(){
     renderAll();
     if(msg){msg.textContent='✓ Saved to SQL';setTimeout(()=>{if(msg)msg.textContent=''},2000);}
   }catch(e){if(msg)msg.textContent='Save failed: '+(e?.message||e);}
+}
+
+
+const ORDER_BANK_SOURCE_COLUMNS=[
+  'Code-EWO','Code','Buyer','Dept','EWO','PO','GmtColor','EWO&Color','Stroke','Description',
+  'Destination','TechPackDate','FOB','RevisedFOB','EFD','FRDate','CostingSMV','UpdatedSMV',
+  'TotalHour','FRHour','OrderQty','OrderRate','Ordervalue','Season','ContractNo','ContractUnit',
+  'ExecutionUnit','Gender','ConsumptionQtyInHouse','ConsumptionQtyOutSource','FabrickgInHouse',
+  'FabrickgOutSource','TotalFabricinKG','Ordertype','OrderStatus','TNADays','MMTeam','CancelReason',
+  'Remarks','Month'
+];
+const ORDER_BANK_FILTER_COLUMNS=['Buyer','Dept','EWO','PO','GmtColor','Description','Destination','Season','ExecutionUnit','Ordertype','OrderStatus','MMTeam','Month'];
+const ORDER_BANK_PAGE_SIZE=100;
+let ORDER_BANK_RAW_ROWS=[];
+let ORDER_BANK_KEYMAP=new Map();
+let ORDER_BANK_FILTERS={};
+let ORDER_BANK_FILTER_INDEX={};
+let ORDER_BANK_FILTERED_INDEXES=[];
+let ORDER_BANK_PAGE=1;
+let ORDER_BANK_EWO_SEARCH='';
+
+function obVal(r,label){
+  const key=ORDER_BANK_KEYMAP.get(label.toLowerCase());
+  return key ? String(r[key]??'') : '';
+}
+function obNum(r,label){
+  const x=Number(obVal(r,label).replace(/,/g,'').trim());
+  return Number.isFinite(x)?x:0;
+}
+function buildOrderBankFilterIndex(){
+  ORDER_BANK_FILTER_INDEX={};
+  ORDER_BANK_FILTER_COLUMNS.forEach(c=>ORDER_BANK_FILTER_INDEX[c]=new Map());
+  ORDER_BANK_RAW_ROWS.forEach((r,i)=>{
+    ORDER_BANK_FILTER_COLUMNS.forEach(c=>{
+      const v=obVal(r,c);
+      if(!ORDER_BANK_FILTER_INDEX[c].has(v))ORDER_BANK_FILTER_INDEX[c].set(v,new Set());
+      ORDER_BANK_FILTER_INDEX[c].get(v).add(i);
+    });
+  });
+}
+function obIntersectSets(sets){
+  if(!sets.length)return new Set(ORDER_BANK_RAW_ROWS.map((_,i)=>i));
+  sets=[...sets].sort((a,b)=>a.size-b.size);
+  const out=new Set(sets[0]);
+  for(let x=1;x<sets.length;x++){
+    const s=sets[x];
+    for(const i of out)if(!s.has(i))out.delete(i);
+    if(!out.size)break;
+  }
+  return out;
+}
+function obMatchingIndexSet(excludeColumn=null){
+  const sets=[];
+  ORDER_BANK_FILTER_COLUMNS.forEach(c=>{
+    if(c===excludeColumn)return;
+    const v=ORDER_BANK_FILTERS[c]||'';
+    if(v){
+      const s=ORDER_BANK_FILTER_INDEX[c]?.get(v);
+      sets.push(s||new Set());
+    }
+  });
+  if(ORDER_BANK_EWO_SEARCH){
+    const ewoSet=ORDER_BANK_FILTER_INDEX['EWO']?.get(ORDER_BANK_EWO_SEARCH);
+    sets.push(ewoSet||new Set());
+  }
+  return obIntersectSets(sets);
+}
+function obCascadeOptions(column){
+  const candidates=obMatchingIndexSet(column);
+  const values=new Set();
+  for(const i of candidates){
+    const v=obVal(ORDER_BANK_RAW_ROWS[i],column);
+    if(v!=='')values.add(v);
+  }
+  return [...values].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'}));
+}
+function renderOrderBankFilters(){
+  const box=document.getElementById('order-bank-filters');
+  if(!box)return;
+  box.innerHTML=ORDER_BANK_FILTER_COLUMNS.map(c=>{
+    const opts=obCascadeOptions(c),cur=ORDER_BANK_FILTERS[c]||'';
+    return `<label><span>${esc(c)}</span><select data-ob-filter="${esc(c)}"><option value="">All</option>${
+      opts.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join('')
+    }</select></label>`;
+  }).join('')+`<button class="top-btn" id="order-bank-clear-filters">Clear Filters</button>`;
+  box.querySelectorAll('[data-ob-filter]').forEach(sel=>sel.addEventListener('change',()=>{
+    ORDER_BANK_FILTERS[sel.dataset.obFilter]=sel.value;
+    ORDER_BANK_FILTER_COLUMNS.forEach(c=>{
+      if(c===sel.dataset.obFilter)return;
+      const cur=ORDER_BANK_FILTERS[c]||'';
+      if(cur && !obCascadeOptions(c).includes(cur))ORDER_BANK_FILTERS[c]='';
+    });
+    ORDER_BANK_PAGE=1;
+    renderOrderBankView(true);
+  }));
+  document.getElementById('order-bank-clear-filters').onclick=()=>{
+    ORDER_BANK_FILTERS={};ORDER_BANK_EWO_SEARCH='';ORDER_BANK_PAGE=1;renderOrderBankView(true);
+    const si=document.getElementById('order-bank-ewo-search');if(si)si.value='';
+  };
+  const si=document.getElementById('order-bank-ewo-search'),sb=document.getElementById('order-bank-ewo-search-btn');
+  if(si){
+    si.value=ORDER_BANK_EWO_SEARCH;
+    const run=()=>{ORDER_BANK_EWO_SEARCH=String(si.value||'').trim();ORDER_BANK_PAGE=1;renderOrderBankView(true);};
+    si.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();run();}};
+    if(sb)sb.onclick=run;
+  }
+}
+function renderOrderBankTotals(indexes){
+  const box=document.getElementById('order-bank-total-cells');
+  if(!box)return;
+  let oq=0,ov=0,fkg=0; const ewos=new Set();
+  for(const i of indexes){
+    const r=ORDER_BANK_RAW_ROWS[i];
+    oq+=obNum(r,'OrderQty'); ov+=obNum(r,'Ordervalue'); fkg+=obNum(r,'TotalFabricinKG');
+    const e=obVal(r,'EWO'); if(e)ewos.add(e);
+  }
+  const cells=[['Filtered Rows',indexes.length],['Unique EWO',ewos.size],['Order Qty',oq],['Order Value',ov],['Fabric KG',fkg]];
+  box.innerHTML=cells.map(([a,b])=>`<div class="ob-total-cell"><span>${esc(a)}</span><b>${fmt(b)}</b></div>`).join('');
+}
+function renderOrderBankPage(){
+  const box=document.getElementById('order-bank-table'),pg=document.getElementById('order-bank-pagination'),msg=document.getElementById('order-bank-msg');
+  if(!box)return;
+  const cols=ORDER_BANK_SOURCE_COLUMNS.map(label=>({label,key:ORDER_BANK_KEYMAP.get(label.toLowerCase())}));
+  const total=ORDER_BANK_FILTERED_INDEXES.length;
+  const pages=Math.max(1,Math.ceil(total/ORDER_BANK_PAGE_SIZE));
+  ORDER_BANK_PAGE=Math.min(Math.max(1,ORDER_BANK_PAGE),pages);
+  const from=(ORDER_BANK_PAGE-1)*ORDER_BANK_PAGE_SIZE;
+  const indexes=ORDER_BANK_FILTERED_INDEXES.slice(from,from+ORDER_BANK_PAGE_SIZE);
+  box.innerHTML=`<table class="dt order-bank-raw-table"><thead><tr>${cols.map(c=>`<th>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>${
+    indexes.map(i=>{const r=ORDER_BANK_RAW_ROWS[i];return `<tr>${cols.map(c=>`<td>${esc(r[c.key]??'')}</td>`).join('')}</tr>`}).join('')
+  }</tbody></table>`;
+  if(pg){
+    const lo=Math.max(1,ORDER_BANK_PAGE-2),hi=Math.min(pages,ORDER_BANK_PAGE+2);
+    let nums=''; for(let p=lo;p<=hi;p++)nums+=`<button class="pg-btn ${p===ORDER_BANK_PAGE?'active':''}" onclick="goOrderBankPage(${p})">${p}</button>`;
+    pg.innerHTML=`<span>${total?fmt(from+1):0}–${fmt(Math.min(from+ORDER_BANK_PAGE_SIZE,total))} of ${fmt(total)}</span>
+      <button class="pg-btn" ${ORDER_BANK_PAGE<=1?'disabled':''} onclick="goOrderBankPage(${ORDER_BANK_PAGE-1})">← Previous</button>
+      ${nums}
+      <button class="pg-btn" ${ORDER_BANK_PAGE>=pages?'disabled':''} onclick="goOrderBankPage(${ORDER_BANK_PAGE+1})">Next →</button>
+      <span>Page ${fmt(ORDER_BANK_PAGE)} / ${fmt(pages)}</span>`;
+  }
+  if(msg)msg.textContent=`RAW SQL · ${fmt(total)} filtered / ${fmt(ORDER_BANK_RAW_ROWS.length)} total · showing max ${ORDER_BANK_PAGE_SIZE} rows`;
+}
+function goOrderBankPage(p){
+  ORDER_BANK_PAGE=p;renderOrderBankPage();
+  document.getElementById('order-bank-table')?.scrollTo({top:0,left:0});
+}
+function renderOrderBankView(rebuildFilters=false){
+  ORDER_BANK_FILTERED_INDEXES=[...obMatchingIndexSet()];
+  if(rebuildFilters)renderOrderBankFilters();
+  renderOrderBankTotals(ORDER_BANK_FILTERED_INDEXES);
+  renderOrderBankPage();
+}
+async function loadOrderBankSlide(){
+  const msg=document.getElementById('order-bank-msg'),box=document.getElementById('order-bank-table'),k=document.getElementById('order-bank-kpis');
+  if(!box)return;
+  if(msg)msg.textContent='Loading complete raw SQL snapshot…';
+  try{
+    const pageSize=1000,all=[];
+    for(let from=0;;from+=pageSize){
+      const {data,error}=await SB.from('order_bank_latest_all').select('*').range(from,from+pageSize-1);
+      if(error)throw error;
+      const page=data||[];all.push(...page);
+      if(msg)msg.textContent=`Loading raw SQL… ${fmt(all.length)} rows`;
+      if(page.length<pageSize)break;
+    }
+    ORDER_BANK_RAW_ROWS=all;
+    ORDER_BANK_KEYMAP=new Map((all[0]?Object.keys(all[0]):[]).map(x=>[x.toLowerCase(),x]));
+    const missing=ORDER_BANK_SOURCE_COLUMNS.filter(c=>!ORDER_BANK_KEYMAP.has(c.toLowerCase()));
+    if(missing.length)throw Error('SQL raw view missing source column(s): '+missing.join(', '));
+    ORDER_BANK_FILTERS={};ORDER_BANK_EWO_SEARCH='';ORDER_BANK_PAGE=1;
+    buildOrderBankFilterIndex();
+    k.innerHTML=`<div class="kpi"><div class="kpi-lbl">SQL RAW ROWS</div><div class="kpi-val">${fmt(all.length)}</div><div class="kpi-sub">Complete latest snapshot</div></div>
+      <div class="kpi"><div class="kpi-lbl">SOURCE COLUMNS</div><div class="kpi-val">40</div><div class="kpi-sub">Exact CSV order</div></div>
+      <div class="kpi"><div class="kpi-lbl">FILTER MODE</div><div class="kpi-val" style="font-size:16px">FAST CASCADE</div><div class="kpi-sub">Pre-indexed filtering</div></div>
+      <div class="kpi"><div class="kpi-lbl">TABLE PAGE</div><div class="kpi-val">${ORDER_BANK_PAGE_SIZE}</div><div class="kpi-sub">Rows rendered at once</div></div>`;
+    renderOrderBankView(true);
+  }catch(e){
+    if(msg)msg.textContent='Load failed';
+    box.innerHTML=`<div class="modal-msg">Order Bank raw SQL load failed: ${esc(e?.message||e)}</div>`;
+  }
+}
+
+async function loadEfficiencyAnalysisSlide(){
+  const msg=document.getElementById('eff-analysis-msg'), box=document.getElementById('eff-analysis-table'), k=document.getElementById('eff-analysis-kpis');
+  if(!box)return;
+  if(msg)msg.textContent='Loading live SQL…';
+  try{
+    const {data,error}=await SB.from('efficiency_run_day_ladder').select('item,day_1,day_2,day_3,day_4,day_5,day_6_plus').order('item');
+    if(error)throw error;
+    const rows=data||[];
+    const avg=(field)=>rows.length?rows.reduce((s,r)=>s+N(r[field]),0)/rows.length:0;
+    k.innerHTML=`<div class="kpi"><div class="kpi-lbl">Items</div><div class="kpi-val">${fmt(rows.length)}</div><div class="kpi-sub">SQL ladder</div></div>
+      <div class="kpi"><div class="kpi-lbl">Avg Day-1</div><div class="kpi-val">${avg('day_1').toFixed(1)}%</div><div class="kpi-sub">Target</div></div>
+      <div class="kpi"><div class="kpi-lbl">Avg Day-3</div><div class="kpi-val">${avg('day_3').toFixed(1)}%</div><div class="kpi-sub">Target</div></div>
+      <div class="kpi"><div class="kpi-lbl">Avg Day-6 & 6+</div><div class="kpi-val">${avg('day_6_plus').toFixed(1)}%</div><div class="kpi-sub">Target</div></div>`;
+    box.innerHTML=`<table class="dt"><thead><tr><th>Item</th><th>Day-1</th><th>Day-2</th><th>Day-3</th><th>Day-4</th><th>Day-5</th><th>Day-6 & 6+</th><th>Growth</th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${esc(r.item)}</b></td><td class="num">${N(r.day_1)}%</td><td class="num">${N(r.day_2)}%</td><td class="num">${N(r.day_3)}%</td><td class="num">${N(r.day_4)}%</td><td class="num">${N(r.day_5)}%</td><td class="num">${N(r.day_6_plus)}%</td><td class="num">${(N(r.day_6_plus)-N(r.day_1)).toFixed(1)} pp</td></tr>`).join('')}</tbody></table>`;
+    if(msg)msg.textContent=`Live SQL · ${rows.length} items`;
+  }catch(e){if(msg)msg.textContent='Load failed';box.innerHTML=`<div class="modal-msg">Efficiency Ladder SQL load failed: ${esc(e?.message||e)}</div>`;}
 }
 
 </script>
