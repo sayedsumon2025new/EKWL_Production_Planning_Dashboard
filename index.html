@@ -1683,9 +1683,7 @@ input,select,textarea{
     </div>
     <div class="home-quick">
       <div class="home-quick-title">📊 LIVE PLANNING SUMMARY <span id="home-live-month" style="color:var(--text2);font-weight:600"></span></div>
-      <div class="home-quick-grid" id="home-live-kpis">
-        <div class="home-quick-box"><b>—</b><span>Loading live data...</span></div>
-      </div>
+      <div class="home-quick-grid" id="home-live-kpis"></div>
       <div id="home-live-detail" style="margin-top:12px"></div>
     </div>
   </div>
@@ -2847,6 +2845,42 @@ async function updateNextPlanningSequence(){
   box.textContent=`${planningMonthLabel(month)} → Sequence ${next} · Auto ID: ${autoId} (editable)`;
 }
 
+// ===== Instant same-browser refresh cache =====
+const FAST_BOOT_KEY='EKWL_FAST_BOOT_v1';
+function saveFastBootCache(){
+  try{
+    const payload={
+      activeUpload:ACTIVE_PLAN_UPLOAD,
+      catalog:PLAN_UPLOAD_CATALOG,
+      planning:capturePlanningState(),
+      fabric:FABRIC_CUTTING_DATA,
+      sewing:SEWING_IO_DATA,
+      production:DATE_WISE_PRODUCTION_DATA
+    };
+    sessionStorage.setItem(FAST_BOOT_KEY,JSON.stringify(payload));
+    return true;
+  }catch(e){console.warn('Fast boot cache save skipped',e);return false;}
+}
+function restoreFastBootCache(){
+  try{
+    const raw=sessionStorage.getItem(FAST_BOOT_KEY);
+    if(!raw)return false;
+    const c=JSON.parse(raw);
+    if(!c?.planning?.DATA?.length)return false;
+    ACTIVE_PLAN_UPLOAD=c.activeUpload||null;
+    PLAN_UPLOAD_CATALOG=c.catalog||[];
+    restorePlanningState(c.planning);
+    FABRIC_CUTTING_DATA=c.fabric||[];
+    SEWING_IO_DATA=c.sewing||[];
+    DATE_WISE_PRODUCTION_DATA=c.production||[];
+    rebuildPlanningFilters(uploadMonthKey(ACTIVE_PLAN_UPLOAD),ACTIVE_PLAN_UPLOAD?.id);
+    if(ACTIVE_PLAN_UPLOAD?.id)PLAN_VERSION_CACHE.set(String(ACTIVE_PLAN_UPLOAD.id),c.planning);
+    applySitePermissions();
+    renderAll();
+    return true;
+  }catch(e){console.warn('Fast boot cache restore failed',e);return false;}
+}
+
 // ===== Persistent browser cache: refresh does NOT re-download Supabase data =====
 const DASH_CACHE_DB='EKWL_Planning_Cache_v2', DASH_CACHE_STORE='snapshots', DASH_CACHE_KEY='dashboard';
 function openDashCache(){
@@ -2862,7 +2896,7 @@ async function saveDashboardCache(){
     const payload={
       savedAt:Date.now(),PLAN_UPLOAD_CATALOG,ACTIVE_PLAN_UPLOAD,
       activeSnapshot:capturePlanningState(),
-      planVersions:[...PLAN_VERSION_CACHE.entries()],
+      // Only the active planning snapshot is persisted. Historical sequences load on demand.
       FABRIC_CUTTING_DATA,SEWING_IO_DATA,DATE_WISE_PRODUCTION_DATA
     };
     await new Promise((resolve,reject)=>{
@@ -2871,7 +2905,8 @@ async function saveDashboardCache(){
       tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
     });
     db.close();
-  }catch(e){console.warn('Persistent dashboard cache save failed',e);}
+    return true;
+  }catch(e){console.warn('Persistent dashboard cache save failed',e);return false;}
 }
 async function readDashboardCache(){
   try{
@@ -2900,15 +2935,14 @@ async function restoreDashboardFromCache(){
   PLAN_UPLOAD_CATALOG=c.PLAN_UPLOAD_CATALOG||[];
   ACTIVE_PLAN_UPLOAD=c.ACTIVE_PLAN_UPLOAD||null;
   PLAN_VERSION_CACHE.clear();
-  for(const [k,v] of (c.planVersions||[]))PLAN_VERSION_CACHE.set(String(k),v);
   restorePlanningState(c.activeSnapshot);
+  if(ACTIVE_PLAN_UPLOAD?.id) PLAN_VERSION_CACHE.set(String(ACTIVE_PLAN_UPLOAD.id),c.activeSnapshot);
   FABRIC_CUTTING_DATA=c.FABRIC_CUTTING_DATA||[];
   SEWING_IO_DATA=c.SEWING_IO_DATA||[];
   DATE_WISE_PRODUCTION_DATA=c.DATE_WISE_PRODUCTION_DATA||[];
   rebuildPlanningFilters(uploadMonthKey(ACTIVE_PLAN_UPLOAD),ACTIVE_PLAN_UPLOAD?.id);
   applySitePermissions();
   renderAll();
-  refreshPermittedSlides('all');
   goSlide(CURRENT_SLIDE);
   setLoadChip('load-plan','ok','Planning ('+DATA.length.toLocaleString()+')');
   setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
@@ -3173,6 +3207,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
 
     renderAll();
     PLAN_VERSION_CACHE.set(String(upload.id),capturePlanningState());
+    saveFastBootCache();
     await saveDashboardCache();
     setLoadProgress(100,'সব Supabase report successfully loaded');
     setStatus(true,
@@ -5220,16 +5255,50 @@ function fcText(v){
 function fcDate(v){
   const s=String(v??'').trim();
   if(!s)return null;
-  // Handles ISO, dd-MMM-yy/dd-MMM-yyyy and normal browser-readable dates.
-  let m=s.match(/^(\d{1,2})[-\/]([A-Za-z]{3})[-\/](\d{2,4})$/);
+  const pad=n=>String(n).padStart(2,'0');
+  const valid=(y,m,d)=>{
+    y=Number(y);m=Number(m);d=Number(d);
+    if(y<1900||y>2100||m<1||m>12||d<1||d>31)return null;
+    const dt=new Date(Date.UTC(y,m-1,d));
+    return dt.getUTCFullYear()===y&&dt.getUTCMonth()===m-1&&dt.getUTCDate()===d
+      ? `${y}-${pad(m)}-${pad(d)}` : null;
+  };
+  let m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[ T].*)?$/);
+  if(m)return valid(m[1],m[2],m[3]);
+  m=s.match(/^(\d{1,2})[-\/]([A-Za-z]{3})[-\/](\d{2,4})$/);
   if(m){
     const mons={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-    const mm=mons[m[2].toLowerCase()];
-    let yy=Number(m[3]); if(yy<100)yy+=2000;
-    if(mm)return `${yy}-${String(mm).padStart(2,'0')}-${String(Number(m[1])).padStart(2,'0')}`;
+    let y=Number(m[3]);if(y<100)y+=2000;
+    return valid(y,mons[m[2].toLowerCase()],m[1]);
   }
-  const d=new Date(s);
-  return Number.isNaN(d.getTime())?null:d.toISOString().slice(0,10);
+  m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+  if(m){let y=Number(m[3]);if(y<100)y+=2000;return valid(y,m[2],m[1]);}
+  // Excel date serial. Restrict the range so malformed values can never become huge JS dates.
+  if(/^\d+(?:\.\d+)?$/.test(s)){
+    const serial=Number(s);
+    if(serial>=1&&serial<=73050){
+      const dt=new Date(Date.UTC(1899,11,30)+Math.floor(serial)*86400000);
+      return valid(dt.getUTCFullYear(),dt.getUTCMonth()+1,dt.getUTCDate());
+    }
+  }
+  return null;
+}
+function fcTime(v){
+  const s=String(v??'').trim();
+  if(!s)return null;
+  let m=s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if(m){
+    let h=Number(m[1]),mi=Number(m[2]),sec=Number(m[3]||0);
+    const ap=(m[4]||'').toUpperCase();
+    if(ap){if(h<1||h>12)return null;if(ap==='PM'&&h<12)h+=12;if(ap==='AM'&&h===12)h=0;}
+    if(h>23||mi>59||sec>59)return null;
+    return `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  }
+  // Excel time fraction, e.g. 0.4375.
+  if(/^0?\.\d+$/.test(s)){
+    const f=Number(s);if(f>=0&&f<1){const total=Math.round(f*86400)%86400;return `${String(Math.floor(total/3600)).padStart(2,'0')}:${String(Math.floor(total%3600/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;}
+  }
+  return null;
 }
 async function parseFabricCuttingFile(file){
   const text=await file.text(), records=parseRecords(text);
@@ -5263,7 +5332,7 @@ async function uploadFabricCutting(){
       style_embellishment_type:fcText(fcPick(r,['Style /Embellishment Type','Style / Embellishment Type','Style/Embellishment Type'])),
       pattern_update:fcText(fcPick(r,['Pattern update','Pattern Update'])),
       pattern_received_date:fcDate(fcPick(r,['Pattern rerceived Date','Pattern received Date','Pattern Received Date'])),
-      pattern_received_time:fcText(fcPick(r,['Pattern rerceived Time','Pattern received Time','Pattern Received Time'])),
+      pattern_received_time:fcTime(fcPick(r,['Pattern rerceived Time','Pattern received Time','Pattern Received Time'])),
       color_order_qty:csvNum(fcPick(r,['Color wise order qty (pcs)','Color wise order qty','Color Order Qty'])),
       fabric_booking_qty:csvNum(fcPick(r,['Fabric booking qty (kg)','Fabric Booking Qty'])),
       replace_ask_qty:csvNum(fcPick(r,['Replace Ask qty(kg).','Replace Ask qty (kg)','Replace Ask Qty'])),
@@ -5306,6 +5375,7 @@ async function uploadFabricCutting(){
     }
     prog.value=100;
     FABRIC_CUTTING_DATA=payload.map((r,i)=>({...r,id:r.id??(i+1)}));
+    saveFastBootCache();
     await saveDashboardCache();
     refreshPermittedSlides('fabric');
     if(CURRENT_SLIDE===11 && canAccessSlide(11))renderSlide(11);
@@ -5398,6 +5468,7 @@ async function uploadSewingIO(){
       input:N(r.total_input_qty), output:N(r.total_output_qty),
       wip:N(r.total_wip_qty), reject:N(r.total_reject_qty)
     }));
+    saveFastBootCache();
     await saveDashboardCache();
     refreshPermittedSlides('sewing');
     if(CURRENT_SLIDE===7 && canAccessSlide(7))renderSlide(7);
@@ -5453,6 +5524,7 @@ async function uploadDateWiseProduction(){
       line_no:Number(r.line_no)||lineNumber(r.line),total_qty:N(r.total_qty)
     })));
     DATE_WISE_PRODUCTION_DATA.sort((a,b)=>String(a.output_date).localeCompare(String(b.output_date)));
+    saveFastBootCache();
     await saveDashboardCache();
     refreshPermittedSlides('production');
     if(CURRENT_SLIDE===7 && canAccessSlide(7))renderSlide(7);
@@ -5529,12 +5601,12 @@ window.addEventListener('DOMContentLoaded',async()=>{
       SITE_BOOTED=true;
       loadCapacitySettings();
 
-      // Normal refresh is local-first: no Supabase report download when cache exists.
-      const cached=await restoreDashboardFromCache();
+      // Refresh is cache-only first: synchronous same-tab cache -> IndexedDB -> network fallback.
+      let cached=restoreFastBootCache();
+      if(!cached) cached=await restoreDashboardFromCache();
       if(!cached) await loadFromSupabase();
       applySitePermissions();
       restoreActiveTab();
-      refreshPermittedSlides('all');
       return;
     }
   }catch(e){
