@@ -37,6 +37,7 @@ function setup(source,options={}){
   const c={console:{error(){},warn(){}},setTimeout,SB:{from:query},document:{getElementById(){return el;}},DATA:[],DAILY_PLAN:[],SAH_DATA:[],SAH_DAILY:[],CLOCK_HOUR_DATA:[],CLOCK_HOUR_DAILY:[],BUYER_PLAN_DATA:[],MONTHS:[],FABRIC_CUTTING_DATA:[],SEWING_IO_DATA:[],DATE_WISE_PRODUCTION_DATA:[],PLAN_UPLOAD_CATALOG:[],ACTIVE_PLAN_UPLOAD:null,PLAN_VERSION_CACHE:new Map(),CURRENT_SLIDE:0,SUPABASE_LOAD_TOKEN:0,PLAN_FILTER_TOKEN:0,N:v=>Number.isFinite(Number(v))?Number(v):0,isChassisMasterLine:v=>Number(v)>=1&&Number(v)<=48&&Number(v)!==46,monthFromISO:v=>v?'Sep-26':'',monthTime:()=>1,lineNumber:v=>Number(String(v??'').match(/\d+/)?.[0]||0),dashboardStyle:v=>v||'Other',rebuildPlanningFilters(){},refreshPermittedSlides(){},canAccessSlide:()=>true,goSlide(){},renderAll(){},saveFastBootCache(){},saveDashboardCache:async()=>{},setStatus:(...a)=>events.push(a),setLoadProgress(){},setLoadChip(){},setSupabaseLiveBadge:(...a)=>events.push(a),activePlanningLabel:()=>'',renderSlide(){}};
   c.console={error:(...a)=>{if(!options.fail)console.error(...a);},warn(){}};
   c.resetLoadUI=()=>{};
+  Object.assign(c,{EFF15_METRIC_DAILY:[],EFF15_METRIC_UPLOAD_ID:null,SITE_SESSION_GENERATION:0,SITE_AUTH_USER:{id:'test-admin'}});
   vm.createContext(c);
   const names=['capturePlanningState','restorePlanningState','fetchPlanningSnapshot','loadFromSupabase'];
   if(source.includes('async function sbPaged('))names.unshift('sbPaged');else names.unshift('sbAll');
