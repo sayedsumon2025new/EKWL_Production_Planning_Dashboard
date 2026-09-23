@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EKWL · HW Production Planning Dashboard</title>
+<!-- FINAL BUILD: persistent session, cache-first refresh, optimized uploads, Edge Function user creation, user access removal -->
 <style>
 /* ══ TOKENS ══════════════════════════════════════ */
 :root{
@@ -4140,14 +4141,11 @@ function renderS11(data){
       .replace(/\s*([\/-])\s*/g,'$1');
     const ganttColor=normColor(color);
 
-    // Reconciliation hover metrics follow the hovered PLAN cell:
-    // exact Plan Line + EWO + resolved Plan Color. The hovered Date selects the
-    // plan cell itself; sewing_input_output has no date field, so a date filter
-    // cannot be truthfully applied to reconciliation source rows.
+    // EWO-wise reconciliation: Color is informational only, never a calculation key.
+    // Sewing metrics = exact Line + EWO, summed across every Color.
     const sio=SEWING_IO_DATA.filter(x=>
       Number(x.line_no)===line &&
-      normEwo(x.ewo)===normEwo(ewo) &&
-      normColor(x.color)===ganttColor
+      normEwo(x.ewo)===normEwo(ewo)
     );
     const sewingInput=sio.reduce((a,x)=>a+N(x.input),0);
     const sewingOutput=sio.reduce((a,x)=>a+N(x.output),0);
@@ -4155,7 +4153,7 @@ function renderS11(data){
     const sewingReject=sio.reduce((a,x)=>a+N(x.reject),0);
 
     // Exact Date Wise Production match:
-    // SAME Line + SAME Output Date + SAME EWO.
+    // SAME Line + SAME Output Date + SAME EWO, across all Colors.
     // The production report may contain multiple PO / Color rows for that key,
     // therefore Total Qty is summed once across every exact matching source row.
     const normProdEwo=v=>{
@@ -4166,29 +4164,33 @@ function renderS11(data){
     const productionMatches=(DATE_WISE_PRODUCTION_DATA||[]).filter(x=>
       Number(x.line_no)===Number(line) &&
       String(x.output_date||'').slice(0,10)===String(date||'').slice(0,10) &&
-      normProdEwo(x.ewo)===normProdEwo(ewo) &&
-      normColor(x.color)===ganttColor
+      normProdEwo(x.ewo)===normProdEwo(ewo)
     );
     const productionQty=productionMatches.reduce((a,x)=>a+N(x.total_qty),0);
 
-    // Cut Qty is EWO + Color wise only (not line/date scoped).
+    // Cut Qty = EWO total across every Color (not line/date scoped).
     const fcMatches=(FABRIC_CUTTING_DATA||[]).filter(x=>
-      normEwo(x.ewo)===normEwo(ewo) && normColor(x.color_name)===ganttColor
+      normEwo(x.ewo)===normEwo(ewo)
     );
     const cutQty=fcMatches.reduce((a,x)=>a+N(x.total_cut_qty),0);
 
-    // Cutting WIP — STRICT EWO + COLOR, ALL LINES combined.
-    // Example: EWO 271436 + Black Cut 4264; inputs from Line 03/05/08/... are
-    // all summed for 271436 + Black, then deducted once from 4264.
-    // IMPORTANT: no hovered Line filter and no Date filter in this calculation.
+    // Cutting WIP = EWO Total Cut Qty - EWO Total Sewing Input.
+    // All lines and all colors are combined; no Line/Date/Color filter here.
     const cuttingInputMatches=(SEWING_IO_DATA||[]).filter(x=>
-      normEwo(x.ewo)===normEwo(ewo) &&
-      normColor(x.color)===ganttColor
+      normEwo(x.ewo)===normEwo(ewo)
     );
     const cuttingTotalSewingInput=cuttingInputMatches.reduce((sum,x)=>sum+N(x.input),0);
     const cuttingWip=cutQty-cuttingTotalSewingInput;
 
-    const item={ewo,qty,buyer:m.buyer||'',style:m.style||'',color,sah,clock,eff,
+    // Informational only: show every known color for this EWO.
+    const ewoColors=[...new Set([
+      ...scope.filter(x=>normEwo(x.ewo)===normEwo(ewo)).map(x=>String(x.color||'').trim()),
+      ...(FABRIC_CUTTING_DATA||[]).filter(x=>normEwo(x.ewo)===normEwo(ewo)).map(x=>String(x.color_name||'').trim()),
+      ...(SEWING_IO_DATA||[]).filter(x=>normEwo(x.ewo)===normEwo(ewo)).map(x=>String(x.color||'').trim()),
+      ...(DATE_WISE_PRODUCTION_DATA||[]).filter(x=>normEwo(x.ewo)===normEwo(ewo)).map(x=>String(x.color||'').trim())
+    ].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+
+    const item={ewo,qty,buyer:m.buyer||'',style:m.style||'',color,ewoColors,sah,clock,eff,
       sewingInput,sewingOutput,sewingWip,sewingReject,sewingRows:sio.length,
       productionQty,productionRows:productionMatches.length,
       cutQty,cutRows:fcMatches.length,cuttingTotalSewingInput,cuttingWip};
@@ -4258,10 +4260,10 @@ function renderS11(data){
 
         '<div class="gt-row"><span class="gt-lbl">Buyer Name</span><span class="gt-val buyer">'+esc(w.buyer||'—')+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Product Name</span><span class="gt-val prod">'+esc(w.style||'—')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Plan Color</span><span class="gt-val">'+esc(w.color||'—')+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">EWO Colors</span><span class="gt-val">'+esc((w.ewoColors||[]).join(', ')||'—')+'</span></div>'+
 
-        '<div class="gt-row"><span class="gt-lbl">Cut Qty ('+esc(w.color||'Color')+')</span><span class="gt-val eff-good">'+fmt(w.cutQty)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Color-wise Total Input</span><span class="gt-val qty">'+fmt(w.cuttingTotalSewingInput)+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">EWO Total Cut Qty</span><span class="gt-val eff-good">'+fmt(w.cutQty)+'</span></div>'+
+        '<div class="gt-row"><span class="gt-lbl">EWO Total Sewing Input</span><span class="gt-val qty">'+fmt(w.cuttingTotalSewingInput)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Cutting WIP</span><span class="gt-val sah">'+fmt(w.cuttingWip)+'</span></div>'+
 
         '<div style="margin:7px 0 3px;border-top:1px solid #36536e"></div>'+
@@ -4845,8 +4847,11 @@ async function addNewSiteUser(){
 
     // Server-side Edge Function creates the Auth account with email_confirm:true.
     // The current Admin JWT is sent automatically by the Supabase client.
+    const {data:{session}}=await SB.auth.getSession();
+    if(!session?.access_token)throw Error('Admin session expired. Please sign in again.');
     const {data,error}=await SB.functions.invoke('admin-create-user',{
-      body:{email,password,role,status}
+      headers:{Authorization:`Bearer ${session.access_token}`},
+      body:{action:'create',email,password,role,status}
     });
     if(error)throw error;
     if(!data?.success)throw Error(data?.error||'User creation failed.');
@@ -4902,7 +4907,7 @@ async function loadSiteUsers(){
         <td class="cen">${ck('slide_10')}</td><td class="cen">${ck('slide_11')}</td>
         <td class="cen">${ck('planning_upload')}</td><td class="cen">${ck('fabric')}</td><td class="cen">${ck('sewing')}</td>
         <td class="cen">${ck('production')}</td><td class="cen">${ck('admin_settings')}</td><td class="cen">${ck('user_admin')}</td>
-        <td><button class="pg-btn" onclick="saveSiteUser(${u.id},this)">Save</button></td></tr>`;
+        <td><div style="display:flex;gap:5px;white-space:nowrap"><button class="pg-btn" onclick="saveSiteUser(${u.id},this)">Save</button><button class="pg-btn" style="border-color:#dc2626;color:#dc2626" onclick="removeSiteUser(${u.id},this)">Remove</button></div></td></tr>`;
     }).join(''):'<tr><td colspan="22" class="cen">No users found.</td></tr>';
     if(msg)msg.textContent=`${rows.length} user(s) loaded`;
   }catch(e){console.error(e);body.innerHTML=`<tr><td colspan="22" class="cen" style="color:#ef4444">${umEsc(e.message)}</td></tr>`;if(msg)msg.textContent='Load failed'}
@@ -4917,6 +4922,39 @@ async function saveSiteUser(id,btn){
     if(error)throw error;if(msg)msg.textContent='✓ Saved';await loadSiteUsers();
   }catch(e){console.error(e);if(msg)msg.textContent='Save failed: '+e.message}
   finally{btn.disabled=false}
+}
+
+
+async function removeSiteUser(id,btn){
+  if(!requireSitePerm('user_admin','User Admin'))return;
+  const msg=document.getElementById('user-module-msg');
+  const row=btn.closest('tr');
+  const email=String(row?.cells?.[0]?.textContent||'').trim();
+  const currentEmail=String(SITE_AUTH_USER?.email||'').trim().toLowerCase();
+  const targetEmail=email.toLowerCase();
+  if(targetEmail===currentEmail){
+    if(msg)msg.textContent='নিজের logged-in Admin account Remove করা যাবে না।';
+    return;
+  }
+  if(!confirm(`Permanently remove user?\n\n${email}\n\nAuth account + dashboard access দুটোই delete হবে।`))return;
+  btn.disabled=true;if(msg)msg.textContent='Removing user...';
+  try{
+    const {data:{session}}=await SB.auth.getSession();
+    if(!session?.access_token)throw Error('Admin session expired. Please sign in again.');
+    const {data,error}=await SB.functions.invoke('admin-create-user',{
+      headers:{Authorization:`Bearer ${session.access_token}`},
+      body:{action:'delete',site_user_id:id,email:targetEmail}
+    });
+    if(error)throw error;
+    if(!data?.success)throw Error(data?.error||'User remove failed.');
+    if(msg)msg.textContent='✓ User permanently removed — Auth + dashboard access deleted';
+    await loadSiteUsers();
+  }catch(e){
+    console.error(e);
+    let detail=e?.message||String(e);
+    try{if(e?.context&&typeof e.context.json==='function'){const j=await e.context.json();if(j?.error)detail=j.error;}}catch(_){ }
+    if(msg)msg.textContent='Remove failed: '+detail;
+  }finally{btn.disabled=false}
 }
 
 /* === SECURE SITE LOGIN / site_users AUTHORIZATION === */
