@@ -4,6 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EKWL · HW Production Planning Dashboard</title>
+<!-- Slide15 permanent source: exact selected-plan Plan/Day, SAH/Day, Effi/Day, Clock Hour/Day by Line+Product+Date; calc=SAH/Clock*100 -->
+<!-- Permanent zero-eff fix: Clock matched by EWO first, then Product, then blank-EWO line clock; no clock => N/A, never false 0% -->\n<!-- Zero-efficiency root fix: source SAH/Day > 0 else selected-plan Plan/Day*SMV/60 fallback; clock-only keys are not rendered -->
+<!-- Ladder 3-color FULL CELL rule: below=Dark Indigo, meet=Green, above=Tomato; final scoped CSS overrides global zebra/hover rules -->
+<!-- Below-target-only cell color: Tomato #ff6347; equal/above remain normal -->
+<!-- Slide 15 dynamic hover: viewport-aware tooltip with efficiency variance and ladder status -->
+<!-- ROOT FIX: SAH/Day live query now selects id, enabling plan_records.id -> plan_daily.record_id linkage -->
+<!-- FR PRODUCT EFFICIENCY: SAH=(PlanQty*SMV)/60; Eff=SAH/ClockHours*100; highest product per cell; below ladder=tomato -->
+<!-- Slide 15 selected-plan fix: uses planning-sequence-filter upload id; local date formatter -->
+<!-- FR LOAD SEQUENCE FIX: hydrate DAILY_PLAN before rendering Slide 15 FR table -->
+<!-- FR TABLE ROOT FIX: date-wise source is DAILY_PLAN, matching the working Gantt renderer -->
+<!-- Slide 15 rebuilt: Fixed Ladder + Planning-only Line/Date FR comparison table; no Order Bank source -->
+<!-- ROOT ISOLATION FIX: explicit logical slide routes + display:none for every inactive slide -->
+<!-- USER MODULE AUTO-SLIDES: permission columns derive automatically from data-slide-access; dynamic max navigation -->
+<!-- DEEP SLIDE ROUTING FIX: logical slide number follows DOM/navigation order; legacy internal IDs are intentionally not used for activation -->
 <!-- GANTT HOVER: informational Style/Emb, Status, Cutting Difficulties matched by exact EWO + Color only -->
 <!-- GANTT: exact EWO search + valid master Line filter; approved Gantt calculations unchanged -->
 <!-- ORDER BANK: dedicated exact EWO search integrated with indexed cascading filters -->
@@ -182,7 +196,8 @@ body{background:var(--navy);color:var(--text)}
   scrollbar-width:thin;
   scrollbar-color:var(--border) transparent;
 }
-.slide.active{opacity:1;pointer-events:all}
+.slide.active{opacity:1;pointer-events:all;display:block}
+.slide:not(.active){display:none}
 .slide::-webkit-scrollbar{width:5px}
 .slide::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
@@ -1047,6 +1062,56 @@ border:1px solid #334155;border-radius:8px;padding:6px 10px;font-size:10px;font-
 
 .gt-cut-comment{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.28)}
 .gt-cut-title{font-size:10px;font-weight:900;letter-spacing:.5px;margin-bottom:5px}
+
+.eff15-tabs{display:flex;gap:8px;margin:0 0 12px;padding:8px;border:1px solid #d8e1ec;border-radius:8px;background:#eef3f9}
+.eff15-tab{padding:9px 14px;border:1px solid #b8c8db;border-radius:6px;background:#fff;color:#17365d;font-size:11px;font-weight:900;cursor:pointer}
+.eff15-tab.active{background:#0f2748;color:#fff;border-color:#0f2748}
+.eff15-sub{display:none}.eff15-sub.active{display:block}
+.eff15-fr-wrap{max-height:620px;overflow:auto}
+.eff15-fr-table{border-collapse:collapse;min-width:max-content;width:100%}
+.eff15-fr-table th,.eff15-fr-table td{border:1px solid #cbd5e1;text-align:center;white-space:nowrap;padding:7px 10px;font-size:10px}
+.eff15-fr-table th{position:sticky;top:0;z-index:3;background:#0d5b78;color:#fff}
+.eff15-fr-table .eff15-line{position:sticky;left:0;z-index:2;background:#11b5e4;color:#fff;font-weight:900;min-width:64px}
+.eff15-fr-table th.eff15-line{z-index:4;background:#0d5b78}
+.eff15-fr-cell{font-weight:800;color:#063b5c;background:#f8fafc;min-width:105px}
+.eff15-fr-cell.eff15-below{
+  background:#312e81!important; /* Dark Indigo = below ladder target */
+  color:#fff!important;
+}
+.eff15-fr-cell.eff15-meet{
+  background:#86efac!important; /* Green = ladder target met */
+  color:#111827!important;
+}
+.eff15-fr-cell.eff15-above{
+  background:#fca5a5!important; /* Tomato/Pink = above ladder target */
+  color:#991b1b!important;
+}
+.eff15-fr-cell.eff15-below .eff15-product,
+.eff15-fr-cell.eff15-below .eff15-pct,
+.eff15-fr-cell.eff15-below .eff15-run{color:#fff!important}
+.eff15-product{font-size:9px;font-weight:900;line-height:1.15}
+.eff15-pct{font-size:12px;font-weight:900;line-height:1.25}
+.eff15-run{font-size:8px;font-weight:700;opacity:.85;line-height:1.15}
+.eff15-fr-empty{background:#fff;color:#cbd5e1}
+.small-note{font-size:10px;color:#64748b;font-weight:700;margin:2px 0 9px}
+
+/* Slide 15 dynamic efficiency hover */
+.eff15-tip{position:fixed;z-index:99999;display:none;pointer-events:none;min-width:245px;max-width:330px;
+background:#0f2748;color:#fff;border:1px solid #345276;border-radius:9px;padding:10px 12px;
+box-shadow:0 10px 28px rgba(15,39,72,.28);font-size:10px;line-height:1.35}
+.eff15-tip.show{display:block}
+.eff15-tip-title{font-size:12px;font-weight:900;margin-bottom:7px;color:#ffd166}
+.eff15-tip-grid{display:grid;grid-template-columns:1fr auto;gap:4px 12px}
+.eff15-tip-grid b{text-align:right}
+.eff15-tip-status{margin-top:8px;padding:5px 7px;border-radius:5px;font-weight:900;text-align:center}
+.eff15-tip-status.below{background:#312e81;color:#fff}
+.eff15-tip-status.ok{background:#86efac;color:#065f46}
+.eff15-tip-status.above{background:#fca5a5;color:#991b1b}
+.eff15-tip-status.na{background:#e5e7eb;color:#374151}
+
+.eff15-fr-cell.eff15-below > *,
+.eff15-fr-cell.eff15-meet > *,
+.eff15-fr-cell.eff15-above > *{background:transparent!important}
 </style>
 
 <style id="optical-white-professional-theme">
@@ -1557,6 +1622,49 @@ input,select,textarea{
 }
 </style>
 
+<style id="eff15-cell-color-final-override">
+/* Final Slide-15 state colors. These intentionally override global zebra/hover TD rules. */
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-below,
+#s15 .eff15-fr-table tbody tr:nth-child(odd) td.eff15-fr-cell.eff15-below,
+#s15 .eff15-fr-table tbody tr:nth-child(even) td.eff15-fr-cell.eff15-below,
+#s15 .eff15-fr-table tbody tr:hover td.eff15-fr-cell.eff15-below{
+  background:#312e81!important;
+  color:#ffffff!important;
+}
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-meet,
+#s15 .eff15-fr-table tbody tr:nth-child(odd) td.eff15-fr-cell.eff15-meet,
+#s15 .eff15-fr-table tbody tr:nth-child(even) td.eff15-fr-cell.eff15-meet,
+#s15 .eff15-fr-table tbody tr:hover td.eff15-fr-cell.eff15-meet{
+  background:#86efac!important;
+  color:#111827!important;
+}
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-above,
+#s15 .eff15-fr-table tbody tr:nth-child(odd) td.eff15-fr-cell.eff15-above,
+#s15 .eff15-fr-table tbody tr:nth-child(even) td.eff15-fr-cell.eff15-above,
+#s15 .eff15-fr-table tbody tr:hover td.eff15-fr-cell.eff15-above{
+  background:#fca5a5!important;
+  color:#991b1b!important;
+}
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-below .eff15-product,
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-below .eff15-pct,
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-below .eff15-run{
+  color:#ffffff!important;
+}
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-meet .eff15-product,
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-meet .eff15-pct,
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-meet .eff15-run{
+  color:#111827!important;
+}
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-above .eff15-product,
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-above .eff15-pct,
+#s15 .eff15-fr-table tbody td.eff15-fr-cell.eff15-above .eff15-run{
+  color:#991b1b!important;
+}
+
+#s15 .eff15-fr-table tbody td.eff15-fr-cell:not(.eff15-below):not(.eff15-meet):not(.eff15-above){background:#f8fafc!important;color:#334155!important}
+</style>
+
+
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 
@@ -1762,7 +1870,7 @@ input,select,textarea{
 <div id="slides-wrap">
 
 <!-- ─── SLIDE 0: UPLOAD ──────────────────── -->
-<div class="slide active" id="s0">
+<div class="slide active" id="s0" data-logical-slide="0">
   <div class="home-shell">
     <div class="home-head">
       <div class="home-title"><span class="snum">00</span> Production Planning Control Center</div>
@@ -1812,7 +1920,7 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 1: ORDER TABLE ──────────────── -->
-<div class="slide" id="s1">
+<div class="slide" id="s1" data-logical-slide="1">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">01</span> Order Summary Table <span class="slide-subtitle" id="s1-month"></span></div>
     <div class="pager-btns">
@@ -1846,7 +1954,7 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 2: PLAN QTY ANALYSIS ────────── -->
-<div class="slide" id="s2">
+<div class="slide" id="s2" data-logical-slide="2">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">02</span> Plan Quantity Details <span class="slide-subtitle" id="s2-months"></span></div>
     <div class="pager-btns">
@@ -1874,7 +1982,7 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 3: BUYER SUMMARY ─────────────── -->
-<div class="slide" id="s3">
+<div class="slide" id="s3" data-logical-slide="3">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">03</span> Buyer Summary <span class="slide-subtitle" id="s3-month"></span></div>
     <div class="pager-btns">
@@ -1909,7 +2017,7 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 4: LINE PLAN & LOADING ─────── -->
-<div class="slide" id="s4">
+<div class="slide" id="s4" data-logical-slide="4">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">04</span> Chassis Line Plan & Loading <span class="slide-subtitle" id="s4-month"></span></div>
     <div class="pager-btns">
@@ -1957,7 +2065,7 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 5: ITEM STATUS ───────────────── -->
-<div class="slide" id="s5">
+<div class="slide" id="s5" data-logical-slide="5">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">05</span> Item / Style Status <span class="slide-subtitle" id="s5-month"></span></div>
     <div class="pager-btns">
@@ -1982,7 +2090,7 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 6: EWO DETAILS ──────────────── -->
-<div class="slide" id="s6">
+<div class="slide" id="s6" data-logical-slide="6">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">06</span> EWO Detail Table <span class="slide-subtitle" id="s6-month"></span></div>
     <div class="pager-btns">
@@ -2010,7 +2118,7 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 07: EWO GANTT CHART ─────────── -->
-<div class="slide" id="s11">
+<div class="slide" id="s11" data-logical-slide="7">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">07</span> EWO Gantt Chart <span class="slide-subtitle" id="s11-month"></span></div>
     <div class="pager-btns">
@@ -2040,9 +2148,9 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 8: CHARTS ───────────────────── -->
-<div class="slide" id="s7">
+<div class="slide" id="s7" data-logical-slide="8">
   <div class="slide-header">
-    <div class="slide-title"><span class="snum">07</span> Plan vs HW Charts <span class="slide-subtitle" id="s7-month"></span></div>
+    <div class="slide-title"><span class="snum">08</span> Plan vs HW Charts <span class="slide-subtitle" id="s7-month"></span></div>
     <div class="pager-btns">
       <button class="pg-btn" onclick="goSlide(6)">← Back</button>
       <button class="pg-btn" onclick="goSlide(8)">Next →</button>
@@ -2065,9 +2173,9 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 8: FEEDING ANALYSIS ─────────── -->
-<div class="slide" id="s8">
+<div class="slide" id="s8" data-logical-slide="9">
   <div class="slide-header">
-    <div class="slide-title"><span class="snum">08</span> Feeding Analysis <span class="slide-subtitle" id="s8-month"></span></div>
+    <div class="slide-title"><span class="snum">09</span> Feeding Analysis <span class="slide-subtitle" id="s8-month"></span></div>
     <div class="pager-btns">
       <button class="pg-btn" onclick="goSlide(7)">← Back</button>
       <button class="pg-btn" onclick="goSlide(9)">Next →</button>
@@ -2107,9 +2215,9 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 9: LINE CALENDAR ─────────────── -->
-<div class="slide" id="s9">
+<div class="slide" id="s9" data-logical-slide="10">
   <div class="slide-header">
-    <div class="slide-title"><span class="snum">09</span> Line Running Style Calendar <span class="slide-subtitle" id="s9-month"></span></div>
+    <div class="slide-title"><span class="snum">10</span> Line Running Style Calendar <span class="slide-subtitle" id="s9-month"></span></div>
     <div class="pager-btns">
       <button class="pg-btn" onclick="goSlide(8)">← Back</button>
       <button class="pg-btn" onclick="goSlide(10)">Next →</button>
@@ -2140,7 +2248,7 @@ input,select,textarea{
 
 
 <!-- ─── SLIDE 11: FABRICS & CUTTING ANALYSIS ─────────────── -->
-<div class="slide" id="s12">
+<div class="slide" id="s12" data-logical-slide="11">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">11</span> Fabrics &amp; Cutting Analysis</div>
     <div class="pager-btns">
@@ -2197,7 +2305,7 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 10: ADMIN / PARAMETER SETTING ─────────────── -->
-<div class="slide" id="s10">
+<div class="slide" id="s10" data-logical-slide="12">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">12</span> Admin / Parameter Setting</div>
     <div class="pager-btns">
@@ -2264,7 +2372,7 @@ input,select,textarea{
 
 
 <!-- ─── SLIDE 13: USER MODULE ───────────────────────────── -->
-<div class="slide" id="s13">
+<div class="slide" id="s13" data-logical-slide="13">
   <div class="slide-header">
     <div>
       <div class="slide-title"><span class="snum">13</span> 👥 User Module</div>
@@ -2290,18 +2398,12 @@ input,select,textarea{
 
   <div class="card" style="margin-top:14px">
     <div class="card-title">👤 USER INFORMATION <span class="ct-right" id="user-module-msg">Ready</span></div><div style="font-size:10px;color:#b45309;font-weight:800;margin:6px 0 10px">
-      Slide permission এখন individual: 01–11 থেকে যেটি/যেগুলি check করবেন, User শুধু সেগুলিই দেখতে/খুলতে পারবে। পুরোনো Planning View permission আর slide access দেয় না।
+      Slide permission এখন dashboard-এর Home/Navigation থেকে automatically তৈরি হয়। নতুন slide add করলে User Module-এ তার permission column নিজে থেকেই আসবে।
     </div>
     <div class="tbl-wrap">
       <table class="dt">
-        <thead><tr>
-          <th>Email</th><th>Auth Status</th><th>Role</th><th>Status</th>
-          <th>01 Order</th><th>02 Plan Qty</th><th>03 Buyer</th><th>04 Line Plan</th><th>05 Item</th>
-          <th>06 EWO</th><th>07 Gantt</th><th>08 Charts</th><th>09 Feeding</th><th>10 Calendar</th><th>11 Fabric Analysis</th>
-          <th>Plan Upload</th><th>Fabric Upload</th><th>Sewing Upload</th><th>Production Upload</th>
-          <th>Admin Setting</th><th>User Admin</th><th>Action</th>
-        </tr></thead>
-        <tbody id="site-users-body"><tr><td colspan="22" class="cen">Open User Module to load users.</td></tr></tbody>
+        <thead><tr id="site-users-head"></tr></thead>
+        <tbody id="site-users-body"><tr><td class="cen">Open User Module to load users.</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -2326,7 +2428,7 @@ input,select,textarea{
 
 
 <!-- ─── SLIDE 14: ORDER BANK ───────────────────────────── -->
-<div class="slide" id="s14">
+<div class="slide" id="s14" data-logical-slide="14">
   <div class="slide-header">
     <div>
       <div class="slide-title"><span class="snum">14</span> 📦 Order Bank</div>
@@ -2351,18 +2453,35 @@ input,select,textarea{
 </div>
 
 <!-- ─── SLIDE 15: EFFICIENCY LADDER ANALYSIS ───────────── -->
-<div class="slide" id="s15">
+<div class="slide" id="s15" data-logical-slide="15">
   <div class="slide-header">
     <div>
       <div class="slide-title"><span class="snum">15</span> 📈 Efficiency Ladder Analysis</div>
-      <div class="slide-subtitle">LIVE SUPABASE · ITEM-WISE RUN DAY EFFICIENCY LADDER</div>
+      <div class="slide-subtitle">FIXED LADDER + LINE / DATE-WISE FR PLAN EFFICIENCY COMPARISON</div>
     </div>
-    <div class="pager-btns"><button class="pg-btn" onclick="loadEfficiencyAnalysisSlide()">↻ Refresh</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+    <div class="pager-btns"><button class="pg-btn" onclick="refreshEfficiencySlide15()">↻ Refresh</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
   </div>
-  <div id="eff-analysis-kpis" class="kpi-row"></div>
-  <div class="card" style="margin-top:14px">
-    <div class="card-title">📈 EFFICIENCY LADDER MATRIX <span class="ct-right" id="eff-analysis-msg">Loading…</span></div>
-    <div class="tbl-wrap" id="eff-analysis-table"></div>
+
+  <div class="eff15-tabs">
+    <button id="eff15-tab-fixed" class="eff15-tab active" onclick="showEff15Sub('fixed')">01 · Fixed Ladder</button>
+    <button id="eff15-tab-fr" class="eff15-tab" onclick="showEff15Sub('fr')">02 · FR Plan Efficiency Comparison Analysis</button>
+  </div>
+
+  <div id="eff15-fixed" class="eff15-sub active">
+    <div id="eff-analysis-kpis" class="kpi-row"></div>
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">📈 ITEM-WISE FIXED EFFICIENCY LADDER <span class="ct-right" id="eff-analysis-msg">Loading…</span></div>
+      <div class="tbl-wrap" id="eff-analysis-table"></div>
+    </div>
+  </div>
+
+  <div id="eff15-dynamic-tip" class="eff15-tip"></div>
+  <div id="eff15-fr" class="eff15-sub">
+    <div class="card">
+      <div class="card-title">📅 LINE & DATE-WISE PRODUCT PLAN EFFICIENCY COMPARISON <span class="ct-right" id="eff15-fr-msg"></span></div>
+      <div class="small-note">Selected Planning version only · Dark Indigo = below Ladder · Green = target met · Tomato = above Ladder.</div>
+      <div class="tbl-wrap eff15-fr-wrap" id="eff15-fr-table"></div>
+    </div>
   </div>
 </div>
 
@@ -2418,6 +2537,7 @@ const PLAN_VERSION_CACHE=new Map();
 let PLAN_FILTER_TOKEN=0;
 let DAILY_PLAN = [];
 let SAH_DATA = [];
+let SAH_DAILY = [];
 let BUYER_PLAN_DATA = [];
 let CLOCK_HOUR_DATA = [];
 let CLOCK_HOUR_DAILY = [];
@@ -2894,12 +3014,10 @@ function siteHasPerm(key){
 }
 function slidePermissionKey(n){
   n=Number(n)||0;
-  if(n===0)return null;                 // Home is only a launcher
-  if(n>=1 && n<=11)return 'slide_'+n;  // TRUE slide-wise permission
+  if(n===0)return null;
   if(n===12)return 'admin_settings';
   if(n===13)return 'user_admin';
-  if(n===14)return 'admin_settings';
-  return null;
+  return 'slide_'+n; // all present/future normal slides get their own permission automatically
 }
 function canAccessSlide(n){
   const key=slidePermissionKey(n);
@@ -2957,18 +3075,29 @@ function requireSitePerm(key,label='এই module'){
 
 function goSlide(n){
   if(Number(n)===12){setTimeout(loadFloorAllocationAdmin,0);setTimeout(()=>loadEfficiencyLadderFromSQL(false),0);setTimeout(()=>loadChassisPriorityFromSQL(false),0);setTimeout(()=>loadABPTargetFromSQL(false),0);}
-  const maxSlide=14;
+  const maxSlide=getMaxDashboardSlide();
   n=Math.max(0,Math.min(Number(n)||0,maxSlide));
   if(!canAccessSlide(n)){
     console.warn('Permission denied for slide',n);
     n=0;
   }
   if(n===13)setTimeout(()=>loadSiteUsers(),0);
-  document.querySelectorAll('.slide').forEach((s,i)=>s.classList.toggle('active',i===n));
+  document.querySelectorAll('.slide').forEach(s=>
+    s.classList.toggle('active',Number(s.dataset.logicalSlide)===n)
+  );
   document.querySelectorAll('.stab').forEach(t=>t.classList.toggle('active',+t.dataset.s===n));
+  const activeSlides=[...document.querySelectorAll('.slide.active')];
+  if(activeSlides.length!==1 || Number(activeSlides[0]?.dataset.logicalSlide)!==n){
+    document.querySelectorAll('.slide').forEach(s=>s.classList.toggle('active',Number(s.dataset.logicalSlide)===n));
+  }
   CURRENT_SLIDE=n;
   try{localStorage.setItem(ACTIVE_TAB_STORAGE_KEY,String(n))}catch(e){}
-  if(n>0 && DATA.length){
+  if(n===14 || n===15){
+    try{renderSlide(n)}catch(e){
+      console.error('Slide '+n+' render failed',e);
+      setStatus(false,'Slide '+n+' render error: '+(e?.message||e));
+    }
+  }else if(n>0 && DATA.length){
     try{renderSlide(n)}catch(e){
       console.error('Slide '+n+' render failed',e);
       setStatus(false,'Slide '+n+' render error: '+(e?.message||e));
@@ -2979,7 +3108,7 @@ function restoreActiveTab(){
   let n=CURRENT_SLIDE;
   try{
     const saved=Number(localStorage.getItem(ACTIVE_TAB_STORAGE_KEY));
-    if(Number.isInteger(saved)&&saved>=0&&saved<=13)n=saved;
+    if(Number.isInteger(saved)&&saved>=0&&saved<=getMaxDashboardSlide())n=saved;
     if(!canAccessSlide(n))n=0;
   }catch(e){}
   goSlide(n);
@@ -3070,13 +3199,13 @@ function rebuildPlanningFilters(preferredMonth,preferredUploadId){
 
 function capturePlanningState(){
   return {
-    DATA,DAILY_PLAN,SAH_DATA,CLOCK_HOUR_DATA,BUYER_PLAN_DATA,
+    DATA,DAILY_PLAN,SAH_DATA,SAH_DAILY,CLOCK_HOUR_DATA,BUYER_PLAN_DATA,
     CLOCK_HOUR_DAILY:typeof CLOCK_HOUR_DAILY!=='undefined'?CLOCK_HOUR_DAILY:[],
     MONTHS
   };
 }
 function restorePlanningState(c){
-  DATA=c.DATA||[];DAILY_PLAN=c.DAILY_PLAN||[];SAH_DATA=c.SAH_DATA||[];
+  DATA=c.DATA||[];DAILY_PLAN=c.DAILY_PLAN||[];SAH_DATA=c.SAH_DATA||[];SAH_DAILY=c.SAH_DAILY||[];
   CLOCK_HOUR_DATA=c.CLOCK_HOUR_DATA||[];BUYER_PLAN_DATA=c.BUYER_PLAN_DATA||[];
   if(typeof CLOCK_HOUR_DAILY!=='undefined')CLOCK_HOUR_DAILY=c.CLOCK_HOUR_DAILY||[];
   MONTHS=c.MONTHS||[];
@@ -3131,16 +3260,23 @@ async function fetchPlanningSnapshot(upload){
   }));
   const planMeta=new Map(DATA_LOCAL.map(r=>[String(r.record_id),r]));
   const clockMeta=new Map(CLOCK_LOCAL.map(r=>[String(r.record_id),r]));
-  const DAILY_LOCAL=[],CLOCK_DAILY_LOCAL=[];
+  const sahMeta=new Map(sahRows.map(r=>[String(r.id),{
+    line:lineNumber(r.line_no),ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),
+    buyer:r.buyer||'',style:dashboardStyle(r.product_type||r.product)
+  }]));
+  const DAILY_LOCAL=[],SAH_DAILY_LOCAL=[],CLOCK_DAILY_LOCAL=[];
   for(const d of daily){
     const p=planMeta.get(String(d.record_id));
     if(p)DAILY_LOCAL.push({record_id:d.record_id,date:d.plan_date,value:N(d.value),
       line:p.line,ewo:p.ewo,buyer:p.buyer,style:p.style,color:p.color||'',smv:p.smv});
+    const s=sahMeta.get(String(d.record_id));
+    if(s)SAH_DAILY_LOCAL.push({record_id:d.record_id,date:d.plan_date,value:N(d.value),
+      line:s.line,ewo:s.ewo,buyer:s.buyer,style:s.style});
     const c=clockMeta.get(String(d.record_id));
     if(c)CLOCK_DAILY_LOCAL.push({record_id:d.record_id,date:d.plan_date,value:N(d.value),
       line:c.line,ewo:c.ewo,buyer:c.buyer,style:c.style});
   }
-  return {DATA:DATA_LOCAL,DAILY_PLAN:DAILY_LOCAL,SAH_DATA:SAH_LOCAL,CLOCK_HOUR_DATA:CLOCK_LOCAL,
+  return {DATA:DATA_LOCAL,DAILY_PLAN:DAILY_LOCAL,SAH_DATA:SAH_LOCAL,SAH_DAILY:SAH_DAILY_LOCAL,CLOCK_HOUR_DATA:CLOCK_LOCAL,
     CLOCK_HOUR_DAILY:CLOCK_DAILY_LOCAL,BUYER_PLAN_DATA:BUYER_PLAN_DATA_LOCAL,
     MONTHS:[...new Set(DAILY_LOCAL.map(d=>monthFromISO(d.date)).filter(Boolean))].sort((a,b)=>monthTime(a)-monthTime(b))};
 }
@@ -3432,13 +3568,14 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     let sahFrom=0;
     while(true){
       const {data:sahPart,error:sahErr}=await SB.from('plan_records')
-        .select('buyer,ewo,product_type,product,col,total,psd,pfd,delivery,line_no,is_summary_row')
+        .select('id,buyer,ewo,product_type,product,col,total,psd,pfd,delivery,line_no,is_summary_row')
         .eq('upload_id',upload.id)
         .eq('criteria','SAH/Day')
         .eq('is_summary_row',false)
         .range(sahFrom,sahFrom+pageSize-1);
       if(sahErr) throw sahErr;
       SAH_DATA.push(...(sahPart||[]).filter(r=>isChassisMasterLine(r.line_no)).map(r=>({
+        record_id:r.id,
         month:monthFromISO(r.psd || r.pfd || r.delivery),
         line:lineNumber(r.line_no),
         ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),
@@ -3478,7 +3615,9 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     // Exact date-wise Clock Hour/Day values.
     // plan_records.Total is the row total; tooltip needs the value for the hovered DATE.
     CLOCK_HOUR_DAILY=[];
+    SAH_DAILY=[];
     const clockMeta=new Map(CLOCK_HOUR_DATA.map(r=>[String(r.record_id),r]));
+    const sahMetaDaily=new Map(SAH_DATA.map(r=>[String(r.record_id),r]));
     let chDailyFrom=0;
     while(true){
       const {data:chDailyPart,error:chDailyErr}=await SB.from('plan_daily')
@@ -3488,6 +3627,11 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
         .range(chDailyFrom,chDailyFrom+pageSize-1);
       if(chDailyErr) throw chDailyErr;
       (chDailyPart||[]).forEach(d=>{
+        const s=sahMetaDaily.get(String(d.record_id));
+        if(s) SAH_DAILY.push({
+          record_id:d.record_id,date:d.plan_date,value:N(d.value),
+          line:s.line,ewo:s.ewo,buyer:s.buyer,style:s.style
+        });
         const r=clockMeta.get(String(d.record_id));
         if(r) CLOCK_HOUR_DAILY.push({
           record_id:d.record_id,date:d.plan_date,value:N(d.value),
@@ -3523,6 +3667,11 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     // Dashboard data is already scoped to the selected planning upload/sequence.
     MONTHS=[...new Set(DAILY_PLAN.map(d=>monthFromISO(d.date)).filter(Boolean))]
       .sort((a,b)=>monthTime(a)-monthTime(b));
+
+    // Keep Slide 15 FR Comparison synchronized with the selected Planning upload.
+    if(CURRENT_SLIDE===15 && typeof EFF15_SUB!=='undefined' && EFF15_SUB==='fr'){
+      setTimeout(()=>renderEff15LineDateTable(),0);
+    }
 
     // Do not wait for Fabric/Sewing/Production reports before showing Planning slides.
     // This applies to every permitted Planning slide, including Line Calendar.
@@ -3889,7 +4038,7 @@ function renderSlide(n){
       .catch(e=>console.error('ABP Target live SQL refresh failed',e));
   }
   if(n===14)loadOrderBankSlide();
-  if(n===15)loadEfficiencyAnalysisSlide();
+  if(n===15)showEff15Sub(EFF15_SUB||'fixed');
 }
 
 // Permission-aware progressive rendering.
@@ -5362,10 +5511,32 @@ May-26,21,265400,Tommy,Hoody,20,8500,4250,2026-05-22,2026-05-08,2026-05-22`;
 
 
 /* === USER MODULE MANAGEMENT === */
-const USER_PERM_KEYS=[
-  'slide_1','slide_2','slide_3','slide_4','slide_5','slide_6','slide_7','slide_8','slide_9','slide_10','slide_11',
-  'planning_upload','fabric','sewing','production','admin_settings','user_admin'
-];
+function getDashboardSlideRegistry(){
+  const byNo=new Map();
+  document.querySelectorAll('[data-slide-access]').forEach(el=>{
+    const n=Number(el.getAttribute('data-slide-access'));
+    if(!Number.isInteger(n)||n<=0)return;
+    if(byNo.has(n))return;
+    const home=document.querySelector(`.home-card[data-slide-access="${n}"]`);
+    const tab=document.querySelector(`.stab[data-slide-access="${n}"]`);
+    const slide=document.querySelector(`.slide[data-logical-slide="${n}"]`)||null;
+    let title=(home?.querySelector('.home-card-title')?.textContent||tab?.textContent||slide?.querySelector('.slide-title')?.textContent||('Slide '+n)).trim();
+    title=title.replace(/^\d+\s*/,'').replace(/\s+/g,' ').trim();
+    const key=(n===12?'admin_settings':n===13?'user_admin':'slide_'+n);
+    byNo.set(n,{n,key,title});
+  });
+  return [...byNo.values()].sort((a,b)=>a.n-b.n);
+}
+function getUserPermissionKeys(){
+  const slideKeys=getDashboardSlideRegistry().map(x=>x.key);
+  return [...new Set([...slideKeys,'planning_upload','fabric','sewing','production'])];
+}
+function getMaxDashboardSlide(){
+  const nums=[...document.querySelectorAll('.slide[data-logical-slide]')]
+    .map(el=>Number(el.dataset.logicalSlide))
+    .filter(n=>Number.isInteger(n)&&n>=0);
+  return nums.length?Math.max(...nums):0;
+}
 function umEsc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function umOn(p,k){return !!(p&&(p[k]===true||p[k]==='true'))}
 
@@ -5383,9 +5554,10 @@ async function addNewSiteUser(){
     if(msg)msg.innerHTML='<span style="color:#dc2626">✕ Admin access required</span>';return;
   }
 
+  const permissionKeys=getUserPermissionKeys();
   const permissions = String(role).toLowerCase()==='admin'
-    ? Object.fromEntries(USER_PERM_KEYS.map(k=>[k,true]))
-    : Object.fromEntries(USER_PERM_KEYS.map(k=>[k,false]));
+    ? Object.fromEntries(permissionKeys.map(k=>[k,true]))
+    : Object.fromEntries(permissionKeys.map(k=>[k,false]));
 
   try{
     if(msg)msg.innerHTML='<span style="color:#d97706">Creating confirmed Auth user...</span>';
@@ -5431,9 +5603,25 @@ async function addNewSiteUser(){
 
 async function loadSiteUsers(){
   if(!requireSitePerm('user_admin','User Admin'))return;
-  const body=document.getElementById('site-users-body'),msg=document.getElementById('user-module-msg');
-  if(!body)return;
-  body.innerHTML='<tr><td colspan="22" class="cen">Loading...</td></tr>'; if(msg)msg.textContent='Loading from Supabase...';
+  const body=document.getElementById('site-users-body'),head=document.getElementById('site-users-head'),msg=document.getElementById('user-module-msg');
+  if(!body||!head)return;
+
+  const slides=getDashboardSlideRegistry();
+  const fixedPerms=[
+    {key:'planning_upload',title:'Plan Upload'},
+    {key:'fabric',title:'Fabric Upload'},
+    {key:'sewing',title:'Sewing Upload'},
+    {key:'production',title:'Production Upload'}
+  ];
+  const totalCols=4+slides.length+fixedPerms.length+1;
+
+  head.innerHTML='<th>Email</th><th>Auth Status</th><th>Role</th><th>Status</th>'+
+    slides.map(s=>`<th>${String(s.n).padStart(2,'0')} ${umEsc(s.title)}</th>`).join('')+
+    fixedPerms.map(p=>`<th>${umEsc(p.title)}</th>`).join('')+
+    '<th>Action</th>';
+
+  body.innerHTML=`<tr><td colspan="${totalCols}" class="cen">Loading...</td></tr>`;
+  if(msg)msg.textContent='Loading from Supabase...';
   try{
     const {data,error}=await SB.from('site_users').select('id,auth_user_id,email,role,status,permissions,created_at').order('created_at',{ascending:true});
     if(error)throw error;
@@ -5446,21 +5634,21 @@ async function loadSiteUsers(){
         <td class="cen">${authLinked?'<span style="color:#16a34a;font-weight:900">✓ Auth Linked</span>':'<span style="color:#dc2626;font-weight:900">✕ Not Linked</span>'}</td>
         <td><select class="usr-role"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td>
         <td><select class="usr-status"><option value="active" ${u.status==='active'?'selected':''}>Active</option><option value="disabled" ${u.status==='disabled'?'selected':''}>Disabled</option></select></td>
-        <td class="cen">${ck('slide_1')}</td><td class="cen">${ck('slide_2')}</td><td class="cen">${ck('slide_3')}</td>
-        <td class="cen">${ck('slide_4')}</td><td class="cen">${ck('slide_5')}</td><td class="cen">${ck('slide_6')}</td>
-        <td class="cen">${ck('slide_7')}</td><td class="cen">${ck('slide_8')}</td><td class="cen">${ck('slide_9')}</td>
-        <td class="cen">${ck('slide_10')}</td><td class="cen">${ck('slide_11')}</td>
-        <td class="cen">${ck('planning_upload')}</td><td class="cen">${ck('fabric')}</td><td class="cen">${ck('sewing')}</td>
-        <td class="cen">${ck('production')}</td><td class="cen">${ck('admin_settings')}</td><td class="cen">${ck('user_admin')}</td>
+        ${slides.map(s=>`<td class="cen">${ck(s.key)}</td>`).join('')}
+        ${fixedPerms.map(x=>`<td class="cen">${ck(x.key)}</td>`).join('')}
         <td><div style="display:flex;gap:5px;white-space:nowrap"><button class="pg-btn" onclick="saveSiteUser(${u.id},this)">Save</button><button class="pg-btn" style="border-color:#dc2626;color:#dc2626" onclick="removeSiteUser(${u.id},this)">Remove</button></div></td></tr>`;
-    }).join(''):'<tr><td colspan="22" class="cen">No users found.</td></tr>';
-    if(msg)msg.textContent=`${rows.length} user(s) loaded`;
-  }catch(e){console.error(e);body.innerHTML=`<tr><td colspan="22" class="cen" style="color:#ef4444">${umEsc(e.message)}</td></tr>`;if(msg)msg.textContent='Load failed'}
+    }).join(''):`<tr><td colspan="${totalCols}" class="cen">No users found.</td></tr>`;
+    if(msg)msg.textContent=`${rows.length} user(s) loaded · ${slides.length} slide permission(s) detected automatically`;
+  }catch(e){
+    console.error(e);
+    body.innerHTML=`<tr><td colspan="${totalCols}" class="cen" style="color:#ef4444">${umEsc(e.message)}</td></tr>`;
+    if(msg)msg.textContent='Load failed';
+  }
 }
 async function saveSiteUser(id,btn){
   const tr=btn.closest('tr'),msg=document.getElementById('user-module-msg'),permissions={};
   const selectedRole=tr.querySelector('.usr-role').value;
-  USER_PERM_KEYS.forEach(k=>permissions[k]=selectedRole==='admin' ? true : !!tr.querySelector(`[data-perm="${k}"]`)?.checked);
+  getUserPermissionKeys().forEach(k=>permissions[k]=selectedRole==='admin' ? true : !!tr.querySelector(`[data-perm="${k}"]`)?.checked);
   btn.disabled=true;if(msg)msg.textContent='Saving...';
   try{
     const {data:{session}}=await SB.auth.getSession();
@@ -6583,6 +6771,248 @@ async function loadOrderBankSlide(){
   }catch(e){
     if(msg)msg.textContent='Load failed';
     box.innerHTML=`<div class="modal-msg">Order Bank raw SQL load failed: ${esc(e?.message||e)}</div>`;
+  }
+}
+
+
+let EFF15_SUB='fixed';
+function showEff15Sub(name){
+  EFF15_SUB=name==='fr'?'fr':'fixed';
+  document.getElementById('eff15-fixed')?.classList.toggle('active',EFF15_SUB==='fixed');
+  document.getElementById('eff15-fr')?.classList.toggle('active',EFF15_SUB==='fr');
+  document.getElementById('eff15-tab-fixed')?.classList.toggle('active',EFF15_SUB==='fixed');
+  document.getElementById('eff15-tab-fr')?.classList.toggle('active',EFF15_SUB==='fr');
+  if(EFF15_SUB==='fixed')loadEfficiencyAnalysisSlide();
+  else loadEff15FRComparison();
+}
+function refreshEfficiencySlide15(){
+  if(EFF15_SUB==='fixed')loadEfficiencyAnalysisSlide();
+  else loadEff15FRComparison();
+}
+
+let EFF15_FR_LOADING=false;
+let EFF15_METRIC_DAILY=[];
+async function loadEff15FRComparison(){
+  const box=document.getElementById('eff15-fr-table'),msg=document.getElementById('eff15-fr-msg');
+  if(!box)return;
+  if(EFF15_FR_LOADING)return;
+  EFF15_FR_LOADING=true;
+  try{
+    if(msg)msg.textContent='Loading Planning data…';
+    box.innerHTML='<div class="empty">Loading Line × Date planning table…</div>';
+
+    // Slide 15 is SQL/data independent in navigation, so explicitly hydrate the same
+    // planning dataset used by the working Gantt before rendering this sub-slide.
+    if(!(DAILY_PLAN||[]).length){
+      const selectedPlanId=document.getElementById('planning-sequence-filter')?.value || null;
+      await loadFromSupabase(selectedPlanId,true);
+      if(CURRENT_SLIDE!==15)goSlide(15);
+    }
+    await loadEfficiencyLadderFromSQL(false);
+    await loadEff15ExactMetricSource();
+
+    if(!(DAILY_PLAN||[]).length){
+      box.innerHTML='<div class="empty">Planning DAILY_PLAN returned no rows for the current plan.</div>';
+      if(msg)msg.textContent='0 Planning rows';
+      return;
+    }
+    renderEff15LineDateTable();
+  }catch(e){
+    console.error('FR comparison load failed',e);
+    box.innerHTML='<div class="empty" style="color:#dc2626">FR comparison load failed: '+esc(e?.message||e)+'</div>';
+    if(msg)msg.textContent='Load failed';
+  }finally{
+    EFF15_FR_LOADING=false;
+  }
+}
+
+function bindEff15DynamicHover(){
+  const table=document.getElementById('eff15-fr-table');
+  const tip=document.getElementById('eff15-dynamic-tip');
+  if(!table||!tip||table.dataset.hoverBound==='1')return;
+  table.dataset.hoverBound='1';
+
+  const renderTip=cell=>{
+    const d=cell.dataset,target=d.target?Number(d.target):null;
+    const hasEff=d.eff!==''&&Number.isFinite(Number(d.eff)),eff=hasEff?Number(d.eff):null;
+    const gap=(target==null||!hasEff)?null:(eff-target);
+    const state=d.state||'na';
+    const status=target==null?'No Fixed Ladder Match':
+      (state==='below'?'Below Ladder Target':state==='meet'?'Ladder Target Met':'Above Ladder Target');
+    const cls=target==null?'na':(state==='below'?'below':state==='above'?'above':'ok');
+    tip.innerHTML=
+      '<div class="eff15-tip-title">'+esc(d.product||'Product')+' · Line '+esc(d.line||'')+'</div>'+
+      '<div class="eff15-tip-grid">'+
+      '<span>Date</span><b>'+esc(d.date||'')+'</b>'+
+      '<span>Run Day</span><b>'+esc(d.runday||'')+'</b>'+
+      '<span>Plan / Day</span><b>'+esc(d.planqty||'0.00')+'</b>'+ '<span>SAH / Day</span><b>'+esc(d.sah||'0.00')+'</b>'+
+      '<span>SAH Source</span><b>'+esc(d.sahsource||'—')+'</b>'+
+      '<span>Clock Hour / Day</span><b>'+esc(d.clock||'N/A')+'</b>'+
+      '<span>Clock Match</span><b>'+esc(d.clocksource||'—')+'</b>'+
+      '<span>Plan Efficiency</span><b>'+(hasEff?esc(d.eff)+'%':'N/A')+'</b>'+ '<span>Source Effi / Day</span><b>'+(d.sourceeff?esc(d.sourceeff)+'%':'N/A')+'</b>'+
+      '<span>Fixed Ladder</span><b>'+(target==null?'N/A':target.toFixed(1)+'%')+'</b>'+
+      '<span>Variance</span><b>'+(gap==null?'N/A':(gap>=0?'+':'')+gap.toFixed(1)+' pp')+'</b>'+
+      '</div><div class="eff15-tip-status '+cls+'">'+status+'</div>';
+  };
+  const move=(e)=>{
+    const pad=14,w=tip.offsetWidth||280,h=tip.offsetHeight||180;
+    let x=e.clientX+14,y=e.clientY+14;
+    if(x+w>window.innerWidth-pad)x=e.clientX-w-14;
+    if(y+h>window.innerHeight-pad)y=e.clientY-h-14;
+    tip.style.left=Math.max(pad,x)+'px';
+    tip.style.top=Math.max(pad,y)+'px';
+  };
+  table.addEventListener('mouseover',e=>{
+    const cell=e.target.closest('.eff15-hover-cell');
+    if(!cell||!table.contains(cell))return;
+    renderTip(cell);tip.classList.add('show');move(e);
+  });
+  table.addEventListener('mousemove',e=>{if(tip.classList.contains('show'))move(e);});
+  table.addEventListener('mouseout',e=>{
+    const cell=e.target.closest('.eff15-hover-cell');
+    if(cell&&!cell.contains(e.relatedTarget))tip.classList.remove('show');
+  });
+}
+
+async function loadEff15ExactMetricSource(){
+  const uploadId=ACTIVE_PLAN_UPLOAD?.id || document.getElementById('planning-sequence-filter')?.value || null;
+  EFF15_METRIC_DAILY=[];
+  if(!uploadId)return;
+  const wanted=new Set(['Plan/Day','SAH/Day','Effi/Day','Clock Hour/Day']);
+  const records=await sbAll('plan_records',
+    'id,line_no,product_type,product,ewo,criteria,is_summary_row',
+    [['upload_id',uploadId]]);
+  const meta=new Map();
+  (records||[]).forEach(r=>{
+    if(r.is_summary_row||!isChassisMasterLine(r.line_no)||!wanted.has(String(r.criteria||'').trim()))return;
+    meta.set(String(r.id),{
+      line:lineNumber(r.line_no), product:dashboardStyle(r.product_type||r.product),
+      ewo:String(r.ewo??'').replace(/\.0$/,'').trim(), criteria:String(r.criteria||'').trim()
+    });
+  });
+  const daily=await sbAll('plan_daily','record_id,plan_date,value',[['upload_id',uploadId]]);
+  (daily||[]).forEach(d=>{
+    const m=meta.get(String(d.record_id));
+    if(!m||!d.plan_date)return;
+    EFF15_METRIC_DAILY.push({
+      record_id:d.record_id,date:d.plan_date,value:N(d.value),
+      line:m.line,product:m.product,ewo:m.ewo,criteria:m.criteria
+    });
+  });
+}
+function renderEff15LineDateTable(){
+  const box=document.getElementById('eff15-fr-table'),msg=document.getElementById('eff15-fr-msg');
+  if(!box)return;
+  const master=getChassisMasterLines();
+  const sourceRows=[...(SAH_DAILY||[]),...(CLOCK_HOUR_DAILY||[])];
+  const dates=[...new Set(sourceRows.map(d=>d.date).filter(Boolean))].sort();
+  const lines=[...master].map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
+
+  // Exact source rule: selected plan -> Line + Product + Criteria + Date.
+  // Calculation: SAH/Day ÷ Clock Hour/Day × 100.
+  // Effi/Day is audit-only and never replaces the calculated result.
+  const metricAgg=new Map(),metricSeen=new Set();
+  (EFF15_METRIC_DAILY||[]).forEach(r=>{
+    const line=Number(r.line),date=r.date,product=dashboardStyle(r.product),criteria=String(r.criteria||'').trim();
+    if(!master.has(line)||!date||!product)return;
+    const dedupe=String(r.record_id??'')+'|'+date;
+    if(r.record_id!=null&&metricSeen.has(dedupe))return;
+    if(r.record_id!=null)metricSeen.add(dedupe);
+    const k=line+'|'+date+'|'+product+'|'+criteria;
+    metricAgg.set(k,(metricAgg.get(k)||0)+N(r.value));
+  });
+
+  const productKeys=new Set();
+  (EFF15_METRIC_DAILY||[]).forEach(r=>{
+    if(String(r.criteria||'').trim()==='Plan/Day' && N(r.value)>0){
+      const product=dashboardStyle(r.product);
+      if(product)productKeys.add(Number(r.line)+'|'+r.date+'|'+product);
+    }
+  });
+
+  const productDaily=new Map();
+  productKeys.forEach(k=>{
+    const p=k.split('|'),line=Number(p[0]),date=p[1],product=p.slice(2).join('|');
+    const get=criteria=>N(metricAgg.get(k+'|'+criteria));
+    const planQty=get('Plan/Day'),sah=get('SAH/Day'),clock=get('Clock Hour/Day'),sourceEff=get('Effi/Day');
+    if(planQty<=0)return;
+    const eff=(sah>0&&clock>0)?(sah/clock)*100:null;
+    productDaily.set(k,{line,date,product,planQty,sah,clock,sourceEff,
+      sahSource:'Exact SAH/Day',clockSource:'Exact Clock Hour/Day',eff});
+  });
+
+  const runDay=new Map();
+  lines.forEach(line=>{
+    const products=[...new Set([...productDaily.values()].filter(x=>x.line===line).map(x=>x.product))];
+    products.forEach(product=>{
+      let day=0;
+      dates.forEach(date=>{
+        const k=line+'|'+date+'|'+product;
+        if(productDaily.has(k)){day++;runDay.set(k,Math.min(day,6));}
+      });
+    });
+  });
+
+  const normItem=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const ladderMap=new Map(getEfficiencyLadder().map(r=>[normItem(r[0]),r]));
+  const best=new Map();
+  productDaily.forEach(a=>{
+    const cell=a.line+'|'+a.date,old=best.get(cell);
+    if(!old || (a.eff!=null && (old.eff==null || a.eff>old.eff)))best.set(cell,a);
+  });
+  const dateLabel=d=>{
+    const dt=new Date(d+'T00:00:00');
+    return String(dt.getDate()).padStart(2,'0')+'-'+dt.toLocaleString('en-US',{month:'short'})+'-'+String(dt.getFullYear()).slice(-2);
+  };
+  if(!dates.length){
+    box.innerHTML='<div class="empty">No date-wise SAH/Day or Clock Hour/Day data found in the selected Planning version.</div>';
+    if(msg)msg.textContent='No SAH/Clock date data';
+    return;
+  }
+
+  let belowCount=0,comparedCount=0;
+  box.innerHTML='<table class="eff15-fr-table"><thead><tr><th class="eff15-line">Line</th>'+
+    dates.map(d=>'<th>'+dateLabel(d)+'</th>').join('')+'</tr></thead><tbody>'+
+    lines.map(line=>'<tr><td class="eff15-line">'+line+'</td>'+
+      dates.map(date=>{
+        const a=best.get(line+'|'+date);
+        if(!a)return '<td class="eff15-fr-empty">—</td>';
+        const k=line+'|'+date+'|'+a.product,rd=runDay.get(k)||1;
+        const ladder=ladderMap.get(normItem(a.product));
+        const target=ladder?N(ladder[Math.min(rd,6)]):null;
+        const hasEff=a.eff!=null&&Number.isFinite(a.eff);
+        const shownEff=hasEff?Number(a.eff.toFixed(1)):null;
+        const shownTarget=target==null?null:Number(target.toFixed(1));
+        const below=hasEff&&shownTarget!=null&&shownEff<shownTarget;
+        const meet=hasEff&&shownTarget!=null&&shownEff===shownTarget;
+        const above=hasEff&&shownTarget!=null&&shownEff>shownTarget;
+        if(target!=null)comparedCount++;
+        if(below)belowCount++;
+        const targetText=target==null?'No fixed ladder match':target.toFixed(1)+'%';
+        const tip='Product: '+a.product+' | Run Day: '+(rd>=6?'Day-6+':'Day-'+rd)+
+          ' | SAH/Day: '+a.sah.toFixed(2)+' ('+a.sahSource+') | Clock Hour/Day: '+(a.clock>0?a.clock.toFixed(2):'N/A')+
+          ' ('+a.clockSource+') | Plan Efficiency: '+(hasEff?a.eff.toFixed(1)+'%':'N/A')+' | Fixed Ladder: '+targetText+
+          (below?' | BELOW TARGET':'');
+        return '<td class="eff15-fr-cell eff15-hover-cell'+
+          (below?' eff15-below':meet?' eff15-meet':above?' eff15-above':'')+'" '+
+          'data-line="'+line+'" data-date="'+esc(dateLabel(date))+'" data-product="'+esc(a.product)+'" '+
+          'data-runday="'+(rd>=6?'Day-6+':'Day-'+rd)+'" data-planqty="'+a.planQty.toFixed(2)+'" data-sourceeff="'+(a.sourceEff>0?a.sourceEff.toFixed(1):'')+'" data-sah="'+a.sah.toFixed(2)+'" '+
+          'data-sahsource="'+esc(a.sahSource)+'" data-clock="'+(a.clock>0?a.clock.toFixed(2):'')+'" '+
+          'data-clocksource="'+esc(a.clockSource)+'" data-eff="'+(hasEff?a.eff.toFixed(1):'')+'" '+
+          'data-target="'+(target==null?'':target.toFixed(1))+'" data-below="'+(below?'1':'0')+
+          '" data-state="'+(below?'below':meet?'meet':above?'above':'na')+'">'+
+          '<div class="eff15-product">'+esc(a.product)+'</div>'+
+          '<div class="eff15-pct">'+(hasEff?a.eff.toFixed(1)+'%':'N/A')+'</div>'+
+          '<div class="eff15-run">'+(rd>=6?'D6+':'D'+rd)+(target!=null?' / '+target.toFixed(0)+'%':' / N/A')+'</div></td>';
+      }).join('')+'</tr>').join('')+'</tbody></table>';
+
+
+  bindEff15DynamicHover();
+  if(msg){
+    const planLabel=ACTIVE_PLAN_UPLOAD
+      ? ((ACTIVE_PLAN_UPLOAD.sequence_no?'Seq '+ACTIVE_PLAN_UPLOAD.sequence_no+' · ':'')+(ACTIVE_PLAN_UPLOAD.planning_id||ACTIVE_PLAN_UPLOAD.file_name||'Selected Plan'))
+      : 'Selected Plan';
+    msg.textContent=planLabel+' · '+lines.length+' Lines · '+dates.length+' dates · Exact Criteria Rows '+(EFF15_METRIC_DAILY||[]).length+' · '+belowCount+'/'+comparedCount+' below ladder';
   }
 }
 
