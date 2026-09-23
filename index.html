@@ -4172,6 +4172,7 @@ function renderS11(data){
     const fcMatches=(FABRIC_CUTTING_DATA||[]).filter(x=>
       normEwo(x.ewo)===normEwo(ewo)
     );
+    const cutableQty=fcMatches.reduce((a,x)=>a+N(x.cutable_qty),0);
     const cutQty=fcMatches.reduce((a,x)=>a+N(x.total_cut_qty),0);
 
     // Cutting WIP = EWO Total Cut Qty - EWO Total Sewing Input.
@@ -4193,7 +4194,7 @@ function renderS11(data){
     const item={ewo,qty,buyer:m.buyer||'',style:m.style||'',color,ewoColors,sah,clock,eff,
       sewingInput,sewingOutput,sewingWip,sewingReject,sewingRows:sio.length,
       productionQty,productionRows:productionMatches.length,
-      cutQty,cutRows:fcMatches.length,cuttingTotalSewingInput,cuttingWip};
+      cutableQty,cutQty,cutRows:fcMatches.length,cuttingTotalSewingInput,cuttingWip};
     if(!old||qty>old.qty||(qty===old.qty&&ewo.localeCompare(old.ewo,undefined,{numeric:true})<0))winner.set(cellKey,item);
   });
 
@@ -4262,6 +4263,7 @@ function renderS11(data){
         '<div class="gt-row"><span class="gt-lbl">Product Name</span><span class="gt-val prod">'+esc(w.style||'—')+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">EWO Colors</span><span class="gt-val">'+esc((w.ewoColors||[]).join(', ')||'—')+'</span></div>'+
 
+        '<div class="gt-row"><span class="gt-lbl">EWO Cutable Qty</span><span class="gt-val qty">'+fmt(w.cutableQty)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">EWO Total Cut Qty</span><span class="gt-val eff-good">'+fmt(w.cutQty)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">EWO Total Sewing Input</span><span class="gt-val qty">'+fmt(w.cuttingTotalSewingInput)+'</span></div>'+
         '<div class="gt-row"><span class="gt-lbl">Cutting WIP</span><span class="gt-val sah">'+fmt(w.cuttingWip)+'</span></div>'+
