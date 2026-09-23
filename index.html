@@ -3212,6 +3212,16 @@ function restorePlanningState(c){
 }
 
 let PLAN_PREFETCH_RUNNING=false;
+async function sbPaged(queryFactory){
+  const out=[],size=1000;
+  for(let from=0;;from+=size){
+    const {data,error}=await queryFactory().range(from,from+size-1);
+    if(error)throw error;
+    out.push(...(data||[]));
+    if(!data||data.length<size)break;
+  }
+  return out;
+}
 async function sbAll(table,select,filters=[]){
   const out=[],size=1000;
   for(let from=0;;from+=size){
@@ -3226,10 +3236,15 @@ async function sbAll(table,select,filters=[]){
 }
 async function fetchPlanningSnapshot(upload){
   const [records,daily]=await Promise.all([
-    sbAll('plan_records',
-      'id,source_row,line_no,buyer,product_type,product,ewo,po,col,order_qty,pcd,delivery,psd,pfd,manpower,smv,criteria,total,is_summary_row',
-      [['upload_id',upload.id]]),
-    sbAll('plan_daily','record_id,plan_date,value',[['upload_id',upload.id]])
+    sbPaged(()=>SB.from('plan_records')
+      .select('id,source_row,line_no,buyer,product_type,product,ewo,po,col,order_qty,pcd,delivery,psd,pfd,manpower,smv,criteria,total,is_summary_row')
+      .eq('upload_id',upload.id).eq('is_summary_row',false)
+      .in('criteria',['Plan/Day','SAH/Day','Clock Hour/Day'])
+      .order('source_row',{ascending:true}).order('id',{ascending:true})),
+    // Download daily values once; both planning and clock-hour maps use this result.
+    sbPaged(()=>SB.from('plan_daily').select('record_id,plan_date,value')
+      .eq('upload_id',upload.id)
+      .order('plan_date',{ascending:true}).order('record_id',{ascending:true}))
   ]);
   const valid=records.filter(r=>!r.is_summary_row&&isChassisMasterLine(r.line_no));
   const planRows=valid.filter(r=>r.criteria==='Plan/Day');
@@ -3238,7 +3253,7 @@ async function fetchPlanningSnapshot(upload){
 
   const BUYER_PLAN_DATA_LOCAL=planRows.map(r=>({
     month:monthFromISO(r.psd||r.pfd||r.delivery),buyer:r.buyer||'',
-    ewo:String(r.ewo??'').replace(/\.0$/,'').trim(),po:String(r.po||'').trim(),
+    ewo:String(r.ewo??'').trim(),po:String(r.po||'').trim(),
     color:String(r.col||'').trim(),orderqty:N(r.order_qty),planqty:N(r.total)
   }));
   const DATA_LOCAL=planRows.map(r=>({
@@ -3249,6 +3264,7 @@ async function fetchPlanningSnapshot(upload){
     startdate:r.psd||'',enddate:r.pfd||''
   })).filter(r=>r.line>0);
   const SAH_LOCAL=sahRows.map(r=>({
+    record_id:r.id,
     month:monthFromISO(r.psd||r.pfd||r.delivery),line:lineNumber(r.line_no),
     ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),buyer:r.buyer||'',
     style:dashboardStyle(r.product_type||r.product),color:r.col||'',total:N(r.total)
@@ -3306,6 +3322,7 @@ async function prefetchPlanningVersions(){
 async function switchPlanningInstant(uploadId){
   if(!uploadId)return;
   const token=++PLAN_FILTER_TOKEN;
+  ++SUPABASE_LOAD_TOKEN; // Invalidate any older load, including when this selection is cached.
   const upload=PLAN_UPLOAD_CATALOG.find(u=>String(u.id)===String(uploadId));
   if(upload)ACTIVE_PLAN_UPLOAD=upload;
 
@@ -3321,8 +3338,8 @@ async function switchPlanningInstant(uploadId){
   }
 
   setLoadProgress(18,'Selected Planning version load হচ্ছে...');
-  await loadFromSupabase(uploadId,true);
-  if(token!==PLAN_FILTER_TOKEN)return;
+  const loaded=await loadFromSupabase(uploadId,true,true);
+  if(!loaded||token!==PLAN_FILTER_TOKEN)return;
   PLAN_VERSION_CACHE.set(String(uploadId),capturePlanningState());
 }
 async function planningMonthChanged(){
@@ -3358,17 +3375,19 @@ function setSupabaseLiveBadge(state,text){
 }
 async function loadCentralAdminSettingsBeforeData(){
   // Master-line configuration must be known BEFORE plan_records are filtered.
-  await loadChassisPriorityFromSQL(false);
   await Promise.allSettled([
+    loadChassisPriorityFromSQL(false),
     loadEfficiencyLadderFromSQL(false),
     loadABPTargetFromSQL(false)
   ]);
 }
 async function bootLiveSupabaseData(){
   setSupabaseLiveBadge('','Supabase · checking live data…');
-  await loadCentralAdminSettingsBeforeData();
-  await loadDashboardMasterSettingsFromSQL();
-  await loadABPTargetEfficiencyLive();
+  await Promise.all([
+    loadCentralAdminSettingsBeforeData(),
+    loadDashboardMasterSettingsFromSQL(),
+    loadABPTargetEfficiencyLive()
+  ]);
 
   // Cache is only an instant visual bootstrap; it is never treated as the live authority.
   let cached=restoreFastBootCache();
@@ -3376,7 +3395,7 @@ async function bootLiveSupabaseData(){
 
   try{
     const keepId=ACTIVE_PLAN_UPLOAD?.id||null;
-    await loadFromSupabase(keepId,true);
+    if(!await loadFromSupabase(keepId,true))throw Error('Live report load did not complete');
     setSupabaseLiveBadge('ok','Supabase Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
     return true;
   }catch(e){
@@ -3495,7 +3514,9 @@ async function restoreDashboardFromCache(){
     activePlanningLabel()+' · '+DATA.length+' Plan/Day · '+FABRIC_CUTTING_DATA.length+' Fabric/Cutting · '+SEWING_IO_DATA.length+' Sewing I/O · '+DATE_WISE_PRODUCTION_DATA.length+' Production');
   return true;
 }
-async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
+let SUPABASE_LOAD_TOKEN=0;
+async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reuseSharedReports=false){
+  const loadToken=++SUPABASE_LOAD_TOKEN;
   try{
     setStatus(true,'Supabase থেকে reports load হচ্ছে...','3%');
     resetLoadUI();
@@ -3504,6 +3525,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
       .select('id,file_name,uploaded_at,row_count,planning_month,sequence_no,planning_id')
       .eq('status','complete')
       .order('uploaded_at',{ascending:false});
+    if(loadToken!==SUPABASE_LOAD_TOKEN)return false;
     if(upErr) throw upErr;
     if(!uploads || !uploads.length) throw Error('Supabase-এ কোনো completed upload পাওয়া যায়নি.');
     PLAN_UPLOAD_CATALOG=uploads;
@@ -3513,160 +3535,9 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     const selectedId=requestedUploadId || document.getElementById('planning-sequence-filter')?.value || uploads[0].id;
     const upload=uploads.find(u=>String(u.id)===String(selectedId)) || uploads[0];
     ACTIVE_PLAN_UPLOAD=upload;
-    const pageSize=1000;
-    let rows=[], from=0;
-    while(true){
-      const {data:part,error}=await SB.from('plan_records')
-        .select('id,source_row,line_no,buyer,product_type,product,ewo,po,col,order_qty,planned_qty,pcd,delivery,psd,pfd,manpower,smv,criteria,total,is_summary_row')
-        .eq('upload_id',upload.id)
-        .eq('criteria','Plan/Day')
-        .eq('is_summary_row',false)
-        .order('source_row',{ascending:true})
-        .range(from,from+pageSize-1);
-      if(error) throw error;
-      rows.push(...(part||[]));
-      if(!part || part.length<pageSize) break;
-      from+=pageSize;
-    }
-
-    // Chassis Priority list is the MASTER line list for the whole dashboard.
-    rows=rows.filter(r=>isChassisMasterLine(r.line_no));
-
-    // Raw Plan/Day values for Buyer Summary.
-    BUYER_PLAN_DATA=rows.map(r=>({
-      month:monthFromISO(r.psd || r.pfd || r.delivery),
-      buyer:r.buyer||'',
-      ewo:String(r.ewo??'').trim(),
-      po:String(r.po||'').trim(),
-      color:String(r.col||'').trim(),
-      orderqty:N(r.order_qty),
-      planqty:N(r.total)
-    }));
-
-    DATA=rows.map(r=>({
-      record_id:r.id,
-      month: monthFromISO(r.psd || r.pfd || r.delivery),
-      line: lineNumber(r.line_no),
-      ewo: r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),
-      buyer: r.buyer || '',
-      color: r.col || '',
-      po: r.po || '',
-      style: dashboardStyle(r.product_type || r.product),
-      manpower: N(r.manpower),
-      smv: N(r.smv),
-      orderqty: N(r.order_qty),
-      planqty: N(r.total),
-      deliverydate: r.delivery || '',
-      pcddate: r.pcd || '',
-      startdate: r.psd || '',
-      enddate: r.pfd || ''
-    })).filter(r=>r.line>0);
-
-    // Fetch the raw SAH/Day rows. Buyer Summary Plan Hours must match
-    // the uploaded file's Criteria = SAH/Day -> Total values exactly.
-    SAH_DATA=[];
-    let sahFrom=0;
-    while(true){
-      const {data:sahPart,error:sahErr}=await SB.from('plan_records')
-        .select('id,buyer,ewo,product_type,product,col,total,psd,pfd,delivery,line_no,is_summary_row')
-        .eq('upload_id',upload.id)
-        .eq('criteria','SAH/Day')
-        .eq('is_summary_row',false)
-        .range(sahFrom,sahFrom+pageSize-1);
-      if(sahErr) throw sahErr;
-      SAH_DATA.push(...(sahPart||[]).filter(r=>isChassisMasterLine(r.line_no)).map(r=>({
-        record_id:r.id,
-        month:monthFromISO(r.psd || r.pfd || r.delivery),
-        line:lineNumber(r.line_no),
-        ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),
-        buyer:r.buyer||'',
-        style:dashboardStyle(r.product_type || r.product),
-        color:r.col||'',
-        total:N(r.total)
-      })));
-      if(!sahPart || sahPart.length<pageSize) break;
-      sahFrom+=pageSize;
-    }
-
-    CLOCK_HOUR_DATA=[];
-    let chFrom=0;
-    while(true){
-      const {data:chPart,error:chErr}=await SB.from('plan_records')
-        .select('id,buyer,ewo,product_type,product,col,total,psd,pfd,delivery,line_no,is_summary_row')
-        .eq('upload_id',upload.id)
-        .eq('criteria','Clock Hour/Day')
-        .eq('is_summary_row',false)
-        .range(chFrom,chFrom+pageSize-1);
-      if(chErr) throw chErr;
-      CLOCK_HOUR_DATA.push(...(chPart||[]).filter(r=>isChassisMasterLine(r.line_no)).map(r=>({
-        record_id:r.id,
-        month:monthFromISO(r.psd || r.pfd || r.delivery),
-        line:lineNumber(r.line_no),
-        ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),
-        buyer:r.buyer||'',
-        style:dashboardStyle(r.product_type || r.product),
-        color:r.col||'',
-        total:N(r.total)
-      })));
-      if(!chPart || chPart.length<pageSize) break;
-      chFrom+=pageSize;
-    }
-
-    // Exact date-wise Clock Hour/Day values.
-    // plan_records.Total is the row total; tooltip needs the value for the hovered DATE.
-    CLOCK_HOUR_DAILY=[];
-    SAH_DAILY=[];
-    const clockMeta=new Map(CLOCK_HOUR_DATA.map(r=>[String(r.record_id),r]));
-    const sahMetaDaily=new Map(SAH_DATA.map(r=>[String(r.record_id),r]));
-    let chDailyFrom=0;
-    while(true){
-      const {data:chDailyPart,error:chDailyErr}=await SB.from('plan_daily')
-        .select('record_id,plan_date,value')
-        .eq('upload_id',upload.id)
-        .order('plan_date',{ascending:true})
-        .range(chDailyFrom,chDailyFrom+pageSize-1);
-      if(chDailyErr) throw chDailyErr;
-      (chDailyPart||[]).forEach(d=>{
-        const s=sahMetaDaily.get(String(d.record_id));
-        if(s) SAH_DAILY.push({
-          record_id:d.record_id,date:d.plan_date,value:N(d.value),
-          line:s.line,ewo:s.ewo,buyer:s.buyer,style:s.style
-        });
-        const r=clockMeta.get(String(d.record_id));
-        if(r) CLOCK_HOUR_DAILY.push({
-          record_id:d.record_id,date:d.plan_date,value:N(d.value),
-          line:r.line,ewo:r.ewo,buyer:r.buyer,style:r.style
-        });
-      });
-      if(!chDailyPart || chDailyPart.length<pageSize) break;
-      chDailyFrom+=pageSize;
-    }
-
-    const meta=new Map(DATA.map(r=>[String(r.record_id),r]));
-    DAILY_PLAN=[];
-    from=0;
-    while(true){
-      const {data:part,error}=await SB.from('plan_daily')
-        .select('record_id,plan_date,value')
-        .eq('upload_id',upload.id)
-        .order('plan_date',{ascending:true})
-        .range(from,from+pageSize-1);
-      if(error) throw error;
-      (part||[]).forEach(d=>{
-        const r=meta.get(String(d.record_id));
-        if(r) DAILY_PLAN.push({
-          record_id:d.record_id, date:d.plan_date, value:N(d.value),
-          line:r.line, ewo:r.ewo, buyer:r.buyer, style:r.style, color:r.col||r.color||'', smv:r.smv
-        });
-      });
-      if(!part || part.length<pageSize) break;
-      from+=pageSize;
-    }
-
-    // The top Month filter is the Planning History month.
-    // Dashboard data is already scoped to the selected planning upload/sequence.
-    MONTHS=[...new Set(DAILY_PLAN.map(d=>monthFromISO(d.date)).filter(Boolean))]
-      .sort((a,b)=>monthTime(a)-monthTime(b));
+    const snapshot=await fetchPlanningSnapshot(upload);
+    if(loadToken!==SUPABASE_LOAD_TOKEN)return false;
+    restorePlanningState(snapshot);
 
     // Keep Slide 15 FR Comparison synchronized with the selected Planning upload.
     if(CURRENT_SLIDE===15 && typeof EFF15_SUB!=='undefined' && EFF15_SUB==='fr'){
@@ -3681,89 +3552,58 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     setLoadChip('load-plan','ok','Planning ('+DATA.length.toLocaleString()+')');
 
     const sewingColorReady=!SEWING_IO_DATA.length || SEWING_IO_DATA.every(r=>Object.prototype.hasOwnProperty.call(r,'color'));
-    const reuseShared = preserveFilters && sewingColorReady && (FABRIC_CUTTING_DATA.length || SEWING_IO_DATA.length || DATE_WISE_PRODUCTION_DATA.length);
+    const reuseShared = reuseSharedReports && sewingColorReady && (FABRIC_CUTTING_DATA.length || SEWING_IO_DATA.length || DATE_WISE_PRODUCTION_DATA.length);
     if(reuseShared){
       setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
       setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
       setLoadChip('load-production','ok','Date Wise Production ('+DATE_WISE_PRODUCTION_DATA.length.toLocaleString()+')');
       setLoadProgress(92,'Planning version loaded · cached reports reused');
     }else{
-    setLoadProgress(58,'Planning data loaded · Fabrics & Cutting load হচ্ছে...');
-    setLoadChip('load-fabric','loading','Fabrics & Cutting');
+      setLoadProgress(58,'Planning loaded · shared reports load হচ্ছে...');
+      setLoadChip('load-fabric','loading','Fabrics & Cutting');
+      setLoadChip('load-sewing','loading','Sewing I/O');
+      setLoadChip('load-production','loading','Date Wise Production');
 
-    // Load Fabrics & Cutting analysis data.
-    FABRIC_CUTTING_DATA=[];
-    let fcFrom=0;
-    while(true){
-      const {data:fcPart,error:fcErr}=await SB.from('fabric_cutting_info')
-        .select('id,buyer,ewo,color_name,item_product_type,style_embellishment_type,pattern_update,color_order_qty,fabric_booking_qty,total_fabric_received,fabric_balance,fabric_stock_after_cut,cutable_qty,total_cut_qty,cutting_balance,cutting_percent,status,cutting_difficulties')
-        .order('id',{ascending:true})
-        .range(fcFrom,fcFrom+pageSize-1);
-      if(fcErr) throw fcErr;
-      FABRIC_CUTTING_DATA.push(...(fcPart||[]));
-      if(!fcPart || fcPart.length<pageSize)break;
-      fcFrom+=pageSize;
-    }
-
-    setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
-    refreshPermittedSlides('fabric');
-    if(CURRENT_SLIDE===11 && canAccessSlide(11))goSlide(11);
-    setLoadProgress(72,'Fabrics & Cutting loaded · Sewing I/O load হচ্ছে...');
-    setLoadChip('load-sewing','loading','Sewing I/O');
-
-    // Load Sewing Input & Output data for EWO Gantt hover.
-    SEWING_IO_DATA=[];
-    let sioFrom=0;
-    while(true){
-      const {data:sioPart,error:sioErr}=await SB.from('sewing_input_output')
-        .select('id,ewo,color,line,line_no,total_input_qty,total_output_qty,total_wip_qty,total_reject_qty')
-        .order('id',{ascending:true})
-        .range(sioFrom,sioFrom+pageSize-1);
-      if(sioErr) throw sioErr;
-      SEWING_IO_DATA.push(...(sioPart||[]).map(r=>({
+      // Independent reports download together. Publish only complete results so a
+      // failed page never replaces the previous report with a partial dataset.
+      const [fabric,sewing,production]=await Promise.all([
+        sbPaged(()=>SB.from('fabric_cutting_info')
+          .select('id,buyer,ewo,color_name,item_product_type,style_embellishment_type,pattern_update,color_order_qty,fabric_booking_qty,total_fabric_received,fabric_balance,fabric_stock_after_cut,cutable_qty,total_cut_qty,cutting_balance,cutting_percent,status,cutting_difficulties')
+          .order('id',{ascending:true})),
+        sbPaged(()=>SB.from('sewing_input_output')
+          .select('id,ewo,color,line,line_no,total_input_qty,total_output_qty,total_wip_qty,total_reject_qty')
+          .order('id',{ascending:true})),
+        sbPaged(()=>SB.from('date_wise_production')
+          .select('id,code,buyer,ewo,po_no,color,line,line_no,output_date,total_qty')
+          .order('output_date',{ascending:true}).order('id',{ascending:true}))
+      ]);
+      if(loadToken!==SUPABASE_LOAD_TOKEN)return false;
+      FABRIC_CUTTING_DATA=fabric;
+      SEWING_IO_DATA=sewing.map(r=>({
         ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
         color:r.color||'',
         line_no:Number(r.line_no)||lineNumber(r.line),
-        input:N(r.total_input_qty),
-        output:N(r.total_output_qty),
-        wip:N(r.total_wip_qty),
-        reject:N(r.total_reject_qty)
-      })));
-      if(!sioPart || sioPart.length<pageSize)break;
-      sioFrom+=pageSize;
-    }
-
-    setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
-    setLoadProgress(84,'Sewing I/O loaded · Date Wise Production load হচ্ছে...');
-    setLoadChip('load-production','loading','Date Wise Production');
-
-    DATE_WISE_PRODUCTION_DATA=[];
-    let dwpFrom=0;
-    while(true){
-      const {data:dwpPart,error:dwpErr}=await SB.from('date_wise_production')
-        .select('id,code,buyer,ewo,po_no,color,line,line_no,output_date,total_qty')
-        .order('output_date',{ascending:true})
-        .order('id',{ascending:true})
-        .range(dwpFrom,dwpFrom+pageSize-1);
-      if(dwpErr)throw dwpErr;
-      DATE_WISE_PRODUCTION_DATA.push(...(dwpPart||[]).map(r=>({
+        input:N(r.total_input_qty),output:N(r.total_output_qty),
+        wip:N(r.total_wip_qty),reject:N(r.total_reject_qty)
+      }));
+      DATE_WISE_PRODUCTION_DATA=production.map(r=>({
         id:r.id,code:r.code||'',buyer:r.buyer||'',
         ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
         po_no:r.po_no||'',color:r.color||'',line:r.line||'',
         line_no:Number(r.line_no)||lineNumber(r.line),
         output_date:r.output_date,total_qty:N(r.total_qty)
-      })));
-      if(!dwpPart || dwpPart.length<pageSize)break;
-      dwpFrom+=pageSize;
-    }
-    setLoadChip('load-production','ok','Date Wise Production ('+DATE_WISE_PRODUCTION_DATA.length.toLocaleString()+')');
-    setLoadProgress(96,'সব report loaded · Dashboard render হচ্ছে...');
+      }));
+      setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
+      setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
+      setLoadChip('load-production','ok','Date Wise Production ('+DATE_WISE_PRODUCTION_DATA.length.toLocaleString()+')');
+      setLoadProgress(96,'সব report loaded · Dashboard render হচ্ছে...');
     }
 
     renderAll();
     PLAN_VERSION_CACHE.set(String(upload.id),capturePlanningState());
     saveFastBootCache();
     await saveDashboardCache();
+    if(loadToken!==SUPABASE_LOAD_TOKEN)return false;
     setLoadProgress(100,'সব Supabase report successfully loaded');
     setStatus(true,
       'সব Supabase report successfully loaded',
@@ -3774,10 +3614,14 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     // Preload other Planning sequences in the background so first selection is also instant.
     // Performance: do not download every historical planning version in background.
     // A version is fetched only when the user explicitly selects it.
+    return true;
   }catch(error){
+    if(loadToken!==SUPABASE_LOAD_TOKEN)return false;
     console.error(error);
+    setSupabaseLiveBadge('err','Supabase sync failed');
     const lf=document.getElementById('load-fill');if(lf)lf.classList.remove('loading');
     setStatus(false,'Supabase load failed: '+(error?.message||error)+'. CSV upload এখনও ব্যবহার করা যাবে.');
+    return false;
   }
 }
 
@@ -6005,7 +5849,7 @@ async function refreshDashboardAfterSuccessfulUpload(source,options={}){
   setSupabaseLiveBadge('','Supabase · refreshing after upload…');
   await clearDashboardCache();
   PLAN_VERSION_CACHE.clear();
-  await loadFromSupabase(options.planUploadId||null,true);
+  if(!await loadFromSupabase(options.planUploadId||null,true))throw Error('Dashboard refresh failed after upload');
   if(source==='orderbank'){
     ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];ORDER_BANK_FILTERS={};ORDER_BANK_EWO_SEARCH='';ORDER_BANK_PAGE=1;
     if(CURRENT_SLIDE===14)await loadOrderBankSlide();
