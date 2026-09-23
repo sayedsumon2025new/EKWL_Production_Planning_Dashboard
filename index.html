@@ -1398,6 +1398,9 @@ input,select,textarea{
 #s11 .gantt td.g-ewo{background:#fff!important;color:#073b7a!important;font-weight:900!important;min-width:96px}
 #s11 .gantt td.g-empty{background:#fff!important;color:#fff!important;min-width:96px}
 #s11 .gantt td.g-ewo.g-wip-covered{background:#b7e4c7!important;color:#17351f!important;font-weight:900!important}
+#s11 .gantt td.g-ewo.g-cutting-covered{background:#93c5fd!important;color:#102a43!important;font-weight:900!important}
+#s11 .gantt td.g-ewo.g-cutable-covered{background:#c7d2fe!important;color:#312e81!important;font-weight:900!important}
+#s11 .gantt td.g-ewo.g-material-short{background:#fecaca!important;color:#7f1d1d!important;font-weight:900!important}
 #s11 .gantt td.g-ewo.g-wip-short{background:#ffe66d!important;color:#5b4300!important;font-weight:900!important}
 #s11 .gantt .g-date{min-width:96px;font-size:10px}
 #s11 .gantt-legend{font-size:10px;margin:0 0 9px 2px;color:#526176;font-weight:700}
@@ -1900,7 +1903,13 @@ input,select,textarea{
   <div class="card">
     <div class="card-title">📅 EWO GANTT CHART <span class="ct-right" id="s11-count"></span></div>
     <div class="gantt-legend">Team/Line × Date · <span class="gantt-note">একই Line/Date-এ একাধিক EWO থাকলে সর্বোচ্চ Plan Qty-এর EWO দেখানো হবে।</span></div>
-    <div class="gantt-wrap"><table class="gantt"><thead id="s11-head"></thead><tbody id="s11-body"></tbody></table></div>
+    <div class="gantt-coverage-legend" style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0 10px;padding:9px 12px;background:#f8fafc;border:1px solid #dbe4ee;border-radius:8px;font-size:12px;font-weight:700;color:#243447">
+<span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#4ade80;margin-right:6px"></b>Green → Sewing WIP cumulative Plan cover করে</span>
+<span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#3b82f6;margin-right:6px"></b>Blue → Sewing WIP fail, কিন্তু Cutting WIP cover করে</span>
+<span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#818cf8;margin-right:6px"></b>Indigo → Sewing WIP + Cutting WIP fail, কিন্তু Cutable Qty cover করে</span>
+<span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#ef4444;margin-right:6px"></b>Red → Cutable Qty-ও cumulative Plan cover করতে পারে না</span>
+</div>
+<div class="gantt-wrap"><table class="gantt"><thead id="s11-head"></thead><tbody id="s11-body"></tbody></table></div>
   </div>
 </div>
 
@@ -4220,7 +4229,7 @@ function renderS11(data){
     const thisDate=String(date||'').slice(0,10);
     const afterProductionCutoff=!!latestProductionDate && thisDate>latestProductionDate;
 
-    let wipCovered=false,wipShort=false;
+    let wipCovered=false,cuttingCovered=false,cutableCovered=false,materialShort=false;
     if(afterProductionCutoff){
       const sameLineEwoFuture=[];
       winner.forEach((cw,ck)=>{
@@ -4238,15 +4247,27 @@ function renderS11(data){
         cumulativePlan+=N(fp.qty);
         if(fp.date===thisDate)break;
       }
+      // Sequential coverage priority:
+      // GREEN  = Line+EWO Sewing WIP covers cumulative plan.
+      // BLUE   = Sewing WIP fails, but EWO Cutting WIP covers it.
+      // INDIGO = Sewing/Cutting WIP fail, but EWO Cutable Qty covers it.
+      // RED    = even EWO Cutable Qty cannot cover cumulative plan.
       wipCovered=cumulativePlan<=N(w.sewingWip);
-      wipShort=!wipCovered;
-      // Remaining usable WIP after deducting date-wise plan cumulatively.
+      if(!wipCovered){
+        cuttingCovered=cumulativePlan<=N(w.cuttingWip);
+        if(!cuttingCovered){
+          cutableCovered=cumulativePlan<=N(w.cutableQty);
+          materialShort=!cutableCovered;
+        }
+      }
+      // Remaining usable Sewing WIP after deducting date-wise plan cumulatively.
       w.consumableWip=Math.max(0,N(w.sewingWip)-cumulativePlan);
     }
     if(!afterProductionCutoff)w.consumableWip=N(w.sewingWip);
 
     const payloadWithWip=encodeURIComponent(JSON.stringify({line,date,...w}));
-    return '<td class="g-ewo'+(wipCovered?' g-wip-covered':wipShort?' g-wip-short':'')+'" data-gantt="'+payloadWithWip+'">'+esc(w.ewo)+'</td>';
+    const coverageClass=wipCovered?' g-wip-covered':cuttingCovered?' g-cutting-covered':cutableCovered?' g-cutable-covered':materialShort?' g-material-short':'';
+    return '<td class="g-ewo'+coverageClass+'" data-gantt="'+payloadWithWip+'">'+esc(w.ewo)+'</td>';
   }).join('')+'</tr>').join('');
 
   const tip=document.getElementById('ewo-gantt-tip');
