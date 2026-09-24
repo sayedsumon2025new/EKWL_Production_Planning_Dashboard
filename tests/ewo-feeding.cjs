@@ -12,23 +12,27 @@ const data=[
  {ewo:'A',line:2,startdate:'2026-09-12',buyer:'Buyer A',style:'Hoody',orderqty:2000,planqty:1500},
  {ewo:'A',line:5,startdate:'2026-10-02',buyer:'Other',style:'Other',orderqty:9000,planqty:8000},
  {ewo:'B',line:8,startdate:'2026-09-15',buyer:'Buyer B',style:'Polo',orderqty:6000,planqty:4500},
+ {ewo:'B',line:9,startdate:'2026-09-16',buyer:'Buyer B',style:'Polo',orderqty:1000,planqty:500},
  {ewo:'C',line:12,startdate:'2026-10-03',orderqty:5000,planqty:2500},
  {ewo:'D',line:1,startdate:'',orderqty:100,planqty:100},
  {ewo:'E',line:1,startdate:'2026-08-31',orderqty:100,planqty:100}
 ];
 const rows=api.buildS6Rows(data,'2026-09');
-assert.equal(rows.length,2);assert.equal(rows[0].ewo,'A');assert.equal(rows[0].feeding,2);
+assert.equal(rows.length,2);assert.equal(rows[0].ewo,'A');assert.equal(rows[0].feeding,1);
 assert.equal(rows[0].lines.length,1);assert.equal(rows[0].orderqty,6000);assert.equal(rows[0].planqty,4000);
 assert.equal(rows[0].splits[0],4000);assert.equal(rows[0].buyers.size,1);
 api.renderS6(data);
 const filter=document.getElementById('s6-feeding-filter');filter.value='2';api.renderS6(data);
 assert.match(document.getElementById('s6-count').textContent,/1 of 2/);
-assert.match(document.getElementById('s6-kpi').innerHTML,/6000/);
-assert.doesNotMatch(document.getElementById('s6-body').innerHTML,/Buyer B|Other|2026-09-05/);
+assert.match(document.getElementById('s6-kpi').innerHTML,/7000/);
+assert.match(document.getElementById('s6-kpi').innerHTML,/5000/);
+assert.equal(rows[1].feeding,2);
+assert.match(document.getElementById('s6-foot').innerHTML,/>2<\/td>/);
+assert.doesNotMatch(document.getElementById('s6-body').innerHTML,/Buyer A|Other|2026-09-05/);
 upload.id='P05';api.renderS6(data);assert.equal(filter.value,'');
 upload.planning_month='2026-10';api.renderS6(data);
 assert.equal(document.getElementById('s6-month').textContent,'2026-10');
 assert.equal(api.buildS6Rows(data,'2026-10').length,2);
 const split=api.buildS6Rows([{ewo:'X',line:12,startdate:'2026-09-02',planqty:40},{ewo:'X',line:2,startdate:'2026-09-03',planqty:60}],'2026-09')[0];
-assert.equal(split.lines.join('|'),'2|12');assert.equal(split.splits.join('|'),'60|40');
-console.log('PASS PSD month exclusion, EWO aggregation, distinct feeding, aligned splits, filter KPIs and planning switch reset');
+assert.equal(split.feeding,2);assert.equal(split.lines.join('|'),'2|12');assert.equal(split.splits.join('|'),'60|40');
+console.log('PASS PSD month exclusion, EWO aggregation, unique-line feeding despite repeated PSD/PO/colour, aligned splits, filter KPIs and planning switch reset');
