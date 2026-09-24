@@ -567,6 +567,25 @@ table.cal td.line-td{
 #s3 #s3-tbl td.num{font-variant-numeric:tabular-nums}
 
 
+
+/* Click-to-open EWO details; hovering only highlights the line. */
+button.range-line-chip{cursor:pointer;transition:transform .15s ease,background .15s ease,box-shadow .15s ease}
+button.range-line-chip:hover,button.range-line-chip:focus-visible{transform:scale(1.18);background:#275c88;color:#fff;box-shadow:0 0 0 2px #f0a500;outline:none}
+#s2-line-dialog{width:min(960px,calc(100vw - 32px));max-height:85vh;box-sizing:border-box;padding:22px;border:1px solid #b7cce0;border-radius:14px;background:#fff;color:#17314e;box-shadow:0 24px 80px #081b3a66}
+#s2-line-dialog::backdrop{background:#0c1c32a6}
+#s2-line-dialog header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+#s2-line-dialog h2{margin:0;font-size:20px;color:#17314e}
+#s2-line-dialog p{margin:8px 0 14px;color:#536c85;font-size:12px}
+#s2-line-dialog .s2-dialog-close{border:1px solid #b7cce0;background:#f1f6fb;color:#17314e;border-radius:6px;padding:7px 12px;cursor:pointer}
+#s2-line-dialog .s2-detail-scroll{overflow:auto;max-height:60vh}
+#s2-line-dialog table{width:100%;border-collapse:collapse;font-size:13px}
+#s2-line-dialog th,#s2-line-dialog td{padding:11px 12px;border:1px solid #d3deeb;text-align:left;white-space:normal}
+#s2-line-dialog thead th{position:sticky;top:0;background:#eaf2fa;color:#17314e}
+#s2-line-dialog tbody tr:nth-child(even){background:#f6f9fc}
+#s2-line-dialog .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#s2-line-dialog tfoot{background:#eaf2fa;font-weight:700}
+@media(prefers-reduced-motion:reduce){button.range-line-chip{transition:none}}
+
 /* Range distribution line numbers */
 .range-lines{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .range-line-chip{display:inline-flex;align-items:center;justify-content:center;min-width:25px;padding:2px 6px;border:1px solid #36516f;border-radius:4px;background:#132943;color:#b9d9f5;font-size:9px;font-weight:700}
@@ -3076,6 +3095,7 @@ function requireSitePerm(key,label='এই module'){
 }
 
 function goSlide(n){
+  closeS2LineDetails();
   if(Number(n)===12 && canAccessSlide(12)){setTimeout(loadFloorAllocationAdmin,0);setTimeout(()=>loadEfficiencyLadderFromSQL(false),0);setTimeout(()=>loadChassisPriorityFromSQL(false),0);setTimeout(()=>loadABPTargetFromSQL(false),0);}
   const maxSlide=getMaxDashboardSlide();
   n=Math.max(0,Math.min(Number(n)||0,maxSlide));
@@ -4076,7 +4096,47 @@ function renderS1(data){
 }
 
 /* ══ SLIDE 2: PLAN QTY ANALYSIS ════════════════ */
+
+let S2_LINE_DETAILS=[];
+function closeS2LineDetails(){
+  const dialog=document.getElementById('s2-line-dialog');
+  if(dialog){if(dialog.open)dialog.close();dialog.remove();}
+}
+function buildS2EwoRows(rows){
+  const groups=new Map();
+  rows.forEach(r=>{
+    const ewo=String(r.ewo??'').trim();
+    if(!groups.has(ewo))groups.set(ewo,{ewo,items:new Set(),colors:new Set(),smvs:new Set(),orderqty:0,planqty:0});
+    const g=groups.get(ewo);
+    if(String(r.style??'').trim())g.items.add(String(r.style).trim());
+    if(String(r.color??'').trim())g.colors.add(String(r.color).trim());
+    if(r.smv!=null && String(r.smv).trim()!=='')g.smvs.add(String(r.smv));
+    g.orderqty+=N(r.orderqty);g.planqty+=N(r.planqty);
+  });
+  return [...groups.values()].sort((a,b)=>a.ewo.localeCompare(b.ewo,undefined,{numeric:true}));
+}
+function openS2LineDetails(index){
+  const detail=S2_LINE_DETAILS[index];if(!detail)return;
+  closeS2LineDetails();
+  const groups=buildS2EwoRows(detail.rows);
+  const dialog=document.createElement('dialog');dialog.id='s2-line-dialog';
+  dialog.setAttribute('aria-labelledby','s2-line-dialog-title');
+  const list=values=>[...values].map(esc).join(', ')||'—';
+  dialog.innerHTML='<header><div><h2 id="s2-line-dialog-title">Line '+esc(detail.line)+' · '+esc(detail.range)+'</h2><p>'+esc(sortedMonths(detail.rows).join(' & '))+' · '+groups.length+' EWO(s)</p></div><button type="button" class="s2-dialog-close" aria-label="Close EWO details">✕</button></header>'+
+    '<p class="s2-detail-note">Plan table details for this line and order range. Quantities are summed from matching Plan/Day rows.</p>'+
+    '<div class="s2-detail-scroll"><table><thead><tr><th>EWO</th><th>Item</th><th>Order Qty</th><th>Plan Qty</th><th>Colour</th><th>SMV</th></tr></thead><tbody>'+
+    groups.map(g=>'<tr><td>'+esc(g.ewo||'—')+'</td><td>'+list(g.items)+'</td><td class="num">'+fmt(g.orderqty)+'</td><td class="num">'+fmt(g.planqty)+'</td><td>'+list(g.colors)+'</td><td>'+list(g.smvs)+'</td></tr>').join('')+
+    '</tbody><tfoot><tr><th colspan="2">Total</th><td class="num">'+fmt(groups.reduce((s,g)=>s+g.orderqty,0))+'</td><td class="num">'+fmt(groups.reduce((s,g)=>s+g.planqty,0))+'</td><td colspan="2"></td></tr></tfoot></table></div>';
+  document.body.appendChild(dialog);
+  dialog.querySelector('.s2-dialog-close').onclick=()=>dialog.close();
+  dialog.addEventListener('click',e=>{if(e.target===dialog){const b=dialog.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)dialog.close();}});
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  dialog.showModal();
+}
+
 function renderS2(data){
+  closeS2LineDetails();
+  S2_LINE_DETAILS=[];
   const ms=sortedMonths(data);
   document.getElementById('s2-months').textContent=ms.join(' & ');
 
@@ -4180,12 +4240,13 @@ function renderS2(data){
           <div class="bar-val">${r.count}</div>
         </div>
         <div class="range-lines"><span class="range-line-label">Lines:</span>
-          ${lines.length?lines.map(l=>`<span class="range-line-chip">${esc(l)}</span>`).join(''):'<span class="range-line-label">—</span>'}
+          ${lines.length?lines.map(l=>{const index=S2_LINE_DETAILS.push({line:l,range:r.lbl,rows:s2Source.filter(x=>String(x.line)===l&&rangeEwoSet.has(JSON.stringify([x.month,String(x.ewo??'').trim()])) )})-1;return `<button type="button" class="range-line-chip" data-s2-detail="${index}" aria-label="View EWO details for line ${esc(l)}, ${esc(r.lbl)}">${esc(l)}</button>`;}).join(''):'<span class="range-line-label">—</span>'}
         </div>
       </div>
     </div>`;
   }).join('');
 
+  document.getElementById('s2-bar').onclick=e=>{const button=e.target.closest('button[data-s2-detail]');if(button)openS2LineDetails(Number(button.dataset.s2Detail));};
   document.getElementById('s2-summary').innerHTML=`<div class="range-summary">
     <div class="rsum-box"><div class="rsum-title">5000 or fewer</div><div class="rsum-val">${pct(lowPct)}</div><div class="rsum-sub">${lowCount} of ${totalStyles} EWOs</div></div>
     <div class="rsum-box"><div class="rsum-title">Above 5000</div><div class="rsum-val">${pct(highPct)}</div><div class="rsum-sub">${highCount} of ${totalStyles} EWOs</div></div>
@@ -5724,6 +5785,7 @@ async function siteLogin(){
   }finally{btn.disabled=false}
 }
 async function siteLogout(){
+  closeS2LineDetails();S2_LINE_DETAILS=[];
   const cacheKey=dashboardCacheKey(),fastKey=fastBootCacheKey();
   ++SITE_SESSION_GENERATION;++SUPABASE_LOAD_TOKEN;++PLAN_FILTER_TOKEN;++EFF15_FR_TOKEN;
   DATA=[];DAILY_PLAN=[];SAH_DATA=[];SAH_DAILY=[];CLOCK_HOUR_DATA=[];CLOCK_HOUR_DAILY=[];BUYER_PLAN_DATA=[];MONTHS=[];
