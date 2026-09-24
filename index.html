@@ -4135,7 +4135,7 @@ function openS2LineDetails(index){
   dialog.setAttribute('aria-labelledby','s2-line-dialog-title');
   const list=values=>[...values].map(esc).join(', ')||'—';
   dialog.innerHTML='<header><div><h2 id="s2-line-dialog-title">Line '+esc(detail.line)+' · '+esc(detail.range)+'</h2><p>'+esc(sortedMonths(detail.rows).join(' & '))+' · '+groups.length+' EWO(s)</p></div><button type="button" class="s2-dialog-close" aria-label="Close EWO details">✕</button></header>'+
-    '<p class="s2-detail-note">Line summary within the selected order range. Quantities follow the matching Plan/Day rows; Colour and PO counts exclude blanks.</p>'+
+    '<p class="s2-detail-note">Range is based on cumulative Order Qty for this Line + EWO across all PO and colours in the selected plan. All totals below use only matching rows on this line; blank Colour and PO values are excluded.</p>'+
     '<div class="s2-line-kpis">'+[
       ['Total EWO',fmt(totals.ewos)],['Unique Colours',fmt(totals.colors)],
       ['Total Order Qty',fmt(totals.orderqty)],['Total Plan Qty',fmt(totals.planqty)],
@@ -4163,12 +4163,12 @@ function renderS2(data){
   // Do not re-filter on r.criteria here: that field is not retained in this runtime view.
   const s2Source=data;
 
-  // EWO Total Order Qty = SUM of Order qty from Plan/Day rows for the same Month + EWO.
+  // Approved range basis: sum all PO/colour Plan/Day rows by Line + EWO in this planning version.
   const ewoOrderMap=new Map();
   s2Source.forEach(r=>{
-    const k=JSON.stringify([r.month,String(r.ewo??'').trim()]);
+    const k=JSON.stringify([String(r.line),String(r.ewo??'').trim()]);
     if(!ewoOrderMap.has(k)) ewoOrderMap.set(k,{
-      month:r.month,ewo:String(r.ewo??'').trim(),buyer:r.buyer||'',style:r.style||'',
+      line:String(r.line),ewo:String(r.ewo??'').trim(),buyer:r.buyer||'',style:r.style||'',
       orderqty:0,lines:[]
     });
     const e=ewoOrderMap.get(k);
@@ -4203,7 +4203,7 @@ function renderS2(data){
 
   let html=`<table class="qty-range-ref">
     <thead><tr>
-      <th>Order QTY Range</th><th>No Of EWO</th><th>Order Qty</th><th>Percentage</th><th>Summary</th>
+      <th>Order QTY Range</th><th>No Of Line–EWO</th><th>Order Qty</th><th>Percentage</th><th>Summary</th>
     </tr></thead><tbody>`;
 
   stats.forEach((r,i)=>{
@@ -4218,7 +4218,7 @@ function renderS2(data){
     html+=`</tr>`;
   });
   html+=`<tr class="range-total">
-    <td>Total EWO</td><td class="num">${fmt(totalStyles)}</td><td class="num">${fmt(totalOrderQty)}</td><td class="num">100%</td><td class="num">100%</td>
+    <td>Total Line–EWO</td><td class="num">${fmt(totalStyles)}</td><td class="num">${fmt(totalOrderQty)}</td><td class="num">100%</td><td class="num">100%</td>
   </tr></tbody></table>`;
   document.getElementById('s2-tbl-wrap').innerHTML=`
     <div style="display:flex;justify-content:flex-end;align-items:center;margin:0 0 8px">
@@ -4228,10 +4228,10 @@ function renderS2(data){
       </div>
     </div>`+html;
   document.getElementById('s2-top-pie').innerHTML=`
-    <div class="s2-top-pie-title">📊 STYLE DISTRIBUTION</div>
+    <div class="s2-top-pie-title">📊 LINE–EWO DISTRIBUTION</div>
     <div class="s2-top-pie-body">
       <div class="s2-top-donut" style="background:conic-gradient(#79c7df 0 ${lowPct}%, #58b63d ${lowPct}% 100%)">
-        <div class="s2-top-hole"><b>${fmt(totalStyles)}</b><span>Total EWO</span></div>
+        <div class="s2-top-hole"><b>${fmt(totalStyles)}</b><span>Line–EWO</span></div>
       </div>
       <div class="s2-top-legend">
         <div class="lg"><i style="background:#79c7df"></i><div>5000 or fewer<strong>${pct(lowPct)} (${fmt(lowCount)})</strong></div></div>
@@ -4244,9 +4244,9 @@ function renderS2(data){
   document.getElementById('s2-bar').innerHTML=stats.map(r=>{
     const rangeEwoSet=new Set(allUniqueEWOs
       .filter(e=>e.orderqty>=r.min && e.orderqty<=r.max)
-      .map(e=>JSON.stringify([e.month,String(e.ewo)])));
+      .map(e=>JSON.stringify([e.line,String(e.ewo)])));
     const lines=[...new Set(s2Source
-      .filter(x=>rangeEwoSet.has(JSON.stringify([x.month,String(x.ewo??'').trim()])))
+      .filter(x=>rangeEwoSet.has(JSON.stringify([String(x.line),String(x.ewo??'').trim()])))
       .map(x=>String(x.line)).filter(Boolean))]
       .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
     return `<div class="bar-row" style="align-items:flex-start">
@@ -4257,7 +4257,7 @@ function renderS2(data){
           <div class="bar-val">${r.count}</div>
         </div>
         <div class="range-lines"><span class="range-line-label">Lines:</span>
-          ${lines.length?lines.map(l=>{const index=S2_LINE_DETAILS.push({line:l,range:r.lbl,rows:s2Source.filter(x=>String(x.line)===l&&rangeEwoSet.has(JSON.stringify([x.month,String(x.ewo??'').trim()])) )})-1;return `<button type="button" class="range-line-chip" data-s2-detail="${index}" aria-label="View EWO details for line ${esc(l)}, ${esc(r.lbl)}">${esc(l)}</button>`;}).join(''):'<span class="range-line-label">—</span>'}
+          ${lines.length?lines.map(l=>{const index=S2_LINE_DETAILS.push({line:l,range:r.lbl,rows:s2Source.filter(x=>String(x.line)===l&&rangeEwoSet.has(JSON.stringify([String(x.line),String(x.ewo??'').trim()])) )})-1;return `<button type="button" class="range-line-chip" data-s2-detail="${index}" aria-label="View EWO details for line ${esc(l)}, ${esc(r.lbl)}">${esc(l)}</button>`;}).join(''):'<span class="range-line-label">—</span>'}
         </div>
       </div>
     </div>`;
@@ -4265,8 +4265,8 @@ function renderS2(data){
 
   document.getElementById('s2-bar').onclick=e=>{const button=e.target.closest('button[data-s2-detail]');if(button)openS2LineDetails(Number(button.dataset.s2Detail));};
   document.getElementById('s2-summary').innerHTML=`<div class="range-summary">
-    <div class="rsum-box"><div class="rsum-title">5000 or fewer</div><div class="rsum-val">${pct(lowPct)}</div><div class="rsum-sub">${lowCount} of ${totalStyles} EWOs</div></div>
-    <div class="rsum-box"><div class="rsum-title">Above 5000</div><div class="rsum-val">${pct(highPct)}</div><div class="rsum-sub">${highCount} of ${totalStyles} EWOs</div></div>
+    <div class="rsum-box"><div class="rsum-title">5000 or fewer</div><div class="rsum-val">${pct(lowPct)}</div><div class="rsum-sub">${lowCount} of ${totalStyles} Line–EWOs</div></div>
+    <div class="rsum-box"><div class="rsum-title">Above 5000</div><div class="rsum-val">${pct(highPct)}</div><div class="rsum-sub">${highCount} of ${totalStyles} Line–EWOs</div></div>
   </div>`;
 }
 
