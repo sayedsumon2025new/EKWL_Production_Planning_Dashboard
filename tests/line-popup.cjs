@@ -25,3 +25,17 @@ ctx.renderS2([rows[3]]);
 assert.equal(vm.runInContext('S2_LINE_DETAILS.length',ctx),1);
 assert.equal(vm.runInContext('S2_LINE_DETAILS[0].rows[0].ewo',ctx),'B');
 console.log('PASS EWO grouping, line/range isolation, quantities, multiple colours/SMVs, click-only buttons and refreshed selection');
+
+const counted=ctx.buildS2EwoRows([
+ {ewo:'A',style:'Shirt',color:'Red',smv:'5.00',po:' PO1 ',orderqty:10,planqty:4},
+ {ewo:'A',style:'Shirt',color:'Red',smv:5,po:'PO1',orderqty:20,planqty:6},
+ {ewo:'B',style:'Polo',color:'Red',smv:6,po:'PO1',orderqty:30,planqty:8},
+ {ewo:'B',style:'Polo',color:'Blue',smv:6,po:'PO2',orderqty:40,planqty:10},
+ {ewo:'B',style:'Polo',color:' ',smv:'',po:' ',orderqty:0,planqty:0}
+]);
+assert.equal(counted[0].pos.size,1);assert.equal(counted[0].smvs.size,1);
+assert.equal(counted[1].colors.size,2);assert.equal(counted[1].pos.size,2);
+const totals=ctx.summarizeS2Line(counted);
+assert.equal(totals.ewos,2);assert.equal(totals.colors,2);assert.equal(totals.pos,2);
+assert.equal(totals.smvs.size,2);assert.equal(totals.orderqty,100);assert.equal(totals.planqty,28);
+console.log('PASS unique PO/colour/SMV counts, blank exclusion, EWO products and line totals');

@@ -571,12 +571,16 @@ table.cal td.line-td{
 /* Click-to-open EWO details; hovering only highlights the line. */
 button.range-line-chip{cursor:pointer;transition:transform .15s ease,background .15s ease,box-shadow .15s ease}
 button.range-line-chip:hover,button.range-line-chip:focus-visible{transform:scale(1.18);background:#275c88;color:#fff;box-shadow:0 0 0 2px #f0a500;outline:none}
-#s2-line-dialog{margin:auto;inset:0;width:min(960px,calc(100vw - 32px));max-height:85vh;box-sizing:border-box;padding:22px;border:1px solid #b7cce0;border-radius:14px;background:#fff;color:#17314e;box-shadow:0 24px 80px #081b3a66}
+#s2-line-dialog{margin:auto;inset:0;width:min(1180px,calc(100vw - 32px));max-height:85vh;box-sizing:border-box;padding:22px;border:1px solid #b7cce0;border-radius:14px;background:#fff;color:#17314e;box-shadow:0 24px 80px #081b3a66}
 #s2-line-dialog::backdrop{background:#0c1c32a6}
 #s2-line-dialog header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
 #s2-line-dialog h2{margin:0;font-size:20px;color:#17314e}
 #s2-line-dialog p{margin:8px 0 14px;color:#536c85;font-size:12px}
 #s2-line-dialog .s2-dialog-close{border:1px solid #b7cce0;background:#f1f6fb;color:#17314e;border-radius:6px;padding:7px 12px;cursor:pointer}
+#s2-line-dialog .s2-line-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+#s2-line-dialog .s2-line-kpis>div{background:#eff5fb;border:1px solid #d3deeb;border-radius:8px;padding:12px}
+#s2-line-dialog .s2-line-kpis span{display:block;font-size:11px;color:#536c85;margin-bottom:6px}
+#s2-line-dialog .s2-line-kpis strong{font-size:18px;overflow-wrap:anywhere}
 #s2-line-dialog .s2-detail-scroll{overflow:auto;max-height:60vh}
 #s2-line-dialog table{width:100%;border-collapse:collapse;font-size:13px}
 #s2-line-dialog th,#s2-line-dialog td{padding:11px 12px;border:1px solid #d3deeb;text-align:left;white-space:normal}
@@ -4106,27 +4110,40 @@ function buildS2EwoRows(rows){
   const groups=new Map();
   rows.forEach(r=>{
     const ewo=String(r.ewo??'').trim();
-    if(!groups.has(ewo))groups.set(ewo,{ewo,items:new Set(),colors:new Set(),smvs:new Set(),orderqty:0,planqty:0});
+    if(!groups.has(ewo))groups.set(ewo,{ewo,items:new Set(),colors:new Set(),smvs:new Set(),pos:new Set(),orderqty:0,planqty:0});
     const g=groups.get(ewo);
     if(String(r.style??'').trim())g.items.add(String(r.style).trim());
     if(String(r.color??'').trim())g.colors.add(String(r.color).trim());
-    if(r.smv!=null && String(r.smv).trim()!=='')g.smvs.add(String(r.smv));
+    if(r.smv!=null && String(r.smv).trim()!=='')g.smvs.add(Number.isFinite(Number(r.smv))?String(Number(r.smv)):String(r.smv).trim());
+    if(String(r.po??'').trim())g.pos.add(String(r.po).trim());
     g.orderqty+=N(r.orderqty);g.planqty+=N(r.planqty);
   });
   return [...groups.values()].sort((a,b)=>a.ewo.localeCompare(b.ewo,undefined,{numeric:true}));
+}
+function summarizeS2Line(groups){
+  const colors=new Set(),pos=new Set(),smvs=new Set();
+  groups.forEach(g=>{g.colors.forEach(v=>colors.add(v));g.pos.forEach(v=>pos.add(v));g.smvs.forEach(v=>smvs.add(v));});
+  return {ewos:groups.filter(g=>g.ewo).length,colors:colors.size,pos:pos.size,smvs,
+    orderqty:groups.reduce((s,g)=>s+g.orderqty,0),planqty:groups.reduce((s,g)=>s+g.planqty,0)};
 }
 function openS2LineDetails(index){
   const detail=S2_LINE_DETAILS[index];if(!detail)return;
   closeS2LineDetails();
   const groups=buildS2EwoRows(detail.rows);
+  const totals=summarizeS2Line(groups);
   const dialog=document.createElement('dialog');dialog.id='s2-line-dialog';
   dialog.setAttribute('aria-labelledby','s2-line-dialog-title');
   const list=values=>[...values].map(esc).join(', ')||'—';
   dialog.innerHTML='<header><div><h2 id="s2-line-dialog-title">Line '+esc(detail.line)+' · '+esc(detail.range)+'</h2><p>'+esc(sortedMonths(detail.rows).join(' & '))+' · '+groups.length+' EWO(s)</p></div><button type="button" class="s2-dialog-close" aria-label="Close EWO details">✕</button></header>'+
-    '<p class="s2-detail-note">Plan table details for this line and order range. Quantities are summed from matching Plan/Day rows.</p>'+
-    '<div class="s2-detail-scroll"><table><thead><tr><th>EWO</th><th>Item</th><th>Order Qty</th><th>Plan Qty</th><th>Colour</th><th>SMV</th></tr></thead><tbody>'+
-    groups.map(g=>'<tr><td>'+esc(g.ewo||'—')+'</td><td>'+list(g.items)+'</td><td class="num">'+fmt(g.orderqty)+'</td><td class="num">'+fmt(g.planqty)+'</td><td>'+list(g.colors)+'</td><td>'+list(g.smvs)+'</td></tr>').join('')+
-    '</tbody><tfoot><tr><th colspan="2">Total</th><td class="num">'+fmt(groups.reduce((s,g)=>s+g.orderqty,0))+'</td><td class="num">'+fmt(groups.reduce((s,g)=>s+g.planqty,0))+'</td><td colspan="2"></td></tr></tfoot></table></div>';
+    '<p class="s2-detail-note">Line summary within the selected order range. Quantities follow the matching Plan/Day rows; Colour and PO counts exclude blanks.</p>'+
+    '<div class="s2-line-kpis">'+[
+      ['Total EWO',fmt(totals.ewos)],['Unique Colours',fmt(totals.colors)],
+      ['Total Order Qty',fmt(totals.orderqty)],['Total Plan Qty',fmt(totals.planqty)],
+      ['Unique PO Count',fmt(totals.pos)],['Unique SMV',list(totals.smvs)]
+    ].map(([label,value])=>'<div><span>'+label+'</span><strong>'+value+'</strong></div>').join('')+'</div>'+
+    '<div class="s2-detail-scroll"><table><thead><tr><th>EWO</th><th>Product</th><th>Total Colours</th><th>Colour</th><th>Total Order Qty</th><th>Total Plan Qty</th><th>Unique SMV</th><th>Unique PO Count</th></tr></thead><tbody>'+
+    groups.map(g=>'<tr><td>'+esc(g.ewo||'—')+'</td><td>'+list(g.items)+'</td><td class="num">'+fmt(g.colors.size)+'</td><td>'+list(g.colors)+'</td><td class="num">'+fmt(g.orderqty)+'</td><td class="num">'+fmt(g.planqty)+'</td><td>'+list(g.smvs)+'</td><td class="num">'+fmt(g.pos.size)+'</td></tr>').join('')+
+    '</tbody></table></div>';
   document.body.appendChild(dialog);
   dialog.querySelector('.s2-dialog-close').onclick=()=>dialog.close();
   dialog.addEventListener('click',e=>{if(e.target===dialog){const b=dialog.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)dialog.close();}});
