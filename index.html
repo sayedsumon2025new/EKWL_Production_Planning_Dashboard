@@ -2804,18 +2804,12 @@ async function saveChassisPriority(){
     rows.forEach(r=>{if(seen.has(r[0]))throw Error('Duplicate Line: '+r[0]);seen.add(r[0]);});
     if(msg)msg.textContent='Saving to SQL…';
 
-    // Replace through authenticated RLS operations. Existing rows are removed only after validation.
-    const {error:delErr}=await SB.from('line_chassis_priority').delete().gt('id',0);
-    if(delErr)throw delErr;
     const payload=[];
     rows.forEach(r=>{
       if(r[1])payload.push({line_no:r[0],priority_order:1,product_name:r[1],updated_at:new Date().toISOString()});
       if(r[2])payload.push({line_no:r[0],priority_order:2,product_name:r[2],updated_at:new Date().toISOString()});
     });
-    if(payload.length){
-      const {error:insErr}=await SB.from('line_chassis_priority').insert(payload);
-      if(insErr)throw insErr;
-    }
+    await saveReportAtomically('chassis',payload,true);
     CHASSIS_PRIORITY_CACHE=rows.map(r=>[...r]);
     if(msg){msg.textContent='✓ Saved to SQL';setTimeout(()=>{if(msg)msg.textContent=''},2200);}
   }catch(e){
@@ -3025,21 +3019,29 @@ function canAccessSlide(n){
 }
 function applySitePermissions(){
   if(!SITE_USER_PROFILE)return;
+  document.querySelectorAll('[data-permission-hidden="1"]').forEach(el=>{
+    el.style.display=el.dataset.permissionDisplay||'';
+    delete el.dataset.permissionHidden; delete el.dataset.permissionDisplay;
+  });
+  const hideForRole=el=>{
+    el.dataset.permissionDisplay=el.style.display;
+    el.dataset.permissionHidden='1';el.style.display='none';
+  };
 
   // User Home is a permission launcher only. Do not expose cross-module totals/status.
   if(!siteIsAdmin()){
     // Requested clean User Home: hide Fabrics & Cutting quick button
     // and the complete Supabase/cache loading-status panel.
-    document.querySelectorAll('[data-admin-home-extra="1"]').forEach(el=>el.style.display='none');
+    document.querySelectorAll('[data-admin-home-extra="1"]').forEach(hideForRole);
 
     const home=document.getElementById('s0');
     if(home){
-      home.querySelectorAll('.load-status-wrap,.live-summary,.summary-grid').forEach(el=>el.style.display='none');
+      home.querySelectorAll('.load-status-wrap,.live-summary,.summary-grid').forEach(hideForRole);
     }
     // Template/Export can expose broader planning data, so keep them Admin-only.
     document.querySelectorAll('button').forEach(b=>{
       const t=(b.textContent||'').trim().toLowerCase();
-      if(t.includes('template') || t.includes('export')) b.style.display='none';
+      if(t.includes('template') || t.includes('export')) hideForRole(b);
     });
   }
 
@@ -3074,7 +3076,7 @@ function requireSitePerm(key,label='এই module'){
 }
 
 function goSlide(n){
-  if(Number(n)===12){setTimeout(loadFloorAllocationAdmin,0);setTimeout(()=>loadEfficiencyLadderFromSQL(false),0);setTimeout(()=>loadChassisPriorityFromSQL(false),0);setTimeout(()=>loadABPTargetFromSQL(false),0);}
+  if(Number(n)===12 && canAccessSlide(12)){setTimeout(loadFloorAllocationAdmin,0);setTimeout(()=>loadEfficiencyLadderFromSQL(false),0);setTimeout(()=>loadChassisPriorityFromSQL(false),0);setTimeout(()=>loadABPTargetFromSQL(false),0);}
   const maxSlide=getMaxDashboardSlide();
   n=Math.max(0,Math.min(Number(n)||0,maxSlide));
   if(!canAccessSlide(n)){
@@ -3200,6 +3202,7 @@ function rebuildPlanningFilters(preferredMonth,preferredUploadId){
 function capturePlanningState(){
   return {
     DATA,DAILY_PLAN,SAH_DATA,SAH_DAILY,CLOCK_HOUR_DATA,BUYER_PLAN_DATA,
+    EFF15_METRIC_DAILY,EFF15_METRIC_UPLOAD_ID,
     CLOCK_HOUR_DAILY:typeof CLOCK_HOUR_DAILY!=='undefined'?CLOCK_HOUR_DAILY:[],
     MONTHS
   };
@@ -3209,6 +3212,8 @@ function restorePlanningState(c){
   CLOCK_HOUR_DATA=c.CLOCK_HOUR_DATA||[];BUYER_PLAN_DATA=c.BUYER_PLAN_DATA||[];
   if(typeof CLOCK_HOUR_DAILY!=='undefined')CLOCK_HOUR_DAILY=c.CLOCK_HOUR_DAILY||[];
   MONTHS=c.MONTHS||[];
+  EFF15_METRIC_DAILY=c.EFF15_METRIC_DAILY||[];
+  EFF15_METRIC_UPLOAD_ID=c.EFF15_METRIC_UPLOAD_ID||null;
 }
 
 let PLAN_PREFETCH_RUNNING=false;
@@ -3239,7 +3244,7 @@ async function fetchPlanningSnapshot(upload){
     sbPaged(()=>SB.from('plan_records')
       .select('id,source_row,line_no,buyer,product_type,product,ewo,po,col,order_qty,pcd,delivery,psd,pfd,manpower,smv,criteria,total,is_summary_row')
       .eq('upload_id',upload.id).eq('is_summary_row',false)
-      .in('criteria',['Plan/Day','SAH/Day','Clock Hour/Day'])
+      .in('criteria',['Plan/Day','SAH/Day','Clock Hour/Day','Effi/Day'])
       .order('source_row',{ascending:true}).order('id',{ascending:true})),
     // Download daily values once; both planning and clock-hour maps use this result.
     sbPaged(()=>SB.from('plan_daily').select('record_id,plan_date,value')
@@ -3280,8 +3285,14 @@ async function fetchPlanningSnapshot(upload){
     line:lineNumber(r.line_no),ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),
     buyer:r.buyer||'',style:dashboardStyle(r.product_type||r.product)
   }]));
+  const metricMeta=new Map(valid.map(r=>[String(r.id),r]));
+  const METRIC_LOCAL=[];
   const DAILY_LOCAL=[],SAH_DAILY_LOCAL=[],CLOCK_DAILY_LOCAL=[];
   for(const d of daily){
+    const m=metricMeta.get(String(d.record_id));
+    if(m&&d.plan_date)METRIC_LOCAL.push({record_id:d.record_id,date:d.plan_date,value:N(d.value),
+      line:lineNumber(m.line_no),product:dashboardStyle(m.product_type||m.product),
+      ewo:String(m.ewo??'').replace(/\.0$/,'').trim(),criteria:String(m.criteria||'').trim()});
     const p=planMeta.get(String(d.record_id));
     if(p)DAILY_LOCAL.push({record_id:d.record_id,date:d.plan_date,value:N(d.value),
       line:p.line,ewo:p.ewo,buyer:p.buyer,style:p.style,color:p.color||'',smv:p.smv});
@@ -3293,6 +3304,7 @@ async function fetchPlanningSnapshot(upload){
       line:c.line,ewo:c.ewo,buyer:c.buyer,style:c.style});
   }
   return {DATA:DATA_LOCAL,DAILY_PLAN:DAILY_LOCAL,SAH_DATA:SAH_LOCAL,SAH_DAILY:SAH_DAILY_LOCAL,CLOCK_HOUR_DATA:CLOCK_LOCAL,
+    EFF15_METRIC_DAILY:METRIC_LOCAL,EFF15_METRIC_UPLOAD_ID:String(upload.id),
     CLOCK_HOUR_DAILY:CLOCK_DAILY_LOCAL,BUYER_PLAN_DATA:BUYER_PLAN_DATA_LOCAL,
     MONTHS:[...new Set(DAILY_LOCAL.map(d=>monthFromISO(d.date)).filter(Boolean))].sort((a,b)=>monthTime(a)-monthTime(b))};
 }
@@ -3322,6 +3334,7 @@ async function prefetchPlanningVersions(){
 async function switchPlanningInstant(uploadId){
   if(!uploadId)return;
   const token=++PLAN_FILTER_TOKEN;
+  ++EFF15_FR_TOKEN;
   ++SUPABASE_LOAD_TOKEN; // Invalidate any older load, including when this selection is cached.
   const upload=PLAN_UPLOAD_CATALOG.find(u=>String(u.id)===String(uploadId));
   if(upload)ACTIVE_PLAN_UPLOAD=upload;
@@ -3382,6 +3395,7 @@ async function loadCentralAdminSettingsBeforeData(){
   ]);
 }
 async function bootLiveSupabaseData(){
+  const generation=SITE_SESSION_GENERATION;
   setSupabaseLiveBadge('','Supabase · checking live data…');
   await Promise.all([
     loadCentralAdminSettingsBeforeData(),
@@ -3389,10 +3403,12 @@ async function bootLiveSupabaseData(){
     loadABPTargetEfficiencyLive()
   ]);
 
+  if(generation!==SITE_SESSION_GENERATION||!SITE_AUTH_USER)return false;
   // Cache is only an instant visual bootstrap; it is never treated as the live authority.
   let cached=restoreFastBootCache();
   if(!cached) cached=await restoreDashboardFromCache();
 
+  if(generation!==SITE_SESSION_GENERATION||!SITE_AUTH_USER)return false;
   try{
     const keepId=ACTIVE_PLAN_UPLOAD?.id||null;
     if(!await loadFromSupabase(keepId,true))throw Error('Live report load did not complete');
@@ -3407,10 +3423,16 @@ async function bootLiveSupabaseData(){
 }
 
 // ===== Instant same-browser refresh cache =====
-const FAST_BOOT_KEY='EKWL_FAST_BOOT_v1';
+let SITE_SESSION_GENERATION=0;
+const FAST_BOOT_KEY='EKWL_FAST_BOOT_v3';
+function dashboardCacheOwner(){return SITE_AUTH_USER?.id||'';}
+function dashboardCacheKey(){return SUPABASE_URL+':'+dashboardCacheOwner();}
+function fastBootCacheKey(){return FAST_BOOT_KEY+':'+dashboardCacheKey();}
 function saveFastBootCache(){
+  if(!dashboardCacheOwner())return false;
   try{
     const payload={
+      owner:dashboardCacheOwner(),
       activeUpload:ACTIVE_PLAN_UPLOAD,
       catalog:PLAN_UPLOAD_CATALOG,
       planning:capturePlanningState(),
@@ -3418,16 +3440,16 @@ function saveFastBootCache(){
       sewing:SEWING_IO_DATA,
       production:DATE_WISE_PRODUCTION_DATA
     };
-    sessionStorage.setItem(FAST_BOOT_KEY,JSON.stringify(payload));
+    sessionStorage.setItem(fastBootCacheKey(),JSON.stringify(payload));
     return true;
   }catch(e){console.warn('Fast boot cache save skipped',e);return false;}
 }
 function restoreFastBootCache(){
   try{
-    const raw=sessionStorage.getItem(FAST_BOOT_KEY);
+    const raw=sessionStorage.getItem(fastBootCacheKey());
     if(!raw)return false;
     const c=JSON.parse(raw);
-    if(!c?.planning?.DATA?.length)return false;
+    if(!dashboardCacheOwner()||c?.owner!==dashboardCacheOwner()||!c?.planning?.DATA?.length)return false;
     ACTIVE_PLAN_UPLOAD=c.activeUpload||null;
     PLAN_UPLOAD_CATALOG=c.catalog||[];
     restorePlanningState(c.planning);
@@ -3443,7 +3465,7 @@ function restoreFastBootCache(){
 }
 
 // ===== Persistent browser cache: instant bootstrap only; live Supabase is always verified =====
-const DASH_CACHE_DB='EKWL_Planning_Cache_v2', DASH_CACHE_STORE='snapshots', DASH_CACHE_KEY='dashboard';
+const DASH_CACHE_DB='EKWL_Planning_Cache_v3', DASH_CACHE_STORE='snapshots', DASH_CACHE_KEY='dashboard';
 function openDashCache(){
   return new Promise((resolve,reject)=>{
     const r=indexedDB.open(DASH_CACHE_DB,1);
@@ -3452,9 +3474,13 @@ function openDashCache(){
   });
 }
 async function saveDashboardCache(){
+  const owner=dashboardCacheOwner(),generation=SITE_SESSION_GENERATION,key=dashboardCacheKey();
+  if(!owner)return false;
   try{
     const db=await openDashCache();
+    if(generation!==SITE_SESSION_GENERATION){db.close();return false;}
     const payload={
+      owner,
       savedAt:Date.now(),PLAN_UPLOAD_CATALOG,ACTIVE_PLAN_UPLOAD,
       activeSnapshot:capturePlanningState(),
       // Only the active planning snapshot is persisted. Historical sequences load on demand.
@@ -3462,7 +3488,7 @@ async function saveDashboardCache(){
     };
     await new Promise((resolve,reject)=>{
       const tx=db.transaction(DASH_CACHE_STORE,'readwrite');
-      tx.objectStore(DASH_CACHE_STORE).put(payload,DASH_CACHE_KEY);
+      tx.objectStore(DASH_CACHE_STORE).put(payload,key);
       tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
     });
     db.close();
@@ -3470,29 +3496,30 @@ async function saveDashboardCache(){
   }catch(e){console.warn('Persistent dashboard cache save failed',e);return false;}
 }
 async function readDashboardCache(){
+  const key=dashboardCacheKey(),generation=SITE_SESSION_GENERATION;
   try{
     const db=await openDashCache();
     const val=await new Promise((resolve,reject)=>{
       const tx=db.transaction(DASH_CACHE_STORE,'readonly');
-      const r=tx.objectStore(DASH_CACHE_STORE).get(DASH_CACHE_KEY);
+      const r=tx.objectStore(DASH_CACHE_STORE).get(key);
       r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);
     });
-    db.close();return val;
+    db.close();return generation===SITE_SESSION_GENERATION?val:null;
   }catch(e){console.warn('Persistent dashboard cache read failed',e);return null;}
 }
-async function clearDashboardCache(){
+async function clearDashboardCache(key=dashboardCacheKey()){
   try{
     const db=await openDashCache();
     await new Promise((resolve,reject)=>{
       const tx=db.transaction(DASH_CACHE_STORE,'readwrite');
-      tx.objectStore(DASH_CACHE_STORE).delete(DASH_CACHE_KEY);
+      tx.objectStore(DASH_CACHE_STORE).delete(key);
       tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
     });db.close();
   }catch(e){console.warn(e);}
 }
 async function restoreDashboardFromCache(){
   const c=await readDashboardCache();
-  if(!c?.activeSnapshot)return false;
+  if(!dashboardCacheOwner()||c?.owner!==dashboardCacheOwner()||!c?.activeSnapshot)return false;
   PLAN_UPLOAD_CATALOG=c.PLAN_UPLOAD_CATALOG||[];
   ACTIVE_PLAN_UPLOAD=c.ACTIVE_PLAN_UPLOAD||null;
   PLAN_VERSION_CACHE.clear();
@@ -3547,7 +3574,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
     // Do not wait for Fabric/Sewing/Production reports before showing Planning slides.
     // This applies to every permitted Planning slide, including Line Calendar.
     refreshPermittedSlides('planning');
-    if(CURRENT_SLIDE>=1 && CURRENT_SLIDE<=10 && canAccessSlide(CURRENT_SLIDE))goSlide(CURRENT_SLIDE);
+
 
     setLoadChip('load-plan','ok','Planning ('+DATA.length.toLocaleString()+')');
 
@@ -3610,7 +3637,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
       activePlanningLabel()+' · '+DATA.length+' Plan/Day · '+FABRIC_CUTTING_DATA.length+' Fabric/Cutting · '+SEWING_IO_DATA.length+' Sewing I/O · '+DATE_WISE_PRODUCTION_DATA.length+' Production'
     );
     // Keep whichever tab the user is currently working on.
-    goSlide(CURRENT_SLIDE);
+    if(CURRENT_SLIDE>11)goSlide(CURRENT_SLIDE);
     // Preload other Planning sequences in the background so first selection is also instant.
     // Performance: do not download every historical planning version in background.
     // A version is fetched only when the user explicitly selects it.
@@ -3707,11 +3734,10 @@ function renderAll(){
  const cfgName=document.getElementById('cfg-name');
  const factory=(cfgName?cfgName.value.trim():'')||'EKWL · HW';
  document.title=factory+' Production Planning Dashboard';
- const brand=document.querySelector('#topnav .brand'); if(brand)brand.textContent=factory+' · Production Planning';
+ const brand=document.querySelector('#topnav .brand');if(brand)brand.textContent=factory+' · Production Planning';
  try{renderHome()}catch(e){console.error('Home render failed',e)}
- for(let i=1;i<=11;i++){
-   if(!canAccessSlide(i))continue;
-   try{renderSlide(i)}catch(e){console.error('Slide '+i+' render failed',e)}
+ if(CURRENT_SLIDE>=1 && CURRENT_SLIDE<=11 && canAccessSlide(CURRENT_SLIDE)){
+   try{renderSlide(CURRENT_SLIDE)}catch(e){console.error(e)}
  }
 }
 
@@ -3876,11 +3902,7 @@ function renderSlide(n){
   if(!canAccessSlide(n))return;
   const fns={1:renderS1,2:renderS2,3:renderS3,4:renderS4,5:renderS5,6:renderS6,7:renderS11,8:renderS7,9:renderS8,10:renderS9,11:renderS12};
   if(fns[n])fns[n](getFiltered());
-  if(n===3){
-    loadABPTargetEfficiencyLive()
-      .then(()=>{ if(CURRENT_SLIDE===3) renderS3(getFiltered()); })
-      .catch(e=>console.error('ABP Target live SQL refresh failed',e));
-  }
+
   if(n===14)loadOrderBankSlide();
   if(n===15)showEff15Sub(EFF15_SUB||'fixed');
 }
@@ -3890,18 +3912,12 @@ function renderSlide(n){
 // Fabric slide (11) refreshes as soon as Fabric data is ready.
 // Admin/User modules remain independent from report loading.
 function refreshPermittedSlides(stage='all'){
-  try{
-    if(stage==='planning' || stage==='all'){
-      for(let n=1;n<=10;n++){
-        if(canAccessSlide(n))renderSlide(n);
-      }
-    }
-    if((stage==='fabric' || stage==='all') && canAccessSlide(11))renderSlide(11);
-    if(CURRENT_SLIDE>0 && canAccessSlide(CURRENT_SLIDE)){
-      if(CURRENT_SLIDE<=10 && (stage==='planning'||stage==='all')) renderSlide(CURRENT_SLIDE);
-      if(CURRENT_SLIDE===11 && (stage==='fabric'||stage==='all')) renderSlide(11);
-    }
-  }catch(e){console.error('Progressive permitted render failed',e)}
+  if(!canAccessSlide(CURRENT_SLIDE))return;
+  const planning=CURRENT_SLIDE>=1&&CURRENT_SLIDE<=10;
+  const fabric=CURRENT_SLIDE===11;
+  if((planning&&(stage==='planning'||stage==='all'))||(fabric&&(stage==='fabric'||stage==='all'))){
+    try{renderSlide(CURRENT_SLIDE)}catch(e){console.error('Progressive render failed',e)}
+  }
 }
 
 /* ══ UTILITIES ══════════════════════════════════ */
@@ -5384,7 +5400,9 @@ function getMaxDashboardSlide(){
 function umEsc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function umOn(p,k){return !!(p&&(p[k]===true||p[k]==='true'))}
 
+let SITE_USER_CREATE_BUSY=false;
 async function addNewSiteUser(){
+  if(SITE_USER_CREATE_BUSY)return;
   if(!requireSitePerm('user_admin','User Admin'))return;
   const email=String(document.getElementById('new-user-email')?.value||'').trim().toLowerCase();
   const password=String(document.getElementById('new-user-password')?.value||'');
@@ -5403,6 +5421,9 @@ async function addNewSiteUser(){
     ? Object.fromEntries(permissionKeys.map(k=>[k,true]))
     : Object.fromEntries(permissionKeys.map(k=>[k,false]));
 
+  SITE_USER_CREATE_BUSY=true;
+  const addButton=document.querySelector('[onclick="addNewSiteUser()"]');
+  if(addButton)addButton.disabled=true;
   try{
     if(msg)msg.innerHTML='<span style="color:#d97706">Creating confirmed Auth user...</span>';
 
@@ -5412,19 +5433,12 @@ async function addNewSiteUser(){
     if(!session?.access_token)throw Error('Admin session expired. Please sign in again.');
     const {data,error}=await SB.functions.invoke('admin-create-user',{
       headers:{Authorization:`Bearer ${session.access_token}`},
-      body:{action:'create',email,password,role,status}
+      body:{action:'create',email,password,role,status,permissions}
     });
     if(error)throw error;
     if(!data?.success)throw Error(data?.error||'User creation failed.');
 
-    // Keep this dashboard's existing permission model exactly as before.
-    const permRes=await SB.from('site_users')
-      .update({role,status,permissions})
-      .ilike('email',email)
-      .select('id,auth_user_id,email')
-      .single();
-    if(permRes.error)throw Error('User created, but permission save failed: '+permRes.error.message);
-    if(!permRes.data?.auth_user_id)throw Error('User created, but Auth User ID link পাওয়া যায়নি।');
+    if(!data.auth_user_id)throw Error('Auth User ID link missing.');
 
     document.getElementById('new-user-email').value='';
     document.getElementById('new-user-password').value='';
@@ -5442,6 +5456,8 @@ async function addNewSiteUser(){
     }catch(_){ }
     if(msg)msg.innerHTML='<span style="color:#dc2626;font-weight:900">✕ Failed: '+umEsc(detail)+'</span>';
     await loadSiteUsers();
+  }finally{
+    SITE_USER_CREATE_BUSY=false;if(addButton)addButton.disabled=false;
   }
 }
 
@@ -5708,10 +5724,21 @@ async function siteLogin(){
   }finally{btn.disabled=false}
 }
 async function siteLogout(){
-  try{await SB.auth.signOut()}catch(e){console.error(e)}
-  SITE_AUTH_USER=null; SITE_USER_PROFILE=null; SITE_BOOTED=false;
+  const cacheKey=dashboardCacheKey(),fastKey=fastBootCacheKey();
+  ++SITE_SESSION_GENERATION;++SUPABASE_LOAD_TOKEN;++PLAN_FILTER_TOKEN;++EFF15_FR_TOKEN;
+  DATA=[];DAILY_PLAN=[];SAH_DATA=[];SAH_DAILY=[];CLOCK_HOUR_DATA=[];CLOCK_HOUR_DAILY=[];BUYER_PLAN_DATA=[];MONTHS=[];
+  FABRIC_CUTTING_DATA=[];SEWING_IO_DATA=[];DATE_WISE_PRODUCTION_DATA=[];
+  PLAN_VERSION_CACHE.clear();PLAN_UPLOAD_CATALOG=[];ACTIVE_PLAN_UPLOAD=null;
+  EFF15_METRIC_DAILY=[];EFF15_METRIC_UPLOAD_ID=null;
+  ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];
+  SITE_AUTH_USER=null;SITE_USER_PROFILE=null;SITE_BOOTED=false;
+  try{sessionStorage.removeItem(fastKey);sessionStorage.removeItem('EKWL_FAST_BOOT_v1');}catch(e){console.warn(e)}
   document.getElementById('site-login-password').value='';
   showSiteLogin('Signed out. Please sign in again.');
+  await clearDashboardCache(cacheKey);
+  // Remove the old unscoped cache without ever restoring its contents.
+  try{indexedDB.deleteDatabase('EKWL_Planning_Cache_v2');}catch(e){console.warn(e)}
+  try{await SB.auth.signOut()}catch(e){console.error(e)}
 }
 document.addEventListener('keydown',e=>{
   if(!document.body.classList.contains('site-locked'))return;
@@ -5945,6 +5972,13 @@ async function parseFabricCuttingFile(file){
   if(!hasEwo||!hasColor)throw Error('Required columns EWO and Color Name were not found.');
   return rows;
 }
+async function saveReportAtomically(kind,rows,replace=true){
+  const {data,error}=await SB.rpc('ekwl_save_report',{p_kind:kind,p_rows:rows,p_replace:replace});
+  if(error)throw error;
+  if(!data?.success||Number(data.inserted_rows)!==rows.length)throw Error('Upload row-count verification failed');
+  return data;
+}
+
 async function uploadFabricCutting(){
  if(!requireSitePerm('fabric','Fabrics & Cutting'))return;
   try{
@@ -5991,20 +6025,8 @@ async function uploadFabricCutting(){
     if(!payload.length)throw Error('No usable Fabrics & Cutting rows found.');
     prog.value=12;
 
-    if(document.getElementById('fc-replace').checked){
-      sbMsg('fc-upload-msg','Removing previous Fabrics & Cutting rows...');
-      const {error:de}=await SB.from('fabric_cutting_info').delete().gt('id',0);
-      if(de)throw de;
-    }
-
-    let done=0;
-    for(const batch of csvChunks(payload,300)){
-      const {error}=await SB.from('fabric_cutting_info').insert(batch);
-      if(error)throw error;
-      done+=batch.length;
-      prog.value=15+Math.round(85*done/payload.length);
-      sbMsg('fc-upload-msg',`Fabrics & Cutting rows: ${done}/${payload.length}`);
-    }
+    sbMsg('fc-upload-msg','Saving complete Fabrics & Cutting report...');
+    await saveReportAtomically('fabric',payload,document.getElementById('fc-replace').checked);
     prog.value=100;
     await refreshDashboardAfterSuccessfulUpload('fabric');
     sbMsg('fc-upload-msg',`Upload complete — ${payload.length.toLocaleString()} rows imported. Local dashboard cache updated; no reload required.`,true);
@@ -6075,20 +6097,8 @@ async function uploadSewingIO(){
     if(!payload.length)throw Error('No usable Sewing Input & Output rows found.');
     prog.value=12;
 
-    if(document.getElementById('sio-replace').checked){
-      sbMsg('sio-upload-msg','Removing previous Sewing Input & Output rows...');
-      const {error:de}=await SB.from('sewing_input_output').delete().gt('id',0);
-      if(de)throw de;
-    }
-
-    let done=0;
-    for(const batch of csvChunks(payload,300)){
-      const {error}=await SB.from('sewing_input_output').insert(batch);
-      if(error)throw error;
-      done+=batch.length;
-      prog.value=15+Math.round(85*done/payload.length);
-      sbMsg('sio-upload-msg',`Sewing Input & Output rows: ${done}/${payload.length}`);
-    }
+    sbMsg('sio-upload-msg','Saving complete Sewing I/O report...');
+    await saveReportAtomically('sewing',payload,document.getElementById('sio-replace').checked);
     prog.value=100;
     await refreshDashboardAfterSuccessfulUpload('sewing');
     sbMsg('sio-upload-msg',`Upload complete — ${payload.length.toLocaleString()} rows imported. Local dashboard cache updated; no reload required.`,true);
@@ -6143,8 +6153,9 @@ async function uploadDateWiseProduction(){
     msg.textContent='CSV reading...';prog.value=5;await refreshSbAuth();
     const rows=await parseDateWiseProductionFile(file),dates=[...new Set(rows.map(x=>x.output_date))].sort();
     msg.textContent=`${rows.length.toLocaleString()} rows | ${dates.join(', ')} — uploaded date(s) replacing...`;prog.value=15;
-    for(let i=0;i<dates.length;i++){const {error}=await SB.from('date_wise_production').delete().eq('output_date',dates[i]);if(error)throw error;prog.value=15+Math.round(20*(i+1)/dates.length);}
-    for(let i=0;i<rows.length;i+=300){const {error}=await SB.from('date_wise_production').insert(rows.slice(i,i+300));if(error)throw error;prog.value=35+Math.round(65*Math.min(i+300,rows.length)/rows.length);}
+    prog.value=35;
+    await saveReportAtomically('production',rows,true);
+    prog.value=100;
     prog.value=100;
     msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. Local cache update হচ্ছে...`;
     await refreshDashboardAfterSuccessfulUpload('production');
@@ -6589,6 +6600,7 @@ function renderOrderBankView(rebuildFilters=false){
   renderOrderBankPage();
 }
 async function loadOrderBankSlide(){
+  const sessionGeneration=SITE_SESSION_GENERATION;
   const msg=document.getElementById('order-bank-msg'),box=document.getElementById('order-bank-table'),k=document.getElementById('order-bank-kpis');
   if(!box)return;
   if(msg)msg.textContent='Loading complete raw SQL snapshot…';
@@ -6597,6 +6609,7 @@ async function loadOrderBankSlide(){
     for(let from=0;;from+=pageSize){
       const {data,error}=await SB.from('order_bank_latest_all').select('*').range(from,from+pageSize-1);
       if(error)throw error;
+      if(sessionGeneration!==SITE_SESSION_GENERATION)return;
       const page=data||[];all.push(...page);
       if(msg)msg.textContent=`Loading raw SQL… ${fmt(all.length)} rows`;
       if(page.length<pageSize)break;
@@ -6614,6 +6627,7 @@ async function loadOrderBankSlide(){
     renderOrderBankView(true);
   }catch(e){
     if(msg)msg.textContent='Load failed';
+    if(sessionGeneration!==SITE_SESSION_GENERATION)return;
     box.innerHTML=`<div class="modal-msg">Order Bank raw SQL load failed: ${esc(e?.message||e)}</div>`;
   }
 }
@@ -6634,39 +6648,34 @@ function refreshEfficiencySlide15(){
   else loadEff15FRComparison();
 }
 
+let EFF15_FR_TOKEN=0;
+let EFF15_METRIC_UPLOAD_ID=null;
 let EFF15_FR_LOADING=false;
 let EFF15_METRIC_DAILY=[];
 async function loadEff15FRComparison(){
   const box=document.getElementById('eff15-fr-table'),msg=document.getElementById('eff15-fr-msg');
   if(!box)return;
-  if(EFF15_FR_LOADING)return;
+  const token=++EFF15_FR_TOKEN,session=SITE_SESSION_GENERATION;
   EFF15_FR_LOADING=true;
+  const current=()=>token===EFF15_FR_TOKEN&&session===SITE_SESSION_GENERATION&&CURRENT_SLIDE===15&&EFF15_SUB==='fr';
   try{
     if(msg)msg.textContent='Loading Planning data…';
     box.innerHTML='<div class="empty">Loading Line × Date planning table…</div>';
-
-    // Slide 15 is SQL/data independent in navigation, so explicitly hydrate the same
-    // planning dataset used by the working Gantt before rendering this sub-slide.
     if(!(DAILY_PLAN||[]).length){
-      const selectedPlanId=document.getElementById('planning-sequence-filter')?.value || null;
-      await loadFromSupabase(selectedPlanId,true);
-      if(CURRENT_SLIDE!==15)goSlide(15);
+      const selected=document.getElementById('planning-sequence-filter')?.value||null;
+      if(!await loadFromSupabase(selected,true,true))return;
     }
-    await loadEfficiencyLadderFromSQL(false);
-    await loadEff15ExactMetricSource();
-
-    if(!(DAILY_PLAN||[]).length){
-      box.innerHTML='<div class="empty">Planning DAILY_PLAN returned no rows for the current plan.</div>';
-      if(msg)msg.textContent='0 Planning rows';
-      return;
-    }
+    if(!current())return;
+    const loaded=await loadEff15ExactMetricSource();
+    if(!current()||!loaded)return;
     renderEff15LineDateTable();
   }catch(e){
+    if(!current())return;
     console.error('FR comparison load failed',e);
-    box.innerHTML='<div class="empty" style="color:#dc2626">FR comparison load failed: '+esc(e?.message||e)+'</div>';
+    box.innerHTML='<div class="empty">FR comparison load failed: '+esc(e?.message||e)+'</div>';
     if(msg)msg.textContent='Load failed';
   }finally{
-    EFF15_FR_LOADING=false;
+    if(token===EFF15_FR_TOKEN)EFF15_FR_LOADING=false;
   }
 }
 
@@ -6719,30 +6728,15 @@ function bindEff15DynamicHover(){
 }
 
 async function loadEff15ExactMetricSource(){
-  const uploadId=ACTIVE_PLAN_UPLOAD?.id || document.getElementById('planning-sequence-filter')?.value || null;
-  EFF15_METRIC_DAILY=[];
-  if(!uploadId)return;
-  const wanted=new Set(['Plan/Day','SAH/Day','Effi/Day','Clock Hour/Day']);
-  const records=await sbAll('plan_records',
-    'id,line_no,product_type,product,ewo,criteria,is_summary_row',
-    [['upload_id',uploadId]]);
-  const meta=new Map();
-  (records||[]).forEach(r=>{
-    if(r.is_summary_row||!isChassisMasterLine(r.line_no)||!wanted.has(String(r.criteria||'').trim()))return;
-    meta.set(String(r.id),{
-      line:lineNumber(r.line_no), product:dashboardStyle(r.product_type||r.product),
-      ewo:String(r.ewo??'').replace(/\.0$/,'').trim(), criteria:String(r.criteria||'').trim()
-    });
-  });
-  const daily=await sbAll('plan_daily','record_id,plan_date,value',[['upload_id',uploadId]]);
-  (daily||[]).forEach(d=>{
-    const m=meta.get(String(d.record_id));
-    if(!m||!d.plan_date)return;
-    EFF15_METRIC_DAILY.push({
-      record_id:d.record_id,date:d.plan_date,value:N(d.value),
-      line:m.line,product:m.product,ewo:m.ewo,criteria:m.criteria
-    });
-  });
+  const upload=ACTIVE_PLAN_UPLOAD;
+  if(!upload)return false;
+  const id=String(upload.id),session=SITE_SESSION_GENERATION;
+  if(EFF15_METRIC_UPLOAD_ID===id)return true;
+  const snap=PLAN_VERSION_CACHE.get(id)||await fetchPlanningSnapshot(upload);
+  if(session!==SITE_SESSION_GENERATION||String(ACTIVE_PLAN_UPLOAD?.id)!==id)return false;
+  EFF15_METRIC_DAILY=snap.EFF15_METRIC_DAILY||[];
+  EFF15_METRIC_UPLOAD_ID=id;
+  return true;
 }
 function renderEff15LineDateTable(){
   const box=document.getElementById('eff15-fr-table'),msg=document.getElementById('eff15-fr-msg');
