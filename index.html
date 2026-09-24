@@ -4548,16 +4548,16 @@ function buildS6Rows(data,month){
     const psd=String(r.startdate||'').slice(0,10),ewo=String(r.ewo??'').trim();
     // DATA contains only Plan/Day rows. PSD must belong to the selected plan month.
     if(!ewo||!/^\d{4}-\d{2}-\d{2}$/.test(psd)||psd.slice(0,7)!==month)continue;
-    if(!groups.has(ewo))groups.set(ewo,{ewo,firstPSD:psd,buyers:new Set(),items:new Set(),orderqty:0,planqty:0,lineQty:new Map(),feedings:new Set()});
+    if(!groups.has(ewo))groups.set(ewo,{ewo,firstPSD:psd,buyers:new Set(),items:new Set(),orderqty:0,planqty:0,lineQty:new Map()});
     const g=groups.get(ewo),line=String(r.line??'').trim();
     if(psd<g.firstPSD)g.firstPSD=psd;
     if(r.buyer)g.buyers.add(String(r.buyer));if(r.style)g.items.add(String(r.style));
     g.orderqty+=N(r.orderqty);g.planqty+=N(r.planqty);
-    if(line){g.lineQty.set(line,(g.lineQty.get(line)||0)+N(r.planqty));g.feedings.add(JSON.stringify([line,psd]));}
+    if(line){g.lineQty.set(line,(g.lineQty.get(line)||0)+N(r.planqty));}
   }
   return [...groups.values()].map(g=>{
     const lines=[...g.lineQty.keys()].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
-    return {...g,lines,splits:lines.map(l=>g.lineQty.get(l)),feeding:g.feedings.size};
+    return {...g,lines,splits:lines.map(l=>g.lineQty.get(l)),feeding:lines.length};
   }).sort((a,b)=>a.firstPSD.localeCompare(b.firstPSD)||a.ewo.localeCompare(b.ewo,undefined,{numeric:true}));
 }
 function renderS6(data){
