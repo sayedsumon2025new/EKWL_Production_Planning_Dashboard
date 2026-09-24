@@ -1135,6 +1135,14 @@ box-shadow:0 10px 28px rgba(15,39,72,.28);font-size:10px;line-height:1.35}
 .eff15-fr-cell.eff15-below > *,
 .eff15-fr-cell.eff15-meet > *,
 .eff15-fr-cell.eff15-above > *{background:transparent!important}
+
+#s6 .s6-filter-bar{display:flex;align-items:center;gap:10px;margin:10px 0 14px;font-size:12px;font-weight:700}
+#s6-feeding-filter{padding:6px 12px;border:1px solid #9eafbc;border-radius:4px;background:#fff;color:#17314e}
+#s6 #s6-tbl thead th{background:#c6efce;color:#176125;border:1px solid #8a9d95}
+#s6 #s6-tbl tbody tr:nth-child(odd) td{background:#c0e6f2;color:#17314e}
+#s6 #s6-tbl tbody tr:nth-child(even) td{background:#fff;color:#17314e}
+#s6 #s6-tbl td{border:1px solid #9aaeb5}
+#s6 #s6-tbl tfoot td{background:#e3f2e6;font-weight:700}
 </style>
 
 <style id="optical-white-professional-theme">
@@ -2124,15 +2132,13 @@ input,select,textarea{
   <div class="kpi-row" id="s6-kpi"></div>
   <div class="card">
     <div class="card-title">📝 EWO Detail — Line Run & Split QTY <span class="ct-right" id="s6-count"></span></div>
+    <div class="s6-filter-bar"><label for="s6-feeding-filter">No. of Feeding</label>
+      <select id="s6-feeding-filter" onchange="renderS6(getFiltered())"><option value="">All</option></select></div>
     <div class="tbl-wrap"><table class="dt" id="s6-tbl">
       <thead><tr>
-        <th>Month</th><th>EWO</th><th>Line Run Status</th>
-        <th class="num">No Of Line Run</th>
-        <th class="num">No Of Feeding</th>
-        <th>Item</th>
-        <th class="num">Order Qty</th>
-        <th class="num">Plan Qty</th>
-        <th>Split QTY</th>
+        <th>Month</th><th>Buyer</th><th>EWO</th><th>Line Run Status</th>
+        <th class="num">No Of Feeding</th><th>Item</th>
+        <th class="num">Order Qty</th><th class="num">Plan Pcs</th><th>Split Plan QTY</th>
       </tr></thead>
       <tbody id="s6-body"></tbody>
       <tfoot><tr id="s6-foot"></tr></tfoot>
@@ -4536,72 +4542,51 @@ function renderS5(data){
 }
 
 /* ══ SLIDE 6: EWO DETAILS ═══════════════════════ */
+function buildS6Rows(data,month){
+  const groups=new Map();
+  for(const r of data){
+    const psd=String(r.startdate||'').slice(0,10),ewo=String(r.ewo??'').trim();
+    // DATA contains only Plan/Day rows. PSD must belong to the selected plan month.
+    if(!ewo||!/^\d{4}-\d{2}-\d{2}$/.test(psd)||psd.slice(0,7)!==month)continue;
+    if(!groups.has(ewo))groups.set(ewo,{ewo,firstPSD:psd,buyers:new Set(),items:new Set(),orderqty:0,planqty:0,lineQty:new Map(),feedings:new Set()});
+    const g=groups.get(ewo),line=String(r.line??'').trim();
+    if(psd<g.firstPSD)g.firstPSD=psd;
+    if(r.buyer)g.buyers.add(String(r.buyer));if(r.style)g.items.add(String(r.style));
+    g.orderqty+=N(r.orderqty);g.planqty+=N(r.planqty);
+    if(line){g.lineQty.set(line,(g.lineQty.get(line)||0)+N(r.planqty));g.feedings.add(JSON.stringify([line,psd]));}
+  }
+  return [...groups.values()].map(g=>{
+    const lines=[...g.lineQty.keys()].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    return {...g,lines,splits:lines.map(l=>g.lineQty.get(l)),feeding:g.feedings.size};
+  }).sort((a,b)=>a.firstPSD.localeCompare(b.firstPSD)||a.ewo.localeCompare(b.ewo,undefined,{numeric:true}));
+}
 function renderS6(data){
-  // Respect the global Month filter, but keep one row per distinct EWO
-  // inside the selected month/scope.
-  const source=data;
-  document.getElementById('s6-month').textContent=monthLabel(source);
-
-  const ewoMap={};
-  source.forEach(r=>{
-    const ewo=String(r.ewo??'').trim();
-    if(!ewo)return;
-    if(!ewoMap[ewo])ewoMap[ewo]={
-      monthSet:new Set(),ewo,buyer:r.buyer,style:r.style,smv:r.smv,
-      orderqty:0,planqty:0,lines:[],splits:[]
-    };
-    const g=ewoMap[ewo];
-    if(r.month)g.monthSet.add(r.month);
-    // AUDIT FIX: Order Qty can repeat across line allocations. Plan Qty is additive,
-    // but Order Qty is calculated once per distinct order component below.
-    g.planqty+=N(r.planqty);
-    const pos=g.lines.indexOf(r.line);
-    if(pos<0){g.lines.push(r.line);g.splits.push(N(r.planqty))}
-    else g.splits[pos]+=N(r.planqty);
-  });
-
-  const rows=Object.values(ewoMap).map(r=>({
-    ...r,
-    orderqty: authoritativeOrderQty(source.filter(x=>String(x.ewo??'').trim()===r.ewo)),
-    month:[...r.monthSet].sort((a,b)=>monthTime(a)-monthTime(b)).join(' & ')
-  }));
-  const totOrd=authoritativeOrderQty(source);
-  const totPlan=rows.reduce((s,r)=>s+r.planqty,0);
-  document.getElementById('s6-count').textContent=`${rows.length} unique EWOs`;
-  document.getElementById('s6-kpi').innerHTML=`
-    <div class="kpi"><div class="kpi-lbl">Unique EWOs</div><div class="kpi-val">${rows.length}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Total Order Qty</div><div class="kpi-val">${fmt(totOrd)}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Total Plan Qty</div><div class="kpi-val">${fmt(totPlan)}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Avg Lines/EWO</div><div class="kpi-val">${rows.length?(rows.reduce((s,r)=>s+r.lines.length,0)/rows.length).toFixed(1):'0'}</div></div>`;
-
-  document.getElementById('s6-body').innerHTML=rows.map(r=>{
-    const lineStr=r.lines.join('|');
-    const splitStr=r.splits.map(fmt).join('|');
-    return `<tr>
-      <td>${esc(r.month)}</td>
-      <td class="num">${esc(r.ewo)}</td>
-      <td><code style="font-size:11px">${lineStr}</code></td>
-      <td class="num">${r.lines.length}</td>
-      <td class="num">${r.lines.length}</td>
-      <td>${itemChip(r.style)}</td>
-      <td class="num">${fmt(r.orderqty)}</td>
-      <td class="num">${fmt(r.planqty)}</td>
-      <td style="font-size:11px;font-family:monospace">${splitStr}</td>
-    </tr>`;
-  }).join('');
-  const totalLineRuns=rows.reduce((s,r)=>s+r.lines.length,0);
-  const totalFeeding=totalLineRuns;
-  const totalSplitQty=rows.reduce((s,r)=>s+r.splits.reduce((a,b)=>a+N(b),0),0);
-  document.getElementById('s6-foot').innerHTML=`
-    <td><strong>Total / Sum</strong></td>
-    <td class="num"><strong>${rows.length}</strong></td>
-    <td class="cen">—</td>
-    <td class="num"><strong>${fmt(totalLineRuns)}</strong></td>
-    <td class="num"><strong>${fmt(totalFeeding)}</strong></td>
-    <td class="cen">—</td>
-    <td class="num"><strong>${fmt(totOrd)}</strong></td>
-    <td class="num"><strong>${fmt(totPlan)}</strong></td>
-    <td class="num"><strong>${fmt(totalSplitQty)}</strong></td>`;
+  const month=uploadMonthKey(ACTIVE_PLAN_UPLOAD)||document.getElementById('month-filter').value;
+  const monthText=planningMonthLabel(month);
+  const filter=document.getElementById('s6-feeding-filter');
+  const scope=month+'|'+String(ACTIVE_PLAN_UPLOAD?.id||'');
+  const previous=filter.dataset.scope===scope?filter.value:'';
+  filter.dataset.scope=scope;
+  const allRows=buildS6Rows(data,month);
+  const counts=[...new Set(allRows.map(r=>r.feeding))].sort((a,b)=>a-b);
+  filter.innerHTML='<option value="">All</option>'+counts.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
+  filter.value=counts.some(n=>String(n)===previous)?previous:'';
+  const rows=filter.value?allRows.filter(r=>r.feeding===Number(filter.value)):allRows;
+  document.getElementById('s6-month').textContent=monthText;
+  const totOrd=rows.reduce((s,r)=>s+r.orderqty,0),totPlan=rows.reduce((s,r)=>s+r.planqty,0);
+  const feeding=rows.reduce((s,r)=>s+r.feeding,0);
+  document.getElementById('s6-count').textContent=rows.length+' of '+allRows.length+' unique EWOs';
+  document.getElementById('s6-kpi').innerHTML=[
+    ['Unique EWOs',rows.length],['Total Order Qty',fmt(totOrd)],['Total Plan Qty',fmt(totPlan)],
+    ['Avg Lines/EWO',rows.length?(rows.reduce((s,r)=>s+r.lines.length,0)/rows.length).toFixed(1):'0']
+  ].map(([label,value])=>'<div class="kpi"><div class="kpi-lbl">'+label+'</div><div class="kpi-val">'+value+'</div></div>').join('');
+  document.getElementById('s6-body').innerHTML=rows.map(r=>'<tr>'+
+    '<td>'+esc(monthText)+'</td><td>'+[...r.buyers].map(esc).join(', ')+'</td><td class="num">'+esc(r.ewo)+'</td>'+
+    '<td>'+r.lines.map(esc).join(' | ')+'</td><td class="num">'+r.feeding+'</td>'+
+    '<td>'+[...r.items].map(esc).join(', ')+'</td><td class="num">'+fmt(r.orderqty)+'</td>'+
+    '<td class="num">'+fmt(r.planqty)+'</td><td>'+r.splits.map(fmt).join(' | ')+'</td></tr>').join('')||
+    '<tr><td colspan="9" class="cen">No EWOs match the planning month PSD and feeding filter.</td></tr>';
+  document.getElementById('s6-foot').innerHTML='<td><strong>Total</strong></td><td>—</td><td class="num">'+rows.length+'</td><td>—</td><td class="num">'+fmt(feeding)+'</td><td>—</td><td class="num">'+fmt(totOrd)+'</td><td class="num">'+fmt(totPlan)+'</td><td class="num">'+fmt(totPlan)+'</td>';
 }
 
 /* ══ SLIDE 7: CHARTS (Canvas) ═══════════════════ */
