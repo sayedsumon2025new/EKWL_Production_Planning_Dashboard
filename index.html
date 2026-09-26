@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2713%27 fill=%27%230d2843%27/%3E%3Cpath d=%27M12 46V20h7v26m8 0V12h7v34m8 0V27h7v19%27 stroke=%27%23efa82c%27 stroke-width=%275%27 fill=%27none%27/%3E%3C/svg%3E">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EKWL · HW Production Planning Dashboard</title>
@@ -1699,6 +1700,53 @@ input,select,textarea{
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 
+<style id="dynamic-dashboard-motion">
+/* Motion layer: visual only; the existing data, permissions and routes stay authoritative. */
+#s0 .home-shell{border:0!important;margin:0;min-height:100%;padding:18px clamp(14px,2.2vw,32px) 32px;max-width:1800px;margin-inline:auto}
+#s0 .home-head{position:relative;isolation:isolate;overflow:hidden;min-height:186px;padding:clamp(22px,3vw,42px);border:1px solid #244363;border-radius:20px;background:radial-gradient(circle at 77% 15%,#1b4264 0%,#102a46 43%,#091b30 100%);box-shadow:0 18px 42px rgba(15,38,66,.18);align-items:flex-start;flex-direction:column;justify-content:center;gap:16px;margin-bottom:22px}
+#s0 .home-head::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.3;background:linear-gradient(115deg,transparent 0 30%,rgba(76,167,227,.12) 48%,transparent 63%),repeating-linear-gradient(0deg,transparent 0 39px,rgba(127,190,229,.08) 40px),repeating-linear-gradient(90deg,transparent 0 39px,rgba(127,190,229,.08) 40px);transform:perspective(430px) rotateX(15deg) scale(1.2)}
+#s0 #home-motion-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+#s0 .home-head .home-title{font-size:clamp(22px,2.5vw,37px)!important;line-height:1.13;color:#fff!important;letter-spacing:-.03em!important;max-width:730px;text-wrap:balance}
+#s0 .home-head .home-title .snum{flex:none;border-radius:8px;padding:6px 10px;font-size:12px;background:#f2a423;color:#122236}
+#s0 .home-hero-sub{color:#d3e5f5;font-size:13px;font-weight:500;line-height:1.5;max-width:680px}
+#s0 .home-head .home-actions{position:relative;z-index:1;gap:9px}
+#s0 .home-head .home-actions .top-btn{border:1px solid rgba(188,219,245,.4)!important;background:rgba(218,234,250,.12)!important;color:#fff!important;backdrop-filter:blur(7px);border-radius:9px!important;padding:8px 12px;transition:background .2s ease,transform .2s ease,border-color .2s ease}
+#s0 .home-head .home-actions .top-btn:hover{background:rgba(218,234,250,.24)!important;transform:translateY(-2px);border-color:#bcdaf1!important}
+#s0 .home-head .home-actions .top-btn.primary{background:#e69823!important;color:#142237!important;border-color:#e69823!important}
+#s0 .home-head .home-actions .top-btn.primary:hover{background:#ffb746!important}
+#s0 .home-grid{gap:14px}
+#s0 .home-grid .home-card{overflow:hidden;isolation:isolate;min-height:147px;padding:20px;border-radius:13px!important;background:linear-gradient(145deg,#fff,#f8fbff)!important;transform:perspective(800px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) translateY(var(--lift,0px));box-shadow:0 4px 16px rgba(18,49,82,.07)!important;transition:transform .19s ease,box-shadow .22s ease,border-color .22s ease;will-change:auto}
+#s0 .home-grid .home-card::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(230px circle at var(--pointer-x,50%) var(--pointer-y,0%),rgba(62,144,212,.14),transparent 75%);opacity:0;transition:opacity .23s ease}
+#s0 .home-grid .home-card::after{content:"";position:absolute;inset:auto 16px 0;height:2px;width:calc(100% - 32px);background:linear-gradient(90deg,#e99820,#5ba9dd);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
+#s0 .home-grid .home-card:hover,#s0 .home-grid .home-card:focus-visible{--lift:-4px;border-color:#8eb8d8!important;box-shadow:0 18px 35px rgba(20,63,105,.16)!important}
+#s0 .home-grid .home-card:hover::before,#s0 .home-grid .home-card:focus-visible::before{opacity:1}
+#s0 .home-grid .home-card:hover::after,#s0 .home-grid .home-card:focus-visible::after{transform:scaleX(1)}
+#s0 .home-grid .home-card:focus-visible{outline:2px solid #1769aa;outline-offset:3px}
+#s0 .home-grid .home-icon{font-size:25px;filter:drop-shadow(0 3px 4px rgba(19,49,80,.12));transition:transform .2s ease}
+#s0 .home-grid .home-card:hover .home-icon{transform:translateY(-3px) scale(1.1)}
+#s0 .home-grid .home-no{background:#eaf3fc;color:#235e91}
+#s0 .home-grid .home-card-title{color:#183c60!important;font-size:13px!important}
+#s0 .home-grid .home-card-sub{font-size:11px!important;line-height:1.5}
+#s0 .home-status,#s0 .home-quick{border-radius:13px!important;box-shadow:0 4px 16px rgba(18,49,82,.05)!important}
+#s0 .home-quick{padding:19px!important}
+#s0 .home-quick-title{font-size:14px!important;margin-bottom:14px}
+#s0 .load-panel{display:block!important}
+#s0 .load-fill{transition:width .45s cubic-bezier(.2,.7,.3,1)}
+#s0 #home-live-kpis .home-quick-box{border-radius:10px!important;background:linear-gradient(145deg,#0d2947,#163a5d)!important;box-shadow:0 6px 16px rgba(12,38,68,.14)!important;transition:transform .23s ease,box-shadow .23s ease}
+#s0 #home-live-kpis .home-quick-box:hover{transform:translateY(-3px);box-shadow:0 12px 25px rgba(12,38,68,.22)!important}
+#s0 .home-mini-fill{transform-origin:left;animation:dashboardBarIn .75s ease-out both}
+#s0 .home-hit-pie{animation:dashboardPieIn .7s ease-out both}
+.bar-chart .bar-fill{transform-origin:left;animation:dashboardBarIn .65s ease-out both}
+@keyframes dashboardBarIn{from{transform:scaleX(.02)}to{transform:scaleX(1)}}
+@keyframes dashboardPieIn{from{opacity:.25;transform:scale(.88) rotate(-10deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+#slide-tabs .stab{position:relative;transition:background .2s ease,color .2s ease}
+#slide-tabs .stab::after{content:"";position:absolute;bottom:0;left:12px;right:12px;height:2px;border-radius:2px;background:#db8d18;transform:scaleX(0);transition:transform .22s ease}
+#slide-tabs .stab.active::after,#slide-tabs .stab:hover::after{transform:scaleX(1)}
+.slide.active:not(#s0)>.slide-header,.slide.active:not(#s0)>.kpi-row{animation:dashboardContentIn .35s ease-out both}
+@keyframes dashboardContentIn{from{opacity:.55;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:680px){#s0 .home-head{min-height:190px;padding:22px}#s0 .home-head .home-title{font-size:24px!important}#s0 .home-head .home-actions .top-btn{font-size:11px;padding:7px 9px}}
+@media(prefers-reduced-motion:reduce){#s0 .home-grid .home-card,#s0 .home-grid .home-icon,#s0 .home-head .home-actions .top-btn,#s0 #home-live-kpis .home-quick-box,#slide-tabs .stab,#slide-tabs .stab::after{transition:none!important}#s0 .home-mini-fill,#s0 .home-hit-pie,.bar-chart .bar-fill,.slide.active:not(#s0)>.slide-header,.slide.active:not(#s0)>.kpi-row{animation:none!important}#s0 .load-fill.loading::after{animation:none!important}}
+</style>
 </head>
 <body class="site-locked">
 <div id="supabase-live-badge">Supabase · waiting</div>
@@ -1904,7 +1952,9 @@ input,select,textarea{
 <div class="slide active" id="s0" data-logical-slide="0">
   <div class="home-shell">
     <div class="home-head">
+      <canvas id="home-motion-canvas" aria-hidden="true"></canvas>
       <div class="home-title"><span class="snum">00</span> Production Planning Control Center</div>
+      <p class="home-hero-sub">Explore the live planning picture, open a module, or update a report.</p>
       <div class="home-actions">
         <button class="top-btn" onclick="downloadTemplate()">⬇ Template</button>
         <button class="top-btn" onclick="exportData()">⬇ Export</button>
@@ -6936,6 +6986,115 @@ async function loadEfficiencyAnalysisSlide(){
   }catch(e){if(msg)msg.textContent='Load failed';box.innerHTML=`<div class="modal-msg">Efficiency Ladder SQL load failed: ${esc(e?.message||e)}</div>`;}
 }
 
+</script>
+<script id="dynamic-dashboard-effects">
+/* Decorative motion is isolated from planning calculations and Supabase calls. */
+(()=>{
+  'use strict';
+  const home=document.getElementById('s0');
+  const hero=home?.querySelector('.home-head');
+  const canvas=document.getElementById('home-motion-canvas');
+  if(!home||!hero||!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
+  const fine=window.matchMedia('(pointer: fine)');
+  let frame=0,last=0,w=0,h=0,px=.5,py=.5;
+  const dots=Array.from({length:26},(_,i)=>({
+    x:.38+((i*17%29)/29)*.62,
+    y:.06+((i*13%31)/31)*.86,
+    depth:.55+(i%5)*.13,
+    phase:i*1.7
+  }));
+  function size(){
+    if(!ctx)return;
+    const rect=hero.getBoundingClientRect(),scale=Math.min(window.devicePixelRatio||1,1.5);
+    w=rect.width;h=rect.height;
+    if(!w||!h)return;
+    canvas.width=Math.round(w*scale);canvas.height=Math.round(h*scale);
+    ctx.setTransform(scale,0,0,scale,0,0);
+    draw(0);
+  }
+  function draw(t){
+    if(!ctx||!w||!h)return;
+    ctx.clearRect(0,0,w,h);
+    const points=dots.map(d=>({
+      x:w*d.x+(px-.5)*13*d.depth+Math.sin(t*.00045+d.phase)*5*d.depth,
+      y:h*d.y+(py-.5)*10*d.depth+Math.cos(t*.00038+d.phase)*4*d.depth,
+      depth:d.depth
+    }));
+    for(let i=0;i<points.length;i++)for(let j=i+1;j<points.length;j++){
+      const a=points[i],b=points[j],dist=Math.hypot(a.x-b.x,a.y-b.y);
+      if(dist<Math.min(w*.21,180)){
+        ctx.strokeStyle='rgba(111,190,238,'+(0.17*(1-dist/180)).toFixed(3)+')';
+        ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      }
+    }
+    points.forEach((p,i)=>{
+      const pulse=.7+.3*Math.sin(t*.0017+i);
+      ctx.beginPath();ctx.arc(p.x,p.y,(i%6===0?3.1:1.7)*p.depth,0,Math.PI*2);
+      ctx.fillStyle=i%6===0?'rgba(248,177,70,'+(.48*pulse).toFixed(3)+')':'rgba(139,207,250,'+(.55*pulse).toFixed(3)+')';ctx.fill();
+    });
+  }
+  function tick(time){
+    if(!home.classList.contains('active')||document.body.classList.contains('site-locked')||document.hidden||reduce.matches){frame=0;return}
+    if(time-last>=33){draw(time);last=time}
+    frame=requestAnimationFrame(tick);
+  }
+  function sync(){
+    if(!ctx)return;
+    if(!home.classList.contains('active')||document.body.classList.contains('site-locked')||document.hidden||reduce.matches){
+      if(frame)cancelAnimationFrame(frame);frame=0;draw(0);return;
+    }
+    if(!frame)frame=requestAnimationFrame(tick);
+  }
+  if(ctx){
+    if('ResizeObserver'in window)new ResizeObserver(size).observe(hero);
+    else window.addEventListener('resize',size,{passive:true});
+    new MutationObserver(sync).observe(home,{attributes:true,attributeFilter:['class']});
+    new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']});
+    document.addEventListener('visibilitychange',sync);
+    if(reduce.addEventListener)reduce.addEventListener('change',sync);
+    size();sync();
+  }
+  if(fine.matches){
+    hero.addEventListener('pointermove',e=>{const r=hero.getBoundingClientRect();px=(e.clientX-r.left)/r.width;py=(e.clientY-r.top)/r.height},{passive:true});
+    hero.addEventListener('pointerleave',()=>{px=.5;py=.5});
+    home.querySelectorAll('.home-grid .home-card').forEach(card=>{
+      card.addEventListener('pointermove',e=>{
+        if(reduce.matches)return;
+        const r=card.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+        card.style.setProperty('--pointer-x',(x*100).toFixed(1)+'%');
+        card.style.setProperty('--pointer-y',(y*100).toFixed(1)+'%');
+        card.style.setProperty('--tilt-x',((.5-y)*5).toFixed(2)+'deg');
+        card.style.setProperty('--tilt-y',((x-.5)*5).toFixed(2)+'deg');
+      },{passive:true});
+      card.addEventListener('pointerleave',()=>{
+        card.style.removeProperty('--tilt-x');card.style.removeProperty('--tilt-y');
+      });
+    });
+  }
+  const host=document.getElementById('home-live-kpis');
+  if(host){
+    let kpiFrame=0;
+    const animate=()=>{
+      if(kpiFrame)cancelAnimationFrame(kpiFrame);
+      if(reduce.matches||!home.classList.contains('active'))return;
+      const items=[...host.querySelectorAll('.home-live-kpi-val')].map(el=>{
+        const label=el.textContent.trim(),number=Number(label.replace(/,/g,''));
+        return Number.isSafeInteger(number)&&number>0?{el,label,number}:null;
+      }).filter(Boolean);
+      if(!items.length)return;
+      const started=performance.now(),duration=660;
+      const step=now=>{
+        const p=Math.min(1,(now-started)/duration),ease=1-Math.pow(1-p,3);
+        items.forEach(({el,label,number})=>{el.textContent=p>=1?label:Math.round(number*ease).toLocaleString('en-US')});
+        kpiFrame=p<1?requestAnimationFrame(step):0;
+      };
+      kpiFrame=requestAnimationFrame(step);
+    };
+    new MutationObserver(animate).observe(host,{childList:true});
+  }
+})();
 </script>
 <div id="ewo-gantt-tip"></div>
 <div id="cal-detail-modal" aria-hidden="true">
