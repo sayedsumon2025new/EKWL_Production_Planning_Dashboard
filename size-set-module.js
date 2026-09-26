@@ -42,6 +42,30 @@ function ssMessage(id,message){const el=document.getElementById(id);if(el)el.tex
 // The report has day/month text without a year. Count recorded dates, never infer lateness.
 const ssHasDate=value=>/^(?:[1-9]|[12]\d|3[01])-(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/i.test(value.trim());
 const ssPct=(n,total)=>total?`${(100*n/total).toFixed(1)}%`:'—';
+const SS_TNA_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function ssTnaDateParts(value){
+  if(!ssHasDate(value))return null;
+  const [day,name]=value.trim().split('-');
+  return {day:Number(day),month:SS_TNA_MONTHS.findIndex(x=>x.toLowerCase()===name.toLowerCase())+1};
+}
+function sizeSetTNAMonthChanged(){
+  const selected=!!document.getElementById('ss-tna-month')?.value;
+  for(const id of ['ss-tna-from','ss-tna-to']){
+    const el=document.getElementById(id);
+    if(el){el.value='';el.disabled=!selected;}
+  }
+  refreshSizeSetTNA();
+}
+function refreshSizeSetTNA(){renderSizeSetTNA(SS_FILTERED.filter(row=>ssVal(row,'Buyer').trim()));}
+function clearSizeSetTNAFilters(){
+  for(const id of ['ss-tna-month','ss-tna-from','ss-tna-to','ss-tna-event']){
+    const el=document.getElementById(id);if(el)el.value='';
+  }
+  for(const id of ['ss-tna-from','ss-tna-to']){
+    const el=document.getElementById(id);if(el)el.disabled=true;
+  }
+  refreshSizeSetTNA();
+}
 
 function showSizeSetSub(which){
   for(const name of ['raw','tna']){
@@ -53,29 +77,44 @@ function showSizeSetSub(which){
 }
 
 function renderSizeSetTNA(valid){
-  const stats=SS_TNA_STEPS.map(([label,planKey,actualKey])=>{
-    let planned=0,actual=0,both=0;
+  const month=Number(document.getElementById('ss-tna-month')?.value||0);
+  const from=Number(document.getElementById('ss-tna-from')?.value||1);
+  const to=Number(document.getElementById('ss-tna-to')?.value||31);
+  const selectedEvent=document.getElementById('ss-tna-event')?.value||'';
+  const stats=SS_TNA_STEPS.filter(([name])=>!selectedEvent||name===selectedEvent)
+    .map(([label,planKey,actualKey])=>{
+    let planned=0,both=0;
     for(const row of valid){
-      const p=ssHasDate(ssVal(row,planKey)),a=ssHasDate(ssVal(row,actualKey));
-      if(p)planned++;
-      if(a)actual++;
-      if(p&&a)both++;
+      const plan=ssTnaDateParts(ssVal(row,planKey));
+      if(!plan || (month && (plan.month!==month||plan.day<from||plan.day>to)))continue;
+      planned++;
+      if(ssHasDate(ssVal(row,actualKey)))both++;
     }
-    return {label,planned,actual,both,missing:planned-both,actualOnly:actual-both};
+    return {label,planned,both,missing:planned-both};
   });
   const planned=stats.reduce((n,s)=>n+s.planned,0),both=stats.reduce((n,s)=>n+s.both,0);
-  const closed=valid.filter(row=>ssVal(row,'T & A Closed').trim().toLowerCase()==='closed').length;
-  const cards=[['ORDER ROWS',ssCount(valid.length),'With Buyer · current filters'],
-    ['TNA CLOSED',ssCount(closed),`${ssPct(closed,valid.length)} of order rows`],
-    ['ACTUAL COVERAGE',ssPct(both,planned),`${ssCount(both)} / ${ssCount(planned)} planned milestones`],
-    ['MISSING ACTUAL',ssCount(planned-both),'Planned milestones without recorded actual']];
+  const cards=[['PLANNED EVENTS',ssCount(planned),'Selected plan dates + TNA events'],
+    ['ACTUAL RECORDED',ssCount(both),'Actual date recorded for the plan'],
+    ['MISSING ACTUAL',ssCount(planned-both),'Selected plans without actual dates'],
+    ['ACTUAL COVERAGE',ssPct(both,planned),`${ssCount(both)} / ${ssCount(planned)} planned events`]];
   const kpis=document.getElementById('ss-tna-kpis');
   if(kpis)kpis.innerHTML=cards.map(([name,value,sub])=>
     `<div class="kpi"><div class="kpi-lbl">${name}</div><div class="kpi-val">${value}</div><div class="kpi-sub">${sub}</div></div>`).join('');
-  ssMessage('ss-tna-note','12 TNA milestones from SS.csv · date recorded = D-Mon text; empty / N/A excluded. Coverage = rows with both plan and actual ÷ rows with plan, summed across milestones. “Actual only” has a recorded actual without a plan. Dates have no year, so no late or on-time result is inferred. All counts respect the filters above.');
+  const scope=month?`${SS_TNA_MONTHS[month-1]} ${from}–${to}`:'all plan months';
+  ssMessage('ss-tna-note',`${selectedEvent||'All 12 TNA events'} · ${scope} · ${ssCount(valid.length)} Buyer rows after the shared filters. Date selection uses the Plan date (D-Mon) for each event. Actual recorded means that same row has an Actual date; N/A and blanks are excluded. Coverage = recorded actual ÷ selected plans. Dates have no year, so late or on-time is not inferred.${month&&from>to?' Choose a From day no later than To day.':''}`);
+  const max=Math.max(1,...stats.map(s=>s.planned));
+  const bars=document.getElementById('ss-tna-bars');
+  if(bars)bars.innerHTML=stats.map(s=>`<div class="ss-tna-bar-row" title="${esc(s.label)}: ${ssCount(s.planned)} planned; ${ssCount(s.both)} actual recorded">
+    <div class="ss-tna-bar-label">${esc(s.label)}</div><div class="ss-tna-bar-track"><div class="ss-tna-bar-planned" style="width:${100*s.planned/max}%"></div><div class="ss-tna-bar-actual" style="width:${100*s.both/max}%"></div></div>
+    <div class="ss-tna-bar-values">${ssCount(s.planned)} plan · ${ssCount(s.both)} actual</div></div>`).join('');
+  const pct=planned?100*both/planned:0;
+  const pie=document.getElementById('ss-tna-pie');
+  if(pie){pie.style.background=planned?`conic-gradient(#158068 0 ${pct}%,#e9a839 ${pct}% 100%)`:'#dbe4ee';pie.setAttribute('aria-label',`${ssPct(both,planned)} actual coverage: ${ssCount(both)} recorded, ${ssCount(planned-both)} missing`);}
+  const pieDetail=document.getElementById('ss-tna-pie-detail');
+  if(pieDetail)pieDetail.innerHTML=`<strong>${ssPct(both,planned)} coverage</strong><br><span style="color:#158068">● ${ssCount(both)} actual recorded</span> &nbsp; <span style="color:#ad7415">● ${ssCount(planned-both)} missing actual</span>`;
   const table=document.getElementById('ss-tna-table');
-  if(table)table.innerHTML=`<table class="ss-tna-table"><thead><tr><th>Milestone</th><th>Planned date</th><th>Plan + actual</th><th>Missing actual</th><th>Actual only</th><th>Coverage</th></tr></thead><tbody>${stats.map(s=>
-    `<tr><td>${esc(s.label)}</td><td>${ssCount(s.planned)}</td><td>${ssCount(s.both)}</td><td>${ssCount(s.missing)}</td><td>${ssCount(s.actualOnly)}</td><td><span class="ss-progress"><span style="width:${s.planned?Math.min(100,100*s.both/s.planned):0}%"></span></span>${ssPct(s.both,s.planned)}</td></tr>`).join('')}</tbody></table>`;
+  if(table)table.innerHTML=`<h3 style="font-size:14px;color:#16345a;margin:12px 0">TNA Event-wise KPI</h3><table class="ss-tna-table"><thead><tr><th>TNA event</th><th>Planned date</th><th>Actual recorded</th><th>Missing actual</th><th>Coverage</th></tr></thead><tbody>${stats.map(s=>
+    `<tr><td>${esc(s.label)}</td><td>${ssCount(s.planned)}</td><td>${ssCount(s.both)}</td><td>${ssCount(s.missing)}</td><td><span class="ss-progress"><span style="width:${s.planned?100*s.both/s.planned:0}%"></span></span>${ssPct(s.both,s.planned)}</td></tr>`).join('')}</tbody></table>`;
 }
 
 function parseSizeSetCSV(text){
@@ -126,6 +165,17 @@ function populateSizeSetFilters(){
       options.map(value=>`<option value="${esc(value)}">${esc(value)}</option>`).join('');
   }
   const search=document.getElementById('ss-search');if(search)search.value='';
+  const event=document.getElementById('ss-tna-event');
+  if(event)event.innerHTML='<option value="">All events</option>'+SS_TNA_STEPS.map(([name])=>
+    `<option value="${esc(name)}">${esc(name)}</option>`).join('');
+  for(const id of ['ss-tna-from','ss-tna-to']){
+    const day=document.getElementById(id);
+    if(day)day.innerHTML=`<option value="">${id.endsWith('from')?'1st day':'Last day'}</option>`+
+      Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+  }
+  const tnaMonth=document.getElementById('ss-tna-month');if(tnaMonth)tnaMonth.value='';
+  const tnaEvent=document.getElementById('ss-tna-event');if(tnaEvent)tnaEvent.value='';
+  for(const id of ['ss-tna-from','ss-tna-to']){const day=document.getElementById(id);if(day)day.disabled=true;}
 }
 
 function renderSizeSetModule(){
@@ -207,6 +257,7 @@ async function loadSizeSetModule(force=false){
       document.getElementById('ss-kpis').innerHTML='';
       document.getElementById('ss-tna-kpis').innerHTML='';
       document.getElementById('ss-tna-table').innerHTML='<div class="modal-msg">No completed Size Set SQL snapshot yet.</div>';
+      for(const id of ['ss-tna-bars','ss-tna-pie-detail']){const el=document.getElementById(id);if(el)el.innerHTML='';}
       document.getElementById('ss-table').innerHTML='<div class="modal-msg">No completed Size Set SQL snapshot yet. Admin can preview and upload SS.csv above.</div>';
       document.getElementById('ss-pagination').innerHTML='';
       ssMessage('ss-msg','No SQL snapshot yet');ssMessage('ss-source','');
@@ -265,5 +316,6 @@ function resetSizeSetModule(){
   ssMessage('ss-upload-msg','No CSV selected.');
   ssMessage('ss-source','');ssMessage('ss-msg','Waiting for sign in…');
   showSizeSetSub('raw');
-  for(const id of ['ss-kpis','ss-table','ss-pagination','ss-tna-kpis','ss-tna-table','ss-tna-note']){const el=document.getElementById(id);if(el)el.innerHTML='';}
+  for(const id of ['ss-kpis','ss-table','ss-pagination','ss-tna-kpis','ss-tna-table','ss-tna-note','ss-tna-bars','ss-tna-pie-detail']){const el=document.getElementById(id);if(el)el.innerHTML='';}
+  clearSizeSetTNAFilters();
 }

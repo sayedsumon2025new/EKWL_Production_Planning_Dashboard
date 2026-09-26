@@ -1096,6 +1096,24 @@ border:1px solid #334155;border-radius:8px;padding:6px 10px;font-size:10px;font-
 .ss-tna-table tbody tr:nth-child(even){background:#f8fafc}
 .ss-progress{display:inline-block;vertical-align:middle;height:7px;width:72px;background:#e3eaf2;border-radius:10px;margin-right:7px;overflow:hidden}
 .ss-progress span{display:block;height:100%;background:#158068}
+.ss-tna-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;padding:12px;border:1px solid #d8e2ee;border-radius:8px;background:#f6f9fd;margin:14px 0}
+.ss-tna-filters label{display:flex;flex-direction:column;gap:5px;color:#42536a;font-size:12px;font-weight:800}
+.ss-tna-filters select{min-height:35px;min-width:125px;max-width:225px;border:1px solid #cbd5e1;border-radius:6px;background:white;color:#193554;padding:6px 9px}
+.ss-tna-filters select:disabled{background:#e8edf3;color:#8a98a8}
+.ss-tna-charts{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(270px,1fr);gap:13px;margin:15px 0}
+.ss-tna-chart{border:1px solid #d6e0ec;border-radius:9px;background:#fff;padding:15px;min-width:0}
+.ss-tna-chart h3{font-size:14px;color:#16345a;margin:0 0 13px}
+.ss-tna-bar-row{display:grid;grid-template-columns:115px minmax(70px,1fr) 135px;align-items:center;gap:8px;margin:8px 0;font-size:12px}
+.ss-tna-bar-label{color:#34465f;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ss-tna-bar-track{height:20px;background:#eef3f8;position:relative;border-radius:5px;overflow:hidden}
+.ss-tna-bar-planned{height:100%;background:#adc5e4;border-radius:5px}
+.ss-tna-bar-actual{position:absolute;top:5px;left:0;height:10px;background:#158068;border-radius:5px}
+.ss-tna-bar-values{font-size:11px;color:#526176;text-align:right;white-space:nowrap}
+.ss-tna-legend{display:flex;gap:14px;flex-wrap:wrap;color:#526176;font-size:12px;margin-top:10px}
+.ss-tna-legend b{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.ss-tna-pie{width:min(230px,68vw);aspect-ratio:1;border-radius:50%;margin:14px auto;border:3px solid #fff;box-shadow:0 2px 12px #233f5b24}
+.ss-tna-pie-detail{text-align:center;color:#34465f;font-size:13px;line-height:1.6}
+@media(max-width:850px){.ss-tna-charts{grid-template-columns:1fr}.ss-tna-bar-row{grid-template-columns:95px minmax(60px,1fr) 115px}}
 @media(max-width:700px){.ss-controls label,.ss-controls input,.ss-controls select{width:100%;min-width:0}.ss-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.ss-controls .ss-search{grid-column:1/-1}}
 
 .order-bank-filterbar{display:grid;grid-template-columns:repeat(7,minmax(130px,1fr));gap:7px;margin:8px 0 10px}
@@ -1892,6 +1910,7 @@ input,select,textarea{
         <option value="sewing">🧵 Line Wise Reconcilation / Sewing I-O.csv</option>
         <option value="production">📅 Date Wise Actual Production Report.csv</option>
         <option value="orderbank">📦 Order Bank.csv</option>
+        <option value="sizeset">📐 SS.csv / Size Set</option>
       </select>
       <div id="upload-report-help" class="modal-msg" style="margin-top:6px">Report name select করুন — শুধু selected uploader দেখাবে।</div>
     </div>
@@ -1980,6 +1999,17 @@ input,select,textarea{
       <button class="top-btn primary" style="width:100%;padding:9px;margin-top:9px" onclick="uploadOrderBank()">Upload &amp; Validate Order Bank</button>
       <div id="ob-msg" class="modal-msg">Order Bank.csv select করুন। Missing Rows = 0 হলে upload valid.</div>
       <div id="ob-audit" class="tbl-wrap" style="margin-top:10px"></div>
+    </div>
+    <div id="upload-panel-sizeset" class="upload-report-panel" style="display:none">
+      <div id="ss-upload-card" class="card" style="margin-top:12px">
+        <div class="card-title">📁 SS.csv upload <span class="ct-right">ADMIN ONLY</span></div>
+        <div class="ss-controls">
+          <label>Select CSV<input id="ss-file" type="file" accept=".csv,text/csv" onchange="previewSizeSetFile()"></label>
+          <button id="ss-upload-btn" class="top-btn primary" type="button" onclick="uploadSizeSetFile()">Upload &amp; Activate SQL Snapshot</button>
+        </div>
+        <div class="ss-source-note">Select a file to preview it locally. Upload publishes its complete source rows after the SQL row-count check; previous active data stays visible until then.</div>
+        <div id="ss-upload-msg" class="modal-msg" role="status" aria-live="polite">No CSV selected.</div>
+      </div>
     </div>
   </div>
 </div>
@@ -2636,15 +2666,6 @@ input,select,textarea{
     </div>
     <div class="pager-btns"><button class="pg-btn" onclick="loadSizeSetModule(true)">↻ Refresh SQL</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
   </div>
-  <div id="ss-upload-card" class="card" style="margin-top:12px">
-    <div class="card-title">📁 SS.csv upload <span class="ct-right">ADMIN ONLY</span></div>
-    <div class="ss-controls">
-      <label>Select CSV<input id="ss-file" type="file" accept=".csv,text/csv" onchange="previewSizeSetFile()"></label>
-      <button id="ss-upload-btn" class="top-btn primary" type="button" onclick="uploadSizeSetFile()">Upload &amp; Activate SQL Snapshot</button>
-    </div>
-    <div class="ss-source-note">Select a file to preview it locally. Upload publishes its complete source rows after the SQL row-count check; previous active data stays visible until then.</div>
-    <div id="ss-upload-msg" class="modal-msg" role="status" aria-live="polite">No CSV selected.</div>
-  </div>
   <div class="card" style="margin-top:14px">
     <div class="card-title">📐 SIZE SET REPORT <span id="ss-msg" class="ct-right">Loading SQL…</span></div>
     <div id="ss-source" class="ss-source-note"></div>
@@ -2666,8 +2687,19 @@ input,select,textarea{
       <div id="ss-pagination" class="ss-pager"></div>
     </div>
     <div id="ss-tna-view" role="tabpanel" aria-labelledby="ss-tab-tna" hidden>
+      <div class="ss-tna-filters" aria-label="TNA date and event filters">
+        <label>Plan month<select id="ss-tna-month" onchange="sizeSetTNAMonthChanged()"><option value="">All months</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></label>
+        <label>From day<select id="ss-tna-from" disabled onchange="refreshSizeSetTNA()"><option value="">1st day</option></select></label>
+        <label>To day<select id="ss-tna-to" disabled onchange="refreshSizeSetTNA()"><option value="">Last day</option></select></label>
+        <label>TNA event<select id="ss-tna-event" onchange="refreshSizeSetTNA()"><option value="">All events</option></select></label>
+        <button class="top-btn" type="button" onclick="clearSizeSetTNAFilters()">Clear TNA filters</button>
+      </div>
       <div id="ss-tna-kpis" class="kpi-row" style="margin-top:14px"></div>
       <div id="ss-tna-note" class="ss-tna-note"></div>
+      <div class="ss-tna-charts">
+        <section class="ss-tna-chart"><h3>Plan vs Actual · TNA Events</h3><div id="ss-tna-bars"></div><div class="ss-tna-legend"><span><b style="background:#adc5e4"></b>Planned</span><span><b style="background:#158068"></b>Actual recorded</span></div></section>
+        <section class="ss-tna-chart"><h3>Actual Coverage · Pie Chart</h3><div id="ss-tna-pie" class="ss-tna-pie" role="img"></div><div id="ss-tna-pie-detail" class="ss-tna-pie-detail"></div></section>
+      </div>
       <div id="ss-tna-table" class="tbl-wrap" style="overflow:auto"></div>
     </div>
   </div>
@@ -6585,7 +6617,7 @@ async function uploadOrderBank(){
 
 
 function selectUploadReport(type){
-  const types=['plan','fabric','sewing','production','orderbank'];
+  const types=['plan','fabric','sewing','production','orderbank','sizeset'];
   types.forEach(t=>{
     const el=document.getElementById('upload-panel-'+t);
     if(el)el.style.display=(t===type)?'block':'none';
@@ -6595,7 +6627,8 @@ function selectUploadReport(type){
     fabric:'Fabrics & Cutting.csv → fabric_cutting_info',
     sewing:'Line Wise Reconcilation.csv → sewing_input_output',
     production:'Date Wise Actual Production Report.csv → date-wise replace',
-    orderbank:'Order Bank.csv → staging → lossless SQL snapshot → validation'
+    orderbank:'Order Bank.csv → staging → lossless SQL snapshot → validation',
+    sizeset:'SS.csv → preview → 49-column SQL snapshot → row-count validation'
   };
   const x=document.getElementById('upload-report-help'); if(x)x.textContent=help[type]||'';
 }
@@ -6606,7 +6639,8 @@ function refreshUploadReportOptions(){
     fabric:siteHasPerm('fabric'),
     sewing:siteHasPerm('sewing'),
     production:siteHasPerm('production'),
-    orderbank:siteIsAdmin()||siteHasPerm('admin_settings')
+    orderbank:siteIsAdmin()||siteHasPerm('admin_settings'),
+    sizeset:siteIsAdmin()
   };
   [...sel.options].forEach(o=>o.hidden=!allowed[o.value]);
   let chosen=[...sel.options].find(o=>!o.hidden);
