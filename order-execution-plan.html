@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EKWL HW — Production Planning v3</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f2f5;--border:#c8d0da;--hdr:#1a3c5e;--hdr2:#2a5298;--wht:#fff;
+  --plan:#e8f5e9;--sah:#fff9c4;--effi:#e3f2fd;--clock:#fff3e0;
+  --fc-bg:#eaf0fb;--new-fc:#fce4ec;
+  --green:#2e7d32;--red:#c62828;--orange:#e65100;--yellow:#f9a825;--blue:#1565c0;
+  --risk-over:#ffebee;--risk-crit:#fff3e0;--risk-urg:#fffde7;--risk-watch:#e8f5e9;--risk-ok:#e3f2fd;
+}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;background:var(--bg);color:#222;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── TABS ── */
+#tabs{background:var(--hdr);display:flex;gap:0;flex-shrink:0;align-items:center}
+.tab{padding:9px 18px;color:rgba(255,255,255,.65);cursor:pointer;font-size:11.5px;font-weight:600;border-bottom:3px solid transparent;transition:.15s;white-space:nowrap}
+.tab:hover{color:#fff;background:rgba(255,255,255,.08)}
+.tab.active{color:#fff;border-bottom:3px solid #64b5f6;background:rgba(255,255,255,.12)}
+#tab-title{margin-left:auto;padding:0 14px;color:rgba(255,255,255,.5);font-size:10px}
+
+/* ── TOOLBAR ── */
+#toolbar{background:#fff;padding:6px 10px;border-bottom:2px solid var(--border);display:flex;flex-wrap:wrap;gap:5px;align-items:center;flex-shrink:0}
+select,input[type=text]{padding:3px 7px;border:1px solid var(--border);border-radius:4px;font-size:11px;height:26px;background:#fff;color:#222}
+select{min-width:95px}input[type=text]{width:128px}
+.btn{padding:3px 11px;border:none;border-radius:4px;cursor:pointer;font-size:11px;height:26px;white-space:nowrap;font-weight:600}
+.btn-p{background:var(--hdr);color:#fff}.btn-p:hover{background:var(--hdr2)}
+.btn-s{background:#546e7a;color:#fff}.btn-s:hover{background:#37474f}
+.btn-g{background:var(--green);color:#fff}.btn-g:hover{background:#1b5e20}
+.btn-r{background:var(--red);color:#fff}.btn-r:hover{background:#b71c1c}
+.btn-o{background:var(--orange);color:#fff}.btn-o:hover{background:#bf360c}
+#tog-new{background:var(--red)}.tog-active{background:var(--green)!important}
+
+/* ── INFO BAR ── */
+#infobar{background:var(--hdr);color:#fff;padding:3px 10px;font-size:10px;display:flex;gap:10px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+#infobar b{margin-left:2px;color:#90caf9}
+.ib-risk{padding:1px 8px;border-radius:10px;font-weight:700;font-size:9.5px;margin-left:4px}
+.ib-over{background:#ef9a9a;color:#b71c1c}
+.ib-crit{background:#ffcc02;color:#7f6000}
+.ib-urg{background:#ffe082;color:#7f6000}
+
+/* ── LEGEND ── */
+#legend{background:#fff;border-bottom:1px solid var(--border);padding:3px 10px;display:flex;gap:10px;align-items:center;flex-shrink:0;font-size:10px;flex-wrap:wrap}
+.lbox{width:12px;height:12px;border:1px solid #bbb;border-radius:2px;display:inline-block;margin-right:3px;vertical-align:middle}
+
+/* ── VIEWS ── */
+.view{display:none;flex:1;min-height:0;flex-direction:column}
+.view.on{display:flex}
+
+/* ── TABLE ── */
+#wrap{flex:1;overflow:auto}
+table{border-collapse:collapse;table-layout:fixed;white-space:nowrap}
+th,td{border:1px solid var(--border);padding:2px 4px;text-align:center;vertical-align:middle;overflow:hidden;text-overflow:ellipsis}
+thead th{position:sticky;top:0;z-index:20;background:var(--hdr);color:#fff;font-size:10px;font-weight:600}
+thead th.st{z-index:30}
+td.st{position:sticky;z-index:10}
+tr:hover td:not(.st){filter:brightness(.95)}
+tr.gs td{border-top:2px solid #78909c}
+.rp{background:var(--plan)}.rs{background:var(--sah)}.re{background:var(--effi)}.rc{background:var(--clock)}
+
+/* risk row coloring */
+.row-over{background:var(--risk-over)!important}
+.row-crit{background:var(--risk-crit)!important}
+.row-urg{background:var(--risk-urg)!important}
+
+/* col widths */
+.c0{width:60px}.c1{width:52px}.c2{width:72px}.c3{width:72px}.c4{width:90px}
+.c5{width:52px}.c6{width:128px}.c7{width:85px}.c8{width:78px}
+.c9{width:34px}.c10{width:34px}.c11{width:108px}
+.c12{width:52px}.c13{width:52px}.c14{width:60px}.c15{width:60px}.c16{width:60px}
+.c17{width:48px}.c18{width:64px}.c19{width:44px}.c20{width:36px}
+.c21{width:36px}.c22{width:88px}.c23{width:42px}.cd{width:36px}
+
+/* ── PAGER ── */
+#pager{background:#fff;border-top:2px solid var(--border);padding:5px 10px;display:flex;gap:7px;align-items:center;flex-shrink:0;font-size:11px}
+#footer-stats{margin-left:auto;font-size:10px;color:#555;background:#f5f5f5;padding:2px 10px;border-radius:4px}
+
+/* ── DASHBOARD ── */
+#dash-view{padding:12px;gap:12px}
+.kpi-row{display:flex;gap:10px;flex-wrap:wrap}
+.kpi{background:#fff;border-radius:8px;padding:12px 16px;flex:1;min-width:130px;border-left:4px solid var(--hdr);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.kpi-lbl{font-size:9.5px;color:#777;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.kpi-val{font-size:20px;font-weight:700}
+.kpi-sub{font-size:9.5px;color:#999;margin-top:2px}
+.charts-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.card{background:#fff;border-radius:8px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);flex:1;min-width:280px}
+.card h3{font-size:11.5px;font-weight:700;color:var(--hdr);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:6px}
+.bar-row{display:flex;align-items:center;margin-bottom:4px;gap:6px;font-size:10px}
+.bar-lbl{width:100px;text-align:right;color:#444;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;white-space:nowrap}
+.bar-track{flex:1;background:#eceff1;border-radius:3px;height:15px;min-width:0;position:relative}
+.bar-fill{height:100%;border-radius:3px}
+.bar-val{font-size:9.5px;color:#555;width:80px;flex-shrink:0;text-align:left}
+.b-blue{background:#42a5f5}.b-green{background:#66bb6a}.b-orange{background:#ffa726}
+.b-red{background:#ef5350}.b-purple{background:#ab47bc}.b-teal{background:#26a69a}
+
+/* Risk badges */
+.rbadge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700;white-space:nowrap}
+.rb-over{background:#ffcdd2;color:#b71c1c}
+.rb-crit{background:#ffe0b2;color:#e65100}
+.rb-urg{background:#fff9c4;color:#f57f17}
+.rb-watch{background:#e8f5e9;color:#2e7d32}
+.rb-ok{background:#e3f2fd;color:#1565c0}
+.rb-unk{background:#f5f5f5;color:#757575}
+
+/* Risk table */
+.rtbl{width:100%;border-collapse:collapse;font-size:10px}
+.rtbl th{background:#eceff1;padding:4px 6px;text-align:left;font-weight:700;color:#444;border-bottom:1px solid #ccc;white-space:nowrap;position:sticky;top:0}
+.rtbl td{padding:3px 6px;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+.rtbl tr:hover td{background:#fafafa}
+
+/* Gap table */
+.gtbl{width:100%;border-collapse:collapse;font-size:10px}
+.gtbl th{background:#eceff1;padding:4px 6px;text-align:left;font-weight:700;border-bottom:1px solid #ccc;white-space:nowrap}
+.gtbl td{padding:3px 6px;border-bottom:1px solid #f0f0f0}
+.gap-bar{display:inline-block;height:8px;border-radius:2px;background:#ef5350;vertical-align:middle;margin-right:4px}
+.plan-bar{display:inline-block;height:8px;border-radius:2px;background:#66bb6a;vertical-align:middle;margin-right:4px}
+
+/* Timeline chart */
+#timeline-canvas{width:100%;height:200px;background:#fafafa;border-radius:4px}
+
+/* Heatmap */
+.heatmap-wrap{overflow-x:auto}
+.heatmap-table{border-collapse:collapse;font-size:9px;white-space:nowrap}
+.heatmap-table th{padding:2px 4px;background:#eceff1;color:#555;border:1px solid #ddd;min-width:32px;text-align:center;font-weight:600}
+.heatmap-table td{padding:2px 4px;border:1px solid #ddd;text-align:right;min-width:32px;cursor:default}
+.heatmap-table td.line-lbl{text-align:left;font-weight:600;color:#333;background:#f5f5f5;position:sticky;left:0;z-index:5}
+.h0{background:#fff}
+.h1{background:#bbdefb;color:#0d47a1}
+.h2{background:#64b5f6;color:#0d47a1}
+.h3{background:#1e88e5;color:#fff}
+.h4{background:#0d47a1;color:#fff}
+
+/* SAH calculator */
+.calc-card{background:#fff;border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.calc-card h3{font-size:11.5px;font-weight:700;color:var(--hdr);margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:6px}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.calc-field label{font-size:10px;color:#666;display:block;margin-bottom:3px;font-weight:600}
+.calc-field input{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px}
+.calc-result{background:#e8f5e9;border-radius:6px;padding:10px 14px;display:flex;gap:20px;flex-wrap:wrap}
+.calc-res-item{text-align:center}
+.calc-res-lbl{font-size:9.5px;color:#555;font-weight:600}
+.calc-res-val{font-size:18px;font-weight:700;color:var(--green)}
+.effi-meter{width:100%;height:18px;background:#eceff1;border-radius:9px;overflow:hidden;margin-top:6px}
+.effi-fill{height:100%;border-radius:9px;transition:width .5s;background:linear-gradient(90deg,#ef5350,#ffa726,#66bb6a)}
+
+/* Loading */
+#loading{position:fixed;inset:0;background:rgba(26,60,94,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#fff;gap:14px}
+#loading h2{font-size:17px;font-weight:700}
+#prog-bar{width:280px;height:7px;background:rgba(255,255,255,.2);border-radius:4px}
+#prog-fill{height:100%;border-radius:4px;background:#64b5f6;transition:width .25s}
+#prog-lbl{font-size:11px;opacity:.75}
+
+/* Print */
+@media print{#tabs,#toolbar,#legend,#pager,#infobar{display:none!important}#wrap{overflow:visible!important}#tbl-view{overflow:visible!important;height:auto!important}body{overflow:visible!important;height:auto!important}table{font-size:8px}th,td{padding:1px 2px}}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <h2>🏭 EKWL HW — Production Planning v3</h2>
+  <div id="prog-bar"><div id="prog-fill" style="width:3%"></div></div>
+  <div id="prog-lbl">Starting…</div>
+</div>
+
+<div id="tabs">
+  <div class="tab active" onclick="showTab('tbl')">📋 Planning Table</div>
+  <div class="tab" onclick="showTab('dash')">📊 Dashboard</div>
+  <div class="tab" onclick="showTab('risk')">🚨 Risk Tracker</div>
+  <div class="tab" onclick="showTab('gap')">⚠️ Planning Gap</div>
+  <div class="tab" onclick="showTab('heat')">🌡️ Line Heatmap</div>
+  <div class="tab" onclick="showTab('calc')">🧮 SAH Calculator</div>
+  <div class="tab" onclick="showTab('timeline')">📈 Daily Timeline</div>
+  <span id="tab-title">EKWL HW Production Planning</span>
+</div>
+
+<div id="toolbar">
+  <select id="fl"><option value="">All Lines</option></select>
+  <select id="fb"><option value="">All Buyers</option></select>
+  <select id="fpt"><option value="">All Products</option></select>
+  <select id="frisk"><option value="">All Risk</option><option>Overdue</option><option>Critical</option><option>Urgent</option><option>Watch</option><option>On Track</option></select>
+  <input id="fs" placeholder="EWO / PO / Color…" onkeydown="if(event.key==='Enter')go_filter()">
+  <input id="fd1" type="text" placeholder="EFD From (M/D/YYYY)" style="width:125px">
+  <input id="fd2" type="text" placeholder="EFD To (M/D/YYYY)" style="width:125px">
+  <button class="btn btn-p" onclick="go_filter()">🔍 Filter</button>
+  <button class="btn btn-s" onclick="clr_filter()">✖ Clear</button>
+  <button class="btn btn-r" id="tog-new" onclick="tog_new()">👁 New Only</button>
+  <button class="btn btn-g" onclick="exp_csv()">⬇ CSV</button>
+  <button class="btn btn-s" onclick="window.print()">🖨 Print</button>
+</div>
+<div id="sql-note" style="padding:4px 10px;background:#e8f5e9;color:#1b5e20;font-size:10px">Waiting for authenticated SQL data…</div>
+
+<div id="infobar">
+  <span>Total:<b id="ib-t">—</b></span>
+  <span>Filtered:<b id="ib-f">—</b></span>
+  <span>Orders:<b id="ib-o">—</b></span>
+  <span>New:<b id="ib-n">—</b></span>
+  <span>Qty:<b id="ib-q">—</b></span>
+  <span>Dates:<b id="ib-d">—</b></span>
+  <span style="margin-left:auto">
+    <span class="ib-risk ib-over" id="ib-over">Overdue: —</span>
+    <span class="ib-risk ib-crit" id="ib-crit">Critical: —</span>
+    <span class="ib-risk ib-urg" id="ib-urg">Urgent: —</span>
+  </span>
+</div>
+
+<div id="legend">
+  <b>Criteria:</b>
+  <span><span class="lbox" style="background:var(--plan)"></span>Plan/Day</span>
+  <span><span class="lbox" style="background:var(--sah)"></span>SAH/Day</span>
+  <span><span class="lbox" style="background:var(--effi)"></span>Effi/Day</span>
+  <span><span class="lbox" style="background:var(--clock)"></span>Clock Hour/Day</span>
+  <span><span class="lbox" style="background:var(--new-fc)"></span>New (OB)</span>
+  <span><span class="lbox" style="background:var(--risk-over)"></span>Overdue</span>
+  <span><span class="lbox" style="background:var(--risk-crit)"></span>Critical ≤14d</span>
+  <span><span class="lbox" style="background:var(--risk-urg)"></span>Urgent ≤30d</span>
+</div>
+
+<!-- ① PLANNING TABLE -->
+<div class="view on" id="tbl-view" style="flex-direction:column">
+  <div id="wrap"><table id="tbl"><thead id="th"></thead><tbody id="tb"></tbody></table></div>
+  <div id="pager">
+    <button class="btn btn-p" onclick="pg(-1)" style="height:24px;padding:2px 9px">◀</button>
+    <span id="pi">Page 1/1</span>
+    <button class="btn btn-p" onclick="pg(1)" style="height:24px;padding:2px 9px">▶</button>
+    <select id="ps" onchange="ps_ch()" style="height:24px">
+      <option value="200">200 rows</option><option value="500" selected>500 rows</option>
+      <option value="1000">1000 rows</option><option value="99999">All</option>
+    </select>
+    <span style="color:#999;font-size:10px;margin-left:6px">← Scroll right for dates →</span>
+    <div id="footer-stats"></div>
+  </div>
+</div>
+
+<!-- ② DASHBOARD -->
+<div class="view" id="dash-view" style="overflow:auto;padding:12px;gap:12px;flex-direction:column">
+  <div class="kpi-row" id="kpi-row"></div>
+  <div class="charts-row">
+    <div class="card" style="min-width:380px"><h3>📦 Buyer-wise Order Summary</h3><div id="buyer-chart"></div></div>
+    <div class="card" style="min-width:300px"><h3>👕 Product Type</h3><div id="ptype-chart"></div></div>
+  </div>
+  <div class="charts-row">
+    <div class="card" style="flex:2;min-width:380px"><h3>📅 Monthly EFD (Orders)</h3><div id="month-chart"></div></div>
+    <div class="card" style="min-width:260px"><h3>🏭 Line Utilization</h3><div id="line-chart"></div></div>
+  </div>
+</div>
+
+<!-- ③ RISK TRACKER -->
+<div class="view" id="risk-view" style="overflow:auto;padding:12px;flex-direction:column;gap:12px">
+  <div class="kpi-row" id="risk-kpi-row"></div>
+  <div class="card" style="min-width:0">
+    <h3>🚨 At-Risk Orders <span id="risk-count" style="font-size:10px;font-weight:400;color:#888;margin-left:6px"></span></h3>
+    <div style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-r" style="font-size:10px;height:22px;padding:1px 8px" onclick="filterRisk('Overdue')">Overdue</button>
+      <button class="btn btn-o" style="font-size:10px;height:22px;padding:1px 8px" onclick="filterRisk('Critical')">Critical</button>
+      <button class="btn" style="background:#f9a825;font-size:10px;height:22px;padding:1px 8px" onclick="filterRisk('Urgent')">Urgent</button>
+      <button class="btn btn-g" style="font-size:10px;height:22px;padding:1px 8px" onclick="filterRisk('all')">All Risk</button>
+    </div>
+    <div style="overflow:auto;max-height:420px">
+      <table class="rtbl" id="risk-tbl">
+        <thead><tr>
+          <th>Risk</th><th>Days to EFD</th><th>Buyer</th><th>EWO</th>
+          <th>P.O.</th><th>Color</th><th>Product</th><th>Order Qty</th>
+          <th>Planned Qty</th><th>Line #</th><th>SMV</th><th>Manpower</th><th>EFD</th>
+        </tr></thead>
+        <tbody id="risk-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ④ PLANNING GAP -->
+<div class="view" id="gap-view" style="overflow:auto;padding:12px;flex-direction:column;gap:12px">
+  <div class="card">
+    <h3>⚠️ Planning Gap Analysis — Buyer-wise</h3>
+    <p style="font-size:10px;color:#888;margin-bottom:10px">Gap = Order Qty − Planned Qty. High gap means production not yet scheduled.</p>
+    <div id="gap-content"></div>
+  </div>
+  <div class="card">
+    <h3>📊 Gap Summary</h3>
+    <div id="gap-chart"></div>
+  </div>
+</div>
+
+<!-- ⑤ LINE HEATMAP -->
+<div class="view" id="heat-view" style="overflow:auto;padding:12px;flex-direction:column;gap:12px">
+  <div class="card">
+    <h3>🌡️ Line Daily Production Heatmap <span style="font-size:9.5px;font-weight:400;color:#888"> — deeper blue = higher output</span></h3>
+    <div class="heatmap-wrap" id="heatmap-wrap"></div>
+  </div>
+</div>
+
+<!-- ⑥ SAH CALCULATOR -->
+<div class="view" id="calc-view" style="overflow:auto;padding:12px;flex-direction:column;gap:12px">
+  <div class="calc-card" style="max-width:600px">
+    <h3>🧮 Daily SAH & Efficiency Calculator</h3>
+    <div class="calc-grid">
+      <div class="calc-field"><label>Plan/Day (pcs)</label><input id="c-plan" type="number" value="500" oninput="calc()"></div>
+      <div class="calc-field"><label>SMV (min)</label><input id="c-smv" type="number" value="14.91" step="0.01" oninput="calc()"></div>
+      <div class="calc-field"><label>Manpower</label><input id="c-mp" type="number" value="40" oninput="calc()"></div>
+      <div class="calc-field"><label>Working Hours/Day</label><input id="c-hrs" type="number" value="8" step="0.5" oninput="calc()"></div>
+      <div class="calc-field"><label>Target Efficiency %</label><input id="c-tgt" type="number" value="75" oninput="calc()"></div>
+      <div class="calc-field"><label>Order Qty (pcs)</label><input id="c-oqty" type="number" value="5000" oninput="calc()"></div>
+    </div>
+    <div class="calc-result" id="calc-result"></div>
+    <div style="margin-top:8px;font-size:10px;color:#888">
+      <b>Formulas:</b>
+      SAH/Day = Plan/Day × SMV ÷ 60 &nbsp;|&nbsp;
+      Efficiency = SAH/Day ÷ (Manpower × Hours) × 100 &nbsp;|&nbsp;
+      Production Days = Order Qty ÷ Plan/Day
+    </div>
+  </div>
+  <div class="calc-card" style="max-width:600px">
+    <h3>🎯 Reverse Calculator — Target Efficiency → Required Manpower</h3>
+    <div class="calc-grid">
+      <div class="calc-field"><label>Plan/Day (pcs)</label><input id="r-plan" type="number" value="500" oninput="rcalc()"></div>
+      <div class="calc-field"><label>SMV (min)</label><input id="r-smv" type="number" value="14.91" step="0.01" oninput="rcalc()"></div>
+      <div class="calc-field"><label>Target Efficiency %</label><input id="r-tgt" type="number" value="75" oninput="rcalc()"></div>
+      <div class="calc-field"><label>Working Hours/Day</label><input id="r-hrs" type="number" value="8" step="0.5" oninput="rcalc()"></div>
+    </div>
+    <div class="calc-result" id="rcalc-result"></div>
+  </div>
+</div>
+
+<!-- ⑦ DAILY TIMELINE -->
+<div class="view" id="timeline-view" style="overflow:auto;padding:12px;flex-direction:column;gap:12px">
+  <div class="card">
+    <h3>📈 Daily Production Output — All Lines Combined</h3>
+    <p style="font-size:10px;color:#888;margin-bottom:10px">Sum of Plan/Day values across all lines per date (existing planning data only)</p>
+    <canvas id="tc" style="width:100%;height:220px"></canvas>
+  </div>
+  <div class="card">
+    <h3>📦 Cumulative Production vs Target</h3>
+    <canvas id="tc2" style="width:100%;height:180px"></canvas>
+  </div>
+</div>
+
+<script>
+/* Transform authenticated SQL snapshots into the uploaded v3 report's display model. */
+const OE_SHARED=[
+  'Unit','Line #','Buyer','Product Type','Product','EWO','Stroke','P.O.','Col',
+  'Print','Emb','Outsource','Order qty','Planned qty','PCD','PSD','PFD',
+  'Strip Plan Qty','EFD','Manpower','SMV'
+];
+const OE_CRITERIA=['Plan/Day','SAH/Day','Effi/Day','Clock Hour/Day'];
+
+function oeString(v){return v==null?'':String(v).trim();}
+function oeNumber(v){const n=Number(String(v??'').replace(/,/g,''));return Number.isFinite(n)?n:0;}
+function oeDisplay(v){return Number.isFinite(v)?String(Math.round(v*100)/100):'';}
+function oeRowValue(row,name){
+  if(!row)return '';
+  const key=Object.keys(row).find(k=>k.toLowerCase()===name.toLowerCase());
+  return key===undefined?'':oeString(row[key]);
+}
+function oeKey(ewo,po,color,buyer){
+  const clean=x=>oeString(x).toLowerCase().replace(/\.0$/,'').replace(/\s+/g,' ');
+  return JSON.stringify([clean(ewo),clean(po),clean(color),clean(buyer)]);
+}
+function oeDate(s){
+  const v=oeString(s);
+  let y,m,d;
+  let match=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(match){y=+match[1];m=+match[2];d=+match[3];}
+  else {match=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(!match)return null;m=+match[1];d=+match[2];y=+match[3];}
+  const ms=Date.UTC(y,m-1,d);
+  const check=new Date(ms);
+  return check.getUTCFullYear()===y&&check.getUTCMonth()===m-1&&check.getUTCDate()===d?ms:null;
+}
+function oeDayLabel(s){
+  const ms=oeDate(s);
+  if(ms===null)return '';
+  const d=new Date(ms);
+  return (d.getUTCMonth()+1)+'/'+d.getUTCDate()+'/'+d.getUTCFullYear();
+}
+function oeToday(){
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Dhaka',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date());
+  const get=t=>+parts.find(p=>p.type===t).value;
+  return Date.UTC(get('year'),get('month')-1,get('day'));
+}
+function oeRisk(efd,today){
+  const ms=oeDate(efd);
+  if(ms===null)return {risk:'Unknown',days:null};
+  const days=Math.round((ms-today)/86400000);
+  return {risk:days<0?'Overdue':days<=14?'Critical':days<=30?'Urgent':days<=60?'Watch':'On Track',days};
+}
+function oeDataset({orders,records,daily,dateRange,planningReady}){
+  const dates=[...new Set(dateRange||[])].filter(x=>oeDate(x)!==null).sort((a,b)=>oeDate(a)-oeDate(b));
+  const dateIndex=new Map(dates.map((x,i)=>[x,i]));
+  const recordById=new Map((records||[]).map(r=>[String(r.id),r]));
+  const byOrder=new Map();
+  for(const r of records||[]){
+    const key=oeKey(r.ewo,r.po,r.col,r.buyer);
+    if(!oeString(r.ewo)||!oeString(r.po))continue;
+    if(!byOrder.has(key))byOrder.set(key,[]);
+    byOrder.get(key).push(r);
+  }
+  const byRecord=new Map();
+  for(const row of daily||[]){
+    const id=String(row.record_id);
+    if(!recordById.has(id)||!dateIndex.has(row.plan_date))continue;
+    if(!byRecord.has(id))byRecord.set(id,new Map());
+    const m=byRecord.get(id),v=oeNumber(row.value);
+    m.set(row.plan_date,(m.get(row.plan_date)||0)+v);
+  }
+  const claimed=new Set(),matched=[],unmatched=[];
+  const riskSummary={'Overdue':0,'Critical':0,'Urgent':0,'Watch':0,'On Track':0,'Unknown':0};
+  const gaps=new Map(),buyers=new Map(),products=new Map(),months=new Map(),lines=new Map();
+  const dailyProd={},lineDaily={},riskDetail=[];
+  let orderQtyTotal=0,matchedCount=0;
+  const today=oeToday();
+  for(const ob of orders||[]){
+    const buyer=oeRowValue(ob,'Buyer'),ewo=oeRowValue(ob,'EWO'),po=oeRowValue(ob,'PO');
+    const color=oeRowValue(ob,'GmtColor'),efd=oeRowValue(ob,'EFD'),key=oeKey(ewo,po,color,buyer);
+    const qty=oeNumber(oeRowValue(ob,'OrderQty')),found=byOrder.get(key)||[];
+    const exactMatch=planningReady&&found.length>0;
+    const sourceRows=exactMatch&&!claimed.has(key)?found:[];
+    if(sourceRows.length)claimed.add(key);
+    if(exactMatch)matchedCount++;
+    const planRows=sourceRows.filter(r=>r.criteria==='Plan/Day');
+    const planTotal=planRows.reduce((n,r)=>n+oeNumber(r.total),0);
+    const first=found.find(r=>r.criteria==='Plan/Day')||found[0]||{};
+    const firstCount=sourceRows.length;
+    const allLines=[...new Set(sourceRows.map(r=>oeString(r.line_no)).filter(Boolean))];
+    const groupDates=Object.fromEntries(OE_CRITERIA.map(c=>[c,new Array(dates.length).fill(0)]));
+    const groupTotals=Object.fromEntries(OE_CRITERIA.map(c=>[c,0]));
+    for(const r of sourceRows){
+      const crit=oeString(r.criteria);
+      if(!groupDates[crit])continue;
+      groupTotals[crit]+=oeNumber(r.total);
+      for(const [date,value] of byRecord.get(String(r.id))||[]){
+        const index=dateIndex.get(date);
+        groupDates[crit][index]+=value;
+        if(crit==='Plan/Day'){
+          const day=oeDayLabel(date);
+          dailyProd[day]=(dailyProd[day]||0)+value;
+          const line=oeString(r.line_no);
+          if(line){
+            if(!lineDaily[line])lineDaily[line]={};
+            lineDaily[line][day]=(lineDaily[line][day]||0)+value;
+          }
+        }
+      }
+    }
+    const pcd=sourceRows.map(r=>r.pcd).filter(Boolean).sort()[0]||first.pcd||'';
+    const psd=sourceRows.map(r=>r.psd).filter(Boolean).sort()[0]||first.psd||'';
+    const pfd=sourceRows.map(r=>r.pfd).filter(Boolean).sort().at(-1)||first.pfd||'';
+    const shared=[
+      oeRowValue(ob,'ExecutionUnit')||oeString(first.unit),
+      (allLines.length?allLines.join(', '):oeString(first.line_no)),
+      buyer,
+      oeString(first.product_type),
+      oeString(first.product)||oeRowValue(ob,'Description'),
+      ewo,oeRowValue(ob,'Stroke')||oeString(first.stroke),po,color,
+      oeString(first.print),oeString(first.emb),oeString(first.outsource),
+      oeDisplay(qty),sourceRows.length?oeDisplay(planTotal):'',
+      oeDayLabel(pcd),oeDayLabel(psd),oeDayLabel(pfd),
+      oeString(first.strip_plan_qty),oeDayLabel(efd),
+      oeString(first.manpower),oeRowValue(ob,'UpdatedSMV')||oeRowValue(ob,'CostingSMV')||oeString(first.smv)
+    ];
+    const rows=OE_CRITERIA.map(crit=>{
+      const values=groupDates[crit],active=values.filter(v=>v!==0);
+      const avg=sourceRows.length&&active.length?oeDisplay(active.reduce((a,b)=>a+b,0)/active.length):'';
+      return [avg,crit,sourceRows.length?oeDisplay(groupTotals[crit]):'',
+        ...values.map(v=>v?oeDisplay(v):'0')];
+    });
+    const item={s:shared,r:rows};
+    (exactMatch?matched:unmatched).push(item);
+    orderQtyTotal+=qty;
+    const buyerStat=buyers.get(buyer)||{Buyer:buyer,orders:0,total_qty:0};
+    buyerStat.orders++;buyerStat.total_qty+=qty;buyers.set(buyer,buyerStat);
+    const product=oeString(first.product_type)||oeRowValue(ob,'Description')||'Unclassified';
+    const prodStat=products.get(product)||{'Product Type':product,orders:0,total_qty:0};
+    prodStat.orders++;prodStat.total_qty+=qty;products.set(product,prodStat);
+    const monthMS=oeDate(efd);
+    if(monthMS!==null){
+      const date=new Date(monthMS),month=date.getUTCFullYear()+'-'+String(date.getUTCMonth()+1).padStart(2,'0');
+      const entry=months.get(month)||{month,orders:0};entry.orders++;months.set(month,entry);
+    }
+    if(sourceRows.length){
+      for(const line of new Set(planRows.map(r=>oeString(r.line_no)).filter(Boolean))){
+        const entry=lines.get(line)||{'Line #':line,orders:0};
+        entry.orders++;lines.set(line,entry);
+      }
+    }
+    const risk=oeRisk(efd,today);riskSummary[risk.risk]++;
+    const riskRow={
+      Buyer:buyer,EWO:ewo,'P.O.':po,Col:color,'Product Type':product,
+      'Order qty':qty,'Planned qty':sourceRows.length?oeDisplay(planTotal):'',
+      SMV:shared[20],Manpower:shared[19],'Line #':shared[1],
+      Delivery:shared[18],days_to_efd:risk.days,risk:risk.risk
+    };
+    if(risk.risk!=='On Track'&&risk.risk!=='Unknown')riskDetail.push(riskRow);
+    const gap= gaps.get(buyer)||{Buyer:buyer,order_qty:0,planned_qty:0,orders:0};
+    gap.order_qty+=qty;gap.planned_qty+=planTotal;gap.orders++;gaps.set(buyer,gap);
+    item._risk={r:risk.risk,d:risk.days};
+  }
+  const groups=[...matched,...unmatched],riskMap={};
+  groups.forEach((g,i)=>riskMap[i]=g._risk);
+  const gapsList=planningReady?[...gaps.values()].map(x=>({
+    ...x,gap:Math.max(0,x.order_qty-x.planned_qty),
+    gap_pct:x.order_qty?Math.round(Math.max(0,x.order_qty-x.planned_qty)/x.order_qty*1000)/10:0
+  })):[];
+  const summary={
+    total_orders:orders.length,total_qty:orderQtyTotal,
+    existing_orders:planningReady?matchedCount:0,
+    new_orders:planningReady?orders.length-matchedCount:0,
+    buyers:buyers.size,date_from:dates.length?oeDayLabel(dates[0]):'—',
+    date_to:dates.length?oeDayLabel(dates.at(-1)):'—',date_count:dates.length,
+    planning_ready:planningReady
+  };
+  riskDetail.sort((a,b)=>a.days_to_efd-b.days_to_efd);
+  return {
+    plan:{sc:OE_SHARED,pc:['Average','Criteria','Total',...dates.map(oeDayLabel)],
+      g:groups,existingGroupCount:planningReady?matched.length:groups.length},
+    dashboard:{summary,buyer:[...buyers.values()].sort((a,b)=>b.total_qty-a.total_qty),
+      ptype:[...products.values()].sort((a,b)=>b.total_qty-a.total_qty),
+      monthly:[...months.values()].sort((a,b)=>a.month.localeCompare(b.month)),
+      lines:[...lines.values()].sort((a,b)=>a['Line #'].localeCompare(b['Line #']))},
+    risk:{risk_summary:riskSummary,gap_data:gapsList,daily_prod:dailyProd,
+      line_daily:lineDaily,risk_detail:riskDetail.slice(0,200),
+      risk_total:riskDetail.length}
+    ,riskMap
+  };
+}
+
+function applySQLSnapshot(payload){
+  try{
+    sp(5,'Loading authenticated SQL data…');
+    if(!Array.isArray(payload.orders))throw Error('Order Bank rows are missing');
+    const model=oeDataset(payload);
+    D=model.plan;D1=model.dashboard;D2=model.risk;RISK_MAP=model.riskMap;
+    ALL=expand(D);FIL=ALL.slice();page=1;_showNew=false;
+    dashLoaded=false;riskLoaded=false;
+    for(const id of ['kpi-row','risk-kpi-row','buyer-chart','ptype-chart','month-chart','line-chart']){
+      document.getElementById(id).replaceChildren();
+    }
+    document.getElementById('th').replaceChildren();
+    for(const id of ['fl','fb','fpt']){
+      const select=document.getElementById(id);
+      while(select.options.length>1)select.remove(1);
+    }
+    document.getElementById('tog-new').disabled=!payload.planningReady;
+    buildHeader();popFilters();
+    document.getElementById('ib-t').textContent=ALL.length.toLocaleString();
+    document.getElementById('ib-d').textContent=D.pc.length>3?
+      D.pc[3]+' → '+D.pc.at(-1):'—';
+    const note=document.getElementById('sql-note');
+    note.textContent=payload.planningReady?
+      'SQL Order Bank · Planning: '+(payload.planningLabel||'selected upload')+
+      ' · matched by EWO + PO + Color + Buyer':
+      'SQL Order Bank · Planning details unavailable'+
+      (payload.planningError?': '+payload.planningError:' · waiting for selected planning upload');
+    note.style.background=payload.planningReady?'#e8f5e9':'#fff3e0';
+    note.style.color=payload.planningReady?'#1b5e20':'#a34800';
+    updInfo();renderPage();
+    const active=document.querySelector('.tab.active');
+    const tabs=['tbl','dash','risk','gap','heat','calc','timeline'];
+    const idx=[...document.querySelectorAll('.tab')].indexOf(active);
+    if(idx>0)showTab(tabs[idx]);
+    sp(100,'Ready ✓');
+    document.getElementById('loading').style.display='none';
+    window.parent.postMessage({type:'ekwl-execution-rendered',key:payload.key},'*');
+  }catch(err){
+    const note=document.getElementById('sql-note');
+    note.textContent='Order Execution Plan failed to render: '+String(err?.message||err);
+    note.style.background='#ffebee';note.style.color='#b71c1c';
+    document.getElementById('loading').style.display='none';
+    window.parent.postMessage({type:'ekwl-execution-error',message:String(err?.message||err)},'*');
+  }
+}
+window.addEventListener('message',event=>{
+  if(event.source!==window.parent||!event.data)return;
+  if(event.data.type==='ekwl-execution-loading'){
+    document.getElementById('loading').style.display='flex';
+    sp(5,'Loading Order Bank SQL…');
+  }
+  if(event.data.type==='ekwl-execution-error'){
+    document.getElementById('loading').style.display='none';
+    const note=document.getElementById('sql-note');
+    note.textContent=String(event.data.message||'SQL data unavailable');
+    note.style.background='#ffebee';note.style.color='#b71c1c';
+  }
+});
+
+</script>
+<script>
+// ── DATA ──
+
+
+
+
+async function decomp(b64){
+  const bin=atob(b64), bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  const ds=new DecompressionStream('gzip'), w=ds.writable.getWriter();
+  w.write(bytes); w.close();
+  const chunks=[], r=ds.readable.getReader();
+  for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);}
+  const tot=chunks.reduce((a,c)=>a+c.length,0), out=new Uint8Array(tot);
+  let off=0; for(const c of chunks){out.set(c,off);off+=c.length;}
+  return new TextDecoder().decode(out);
+}
+
+const CRIT={'Plan/Day':'rp','SAH/Day':'rs','Effi/Day':'re','Clock Hour/Day':'rc'};
+const LEFTS=[0,60,112,184,256,346,398,526,611];
+const STICKY=9, SCLEN=21;
+const W=['c0','c1','c2','c3','c4','c5','c6','c7','c8','c9','c10','c11','c12','c13','c14','c15','c16','c17','c18','c19','c20','c21','c22','c23'];
+
+let D={}, ALL=[], FIL=[], RISK_MAP={}, page=1, ps=500, showNew=false;
+let D1={}, D2={}, dashLoaded=false, riskLoaded=false;
+const RISK_CLS={'Overdue':'row-over','Critical':'row-crit','Urgent':'row-urg'};
+
+// ── Tab ──
+function showTab(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>{
+    el.classList.toggle('active',['tbl','dash','risk','gap','heat','calc','timeline'][i]===t);
+  });
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById(t+'-view').classList.add('on');
+  if(t==='dash'&&!dashLoaded) buildDash();
+  if((t==='risk'||t==='gap')&&!riskLoaded) buildRisk();
+  if(t==='heat'&&!riskLoaded) buildRisk();
+  if(t==='timeline') buildTimeline();
+  if(t==='calc'){calc();rcalc();}
+}
+
+// ── Expand ──
+function expand({sc,pc,g,existingGroupCount}){
+  const rows=[];
+  for(let gi=0;gi<g.length;gi++){
+    const{s,r}=g[gi]; const isNew=gi>=existingGroupCount;
+    for(let ri=0;ri<r.length;ri++){
+      const row=[...s,...r[ri]]; row._n=isNew; row._gs=(ri===0); row._gi=gi;
+      rows.push(row);
+    }
+  }
+  return rows;
+}
+
+// ── Header ──
+function buildHeader(){
+  const cols=[...D.sc,...D.pc], tr=document.createElement('tr');
+  cols.forEach((c,i)=>{
+    const th=document.createElement('th'); th.textContent=c; th.title=c;
+    th.className=(i<STICKY?'st ':'')+( i<W.length?W[i]:'cd');
+    if(i<STICKY) th.style.left=LEFTS[i]+'px';
+    tr.appendChild(th);
+  });
+  document.getElementById('th').appendChild(tr);
+}
+
+// ── Render ──
+function renderPage(){
+  const tb=document.getElementById('tb'); tb.innerHTML='';
+  const s=(page-1)*ps, e=Math.min(s+ps,FIL.length);
+  const frag=document.createDocumentFragment();
+  const totalCols=D.sc.length+D.pc.length, avgIdx=D.sc.length;
+  let oqSum=0, pqSum=0;
+  for(let i=s;i<e;i++){
+    const row=FIL[i], crit=row[avgIdx+1]||'', cc=CRIT[crit]||'';
+    if(crit==='Plan/Day'){oqSum+=parseFloat(row[12])||0; pqSum+=parseFloat(row[13])||0;}
+    const tr=document.createElement('tr');
+    if(row._gs) tr.classList.add('gs');
+    // risk coloring (from Plan/Day row index)
+    const rInfo=RISK_MAP[row._gi];
+    if(rInfo){const rc=RISK_CLS[rInfo.r]; if(rc) tr.classList.add(rc);}
+    for(let j=0;j<totalCols;j++){
+      const td=document.createElement('td');
+      let v=row[j]??'';
+      if(j>=SCLEN+3&&(v==='0'||v==='')) v='';
+      td.textContent=v; td.title=v;
+      const isSt=j<STICKY;
+      td.className=(isSt?'st ':'')+( j<W.length?W[j]:'cd');
+      if(isSt){td.style.left=LEFTS[j]+'px'; td.style.background=row._n?'var(--new-fc)':'var(--fc-bg)';}
+      else td.classList.add(cc);
+      tr.appendChild(td);
+    }
+    frag.appendChild(tr);
+  }
+  tb.appendChild(frag);
+  const tp=Math.ceil(FIL.length/ps)||1;
+  document.getElementById('pi').textContent=`Page ${page}/${tp} (${FIL.length?s+1:0}–${e})`;
+  document.getElementById('footer-stats').textContent=
+    `Visible → Order Qty: ${oqSum.toLocaleString()} | Planned Qty: ${pqSum.toLocaleString()}`;
+}
+
+// ── Filter ──
+let _showNew=false;
+function pd(s){if(!s||!s.trim())return null;const d=new Date(s.trim());return isNaN(d)?null:d;}
+function go_filter(){
+  const l=document.getElementById('fl').value.toLowerCase();
+  const b=document.getElementById('fb').value.toLowerCase();
+  const pt=document.getElementById('fpt').value.toLowerCase();
+  const rs=document.getElementById('frisk').value;
+  const q=document.getElementById('fs').value.toLowerCase().trim();
+  const d1=pd(document.getElementById('fd1').value);
+  const d2=pd(document.getElementById('fd2').value);
+  FIL=ALL.filter(r=>{
+    if(_showNew&&!r._n) return false;
+    if(l&&(r[1]||'').toLowerCase()!==l) return false;
+    if(b&&(r[2]||'').toLowerCase()!==b) return false;
+    if(pt&&(r[3]||'').toLowerCase()!==pt) return false;
+    if(q){const s=(r[5]||'').toLowerCase()+(r[7]||'').toLowerCase()+(r[8]||'').toLowerCase();if(!s.includes(q))return false;}
+    if(d1||d2){const dv=new Date(r[18]||'');if(isNaN(dv))return false;if(d1&&dv<d1)return false;if(d2&&dv>d2)return false;}
+    if(rs){const ri=RISK_MAP[r._gi];const rv=ri?ri.r:'Unknown';if(rv!==rs)return false;}
+    return true;
+  });
+  page=1; updInfo(); renderPage();
+}
+function clr_filter(){
+  ['fl','fb','fpt','frisk','fs','fd1','fd2'].forEach(id=>document.getElementById(id).value='');
+  _showNew=false;
+  document.getElementById('tog-new').textContent='👁 New Only';
+  document.getElementById('tog-new').classList.remove('tog-active');
+  FIL=ALL.slice(); page=1; updInfo(); renderPage();
+}
+function tog_new(){
+  _showNew=!_showNew;
+  const btn=document.getElementById('tog-new');
+  btn.textContent=_showNew?'👁 Show All':'👁 New Only';
+  btn.classList.toggle('tog-active',_showNew);
+  go_filter();
+}
+
+// ── Info bar ──
+function updInfo(){
+  document.getElementById('ib-f').textContent=FIL.length;
+  document.getElementById('ib-o').textContent=Math.floor(FIL.length/4).toLocaleString();
+  const nR=FIL.filter(r=>r._n).length;
+  document.getElementById('ib-n').textContent=D1.summary.planning_ready?
+    Math.floor(nR/4).toLocaleString():'—';
+  let qty=0; FIL.forEach(r=>{if((r[D.sc.length+1]||'')==='Plan/Day')qty+=parseFloat(r[12])||0;});
+  document.getElementById('ib-q').textContent=qty.toLocaleString();
+  // risk counts in filtered
+  let ov=0,cr=0,ur=0;
+  FIL.filter(r=>(r[D.sc.length+1]||'')==='Plan/Day').forEach(r=>{
+    const ri=RISK_MAP[r._gi]; if(!ri) return;
+    if(ri.r==='Overdue') ov++;
+    else if(ri.r==='Critical') cr++;
+    else if(ri.r==='Urgent') ur++;
+  });
+  document.getElementById('ib-over').textContent='Overdue: '+ov;
+  document.getElementById('ib-crit').textContent='Critical: '+cr;
+  document.getElementById('ib-urg').textContent='Urgent: '+ur;
+}
+
+function pg(d){const tp=Math.ceil(FIL.length/ps)||1;page=Math.max(1,Math.min(page+d,tp));renderPage();}
+function ps_ch(){ps=+document.getElementById('ps').value;page=1;renderPage();}
+
+function popFilters(){
+  const ls=new Set(),bs=new Set(),pts=new Set();
+  for(const r of ALL){if(r[1])ls.add(r[1]);if(r[2])bs.add(r[2]);if(r[3])pts.add(r[3]);}
+  const fl=document.getElementById('fl'),fb=document.getElementById('fb'),fpt=document.getElementById('fpt');
+  [...ls].sort().forEach(v=>{fl.add(new Option(v,v));});
+  [...bs].sort().forEach(v=>{fb.add(new Option(v,v));});
+  [...pts].sort().forEach(v=>{if(v)fpt.add(new Option(v,v));});
+}
+
+// ── CSV ──
+function exp_csv(){
+  const cols=[...D.sc,...D.pc];
+  const lines=[cols.map(c=>'"'+c.replace(/"/g,'""')+'"').join(',')];
+  for(const r of FIL) lines.push(cols.map((_,i)=>'"'+(String(r[i]??'').replace(/"/g,'""'))+'"').join(','));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download='EKWL_Planning_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+
+// ── DASHBOARD ──
+function oeEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function bars(data,labelKey,valKey,cls,fmt){
+  const mx=Math.max(...data.map(d=>d[valKey]),1);
+  return data.map(d=>{
+    const pct=Math.round(d[valKey]/mx*100);
+    const fv=fmt?fmt(d[valKey]):d[valKey].toLocaleString();
+    return `<div class="bar-row"><div class="bar-lbl" title="${oeEsc(d[labelKey])}">${oeEsc(d[labelKey])}</div>`+
+      `<div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>`+
+      `<div class="bar-val">${fv}</div></div>`;
+  }).join('');
+}
+
+function buildDash(){
+  if(dashLoaded)return; dashLoaded=true;
+  const{summary,buyer,ptype,monthly,lines}=D1;
+  const kpis=[
+    {l:'Total Orders',v:summary.total_orders.toLocaleString(),s:'Latest SQL Order Bank rows',c:'#1a3c5e'},
+    {l:'Total Order Qty',v:summary.total_qty.toLocaleString(),s:'Latest SQL Order Bank snapshot',c:'#2e7d32'},
+    {l:'Existing Orders',v:summary.planning_ready?summary.existing_orders.toLocaleString():'—',s:'Matched SQL Planning',c:'#1565c0'},
+    {l:'New from OB',v:summary.planning_ready?summary.new_orders.toLocaleString():'—',s:'Unmatched in selected plan',c:'#c62828'},
+    {l:'Buyers',v:summary.buyers,s:'Active buyers',c:'#6a1b9a'},
+    {l:'Date Coverage',v:summary.date_count?summary.date_count+' days':'—',s:summary.date_from+' → '+summary.date_to,c:'#e65100'},
+  ];
+  const kr=document.getElementById('kpi-row');
+  kpis.forEach(k=>{
+    const d=document.createElement('div'); d.className='kpi'; d.style.borderLeftColor=k.c;
+    d.innerHTML=`<div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c}">${k.v}</div><div class="kpi-sub">${k.s}</div>`;
+    kr.appendChild(d);
+  });
+  document.getElementById('buyer-chart').innerHTML=bars(buyer,'Buyer','total_qty','b-blue',v=>v.toLocaleString()+' pcs');
+  document.getElementById('ptype-chart').innerHTML=bars(ptype.slice(0,10),'Product Type','total_qty','b-green');
+  const rm=monthly;
+  document.getElementById('month-chart').innerHTML=bars(rm,'month','orders','b-purple',v=>v+' orders');
+  document.getElementById('line-chart').innerHTML=bars(lines,'Line #','orders','b-orange',v=>v+' orders');
+}
+
+// ── RISK ──
+let riskAll=[];
+function buildRisk(){
+  if(riskLoaded)return; riskLoaded=true;
+  const rs=D2.risk_summary;
+  const total=Object.values(rs).reduce((a,v)=>a+v,0);
+  const kpiRow=document.getElementById('risk-kpi-row');
+  const rColors={'Overdue':'#c62828','Critical':'#e65100','Urgent':'#f9a825','Watch':'#2e7d32','On Track':'#1565c0'};
+  Object.entries(rs).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
+    const d=document.createElement('div'); d.className='kpi'; d.style.borderLeftColor=rColors[k]||'#666';
+    d.innerHTML=`<div class="kpi-lbl">${k}</div><div class="kpi-val" style="color:${rColors[k]||'#444'}">${v.toLocaleString()}</div><div class="kpi-sub">${(v/total*100).toFixed(1)}% of orders</div>`;
+    kpiRow.appendChild(d);
+  });
+  riskAll=D2.risk_detail;
+  renderRiskTable(riskAll);
+  buildGap();
+  buildHeatmap();
+}
+
+function rbadge(r){
+  const m={'Overdue':'rb-over','Critical':'rb-crit','Urgent':'rb-urg','Watch':'rb-watch','On Track':'rb-ok'};
+  return `<span class="rbadge ${m[r]||'rb-unk'}">${r}</span>`;
+}
+
+function renderRiskTable(data){
+  const tb=document.getElementById('risk-tbody'); tb.innerHTML='';
+  document.getElementById('risk-count').textContent=`(first ${data.length} of ${D2.risk_total} at-risk orders)`;
+  const frag=document.createDocumentFragment();
+  data.forEach(r=>{
+    const tr=document.createElement('tr');
+    const days=parseInt(r.days_to_efd)||0;
+    const dStr=days<0?`<span style="color:#c62828;font-weight:700">${days}d</span>`:`<span style="color:#2e7d32">${days}d</span>`;
+    tr.innerHTML=`<td>${rbadge(r.risk)}</td><td>${dStr}</td><td>${oeEsc(r.Buyer)}</td>
+      <td>${oeEsc(r.EWO)}</td><td>${oeEsc(r['P.O.'])}</td><td>${oeEsc(r.Col)}</td>
+      <td>${oeEsc(r['Product Type'])}</td><td>${oeEsc(r['Order qty'])}</td>
+      <td>${oeEsc(r['Planned qty']||'—')}</td><td>${oeEsc(r['Line #']||'—')}</td>
+      <td>${oeEsc(r.SMV)}</td><td>${oeEsc(r.Manpower||'—')}</td><td>${oeEsc(r.Delivery)}</td>`;
+    frag.appendChild(tr);
+  });
+  tb.appendChild(frag);
+}
+
+function filterRisk(type){
+  if(type==='all') renderRiskTable(riskAll);
+  else renderRiskTable(riskAll.filter(r=>r.risk===type));
+}
+
+// ── GAP ──
+function buildGap(){
+  const gd=D2.gap_data||[];
+  if(!D1.summary.planning_ready){
+    document.getElementById('gap-content').textContent='Selected SQL Planning data is not available yet.';
+    document.getElementById('gap-chart').textContent='';
+    return;
+  }
+  // table
+  let thtml=`<table class="gtbl"><thead><tr>
+    <th>Buyer</th><th>Order Qty</th><th>Planned Qty</th><th>Gap (Unplanned)</th><th>Gap %</th><th>Visual</th>
+  </tr></thead><tbody>`;
+  const maxGap=Math.max(...gd.map(d=>d.gap||0),1);
+  gd.sort((a,b)=>(b.gap_pct||0)-(a.gap_pct||0)).forEach(d=>{
+    const gpct=d.gap_pct||0;
+    const ppct=100-gpct;
+    const barW=Math.round((d.gap||0)/maxGap*120);
+    const color=gpct>90?'#ef5350':gpct>60?'#ffa726':'#66bb6a';
+    thtml+=`<tr><td><b>${oeEsc(d.Buyer)}</b></td>
+      <td>${(d.order_qty||0).toLocaleString()}</td>
+      <td>${(d.planned_qty||0).toLocaleString()}</td>
+      <td style="color:${color};font-weight:700">${(d.gap||0).toLocaleString()}</td>
+      <td><span class="rbadge" style="background:${color}22;color:${color}">${gpct}%</span></td>
+      <td><span class="plan-bar" style="width:${Math.round(ppct*1.2)}px"></span><span class="gap-bar" style="width:${Math.round(gpct*1.2)}px"></span></td>
+    </tr>`;
+  });
+  thtml+='</tbody></table>';
+  document.getElementById('gap-content').innerHTML=thtml;
+
+  // summary bar chart
+  document.getElementById('gap-chart').innerHTML=bars(
+    gd.sort((a,b)=>b.gap-a.gap),'Buyer','gap','b-red',v=>v.toLocaleString()+' pcs'
+  );
+}
+
+// ── HEATMAP ──
+function buildHeatmap(){
+  const ld=D2.line_daily||{};
+  const allDates=[...new Set(Object.values(ld).flatMap(d=>Object.keys(d)))].sort((a,b)=>new Date(a)-new Date(b));
+  if(allDates.length===0){document.getElementById('heatmap-wrap').textContent='No data.';return;}
+  const showDates=allDates.slice(0,25);
+  const lines=Object.keys(ld).sort();
+  const allVals=lines.flatMap(l=>showDates.map(d=>ld[l][d]||0));
+  const maxV=Math.max(...allVals,1);
+  function hcls(v){if(!v)return 'h0';const p=v/maxV;if(p<.25)return 'h1';if(p<.5)return 'h2';if(p<.75)return 'h3';return 'h4';}
+  let h='<table class="heatmap-table"><thead><tr><th>Line</th>'+ 
+    showDates.map(d=>`<th>${d}</th>`).join('')+'</tr></thead><tbody>';
+  lines.forEach(l=>{
+    h+=`<tr><td class="line-lbl">${oeEsc(l)}</td>`;
+    showDates.forEach(d=>{
+      const v=ld[l][d]||0;
+      h+=`<td class="${hcls(v)}" title="${oeEsc(l)}: ${oeEsc(d)} = ${v.toLocaleString()} pcs">${v?v.toLocaleString():''}</td>`;
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  document.getElementById('heatmap-wrap').innerHTML=h;
+}
+
+// ── TIMELINE ──
+function buildTimeline(){
+  const dp=D2.daily_prod||{};
+  const dates=Object.keys(dp).sort((a,b)=>new Date(a)-new Date(b));
+  const vals=dates.map(d=>dp[d]);
+  if(!dates.length){document.getElementById('tc').style.display='none';return;}
+  drawLineChart('tc', dates, [{label:'Daily Plan/Day Output (pcs)',data:vals,color:'#1e88e5'}]);
+  // cumulative
+  let cum=0;
+  const cumVals=vals.map(v=>{cum+=v;return cum;});
+  drawLineChart('tc2', dates, [{label:'Cumulative (pcs)',data:cumVals,color:'#66bb6a'}]);
+}
+
+function drawLineChart(canvasId, labels, series){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth||800, H=canvas.clientHeight||180;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const pad={l:60,r:20,t:15,b:45};
+  const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
+  const allV=series.flatMap(s=>s.data);
+  const maxV=Math.max(...allV,1);
+  ctx.clearRect(0,0,W,H);
+  // grid
+  ctx.strokeStyle='#eceff1'; ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y=pad.t+ph*(1-i/5);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#999';ctx.font='9px Segoe UI';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxV*i/5).toLocaleString(),pad.l-4,y+3);
+  }
+  // x labels
+  const step=Math.max(1,Math.floor(labels.length/12));
+  ctx.fillStyle='#777';ctx.font='9px Segoe UI';ctx.textAlign='center';
+  labels.forEach((l,i)=>{
+    if(i%step===0){
+      const x=pad.l+i/Math.max(labels.length-1,1)*pw;
+      ctx.fillText(l,x,H-pad.b+14);
+      ctx.beginPath();ctx.strokeStyle='#ddd';ctx.lineWidth=1;
+      ctx.moveTo(x,pad.t);ctx.lineTo(x,pad.t+ph);ctx.stroke();
+    }
+  });
+  // lines
+  series.forEach(s=>{
+    ctx.strokeStyle=s.color; ctx.lineWidth=2.5; ctx.lineJoin='round';
+    ctx.beginPath();
+    s.data.forEach((v,i)=>{
+      const x=pad.l+i/Math.max(s.data.length-1,1)*pw;
+      const y=pad.t+ph*(1-v/maxV);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    // fill
+    ctx.globalAlpha=.12;
+    ctx.fillStyle=s.color;
+    ctx.lineTo(pad.l+pw,pad.t+ph); ctx.lineTo(pad.l,pad.t+ph); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha=1;
+    // label
+    ctx.fillStyle=s.color;ctx.font='bold 10px Segoe UI';ctx.textAlign='left';
+    ctx.fillText(s.label,pad.l+4,pad.t+13);
+  });
+}
+
+// ── SAH CALC ──
+function calc(){
+  const plan=+document.getElementById('c-plan').value||0;
+  const smv=+document.getElementById('c-smv').value||0;
+  const mp=+document.getElementById('c-mp').value||1;
+  const hrs=+document.getElementById('c-hrs').value||8;
+  const tgt=+document.getElementById('c-tgt').value||75;
+  const oqty=+document.getElementById('c-oqty').value||0;
+  const sah=plan*smv/60;
+  const effi=mp>0&&hrs>0?sah/(mp*hrs)*100:0;
+  const days=plan>0?Math.ceil(oqty/plan):0;
+  const gap=effi-tgt;
+  const effiColor=effi>=tgt?'#2e7d32':effi>=60?'#f9a825':'#c62828';
+  document.getElementById('calc-result').innerHTML=`
+    <div class="calc-res-item"><div class="calc-res-lbl">SAH/Day</div><div class="calc-res-val" style="color:#1565c0">${sah.toFixed(2)}</div></div>
+    <div class="calc-res-item"><div class="calc-res-lbl">Efficiency</div><div class="calc-res-val" style="color:${effiColor}">${effi.toFixed(1)}%</div></div>
+    <div class="calc-res-item"><div class="calc-res-lbl">vs Target</div><div class="calc-res-val" style="color:${gap>=0?'#2e7d32':'#c62828'}">${gap>=0?'+':''}${gap.toFixed(1)}%</div></div>
+    <div class="calc-res-item"><div class="calc-res-lbl">Prod Days</div><div class="calc-res-val" style="color:#6a1b9a">${days}</div></div>
+    <div class="effi-meter" style="width:300px"><div class="effi-fill" style="width:${Math.min(effi,100)}%"></div></div>`;
+}
+
+function rcalc(){
+  const plan=+document.getElementById('r-plan').value||0;
+  const smv=+document.getElementById('r-smv').value||0;
+  const tgt=+document.getElementById('r-tgt').value||75;
+  const hrs=+document.getElementById('r-hrs').value||8;
+  const sah=plan*smv/60;
+  const reqMp=tgt>0&&hrs>0?sah/(tgt/100*hrs):0;
+  document.getElementById('rcalc-result').innerHTML=`
+    <div class="calc-res-item"><div class="calc-res-lbl">SAH/Day</div><div class="calc-res-val" style="color:#1565c0">${sah.toFixed(2)}</div></div>
+    <div class="calc-res-item"><div class="calc-res-lbl">Required Manpower</div><div class="calc-res-val" style="color:#e65100">${reqMp.toFixed(1)} workers</div></div>
+    <div class="calc-res-item"><div class="calc-res-lbl">At ${tgt}% efficiency</div><div class="calc-res-val" style="color:#2e7d32">${plan} pcs/day</div></div>`;
+}
+
+// ── PROGRESS ──
+function sp(p,msg){document.getElementById('prog-fill').style.width=p+'%';document.getElementById('prog-lbl').textContent=msg;}
+
+// ── SQL snapshot arrives from the authenticated parent dashboard ──
+window.addEventListener('message', event => {
+  if(event.source !== window.parent || !event.data || event.data.type !== 'ekwl-execution-data') return;
+  applySQLSnapshot(event.data);
+});
+window.parent.postMessage({type:'ekwl-execution-ready'}, '*');
+</script>
+</body>
+</html>

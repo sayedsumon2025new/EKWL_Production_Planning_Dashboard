@@ -201,6 +201,9 @@ body{background:var(--navy);color:var(--text)}
 .slide:not(.active){display:none}
 .slide::-webkit-scrollbar{width:5px}
 .slide::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+#s16{display:none;flex-direction:column}
+#s16.active{display:flex}
+#s16 .order-execution-frame{display:block;width:100%;flex:1;min-height:400px;border:1px solid var(--border);border-radius:8px;background:#f0f2f5}
 
 /* ══ CARDS & TABLES ══════════════════════════════ */
 .card{
@@ -1814,6 +1817,7 @@ input,select,textarea{
     <div class="stab" onclick="goSlide(13)" data-s="13" data-slide-access="13"><span class="tnum">13</span> User Module</div>
     <div class="stab" onclick="goSlide(14)" data-s="14" data-slide-access="14"><span class="tnum">14</span> Order Bank</div>
     <div class="stab" onclick="goSlide(15)" data-s="15" data-slide-access="15"><span class="tnum">15</span> Efficiency Ladder Analysis</div>
+    <div class="stab" onclick="goSlide(16)" data-s="16" data-slide-access="16"><span class="tnum">16</span> Order Execution Plan</div>
   </div>
   <div class="right">
     <button class="top-btn nav-home-btn" type="button" onclick="goSlide(0)" title="Go to Home">🏠 Home</button>
@@ -1979,6 +1983,7 @@ input,select,textarea{
       <button class="home-card" data-slide-access="13" onclick="goSlide(13)"><span class="home-no">13</span><span class="home-icon">👥</span><span class="home-card-title">User Module</span><span class="home-card-sub">Admin/User role, account status and module-wise permission control</span></button>
       <button class="home-card" data-slide-access="14" onclick="goSlide(14)"><span class="home-no">14</span><span class="home-icon">📦</span><span class="home-card-title">Order Bank</span><span class="home-card-sub">Latest successful Order Bank snapshot from live Supabase SQL</span></button>
       <button class="home-card" data-slide-access="15" onclick="goSlide(15)"><span class="home-no">15</span><span class="home-icon">📈</span><span class="home-card-title">Efficiency Ladder Analysis</span><span class="home-card-sub">Item-wise Day-1 to Day-6+ efficiency ladder analysis from live SQL</span></button>
+      <button class="home-card" data-slide-access="16" onclick="goSlide(16)"><span class="home-no">16</span><span class="home-icon">📋</span><span class="home-card-title">Order Execution Plan</span><span class="home-card-sub">SQL Order Bank and matched daily planning, with v3 analysis views</span></button>
     </div>
     <div class="home-status" data-admin-home-extra="1" style="flex-wrap:wrap">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
@@ -2562,6 +2567,20 @@ input,select,textarea{
       <div class="tbl-wrap eff15-fr-wrap" id="eff15-fr-table"></div>
     </div>
   </div>
+</div>
+
+<!-- ─── SLIDE 16: ORDER EXECUTION PLAN ───────────── -->
+<div class="slide" id="s16" data-logical-slide="16">
+  <div class="slide-header">
+    <div>
+      <div class="slide-title"><span class="snum">16</span> Order Execution Plan</div>
+      <div class="slide-subtitle">SQL ORDER BANK · MATCHED SQL PLANNING · V3 ANALYSIS</div>
+    </div>
+    <div class="pager-btns"><button class="pg-btn" onclick="loadOrderExecutionSlide(true)">↻ Refresh SQL</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+  </div>
+  <iframe class="order-execution-frame" id="order-execution-frame"
+    title="Order Execution Plan table" data-src="order-execution-plan.html"
+    sandbox="allow-scripts allow-downloads allow-modals"></iframe>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3174,6 +3193,11 @@ function goSlide(n){
   }
   CURRENT_SLIDE=n;
   try{localStorage.setItem(ACTIVE_TAB_STORAGE_KEY,String(n))}catch(e){}
+  if(n===16){
+    const frame=document.getElementById('order-execution-frame');
+    if(frame&&!frame.getAttribute('src'))frame.src=frame.dataset.src;
+    if(frame&&frame.dataset.ready==='1')setTimeout(()=>loadOrderExecutionSlide(),0);
+  }
   if(n===14 || n===15){
     try{renderSlide(n)}catch(e){
       console.error('Slide '+n+' render failed',e);
@@ -3985,6 +4009,7 @@ function renderSlide(n){
 
   if(n===14)loadOrderBankSlide();
   if(n===15)showEff15Sub(EFF15_SUB||'fixed');
+  if(n===16)loadOrderExecutionSlide();
 }
 
 // Permission-aware progressive rendering.
@@ -5845,6 +5870,7 @@ async function siteLogout(){
   PLAN_VERSION_CACHE.clear();PLAN_UPLOAD_CATALOG=[];ACTIVE_PLAN_UPLOAD=null;
   EFF15_METRIC_DAILY=[];EFF15_METRIC_UPLOAD_ID=null;
   ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];
+  resetOrderExecutionSlide();
   SITE_AUTH_USER=null;SITE_USER_PROFILE=null;SITE_BOOTED=false;
   try{sessionStorage.removeItem(fastKey);sessionStorage.removeItem('EKWL_FAST_BOOT_v1');}catch(e){console.warn(e)}
   document.getElementById('site-login-password').value='';
@@ -5994,6 +6020,7 @@ async function refreshDashboardAfterSuccessfulUpload(source,options={}){
   if(source==='orderbank'){
     ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];ORDER_BANK_FILTERS={};ORDER_BANK_EWO_SEARCH='';ORDER_BANK_PAGE=1;
     if(CURRENT_SLIDE===14)await loadOrderBankSlide();
+    if(CURRENT_SLIDE===16)await loadOrderExecutionSlide(true);
   }
   if(source==='floor' && typeof loadFloorAllocationAdmin==='function')await loadFloorAllocationAdmin();
   if(CURRENT_SLIDE!==14 && canAccessSlide(CURRENT_SLIDE))renderSlide(CURRENT_SLIDE);
@@ -6279,7 +6306,7 @@ async function uploadDateWiseProduction(){
 
 document.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
-  if(e.key==='ArrowRight')goSlide(Math.min(CURRENT_SLIDE+1,13));
+  if(e.key==='ArrowRight')goSlide(Math.min(CURRENT_SLIDE+1,getMaxDashboardSlide()));
   if(e.key==='ArrowLeft')goSlide(Math.max(CURRENT_SLIDE-1,0));
 });
 
@@ -7096,6 +7123,7 @@ async function loadEfficiencyAnalysisSlide(){
   }
 })();
 </script>
+<script src="order-execution-bridge.js"></script>
 <div id="ewo-gantt-tip"></div>
 <div id="cal-detail-modal" aria-hidden="true">
   <div id="cal-detail-box">
