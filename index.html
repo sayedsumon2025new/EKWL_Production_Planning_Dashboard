@@ -1063,6 +1063,40 @@ border:1px solid #334155;border-radius:8px;padding:6px 10px;font-size:10px;font-
 #order-bank-table{overflow:auto;max-height:620px}
 .order-bank-raw-table{min-width:5200px}
 .order-bank-raw-table th,.order-bank-raw-table td{white-space:nowrap}
+.floor-add-row{display:grid;grid-template-columns:minmax(90px,.55fr) minmax(120px,1fr) minmax(220px,2fr) minmax(120px,1fr) auto;gap:9px;align-items:end;margin-top:14px}
+.floor-add-row label{display:block;font-size:13px;font-weight:800;color:var(--text2)}
+.floor-add-row input{display:block;width:100%;min-width:0;margin-top:5px;padding:8px;border:1px solid var(--border);border-radius:6px;background:#fff;color:#14243e;font-size:13px}
+.floor-add-row button{white-space:nowrap}
+@media(max-width:800px){.floor-add-row{grid-template-columns:repeat(2,minmax(0,1fr))}.floor-add-row .floor-add-wide{grid-column:1/-1}}
+
+.ss-controls{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin:12px 0}
+.ss-controls label{display:flex;flex-direction:column;gap:4px;color:#475569;font-size:13px;font-weight:800}
+.ss-controls input,.ss-controls select{min-height:34px;min-width:150px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#14243e;padding:6px 9px;font-size:13px}
+.ss-controls input[type=search]{min-width:230px}
+.ss-source-note{color:#526176;font-size:13px;line-height:1.5;margin-top:7px}
+.ss-table{width:max-content;min-width:100%;font-size:12px}
+.ss-table th,.ss-table td{white-space:nowrap;max-width:300px;overflow:hidden;text-overflow:ellipsis}
+.ss-table th{position:sticky;top:0;z-index:2;background:#e8eff7}
+.ss-table td{height:30px}
+.ss-table th:nth-child(1),.ss-table td:nth-child(1){position:sticky;left:0;min-width:62px;z-index:3;background:#f4f7fb}
+.ss-table th:nth-child(2),.ss-table td:nth-child(2){position:sticky;left:62px;min-width:180px;z-index:3;background:#f4f7fb}
+.ss-table th:nth-child(3),.ss-table td:nth-child(3){position:sticky;left:242px;min-width:92px;z-index:3;background:#f4f7fb}
+.ss-table th:nth-child(4),.ss-table td:nth-child(4){position:sticky;left:334px;min-width:190px;z-index:3;background:#f4f7fb}
+.ss-table thead th:nth-child(-n+4){z-index:4;background:#e8eff7}
+.ss-pager{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:11px;color:#526176;font-size:13px}
+.ss-pager button:disabled{opacity:.45;cursor:default}
+.ss-tabs{display:flex;gap:7px;border-bottom:1px solid #cbd5e1;margin:16px 0 12px}
+.ss-tabs button{border:1px solid #cbd5e1;border-bottom:0;border-radius:7px 7px 0 0;background:#f1f5f9;color:#34465f;padding:10px 17px;font-weight:800;cursor:pointer}
+.ss-tabs button[aria-selected="true"]{background:#123e70;color:white;border-color:#123e70}
+.ss-tna-note{color:#526176;line-height:1.55;font-size:13px;margin:12px 0}
+.ss-tna-table{width:100%;min-width:750px;border-collapse:collapse;font-size:13px}
+.ss-tna-table th,.ss-tna-table td{border:1px solid #dce4ed;padding:9px 10px;text-align:right}
+.ss-tna-table th:first-child,.ss-tna-table td:first-child{text-align:left}
+.ss-tna-table thead th{background:#e8eff7;color:#16345a}
+.ss-tna-table tbody tr:nth-child(even){background:#f8fafc}
+.ss-progress{display:inline-block;vertical-align:middle;height:7px;width:72px;background:#e3eaf2;border-radius:10px;margin-right:7px;overflow:hidden}
+.ss-progress span{display:block;height:100%;background:#158068}
+@media(max-width:700px){.ss-controls label,.ss-controls input,.ss-controls select{width:100%;min-width:0}.ss-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.ss-controls .ss-search{grid-column:1/-1}}
 
 .order-bank-filterbar{display:grid;grid-template-columns:repeat(7,minmax(130px,1fr));gap:7px;margin:8px 0 10px}
 .order-bank-filterbar label{display:flex;flex-direction:column;gap:3px;font-size:9px;font-weight:800;color:#475569}
@@ -1818,6 +1852,7 @@ input,select,textarea{
     <div class="stab" onclick="goSlide(14)" data-s="14" data-slide-access="14"><span class="tnum">14</span> Order Bank</div>
     <div class="stab" onclick="goSlide(15)" data-s="15" data-slide-access="15"><span class="tnum">15</span> Efficiency Ladder Analysis</div>
     <div class="stab" onclick="goSlide(16)" data-s="16" data-slide-access="16"><span class="tnum">16</span> Order Execution Plan</div>
+    <div class="stab" onclick="goSlide(17)" data-s="17" data-slide-access="17"><span class="tnum">17</span> Size Set Module</div>
   </div>
   <div class="right">
     <button class="top-btn nav-home-btn" type="button" onclick="goSlide(0)" title="Go to Home">🏠 Home</button>
@@ -1984,6 +2019,7 @@ input,select,textarea{
       <button class="home-card" data-slide-access="14" onclick="goSlide(14)"><span class="home-no">14</span><span class="home-icon">📦</span><span class="home-card-title">Order Bank</span><span class="home-card-sub">Latest successful Order Bank snapshot from live Supabase SQL</span></button>
       <button class="home-card" data-slide-access="15" onclick="goSlide(15)"><span class="home-no">15</span><span class="home-icon">📈</span><span class="home-card-title">Efficiency Ladder Analysis</span><span class="home-card-sub">Item-wise Day-1 to Day-6+ efficiency ladder analysis from live SQL</span></button>
       <button class="home-card" data-slide-access="16" onclick="goSlide(16)"><span class="home-no">16</span><span class="home-icon">📋</span><span class="home-card-title">Order Execution Plan</span><span class="home-card-sub">SQL Order Bank and matched daily planning, with v3 analysis views</span></button>
+      <button class="home-card" data-slide-access="17" onclick="goSlide(17)"><span class="home-no">17</span><span class="home-icon">📐</span><span class="home-card-title">Size Set Module</span><span class="home-card-sub">SS.csv source rows, milestone plan/actual and next actions</span></button>
     </div>
     <div class="home-status" data-admin-home-extra="1" style="flex-wrap:wrap">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
@@ -2449,6 +2485,14 @@ input,select,textarea{
         <button class="top-btn primary" style="margin-left:8px" onclick="uploadFloorAllocation()">Upload &amp; Replace Floor Allocation</button>
         <div id="floor-msg" class="modal-msg" style="margin-top:8px">Required: Line, Level, IE Name &amp; Line Block, ID. Line 46 is blocked.</div>
       </div>
+      <form id="floor-add-form" class="floor-add-row" onsubmit="event.preventDefault();addFloorAllocationRow()">
+        <label>Line<input id="floor-add-line" type="number" min="1" step="1" placeholder="Line" required></label>
+        <label>Level<input id="floor-add-level" type="text" placeholder="e.g. Level-03" required></label>
+        <label class="floor-add-wide">IE Name &amp; Line Block<input id="floor-add-block" type="text" placeholder="IE Name &amp; Line Block" required></label>
+        <label>ID<input id="floor-add-id" type="text" placeholder="Employee ID" required></label>
+        <button id="floor-add-btn" class="top-btn primary" type="submit">＋ Add Row</button>
+      </form>
+      <div id="floor-add-msg" class="modal-msg" role="status" aria-live="polite" style="margin-top:7px">Add Row saves one new line without replacing existing Floor Allocation data.</div>
       <div id="floor-admin-table" class="tbl-wrap" style="margin-top:12px;max-height:360px;overflow:auto"></div>
     </div>
 
@@ -2583,6 +2627,52 @@ input,select,textarea{
     sandbox="allow-scripts allow-downloads allow-modals"></iframe>
 </div>
 
+<!-- ─── SLIDE 17: SIZE SET MODULE ───────────── -->
+<div class="slide" id="s17" data-logical-slide="17">
+  <div class="slide-header">
+    <div>
+      <div class="slide-title"><span class="snum">17</span> 📐 Size Set Module</div>
+      <div class="slide-subtitle">SS.CSV · SOURCE COLUMNS · LATEST COMPLETED SQL SNAPSHOT</div>
+    </div>
+    <div class="pager-btns"><button class="pg-btn" onclick="loadSizeSetModule(true)">↻ Refresh SQL</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+  </div>
+  <div id="ss-upload-card" class="card" style="margin-top:12px">
+    <div class="card-title">📁 SS.csv upload <span class="ct-right">ADMIN ONLY</span></div>
+    <div class="ss-controls">
+      <label>Select CSV<input id="ss-file" type="file" accept=".csv,text/csv" onchange="previewSizeSetFile()"></label>
+      <button id="ss-upload-btn" class="top-btn primary" type="button" onclick="uploadSizeSetFile()">Upload &amp; Activate SQL Snapshot</button>
+    </div>
+    <div class="ss-source-note">Select a file to preview it locally. Upload publishes its complete source rows after the SQL row-count check; previous active data stays visible until then.</div>
+    <div id="ss-upload-msg" class="modal-msg" role="status" aria-live="polite">No CSV selected.</div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-title">📐 SIZE SET REPORT <span id="ss-msg" class="ct-right">Loading SQL…</span></div>
+    <div id="ss-source" class="ss-source-note"></div>
+    <div class="ss-controls">
+      <label>Line<select id="ss-line" onchange="renderSizeSetModule()"><option value="">All Lines</option></select></label>
+      <label>Buyer<select id="ss-buyer" onchange="renderSizeSetModule()"><option value="">All Buyers</option></select></label>
+      <label>Product Type<select id="ss-product" onchange="renderSizeSetModule()"><option value="">All Products</option></select></label>
+      <label>Next Action<select id="ss-action" onchange="renderSizeSetModule()"><option value="">All Actions</option></select></label>
+      <label class="ss-search">Search EWO / Common / Color<input id="ss-search" type="search" placeholder="Search…" oninput="sizeSetSearchChanged()"></label>
+      <button class="top-btn" type="button" onclick="clearSizeSetFilters()">Clear filters</button>
+    </div>
+    <div class="ss-tabs" role="tablist" aria-label="Size Set report views">
+      <button id="ss-tab-raw" role="tab" type="button" aria-selected="true" aria-controls="ss-raw-view" onclick="showSizeSetSub('raw')">Source Table</button>
+      <button id="ss-tab-tna" role="tab" type="button" aria-selected="false" aria-controls="ss-tna-view" onclick="showSizeSetSub('tna')">TNA KPI</button>
+    </div>
+    <div id="ss-raw-view" role="tabpanel" aria-labelledby="ss-tab-raw">
+      <div id="ss-kpis" class="kpi-row" style="margin-top:14px"></div>
+      <div id="ss-table" class="tbl-wrap" style="max-height:610px;overflow:auto"></div>
+      <div id="ss-pagination" class="ss-pager"></div>
+    </div>
+    <div id="ss-tna-view" role="tabpanel" aria-labelledby="ss-tab-tna" hidden>
+      <div id="ss-tna-kpis" class="kpi-row" style="margin-top:14px"></div>
+      <div id="ss-tna-note" class="ss-tna-note"></div>
+      <div id="ss-tna-table" class="tbl-wrap" style="overflow:auto"></div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://rdslpcazdzqjlenbezaf.supabase.co";
@@ -2596,10 +2686,10 @@ const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','N
 function monthTime(m){const [name,y]=m.split('-');return Date.UTC(2000+Number(y),monthNames.indexOf(name),1)}
 function sortedMonths(data){return unique(data,'month').sort((a,b)=>monthTime(a)-monthTime(b))}
 function validDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;const d=new Date(s+'T00:00:00Z');return Number.isFinite(+d)&&d.toISOString().slice(0,10)===s}
-function parseRecords(text){
+function parseRecords(text,preserveBlankRows=false){
   text=text.replace(/^\uFEFF/,'');const rows=[];let row=[],field='',quoted=false,closed=false;
   const pushField=()=>{row.push(field.trim());field='';closed=false};
-  const pushRow=()=>{pushField();if(row.some(v=>v!==''))rows.push(row);row=[]};
+  const pushRow=()=>{pushField();if(row.some(v=>v!=='')||(preserveBlankRows&&row.length>1))rows.push(row);row=[]};
   for(let i=0;i<text.length;i++){
     const c=text[i];
     if(quoted){if(c==='"'){if(text[i+1]==='"'){field+='"';i++}else{quoted=false;closed=true}}else field+=c;continue}
@@ -3198,6 +3288,7 @@ function goSlide(n){
     if(frame&&!frame.getAttribute('src'))frame.src=frame.dataset.src;
     if(frame&&frame.dataset.ready==='1')setTimeout(()=>loadOrderExecutionSlide(),0);
   }
+  if(n===17)setTimeout(()=>loadSizeSetModule(),0);
   if(n===14 || n===15){
     try{renderSlide(n)}catch(e){
       console.error('Slide '+n+' render failed',e);
@@ -5871,6 +5962,7 @@ async function siteLogout(){
   EFF15_METRIC_DAILY=[];EFF15_METRIC_UPLOAD_ID=null;
   ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];
   resetOrderExecutionSlide();
+  if(typeof resetSizeSetModule==='function')resetSizeSetModule();
   SITE_AUTH_USER=null;SITE_USER_PROFILE=null;SITE_BOOTED=false;
   try{sessionStorage.removeItem(fastKey);sessionStorage.removeItem('EKWL_FAST_BOOT_v1');}catch(e){console.warn(e)}
   document.getElementById('site-login-password').value='';
@@ -6568,6 +6660,41 @@ async function loadFloorAllocationAdmin(){
   }catch(e){box.innerHTML=`<div class="modal-msg">Load failed: ${esc(e?.message||String(e))}</div>`;}
 }
 
+async function addFloorAllocationRow(){
+  if(!requireSitePerm('admin_settings','Floor Allocation'))return;
+  const form=document.getElementById('floor-add-form');
+  const msg=document.getElementById('floor-add-msg');
+  const btn=document.getElementById('floor-add-btn');
+  const lineText=document.getElementById('floor-add-line').value.trim();
+  const level=document.getElementById('floor-add-level').value.trim();
+  const block=document.getElementById('floor-add-block').value.trim();
+  const employeeId=document.getElementById('floor-add-id').value.trim();
+  const lineNo=Number(lineText);
+  if(!/^\d+$/.test(lineText)||!Number.isSafeInteger(lineNo)||lineNo<1||lineNo===46){
+    msg.textContent='Valid Line দিন (Line 46 blocked).';return;
+  }
+  if(!level||!block||!employeeId){msg.textContent='Level, IE Name & Line Block, এবং ID সবগুলো পূরণ করুন।';return;}
+  btn.disabled=true;
+  try{
+    msg.textContent='Checking Line and saving to SQL…';
+    const {data:existing,error:checkError}=await SB.from('floor_allocation').select('line_no').eq('line_no',lineNo).limit(1);
+    if(checkError)throw checkError;
+    if(existing?.length){msg.textContent=`Line ${lineNo} already exists. Add Row-এর জন্য নতুন Line দিন।`;return;}
+    const {error}=await SB.from('floor_allocation').insert({line_no:lineNo,level,ie_name_line_block:block,employee_id:employeeId});
+    if(error)throw error;
+    form.reset();
+    msg.textContent=`✓ Line ${lineNo} added to SQL. Refreshing dashboard…`;
+    try{
+      await refreshDashboardAfterSuccessfulUpload('floor');
+      msg.textContent=`✓ Line ${lineNo} added to SQL. Floor Allocation refreshed.`;
+    }catch(refreshError){
+      msg.textContent=`✓ Line ${lineNo} saved to SQL. Dashboard refresh failed: ${refreshError?.message||refreshError}. Use Refresh Current Data.`;
+      await loadFloorAllocationAdmin();
+    }
+  }catch(e){msg.textContent='Add Row failed: '+(e?.message||e);}
+  finally{btn.disabled=false;}
+}
+
 
 
 
@@ -7124,6 +7251,7 @@ async function loadEfficiencyAnalysisSlide(){
 })();
 </script>
 <script src="order-execution-bridge.js"></script>
+<script src="size-set-module.js"></script>
 <div id="ewo-gantt-tip"></div>
 <div id="cal-detail-modal" aria-hidden="true">
   <div id="cal-detail-box">
