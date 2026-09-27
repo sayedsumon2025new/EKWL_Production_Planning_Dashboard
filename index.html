@@ -1108,6 +1108,15 @@ border:1px solid #334155;border-radius:8px;padding:6px 10px;font-size:10px;font-
 .ac-ok{color:#158068;font-weight:800}
 #s18{position:fixed;top:48px;left:0;right:0;bottom:0}
 body.site-locked #s18{visibility:hidden!important}
+#s19{position:fixed;top:48px;left:0;right:0;bottom:0}
+body.site-locked #s19{visibility:hidden!important}
+#em-table .em-table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px}
+#em-table .em-table th,#em-table .em-table td{padding:9px 11px;border:1px solid #dce4ed;text-align:left;white-space:nowrap;max-width:300px;overflow:hidden;text-overflow:ellipsis}
+#em-table .em-table th{position:sticky;top:0;z-index:2;background:#e8eff7;color:#16345a}
+#em-table .em-table tbody tr:nth-child(even){background:#f8fafc}
+#em-table .em-table td:first-child,#em-table .em-table th:first-child{position:sticky;left:0;z-index:3;background:#fff;min-width:210px}
+#em-table .em-table th:first-child{z-index:4;background:#e8eff7}
+#em-table .em-table tbody tr:nth-child(even) td:first-child{background:#f8fafc}
 @media(max-width:700px){.ac-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.ac-controls label,.ac-controls input,.ac-controls select{min-width:0;width:100%}.ac-search{grid-column:1/-1}}
 .ss-tna-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;padding:12px;border:1px solid #d8e2ee;border-radius:8px;background:#f6f9fd;margin:14px 0}
 .ss-tna-filters label{display:flex;flex-direction:column;gap:5px;color:#42536a;font-size:12px;font-weight:800}
@@ -1885,6 +1894,7 @@ input,select,textarea{
     <div class="stab" onclick="goSlide(16)" data-s="16" data-slide-access="16"><span class="tnum">16</span> Order Execution Plan</div>
     <div class="stab" onclick="goSlide(17)" data-s="17" data-slide-access="17"><span class="tnum">17</span> Size Set Module</div>
     <div class="stab" onclick="goSlide(18)" data-s="18" data-slide-access="18"><span class="tnum">18</span> Accessories</div>
+    <div class="stab" onclick="goSlide(19)" data-s="19" data-slide-access="19"><span class="tnum">19</span> Embellishment Send Receive</div>
   </div>
   <div class="right">
     <button class="top-btn nav-home-btn" type="button" onclick="goSlide(0)" title="Go to Home">🏠 Home</button>
@@ -1926,6 +1936,7 @@ input,select,textarea{
         <option value="orderbank">📦 Order Bank.csv</option>
         <option value="sizeset">📐 SS.csv / Size Set</option>
         <option value="accessories">🧰 EKWLHW-Accessories.csv</option>
+        <option value="embellishment">🎨 Embellishment Send Receive.csv</option>
       </select>
       <div id="upload-report-help" class="modal-msg" style="margin-top:6px">Report name select করুন — শুধু selected uploader দেখাবে।</div>
     </div>
@@ -2037,6 +2048,17 @@ input,select,textarea{
         <div id="ac-upload-msg" class="modal-msg" role="status" aria-live="polite">Select an Accessories CSV to preview.</div>
       </div>
     </div>
+    <div id="upload-panel-embellishment" class="upload-report-panel" style="display:none">
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">🎨 Embellishment Send Receive · Daily CSV <span class="ct-right">ADMIN ONLY</span></div>
+        <div class="ac-controls">
+          <label>CSV file<input id="em-file" type="file" accept=".csv,text/csv" onchange="previewEmbellishmentFile()"></label>
+          <button id="em-upload-btn" type="button" class="top-btn primary" onclick="uploadEmbellishmentFile()">Upload &amp; Activate SQL Snapshot</button>
+        </div>
+        <div class="ss-source-note">CSV-এর Date column অনুযায়ী filter হবে। সফল upload-এর পরে সম্পূর্ণ file নতুন active snapshot হবে; পুরোনো snapshot সংরক্ষিত থাকবে।</div>
+        <div id="em-upload-msg" class="modal-msg" role="status" aria-live="polite">Select an Embellishment CSV to preview.</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2077,6 +2099,7 @@ input,select,textarea{
       <button class="home-card" data-slide-access="16" onclick="goSlide(16)"><span class="home-no">16</span><span class="home-icon">📋</span><span class="home-card-title">Order Execution Plan</span><span class="home-card-sub">SQL Order Bank and matched daily planning, with v3 analysis views</span></button>
       <button class="home-card" data-slide-access="17" onclick="goSlide(17)"><span class="home-no">17</span><span class="home-icon">📐</span><span class="home-card-title">Size Set Module</span><span class="home-card-sub">SS.csv source rows, milestone plan/actual and next actions</span></button>
       <button class="home-card" data-slide-access="18" onclick="goSlide(18)"><span class="home-no">18</span><span class="home-icon">🧰</span><span class="home-card-title">Accessories</span><span class="home-card-sub">Date-wise SQL snapshots and the 15 CSV source columns</span></button>
+      <button class="home-card" data-slide-access="19" onclick="goSlide(19)"><span class="home-no">19</span><span class="home-icon">🎨</span><span class="home-card-title">Embellishment Send Receive</span><span class="home-card-sub">Print and EMB send, receive and return quantities by report date</span></button>
     </div>
     <div class="home-status" data-admin-home-extra="1" style="flex-wrap:wrap">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
@@ -2758,6 +2781,29 @@ input,select,textarea{
   </div>
 </div>
 
+<!-- ─── SLIDE 19: EMBELLISHMENT SEND RECEIVE ──────── -->
+<div class="slide" id="s19" data-logical-slide="19">
+  <div class="slide-header">
+    <div><div class="slide-title"><span class="snum">19</span> 🎨 Embellishment Send Receive</div>
+      <div class="slide-subtitle">DAILY SQL SNAPSHOT · 21 SOURCE CSV COLUMNS</div></div>
+    <div class="pager-btns"><button class="pg-btn" onclick="loadEmbellishmentModule(true)">↻ Refresh SQL</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-title">EMBELLISHMENT SEND RECEIVE <span id="em-msg" class="ct-right">Loading SQL…</span></div>
+    <div id="em-source" class="ss-source-note"></div>
+    <div class="ac-controls">
+      <label>Report Date<select id="em-date" onchange="embellishmentFiltersChanged()"><option value="">All dates</option></select></label>
+      <label>Buyer<select id="em-buyer" onchange="embellishmentFiltersChanged()"><option value="">All buyers</option></select></label>
+      <label>Buyer Team<select id="em-team" onchange="embellishmentFiltersChanged()"><option value="">All teams</option></select></label>
+      <label class="ac-search">Search Code / EWO / Style / Color<input id="em-search" type="search" placeholder="Search…" oninput="embellishmentSearchChanged()"></label>
+      <button class="top-btn" type="button" onclick="clearEmbellishmentFilters()">Clear filters</button>
+    </div>
+    <div id="em-kpis" class="kpi-row"></div>
+    <div id="em-table" class="tbl-wrap" style="max-height:610px;overflow:auto"></div>
+    <div id="em-pagination" class="ss-pager"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://rdslpcazdzqjlenbezaf.supabase.co";
@@ -3375,6 +3421,7 @@ function goSlide(n){
   }
   if(n===17)setTimeout(()=>loadSizeSetModule(),0);
   if(n===18)setTimeout(()=>loadAccessoriesModule(),0);
+  if(n===19)setTimeout(()=>loadEmbellishmentModule(),0);
   if(n===14 || n===15){
     try{renderSlide(n)}catch(e){
       console.error('Slide '+n+' render failed',e);
@@ -6050,6 +6097,7 @@ async function siteLogout(){
   resetOrderExecutionSlide();
   if(typeof resetSizeSetModule==='function')resetSizeSetModule();
   if(typeof resetAccessoriesModule==='function')resetAccessoriesModule();
+  if(typeof resetEmbellishmentModule==='function')resetEmbellishmentModule();
   SITE_AUTH_USER=null;SITE_USER_PROFILE=null;SITE_BOOTED=false;
   try{sessionStorage.removeItem(fastKey);sessionStorage.removeItem('EKWL_FAST_BOOT_v1');}catch(e){console.warn(e)}
   document.getElementById('site-login-password').value='';
@@ -6672,7 +6720,7 @@ async function uploadOrderBank(){
 
 
 function selectUploadReport(type){
-  const types=['plan','fabric','sewing','production','orderbank','sizeset','accessories'];
+  const types=['plan','fabric','sewing','production','orderbank','sizeset','accessories','embellishment'];
   types.forEach(t=>{
     const el=document.getElementById('upload-panel-'+t);
     if(el)el.style.display=(t===type)?'block':'none';
@@ -6684,7 +6732,8 @@ function selectUploadReport(type){
     production:'Date Wise Actual Production Report.csv → date-wise replace',
     orderbank:'Order Bank.csv → staging → lossless SQL snapshot → validation',
     sizeset:'SS.csv → preview → 49-column SQL snapshot → row-count validation',
-    accessories:'EKWLHW-Accessories.csv → PSD as Report Date → 15-column SQL snapshot'
+    accessories:'EKWLHW-Accessories.csv → PSD as Report Date → 15-column SQL snapshot',
+    embellishment:'Embellishment Send Receive.csv → Date filter → 21-column SQL snapshot'
   };
   const x=document.getElementById('upload-report-help'); if(x)x.textContent=help[type]||'';
 }
@@ -6697,7 +6746,8 @@ function refreshUploadReportOptions(){
     production:siteHasPerm('production'),
     orderbank:siteIsAdmin()||siteHasPerm('admin_settings'),
     sizeset:siteIsAdmin(),
-    accessories:siteIsAdmin()
+    accessories:siteIsAdmin(),
+    embellishment:siteIsAdmin()
   };
   [...sel.options].forEach(o=>o.hidden=!allowed[o.value]);
   let chosen=[...sel.options].find(o=>!o.hidden);
@@ -7344,6 +7394,7 @@ async function loadEfficiencyAnalysisSlide(){
 <script src="order-execution-bridge.js"></script>
 <script src="size-set-module.js"></script>
 <script src="accessories-module.js"></script>
+<script src="embellishment-module.js"></script>
 <div id="ewo-gantt-tip"></div>
 <div id="cal-detail-modal" aria-hidden="true">
   <div id="cal-detail-box">
