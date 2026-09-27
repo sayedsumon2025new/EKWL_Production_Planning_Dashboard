@@ -1096,6 +1096,19 @@ border:1px solid #334155;border-radius:8px;padding:6px 10px;font-size:10px;font-
 .ss-tna-table tbody tr:nth-child(even){background:#f8fafc}
 .ss-progress{display:inline-block;vertical-align:middle;height:7px;width:72px;background:#e3eaf2;border-radius:10px;margin-right:7px;overflow:hidden}
 .ss-progress span{display:block;height:100%;background:#158068}
+.ac-controls{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:14px 0}
+.ac-controls label{display:flex;flex-direction:column;gap:5px;font-weight:800;color:#475569;font-size:13px}
+.ac-controls input,.ac-controls select{min-width:160px;min-height:36px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#14243e}
+.ac-controls input[type=search]{min-width:220px}
+.ac-table{min-width:1750px;width:max-content}
+.ac-table th{position:sticky;top:0;background:#e8eff7;z-index:2;white-space:nowrap}
+.ac-table td{max-width:260px;min-width:85px;white-space:normal;overflow-wrap:anywhere;vertical-align:top}
+.ac-table td:nth-child(3),.ac-table td:nth-child(4){white-space:nowrap}
+.ac-attention{color:#a55314;font-weight:800}
+.ac-ok{color:#158068;font-weight:800}
+#s18{position:fixed;top:48px;left:0;right:0;bottom:0}
+body.site-locked #s18{visibility:hidden!important}
+@media(max-width:700px){.ac-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.ac-controls label,.ac-controls input,.ac-controls select{min-width:0;width:100%}.ac-search{grid-column:1/-1}}
 .ss-tna-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;padding:12px;border:1px solid #d8e2ee;border-radius:8px;background:#f6f9fd;margin:14px 0}
 .ss-tna-filters label{display:flex;flex-direction:column;gap:5px;color:#42536a;font-size:12px;font-weight:800}
 .ss-tna-filters select{min-height:35px;min-width:125px;max-width:225px;border:1px solid #cbd5e1;border-radius:6px;background:white;color:#193554;padding:6px 9px}
@@ -1871,6 +1884,7 @@ input,select,textarea{
     <div class="stab" onclick="goSlide(15)" data-s="15" data-slide-access="15"><span class="tnum">15</span> Efficiency Ladder Analysis</div>
     <div class="stab" onclick="goSlide(16)" data-s="16" data-slide-access="16"><span class="tnum">16</span> Order Execution Plan</div>
     <div class="stab" onclick="goSlide(17)" data-s="17" data-slide-access="17"><span class="tnum">17</span> Size Set Module</div>
+    <div class="stab" onclick="goSlide(18)" data-s="18" data-slide-access="18"><span class="tnum">18</span> Accessories</div>
   </div>
   <div class="right">
     <button class="top-btn nav-home-btn" type="button" onclick="goSlide(0)" title="Go to Home">🏠 Home</button>
@@ -1911,6 +1925,7 @@ input,select,textarea{
         <option value="production">📅 Date Wise Actual Production Report.csv</option>
         <option value="orderbank">📦 Order Bank.csv</option>
         <option value="sizeset">📐 SS.csv / Size Set</option>
+        <option value="accessories">🧰 EKWLHW-Accessories.csv</option>
       </select>
       <div id="upload-report-help" class="modal-msg" style="margin-top:6px">Report name select করুন — শুধু selected uploader দেখাবে।</div>
     </div>
@@ -2011,6 +2026,17 @@ input,select,textarea{
         <div id="ss-upload-msg" class="modal-msg" role="status" aria-live="polite">No CSV selected.</div>
       </div>
     </div>
+    <div id="upload-panel-accessories" class="upload-report-panel" style="display:none">
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">🧰 Accessories · Daily CSV <span class="ct-right">ADMIN ONLY</span></div>
+        <div class="ac-controls">
+          <label>CSV file<input id="ac-file" type="file" accept=".csv,text/csv" onchange="previewAccessoriesFile()"></label>
+          <button id="ac-upload-btn" type="button" class="top-btn primary" onclick="uploadAccessoriesFile()">Upload &amp; Activate Daily Snapshot</button>
+        </div>
+        <div class="ss-source-note">Report Date = CSV-এর PSD। কোনো year যোগ করা হবে না। প্রতিদিনের নতুন CSV সফলভাবে যাচাই হলে আগের active report replace হবে।</div>
+        <div id="ac-upload-msg" class="modal-msg" role="status" aria-live="polite">Select an Accessories CSV to preview.</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2050,6 +2076,7 @@ input,select,textarea{
       <button class="home-card" data-slide-access="15" onclick="goSlide(15)"><span class="home-no">15</span><span class="home-icon">📈</span><span class="home-card-title">Efficiency Ladder Analysis</span><span class="home-card-sub">Item-wise Day-1 to Day-6+ efficiency ladder analysis from live SQL</span></button>
       <button class="home-card" data-slide-access="16" onclick="goSlide(16)"><span class="home-no">16</span><span class="home-icon">📋</span><span class="home-card-title">Order Execution Plan</span><span class="home-card-sub">SQL Order Bank and matched daily planning, with v3 analysis views</span></button>
       <button class="home-card" data-slide-access="17" onclick="goSlide(17)"><span class="home-no">17</span><span class="home-icon">📐</span><span class="home-card-title">Size Set Module</span><span class="home-card-sub">SS.csv source rows, milestone plan/actual and next actions</span></button>
+      <button class="home-card" data-slide-access="18" onclick="goSlide(18)"><span class="home-no">18</span><span class="home-icon">🧰</span><span class="home-card-title">Accessories</span><span class="home-card-sub">Date-wise SQL snapshots and the 15 CSV source columns</span></button>
     </div>
     <div class="home-status" data-admin-home-extra="1" style="flex-wrap:wrap">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
@@ -2705,6 +2732,32 @@ input,select,textarea{
   </div>
 </div>
 
+<!-- ─── SLIDE 18: ACCESSORIES ──────────────── -->
+<div class="slide" id="s18" data-logical-slide="18">
+  <div class="slide-header">
+    <div><div class="slide-title"><span class="snum">18</span> 🧰 EKWLHW · Accessories</div>
+      <div class="slide-subtitle">DAILY SQL SNAPSHOT · 15 SOURCE COLUMNS</div></div>
+    <div class="pager-btns"><button class="pg-btn" onclick="loadAccessoriesModule(true)">↻ Refresh SQL</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-title">ACCESSORIES STATUS <span id="ac-msg" class="ct-right">Loading SQL…</span></div>
+    <div id="ac-source" class="ss-source-note"></div>
+    <div class="ac-controls">
+      <label>Report Date / PSD Date<select id="ac-date" onchange="renderAccessoriesModule()"><option value="">All PSD dates</option></select></label>
+      <label>Buyer / Team<select id="ac-buyer" onchange="renderAccessoriesModule()"><option value="">All buyers</option></select></label>
+      <label>Line<select id="ac-line" onchange="renderAccessoriesModule()"><option value="">All lines</option></select></label>
+      <label>Sewing Trims Pending Status<select id="ac-sewing" onchange="renderAccessoriesModule()"><option value="">All sewing statuses</option></select></label>
+      <label>Final Status<select id="ac-status" onchange="renderAccessoriesModule()"><option value="">All statuses</option></select></label>
+      <label>M&amp;M Name<select id="ac-owner" onchange="renderAccessoriesModule()"><option value="">All names</option></select></label>
+      <label class="ac-search">Search EWO / trims<input id="ac-search" type="search" placeholder="Search…" oninput="accessoriesSearchChanged()"></label>
+      <button class="top-btn" type="button" onclick="clearAccessoriesFilters()">Clear filters</button>
+    </div>
+    <div id="ac-kpis" class="kpi-row"></div>
+    <div id="ac-table" class="tbl-wrap" style="max-height:610px;overflow:auto"></div>
+    <div id="ac-pagination" class="ss-pager"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://rdslpcazdzqjlenbezaf.supabase.co";
@@ -3321,6 +3374,7 @@ function goSlide(n){
     if(frame&&frame.dataset.ready==='1')setTimeout(()=>loadOrderExecutionSlide(),0);
   }
   if(n===17)setTimeout(()=>loadSizeSetModule(),0);
+  if(n===18)setTimeout(()=>loadAccessoriesModule(),0);
   if(n===14 || n===15){
     try{renderSlide(n)}catch(e){
       console.error('Slide '+n+' render failed',e);
@@ -5995,6 +6049,7 @@ async function siteLogout(){
   ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];
   resetOrderExecutionSlide();
   if(typeof resetSizeSetModule==='function')resetSizeSetModule();
+  if(typeof resetAccessoriesModule==='function')resetAccessoriesModule();
   SITE_AUTH_USER=null;SITE_USER_PROFILE=null;SITE_BOOTED=false;
   try{sessionStorage.removeItem(fastKey);sessionStorage.removeItem('EKWL_FAST_BOOT_v1');}catch(e){console.warn(e)}
   document.getElementById('site-login-password').value='';
@@ -6617,7 +6672,7 @@ async function uploadOrderBank(){
 
 
 function selectUploadReport(type){
-  const types=['plan','fabric','sewing','production','orderbank','sizeset'];
+  const types=['plan','fabric','sewing','production','orderbank','sizeset','accessories'];
   types.forEach(t=>{
     const el=document.getElementById('upload-panel-'+t);
     if(el)el.style.display=(t===type)?'block':'none';
@@ -6628,7 +6683,8 @@ function selectUploadReport(type){
     sewing:'Line Wise Reconcilation.csv → sewing_input_output',
     production:'Date Wise Actual Production Report.csv → date-wise replace',
     orderbank:'Order Bank.csv → staging → lossless SQL snapshot → validation',
-    sizeset:'SS.csv → preview → 49-column SQL snapshot → row-count validation'
+    sizeset:'SS.csv → preview → 49-column SQL snapshot → row-count validation',
+    accessories:'EKWLHW-Accessories.csv → PSD as Report Date → 15-column SQL snapshot'
   };
   const x=document.getElementById('upload-report-help'); if(x)x.textContent=help[type]||'';
 }
@@ -6640,7 +6696,8 @@ function refreshUploadReportOptions(){
     sewing:siteHasPerm('sewing'),
     production:siteHasPerm('production'),
     orderbank:siteIsAdmin()||siteHasPerm('admin_settings'),
-    sizeset:siteIsAdmin()
+    sizeset:siteIsAdmin(),
+    accessories:siteIsAdmin()
   };
   [...sel.options].forEach(o=>o.hidden=!allowed[o.value]);
   let chosen=[...sel.options].find(o=>!o.hidden);
@@ -7286,6 +7343,7 @@ async function loadEfficiencyAnalysisSlide(){
 </script>
 <script src="order-execution-bridge.js"></script>
 <script src="size-set-module.js"></script>
+<script src="accessories-module.js"></script>
 <div id="ewo-gantt-tip"></div>
 <div id="cal-detail-modal" aria-hidden="true">
   <div id="cal-detail-box">
