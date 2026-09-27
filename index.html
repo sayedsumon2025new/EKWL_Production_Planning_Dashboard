@@ -1659,23 +1659,108 @@ input,select,textarea{
 #s11 .gantt .g-date{min-width:96px;font-size:10px}
 #s11 .gantt-legend{font-size:10px;margin:0 0 9px 2px;color:#526176;font-weight:700}
 #s11 .gantt-note{color:#5a6a7d}
+#s11 .gantt-tabs{display:flex;gap:7px;overflow-x:auto;padding:8px 2px 13px;scrollbar-width:thin}
+#s11 .gantt-tabs button{white-space:nowrap;border:1px solid #cbdce8;background:#f5f9fc;color:#315c79;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer}
+#s11 .gantt-tabs button[aria-selected="true"]{background:#07506d;color:#fff;border-color:#07506d}
+#s11 .action-tools{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:0 0 14px}
+#s11 .action-tools input,#s11 .action-tools select{min-width:145px;border:1px solid #cbdce8;border-radius:8px;background:#fff;color:#244662;padding:8px 10px}
+#s11 .action-tools button{border:1px solid #cbdce8;border-radius:8px;background:#edf7fb;color:#135474;padding:8px 11px;font-weight:800;cursor:pointer}
+#s11 .action-plan-banner{background:#eff7fb;border:1px solid #cce2ee;border-radius:9px;padding:11px 13px;color:#244e69;font-weight:750;margin:0 0 12px}
+#s11 .action-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+#s11 .action-kpi{background:#f6fafc;border:1px solid #dce9f0;border-radius:9px;padding:11px;color:#5d7b90;font-size:12px}
+#s11 .action-kpi strong{display:block;color:#144e72;font-size:21px;margin-top:4px}
+#s11 .action-month{display:flex;align-items:center;gap:12px;margin:12px 0;font-weight:850;color:#163e5a}
+#s11 .action-month button{border:1px solid #cbdce8;background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer}
+#s11 .action-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+#s11 .action-weekday{text-align:center;color:#698399;font-size:11px;font-weight:800;padding:4px}
+#s11 .action-day{min-height:76px;text-align:left;border:1px solid #dce7ee;border-radius:9px;background:#fff;color:#244a63;padding:7px;cursor:pointer}
+#s11 .action-day.has-events{background:#edf7fb;border-color:#96c7dc}
+#s11 .action-day[aria-pressed="true"]{outline:2px solid #076b91}
+#s11 .action-day b{display:block;font-size:13px}#s11 .action-day small{display:block;color:#366585;margin-top:8px}
+#s11 .action-events{display:grid;gap:7px;margin:15px 0}#s11 .action-event{border:1px solid #dbe8f0;border-radius:9px;padding:10px 12px;background:#fff}
+#s11 .action-event strong{color:#124e71}#s11 .action-event small{display:block;color:#67839b;margin-top:4px}
+#s11 .action-note{color:#617f96;font-size:12px;margin:8px 0}
+@media(max-width:600px){#s11 .action-day{min-height:57px;padding:4px}#s11 .action-day small{font-size:10px;margin-top:5px}}
+@media(max-width:600px){#s11 .action-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 
 
 <style id="ewo-rich-tooltip-style">
-#ewo-gantt-tip{
-  position:fixed;display:none;z-index:99999;min-width:245px;max-width:320px;
-  background:#10263e;color:#fff;border:1px solid #244765;border-radius:7px;
-  box-shadow:0 8px 24px rgba(0,0,0,.22);padding:10px 11px;font-size:11px;
-  pointer-events:none;line-height:1.35
-}
-#ewo-gantt-tip .gt-title{font-size:12px;font-weight:900;color:#fff;margin-bottom:7px;padding-bottom:6px;border-bottom:1px solid #36536e}
-#ewo-gantt-tip .gt-row{display:flex;justify-content:space-between;gap:18px;padding:3px 0}
-#ewo-gantt-tip .gt-lbl{color:#b9c9dc;font-weight:700}
-#ewo-gantt-tip .gt-val{font-weight:900;text-align:right}
-#ewo-gantt-tip .qty{color:#7dd3fc}.sah{color:#fbbf24}.buyer{color:#c4b5fd}.prod{color:#86efac}
-#ewo-gantt-tip .eff-good{color:#86efac}.eff-mid{color:#fde68a}.eff-low{color:#fca5a5}
-#s11 .gantt td.g-ewo{cursor:help}
+#ewo-gantt-dialog{width:min(690px,calc(100vw - 20px));max-width:none;max-height:min(91vh,920px);
+  padding:0;margin:auto;background:linear-gradient(150deg,#09233d,#173b5a 58%,#0b2c49);
+  color:#16334e;border:1px solid #7894ad;border-radius:14px;
+  box-shadow:0 28px 80px rgba(6,27,54,.48),inset 0 1px rgba(255,255,255,.16);overflow:hidden}
+#ewo-gantt-dialog::backdrop{background:rgba(8,24,42,.72);backdrop-filter:blur(5px)}
+#ewo-gantt-dialog .gt-modal-toolbar{position:sticky;top:0;z-index:2;display:flex;align-items:center;
+  justify-content:space-between;gap:10px;padding:8px 13px;background:#0b2d4c;
+  border-bottom:1px solid #365c79;color:#c7dcec;letter-spacing:.09em;font-size:12px;font-weight:800}
+#ewo-gantt-dialog .gt-modal-close{border:1px solid #6d91ad;border-radius:8px;color:#fff;
+  background:#1b4b70;width:32px;height:32px;font-size:21px;line-height:1;cursor:pointer}
+#ewo-gantt-dialog .gt-modal-close:hover,#ewo-gantt-dialog .gt-modal-close:focus-visible{background:#28628b;outline:2px solid #e6b664;outline-offset:2px}
+#ewo-gantt-dialog .gt-modal-content{max-height:calc(min(91vh,920px) - 49px);overflow:auto;overscroll-behavior:contain;
+  padding:10px;scrollbar-color:#9bb9cc #173b5e}
+#ewo-gantt-dialog .gt-title{color:#fff;padding:4px 5px 9px;font-size:17px;font-weight:900;letter-spacing:.02em}
+#ewo-gantt-dialog .gt-title small{display:block;margin-top:2px;color:#bad1e1;font-size:11px;font-weight:650}
+#ewo-gantt-dialog .gt-table{border-collapse:separate;border-spacing:0;width:100%;background:#fff;border-radius:7px;overflow:hidden;font-size:12px;line-height:1.2;box-shadow:0 6px 22px rgba(2,19,37,.15)}
+#ewo-gantt-dialog .gt-table th,#ewo-gantt-dialog .gt-table td{padding:6px 9px;border-right:1px solid #d6e0e9;border-bottom:1px solid #d6e0e9;vertical-align:middle}
+#ewo-gantt-dialog .gt-table tr>*:last-child{border-right:0}
+#ewo-gantt-dialog .gt-table thead th{background:#e6c88e;text-align:left;color:#273e53;font-size:12px}
+#ewo-gantt-dialog .gt-table thead th:first-child{width:38px;text-align:center}
+#ewo-gantt-dialog .gt-table thead th:nth-child(2){width:auto}
+#ewo-gantt-dialog .gt-table thead th:last-child{width:145px;text-align:right}
+#ewo-gantt-dialog .gt-table td:first-child{text-align:center;color:#577089;font-weight:750}
+#ewo-gantt-dialog .gt-table td:last-child{text-align:right;font-weight:850;color:#144869;overflow-wrap:anywhere}
+#ewo-gantt-dialog .gt-table .gt-section th{background:#fff5d8;color:#183e62;text-align:center;font-size:11px;padding:6px 5px;font-weight:900;letter-spacing:.035em}
+#ewo-gantt-dialog .gt-table .gt-subsection th{background:#f1f6fb;color:#245577;text-align:center}
+#ewo-gantt-dialog .gt-table .gt-no-data{color:#8da0ae!important;font-weight:600!important}
+#ewo-gantt-dialog .gt-table .gt-negative{color:#ba4b2a!important}
+#ewo-gantt-dialog .gt-color-filter{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:7px 9px;margin:0 0 9px;border:1px solid #527894;border-radius:8px;background:linear-gradient(120deg,#1a4668,#123957);color:#d8ebfa}
+#ewo-gantt-dialog .gt-color-filter label{font-weight:900;font-size:12px;white-space:nowrap}
+#ewo-gantt-dialog .gt-color-select{flex:1;min-width:175px;padding:7px 9px;border:1px solid #83b1d1;border-radius:6px;background:#fff;color:#153955;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+#ewo-gantt-dialog .gt-color-select:focus-visible{outline:3px solid #e6b664;outline-offset:2px}
+#ewo-gantt-dialog .gt-color-select:disabled{opacity:.9;cursor:default}
+#ewo-gantt-dialog .gt-color-filter span{font-size:11px;color:#c6ddec;white-space:nowrap}
+#ewo-gantt-dialog .gt-loading{background:#fff;padding:22px;border-radius:8px;text-align:center;color:#3a5972;font-weight:700}
+#ewo-gantt-dialog{background:#fff;color:#193c57;border-color:#d3e0ea;box-shadow:0 28px 80px rgba(7,30,52,.28)}
+#ewo-gantt-dialog .gt-modal-toolbar{background:#fff;color:#527997;border-bottom:1px solid #e1eaf0}
+#ewo-gantt-dialog .gt-toolbar-actions{display:flex;align-items:center;gap:7px}
+#ewo-gantt-dialog #ewo-gantt-copy{border:1px solid #c9dfed;border-radius:8px;background:#eaf5fb;color:#195376;padding:7px 9px;cursor:pointer;font-size:11px;font-weight:850;letter-spacing:0}
+#ewo-gantt-dialog #ewo-gantt-copy:disabled{opacity:.65;cursor:wait}
+#ewo-gantt-dialog .gt-modal-close{background:#eef5f9;border-color:#d2e3ee;color:#376486}
+#ewo-gantt-dialog .gt-modal-close:hover,#ewo-gantt-dialog .gt-modal-close:focus-visible{background:#dcecf6;color:#163f60}
+#ewo-gantt-dialog .gt-modal-content{background:#fff;scrollbar-color:#b3cad8 #f0f5f8}
+#ewo-gantt-dialog .gt-title{color:#133957;font-size:19px;padding:3px 5px 10px}
+#ewo-gantt-dialog .gt-title small{color:#6c8ca4}
+#ewo-gantt-dialog .gt-color-filter{background:#f5f9fc;border-color:#dae7ef;color:#527692;margin-bottom:12px}
+#ewo-gantt-dialog .gt-color-filter label{color:#446c88;text-transform:uppercase;letter-spacing:.08em}
+#ewo-gantt-dialog .gt-color-filter span{color:#6389a3}
+#ewo-gantt-dialog .gt-color-select{background:#fff;border-color:#c5d9e7;color:#143b59}
+#ewo-gantt-dialog .gt-cards{display:grid;gap:10px}
+#ewo-gantt-dialog .gt-card{min-width:0;background:#fff;border:1px solid #dce7ef;border-radius:10px;overflow:hidden;box-shadow:0 3px 12px rgba(20,61,91,.045)}
+#ewo-gantt-dialog .gt-card h3{margin:0;padding:9px 12px;background:#f0f6fa;border-bottom:1px solid #dce7ef;color:#235679;font-size:11px;letter-spacing:.11em;text-transform:uppercase;font-weight:900}
+#ewo-gantt-dialog .gt-size h3{background:#edf8f1;color:#318060}
+#ewo-gantt-dialog .gt-accessories h3{background:#fff8ed;color:#996728}
+#ewo-gantt-dialog .gt-cutting h3{background:#f1f2fc;color:#585796}
+#ewo-gantt-dialog .gt-embellishment h3{background:#fff1f7;color:#a3537a}
+#ewo-gantt-dialog .gt-sewing h3{background:#edf8f8;color:#347f84}
+#ewo-gantt-dialog .gt-wip h3{background:#fff7e8;color:#987039}
+#ewo-gantt-dialog .gt-card-body{padding:2px 11px 3px}
+#ewo-gantt-dialog .gt-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;min-height:30px;padding:6px 1px;border-bottom:1px solid #edf2f6;font-size:12px;line-height:1.3}
+#ewo-gantt-dialog .gt-row:last-child{border-bottom:0}
+#ewo-gantt-dialog .gt-row-label{display:flex;align-items:baseline;gap:8px;min-width:0;color:#53758f}
+#ewo-gantt-dialog .gt-row-label small{width:19px;flex:none;color:#8da8ba;font-size:10px;font-weight:800}
+#ewo-gantt-dialog .gt-row strong{color:#173c5b;text-align:right;font-size:12px;font-weight:850;overflow-wrap:anywhere}
+#ewo-gantt-dialog .gt-row strong.gt-negative{color:#c24143}
+#ewo-gantt-dialog .gt-row strong.gt-no-data{color:#a6bac7;font-weight:600}
+#ewo-gantt-dialog .gt-card-pair,.gt-emb-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#ewo-gantt-dialog .gt-emb-pair{gap:0}
+#ewo-gantt-dialog .gt-emb-pair>div{min-width:0;padding:1px 8px 3px}
+#ewo-gantt-dialog .gt-emb-pair>div+div{border-left:1px solid #e4edf2}
+#ewo-gantt-dialog .gt-emb-pair h4{margin:0;padding:7px 1px 3px;color:#a3537a;font-size:11px;text-transform:uppercase;letter-spacing:.09em}
+#s11 .gantt td.g-ewo{cursor:pointer}
+#s11 .gantt td.g-ewo:focus-visible{outline:3px solid #e6b664;outline-offset:-3px}
+@media(max-width:600px){#ewo-gantt-dialog .gt-modal-content{padding:7px}#ewo-gantt-dialog .gt-table{font-size:11px}#ewo-gantt-dialog .gt-table th,#ewo-gantt-dialog .gt-table td{padding:6px 5px}#ewo-gantt-dialog .gt-table thead th:last-child{width:100px}}
+@media(max-width:480px){#ewo-gantt-dialog .gt-card-pair{grid-template-columns:1fr}#ewo-gantt-dialog .gt-row{font-size:11px}#ewo-gantt-dialog .gt-row strong{font-size:11px}}
 </style>
 
 
@@ -2327,6 +2412,17 @@ input,select,textarea{
     </div>
   </div>
   <div class="card">
+    <div class="gantt-tabs" role="tablist" aria-label="EWO Gantt and action calendars">
+      <button type="button" id="gantt-tab-gantt" role="tab" aria-selected="true" onclick="showGanttActionTab('gantt')">EWO Gantt Chart</button>
+      <button type="button" id="gantt-tab-pcd" role="tab" aria-selected="false" onclick="showGanttActionTab('pcd')">PCD Action Calendar</button>
+      <button type="button" id="gantt-tab-psd" role="tab" aria-selected="false" onclick="showGanttActionTab('psd')">PSD Action Calendar</button>
+      <button type="button" id="gantt-tab-size" role="tab" aria-selected="false" onclick="showGanttActionTab('size')">Size Set Action Calendar</button>
+      <button type="button" id="gantt-tab-accessories" role="tab" aria-selected="false" onclick="showGanttActionTab('accessories')">Accessories Action Calendar</button>
+      <button type="button" id="gantt-tab-print" role="tab" aria-selected="false" onclick="showGanttActionTab('print')">Print Action Calendar</button>
+      <button type="button" id="gantt-tab-embroidery" role="tab" aria-selected="false" onclick="showGanttActionTab('embroidery')">Embroidery Action Calendar</button>
+      <button type="button" id="gantt-tab-cutting" role="tab" aria-selected="false" onclick="showGanttActionTab('cutting')">Cutting Action Calendar</button>
+    </div>
+    <div id="gantt-main-view">
     <div class="card-title">📅 EWO GANTT CHART
       <div class="gantt-filter-tools">
         <input id="gantt-ewo-search" type="search" inputmode="numeric" placeholder="Search EWO..." autocomplete="off">
@@ -2344,6 +2440,17 @@ input,select,textarea{
 <span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#ef4444;margin-right:6px"></b>Red → Cutable Qty-ও cumulative Plan cover করতে পারে না</span>
 </div>
 <div class="gantt-wrap"><table class="gantt"><thead id="s11-head"></thead><tbody id="s11-body"></tbody></table></div>
+    </div>
+    <div id="gantt-action-view" hidden><div class="action-tools">
+      <input type="search" id="action-ewo" placeholder="Filter EWO" aria-label="Filter action calendar EWO" oninput="renderGanttActionCalendar()">
+      <input type="search" id="action-line" placeholder="Filter line" aria-label="Filter action calendar line" oninput="renderGanttActionCalendar()">
+      <input type="search" id="action-color" placeholder="Filter color" aria-label="Filter action calendar color" oninput="renderGanttActionCalendar()">
+      <select id="action-type" aria-label="Filter action type" onchange="renderGanttActionCalendar()"><option value="">All event types</option></select>
+      <select id="action-month-select" aria-label="Select calendar month" onchange="ganttActionPickMonth(this.value)"></select>
+      <button type="button" onclick="ganttActionToday()">Today</button>
+      <button type="button" onclick="ganttActionRefresh()">Sync SQL now</button>
+      <button type="button" onclick="ganttActionExport()">Export month CSV</button>
+    </div><div id="gantt-action-body" aria-live="polite"></div></div>
   </div>
 </div>
 
@@ -3923,7 +4030,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
       // failed page never replaces the previous report with a partial dataset.
       const [fabric,sewing,production]=await Promise.all([
         sbPaged(()=>SB.from('fabric_cutting_info')
-          .select('id,buyer,ewo,color_name,item_product_type,style_embellishment_type,pattern_update,color_order_qty,fabric_booking_qty,total_fabric_received,fabric_balance,fabric_stock_after_cut,cutable_qty,total_cut_qty,cutting_balance,cutting_percent,status,cutting_difficulties')
+          .select('id,buyer,ewo,color_name,item_product_type,style_embellishment_type,pattern_update,color_order_qty,fabric_booking_qty,total_fabric_received,fabric_balance,fabric_stock_after_cut,cutable_qty,total_cut_qty,cutting_balance,cutting_percent,status,cutting_difficulties,pattern_received_date,replacement_receive_commitment_date')
           .order('id',{ascending:true})),
         sbPaged(()=>SB.from('sewing_input_output')
           .select('id,ewo,color,line,line_no,total_input_qty,total_output_qty,total_wip_qty,total_reject_qty')
@@ -5029,7 +5136,7 @@ function renderS11(data){
       difficulties:uniqueCutText('cutting_difficulties')
     };
 
-    const item={ewo,qty,buyer:m.buyer||'',style:m.style||'',color,ewoColors,sah,clock,eff,
+    const item={ewo,qty,buyer:m.buyer||'',style:m.style||'',color,planColors:colorCandidates,ewoColors,sah,clock,eff,
       sewingInput,sewingOutput,sewingWip,sewingReject,sewingRows:sio.length,
       productionQty,productionRows:productionMatches.length,
       cutableQty,cutQty,cutRows:fcMatches.length,cuttingTotalSewingInput,cuttingWip,
@@ -5156,50 +5263,14 @@ function renderS11(data){
     return '<td class="g-ewo'+coverageClass+'" data-gantt="'+payloadWithWip+'">'+esc(w.ewo)+'</td>';
   }).join('')+'</tr>').join('');
 
-  const tip=document.getElementById('ewo-gantt-tip');
   document.querySelectorAll('#s11 td.g-ewo').forEach(td=>{
-    td.onmouseenter=e=>{
-      const w=JSON.parse(decodeURIComponent(td.dataset.gantt));
-      const effClass=w.eff>=60?'eff-good':(w.eff>=40?'eff-mid':'eff-low');
-      tip.innerHTML=
-        '<div class="gt-title">EWO '+esc(w.ewo)+' · Line '+w.line+' · '+esc(w.date)+'</div>'+
-        '<div class="gt-row"><span class="gt-lbl">Plan Qty</span><span class="gt-val qty">'+fmt(w.qty)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Production Qty</span><span class="gt-val eff-good">'+fmt(w.productionQty)+'</span></div>'+
-
-        '<div class="gt-row"><span class="gt-lbl">Buyer Name</span><span class="gt-val buyer">'+esc(w.buyer||'—')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Product Name</span><span class="gt-val prod">'+esc(w.style||'—')+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">EWO Colors</span><span class="gt-val">'+esc((w.ewoColors||[]).join(', ')||'—')+'</span></div>'+
-
-        '<div class="gt-row"><span class="gt-lbl">EWO Cutable Qty</span><span class="gt-val qty">'+fmt(w.cutableQty)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">EWO Total Cut Qty</span><span class="gt-val eff-good">'+fmt(w.cutQty)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">EWO Total Sewing Input</span><span class="gt-val qty">'+fmt(w.cuttingTotalSewingInput)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Cutting WIP</span><span class="gt-val sah">'+fmt(w.cuttingWip)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Consumable Cutting WIP</span><span class="gt-val qty">'+(w.consumableCuttingWip==null?'—':fmt(w.consumableCuttingWip))+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Consumable Cutable Qty</span><span class="gt-val qty">'+(w.consumableCutableQty==null?'—':fmt(w.consumableCutableQty))+'</span></div>'+
-
-        '<div style="margin:7px 0 3px;border-top:1px solid #36536e"></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Sewing Input</span><span class="gt-val qty">'+fmt(w.sewingInput)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Sewing Output</span><span class="gt-val eff-good">'+fmt(w.sewingOutput)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Sewing WIP</span><span class="gt-val sah">'+fmt(w.sewingWip)+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Consumable WIP</span><span class="gt-val qty">'+(w.consumableWip==null?'—':fmt(w.consumableWip))+'</span></div>'+
-        '<div class="gt-row"><span class="gt-lbl">Sewing Reject</span><span class="gt-val eff-low">'+fmt(w.sewingReject)+'</span></div>'+
-        '<div class="gt-cut-comment">'+
-          '<div class="gt-cut-title">CUTTING COMMENT — EWO + COLOR</div>'+
-          '<div class="gt-row"><span class="gt-lbl">Style / Emb.</span><span class="gt-val">'+esc(w.cuttingComment?.styleEmb||'—')+'</span></div>'+
-          '<div class="gt-row"><span class="gt-lbl">Status</span><span class="gt-val">'+esc(w.cuttingComment?.status||'—')+'</span></div>'+
-          '<div class="gt-row"><span class="gt-lbl">Cutting Difficulties</span><span class="gt-val">'+esc(w.cuttingComment?.difficulties||'—')+'</span></div>'+
-        '</div>';
-      tip.style.display='block';
-    };
-    td.onmousemove=e=>{
-      const pad=14,tw=tip.offsetWidth||260,th=tip.offsetHeight||150;
-      let x=e.clientX+14,y=e.clientY+14;
-      if(x+tw+pad>window.innerWidth)x=e.clientX-tw-14;
-      if(y+th+pad>window.innerHeight)y=e.clientY-th-14;
-      tip.style.left=x+'px';tip.style.top=y+'px';
-    };
-    td.onmouseleave=()=>tip.style.display='none';
+    td.tabIndex=0;
+    td.setAttribute('role','button');
+    td.setAttribute('aria-label','Open EWO '+td.textContent+' status');
+    td.onclick=()=>showGanttPopup(td);
+    td.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showGanttPopup(td)}};
   });
+  if(typeof GANTT_ACTION_TAB!=='undefined'&&GANTT_ACTION_TAB!=='gantt')renderGanttActionCalendar();
 }
 
 function renderS7(data){
@@ -6091,6 +6162,7 @@ async function siteLogout(){
   ++SITE_SESSION_GENERATION;++SUPABASE_LOAD_TOKEN;++PLAN_FILTER_TOKEN;++EFF15_FR_TOKEN;
   DATA=[];DAILY_PLAN=[];SAH_DATA=[];SAH_DAILY=[];CLOCK_HOUR_DATA=[];CLOCK_HOUR_DAILY=[];BUYER_PLAN_DATA=[];MONTHS=[];
   FABRIC_CUTTING_DATA=[];SEWING_IO_DATA=[];DATE_WISE_PRODUCTION_DATA=[];
+  resetGanttHoverCache();
   PLAN_VERSION_CACHE.clear();PLAN_UPLOAD_CATALOG=[];ACTIVE_PLAN_UPLOAD=null;
   EFF15_METRIC_DAILY=[];EFF15_METRIC_UPLOAD_ID=null;
   ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];
@@ -6242,6 +6314,7 @@ async function uploadNewPlan(){
 async function refreshDashboardAfterSuccessfulUpload(source,options={}){
   setSupabaseLiveBadge('','Supabase · refreshing after upload…');
   await clearDashboardCache();
+  resetGanttHoverCache();
   PLAN_VERSION_CACHE.clear();
   if(!await loadFromSupabase(options.planUploadId||null,true))throw Error('Dashboard refresh failed after upload');
   if(source==='orderbank'){
@@ -7395,7 +7468,12 @@ async function loadEfficiencyAnalysisSlide(){
 <script src="size-set-module.js"></script>
 <script src="accessories-module.js"></script>
 <script src="embellishment-module.js"></script>
-<div id="ewo-gantt-tip"></div>
+<script src="gantt-hover.js"></script>
+<script src="gantt-action-calendars.js"></script>
+<dialog id="ewo-gantt-dialog" aria-label="EWO Gantt status">
+  <div class="gt-modal-toolbar"><span>SLIDE 07 · ORDER STATUS</span><span class="gt-toolbar-actions"><button id="ewo-gantt-copy" type="button" onclick="copyGanttPopupImage()" title="Copy entire popup as image">Copy snapshot</button><button type="button" class="gt-modal-close" onclick="closeGanttPopup()" aria-label="Close EWO status">×</button></span></div>
+  <div class="gt-modal-content" id="ewo-gantt-content"></div>
+</dialog>
 <div id="cal-detail-modal" aria-hidden="true">
   <div id="cal-detail-box">
     <div class="cd-head">

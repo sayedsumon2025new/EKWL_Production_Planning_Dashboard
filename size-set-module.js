@@ -305,6 +305,7 @@ async function uploadSizeSetFile(){
     if(data?.status!=='SUCCESS'||Number(data?.uploaded_rows)!==rows.length)throw Error('SQL row-count audit failed. Previous snapshot remains active.');
     ssMessage('ss-upload-msg',`✓ ${ssCount(rows.length)} / ${ssCount(data.uploaded_rows)} source rows verified in SQL. Snapshot activated.`);
     await loadSizeSetModule(true);
+    resetGanttHoverCache();
   }catch(error){ssMessage('ss-upload-msg','Upload not activated: '+(error?.message||error));}
   finally{button.disabled=false;}
 }

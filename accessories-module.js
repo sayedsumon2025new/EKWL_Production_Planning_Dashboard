@@ -184,6 +184,7 @@ async function uploadAccessoriesFile(){
     if(data?.status!=='SUCCESS'||Number(data?.uploaded_rows)!==rows.length)throw Error('SQL row-count audit did not match. Previous snapshot remains active.');
     acMessage('ac-upload-msg',`✓ ${acCount(rows.length)} rows verified and activated. Report Date comes from each row's PSD.`);
     await loadAccessoriesModule(true);
+    resetGanttHoverCache();
   }catch(error){acMessage('ac-upload-msg','Upload not activated: '+(error?.message||error));}
   finally{button.disabled=false;}
 }

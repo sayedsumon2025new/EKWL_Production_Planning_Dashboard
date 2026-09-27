@@ -171,6 +171,7 @@ async function uploadEmbellishmentFile(){
       throw Error('SQL row-count audit failed; previous snapshot remains active.');
     emMessage('em-upload-msg',`✓ ${emCount(rows.length)} rows verified and activated. ${data.report_dates} report dates in the snapshot.`);
     await loadEmbellishmentModule(true);
+    resetGanttHoverCache();
   }catch(error){emMessage('em-upload-msg','Upload not activated: '+(error?.message||error));}
   finally{button.disabled=false;}
 }
