@@ -129,7 +129,7 @@ function ganttPsdSummary(dayEvents,results){
     `<td class="psd-summary-products">${priorities.get(line)?.slice(1).map((name,i)=>name?`${i+1}${i?'nd':'st'}: ${esc(name)}`:'').filter(Boolean).join(' · ')||'—'}</td>`+
     `<td class="psd-summary-ewos">${esc([...item.ewos].sort().join(', '))}</td><td>${item.ewos.size}</td>`+
     `<td>${item.orderKnown?fmt(item.order):'—'}</td><td>${fmt(item.plan)}</td><td>${fmt(Math.round(item.plan/item.ewos.size))}</td></tr>`).join('');
-  return `<div class="psd-summary-head"><span>${esc(GANTT_ACTION_MONTHS[Number(GANTT_ACTION_MONTH.slice(-2))-1]||'')} ${esc(GANTT_ACTION_MONTH.slice(0,4))}</span><strong>PSD Summary · ${esc(dayEvents[0]?.date.label||'Selected date')}</strong></div>`+
+  return `<div class="psd-summary-toolbar"><div class="psd-summary-head"><span>${esc(GANTT_ACTION_MONTHS[Number(GANTT_ACTION_MONTH.slice(-2))-1]||'')} ${esc(GANTT_ACTION_MONTH.slice(0,4))}</span><strong>PSD Summary · ${esc(dayEvents[0]?.date.label||'Selected date')}</strong></div><button type="button" id="gantt-psd-summary-copy" onclick="copyGanttPsdSummaryImage()" title="Copy the complete PSD summary as an image">Copy full summary</button></div>`+
     '<div class="psd-summary-scroll"><table class="psd-summary-table"><thead><tr><th>Line</th><th>Total PSD</th><th>Plan Product Name</th><th>Line Priority Product Name</th><th>EWO</th><th>Total EWO</th><th>Total Order Qty · pcs</th><th>Total Plan Qty · pcs</th><th>AVG Plan Qty / EWO</th></tr></thead><tbody>'+
     (rows||'<tr><td colspan="9">No PSD for this date.</td></tr>')+'</tbody><tfoot><tr><td class="psd-summary-line">G.Total</td>'+
     `<td>${totalPairs}</td><td>—</td><td>—</td><td>—</td><td>${totalPairs}</td><td>${allOrdersKnown?fmt(totalOrder):'—'}</td><td>${fmt(totalPlan)}</td><td>${totalPairs?fmt(Math.round(totalPlan/totalPairs)):'—'}</td></tr></tfoot></table></div>`+
@@ -173,7 +173,7 @@ function ganttPsdTable(dayEvents,results){
   }).join('');
   const missing=['Order Bank','Size Set','Embellishment'].filter((_,i)=>!available(i));
   const columns=['Line','EWO','Color','Order Qty · pcs','Cumulative Plan Qty · pcs','First PSD','Fabrics Booking · kg','Fabrics Received · kg','Fabrics Balance · kg','Size Set status','Cutting status','Embroidery status','Print status','Outsource status'];
-  return `<div class="psd-table-title"><strong>Line-wise PSD & prior activity</strong><span class="psd-title-actions"><span>${dayEvents.length} Line–EWO–Color rows</span><button type="button" id="gantt-psd-copy" onclick="copyGanttPsdTableImage()" title="Copy all PSD table rows and columns as an image">Copy full table</button></span></div>`+
+  return `<div class="psd-table-title"><strong>Line-wise PSD & prior activity</strong><span class="psd-title-actions"><span>${dayEvents.length} Line–EWO–Color rows</span><button type="button" id="gantt-psd-excel" onclick="exportGanttPsdExcel()" title="Export all rows and columns to Excel">Export Excel</button><button type="button" id="gantt-psd-copy" onclick="copyGanttPsdTableImage()" title="Copy all PSD table rows and columns as an image">Copy full table</button></span></div>`+
     '<div class="psd-table-scroll"><table class="psd-table"><thead><tr>'+columns.map(label=>`<th scope="col">${esc(label)}</th>`).join('')+'</tr></thead><tbody>'+
     (rows||'<tr><td colspan="14">No Line–EWO–Color starts on this date.</td></tr>')+'</tbody></table></div>'+
     '<p class="psd-table-note">First PSD across POs for each Line–EWO–Color in the selected Plan. Plan Qty covers all Plan/Day dates. Embroidery and Print include dated activity through PSD; without activity they show the selected Plan’s Yes/No flag. Outsource follows the selected Plan. Fabric/Cutting and Size Set are current report snapshots.'+
@@ -209,6 +209,82 @@ async function copyGanttPsdTableImage(){
   }catch(error){console.warn('PSD table screenshot unavailable',error);button.textContent='Capture failed';}
   finally{button.disabled=false;setTimeout(()=>button.textContent=label,2500);}
 }
+async function copyGanttPsdSummaryImage(){
+  const button=document.getElementById('gantt-psd-summary-copy'),section=document.getElementById('gantt-psd-summary');
+  if(!button||!section)return;
+  const label=button.textContent;
+  button.disabled=true;button.textContent='Capturing…';
+  try{
+    if(typeof html2canvas!=='function')throw Error('Screenshot library unavailable');
+    const table=section.querySelector('.psd-summary-table');
+    const fullWidth=Math.ceil(Math.max(section.scrollWidth,table?.scrollWidth||0)+24);
+    const canvas=await html2canvas(section,{backgroundColor:'#ffffff',scale:Math.min(2,window.devicePixelRatio||2),useCORS:true,logging:false,
+      windowWidth:Math.max(document.documentElement.clientWidth,fullWidth),
+      windowHeight:Math.max(document.documentElement.clientHeight,section.scrollHeight),
+      onclone:doc=>{
+        const clone=doc.getElementById('gantt-psd-summary'),scroll=clone?.querySelector('.psd-summary-scroll');
+        if(clone){clone.style.width=fullWidth+'px';clone.style.maxWidth='none';clone.style.height='auto';clone.style.overflow='visible';}
+        if(scroll){scroll.style.maxHeight='none';scroll.style.height='auto';scroll.style.overflow='visible';}
+        const footer=clone?.querySelector('.psd-summary-table tfoot');if(footer)footer.style.position='static';
+        clone?.querySelector('#gantt-psd-summary-copy')?.remove();
+      }});
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+    if(!blob)throw Error('PNG capture failed');
+    if(navigator.clipboard?.write&&typeof ClipboardItem!=='undefined'){
+      try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);button.textContent='Image copied';return;}
+      catch(error){console.warn('Clipboard unavailable; downloading PNG instead',error);}
+    }
+    const link=document.createElement('a'),url=URL.createObjectURL(blob);
+    link.href=url;link.download=`EKWL_PSD_summary_${GANTT_ACTION_MONTH}_${GANTT_ACTION_DAY}.png`;link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);button.textContent='PNG downloaded';
+  }catch(error){console.warn('PSD summary screenshot unavailable',error);button.textContent='Capture failed';}
+  finally{button.disabled=false;setTimeout(()=>button.textContent=label,2500);}
+}
+function ganttPsdExcelFile(rows){
+  const xml=value=>String(value??'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const cells=rows.map((row,r)=>'<row r="'+(r+1)+'">'+row.map((value,c)=>{
+    let column='',index=c+1;while(index){index--;column=String.fromCharCode(65+index%26)+column;index=Math.floor(index/26);}
+    const address=column+(r+1);
+    if(r>0&&[3,4,6,7,8].includes(c)&&value!=='—'&&value!==''&&Number.isFinite(Number(String(value).replace(/,/g,''))))
+      return `<c r="${address}"><v>${Number(String(value).replace(/,/g,''))}</v></c>`;
+    return `<c r="${address}" t="inlineStr"><is><t xml:space="preserve">${xml(value)}</t></is></c>`;
+  }).join('')+'</row>').join('');
+  const files=[
+    ['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>'],
+    ['_rels/.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ['xl/workbook.xml','<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="PSD Activity" sheetId="1" r:id="rId1"/></sheets></workbook>'],
+    ['xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>'],
+    ['xl/worksheets/sheet1.xml','<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetData>'+cells+'</sheetData></worksheet>']
+  ];
+  const encoder=new TextEncoder(),parts=[],central=[];let offset=0;
+  const crc32=bytes=>{let crc=-1;for(const byte of bytes){crc^=byte;for(let bit=0;bit<8;bit++)crc=crc&1?(crc>>>1)^0xedb88320:crc>>>1;}return (crc^-1)>>>0;};
+  for(const [name,content] of files){
+    const n=encoder.encode(name),data=encoder.encode(content),crc=crc32(data);
+    const local=new Uint8Array(30+n.length),h=new DataView(local.buffer);
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint32(14,crc,true);
+    h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,n.length,true);local.set(n,30);
+    parts.push(local,data);
+    const directory=new Uint8Array(46+n.length),d=new DataView(directory.buffer);
+    d.setUint32(0,0x02014b50,true);d.setUint16(4,20,true);d.setUint16(6,20,true);d.setUint16(8,0x0800,true);
+    d.setUint32(16,crc,true);d.setUint32(20,data.length,true);d.setUint32(24,data.length,true);
+    d.setUint16(28,n.length,true);d.setUint32(42,offset,true);directory.set(n,46);central.push(directory);
+    offset+=local.length+data.length;
+  }
+  const centralSize=central.reduce((n,part)=>n+part.length,0),end=new Uint8Array(22),e=new DataView(end.buffer);
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);
+  e.setUint32(12,centralSize,true);e.setUint32(16,offset,true);
+  return new Blob([...parts,...central,end],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function exportGanttPsdExcel(){
+  const table=document.querySelector('#gantt-psd-table .psd-table');if(!table)return;
+  const rows=[...table.querySelectorAll('tr')].map(tr=>[...tr.querySelectorAll('th,td')].map(cell=>{
+    const copy=cell.cloneNode(true);copy.querySelectorAll('br').forEach(br=>br.replaceWith(' | '));
+    return (copy.textContent||'').replace(/\s+/g,' ').trim();
+  }));
+  const url=URL.createObjectURL(ganttPsdExcelFile(rows)),link=document.createElement('a');
+  link.href=url;link.download=`EKWL_PSD_activity_${GANTT_ACTION_MONTH}_${GANTT_ACTION_DAY}.xlsx`;link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
 async function renderGanttPsdTable(dayEvents,token){
   const slot=document.getElementById('gantt-psd-table'),summary=document.getElementById('gantt-psd-summary');if(!slot)return;
   if(!dayEvents.length){slot.innerHTML=ganttPsdTable([],[]);if(summary)summary.innerHTML=ganttPsdSummary([],[]);return;}
@@ -230,7 +306,9 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 #s11 .psd-compact-calendar .action-day b{font-size:11px}
 #s11 .psd-compact-calendar .action-day small{font-size:8px;margin-top:1px}
 #s11 .psd-summary{padding:10px 12px}
+#s11 .psd-summary-toolbar{display:flex;align-items:stretch;gap:7px;margin-bottom:5px}
 #s11 .psd-summary-head{display:grid;grid-template-columns:86px 1fr;text-align:center;border:1px solid #34485b;border-bottom:0;color:#405c77;font-size:13px;font-weight:800}
+#s11 .psd-summary-toolbar .psd-summary-head{flex:1;min-width:0;border-bottom:1px solid #34485b}
 #s11 .psd-summary-head span{border-right:1px solid #34485b;padding:5px}
 #s11 .psd-summary-head strong{padding:5px}
 #s11 .psd-summary-scroll{overflow:auto;max-height:259px;border:1px solid #34485b}
@@ -241,9 +319,9 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 #s11 .psd-summary-table .psd-summary-ewos{text-align:left}
 #s11 .psd-summary-table .psd-summary-products{text-align:left;min-width:150px}
 #s11 .psd-title-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-#s11 #gantt-psd-copy{border:1px solid #cad8e9;background:#eaf1fa;color:#173960;border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer}
-#s11 #gantt-psd-copy:hover{background:#d8e8fb}
-#s11 #gantt-psd-copy:disabled{opacity:.65;cursor:wait}
+#s11 #gantt-psd-copy,#s11 #gantt-psd-excel,#s11 #gantt-psd-summary-copy{border:1px solid #cad8e9;background:#eaf1fa;color:#173960;border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer}
+#s11 #gantt-psd-copy:hover,#s11 #gantt-psd-excel:hover,#s11 #gantt-psd-summary-copy:hover{background:#d8e8fb}
+#s11 #gantt-psd-copy:disabled,#s11 #gantt-psd-summary-copy:disabled{opacity:.65;cursor:wait}
 #s11 .psd-summary-table tfoot{position:sticky;bottom:0}
 #s11 .psd-summary-table tfoot td:not(.psd-summary-line){background:#f7f8f9;color:#e87900;font-weight:800}
 #s11 .psd-summary-note{font-size:11px;color:#60778d;margin:8px 0 0;line-height:1.4}
