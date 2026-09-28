@@ -101,6 +101,7 @@ function ganttPsdStatus(rows,field){return [...new Set(rows.map(r=>String(r.row_
 function ganttPsdFlag(flags){return flags?.has('yes')?'Yes':flags?.has('no')?'No':'—';}
 function ganttPsdSummary(dayEvents,results){
   const groups=ganttPsdGroups(),plan=ganttPsdPlanTotals(groups),lines=new Map();
+  const priorities=new Map(getChassisPriority().map(row=>[Number(row[0]),row]));
   const orders=results[0]?.status==='fulfilled'?results[0].value:null;
   const byOrder=new Map();
   for(const row of orders||[]){const key=ganttKey(row.EWO)+'|'+ganttColorKey(row.GmtColor);
@@ -124,12 +125,14 @@ function ganttPsdSummary(dayEvents,results){
   const totalPlan=counts.reduce((n,x)=>n+x.plan,0),allOrdersKnown=counts.every(x=>x.orderKnown);
   const totalOrder=counts.reduce((n,x)=>n+x.order,0);
   const rows=[...lines.entries()].sort((a,b)=>a[0]-b[0]).map(([line,item])=>`<tr><td class="psd-summary-line">${esc(String(line).padStart(2,'0'))}</td>`+
-    `<td>${item.ewos.size}</td><td class="psd-summary-products">${item.products.size?esc([...item.products].sort().join(' · ')):'—'}</td><td class="psd-summary-ewos">${esc([...item.ewos].sort().join(', '))}</td><td>${item.ewos.size}</td>`+
+    `<td>${item.ewos.size}</td><td class="psd-summary-products">${item.products.size?esc([...item.products].sort().join(' · ')):'—'}</td>`+
+    `<td class="psd-summary-products">${priorities.get(line)?.slice(1).map((name,i)=>name?`${i+1}${i?'nd':'st'}: ${esc(name)}`:'').filter(Boolean).join(' · ')||'—'}</td>`+
+    `<td class="psd-summary-ewos">${esc([...item.ewos].sort().join(', '))}</td><td>${item.ewos.size}</td>`+
     `<td>${item.orderKnown?fmt(item.order):'—'}</td><td>${fmt(item.plan)}</td><td>${fmt(Math.round(item.plan/item.ewos.size))}</td></tr>`).join('');
   return `<div class="psd-summary-head"><span>${esc(GANTT_ACTION_MONTHS[Number(GANTT_ACTION_MONTH.slice(-2))-1]||'')} ${esc(GANTT_ACTION_MONTH.slice(0,4))}</span><strong>PSD Summary · ${esc(dayEvents[0]?.date.label||'Selected date')}</strong></div>`+
-    '<div class="psd-summary-scroll"><table class="psd-summary-table"><thead><tr><th>Line</th><th>Total PSD</th><th>Plan Product Name</th><th>EWO</th><th>Total EWO</th><th>Total Order Qty · pcs</th><th>Total Plan Qty · pcs</th><th>AVG Plan Qty / EWO</th></tr></thead><tbody>'+
-    (rows||'<tr><td colspan="8">No PSD for this date.</td></tr>')+'</tbody><tfoot><tr><td class="psd-summary-line">G.Total</td>'+
-    `<td>${totalPairs}</td><td>—</td><td>—</td><td>${totalPairs}</td><td>${allOrdersKnown?fmt(totalOrder):'—'}</td><td>${fmt(totalPlan)}</td><td>${totalPairs?fmt(Math.round(totalPlan/totalPairs)):'—'}</td></tr></tfoot></table></div>`+
+    '<div class="psd-summary-scroll"><table class="psd-summary-table"><thead><tr><th>Line</th><th>Total PSD</th><th>Plan Product Name</th><th>Line Priority Product Name</th><th>EWO</th><th>Total EWO</th><th>Total Order Qty · pcs</th><th>Total Plan Qty · pcs</th><th>AVG Plan Qty / EWO</th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="9">No PSD for this date.</td></tr>')+'</tbody><tfoot><tr><td class="psd-summary-line">G.Total</td>'+
+    `<td>${totalPairs}</td><td>—</td><td>—</td><td>—</td><td>${totalPairs}</td><td>${allOrdersKnown?fmt(totalOrder):'—'}</td><td>${fmt(totalPlan)}</td><td>${totalPairs?fmt(Math.round(totalPlan/totalPairs)):'—'}</td></tr></tfoot></table></div>`+
     '<p class="psd-summary-note">Selected Plan · one PSD per Line and EWO, regardless of color. Order Qty follows Order Bank by EWO and color.</p>';
 }
 function ganttPsdTable(dayEvents,results){
@@ -170,11 +173,41 @@ function ganttPsdTable(dayEvents,results){
   }).join('');
   const missing=['Order Bank','Size Set','Embellishment'].filter((_,i)=>!available(i));
   const columns=['Line','EWO','Color','Order Qty · pcs','Cumulative Plan Qty · pcs','First PSD','Fabrics Booking · kg','Fabrics Received · kg','Fabrics Balance · kg','Size Set status','Cutting status','Embroidery status','Print status','Outsource status'];
-  return `<div class="psd-table-title"><strong>Line-wise PSD & prior activity</strong><span>${dayEvents.length} Line–EWO–Color rows</span></div>`+
+  return `<div class="psd-table-title"><strong>Line-wise PSD & prior activity</strong><span class="psd-title-actions"><span>${dayEvents.length} Line–EWO–Color rows</span><button type="button" id="gantt-psd-copy" onclick="copyGanttPsdTableImage()" title="Copy all PSD table rows and columns as an image">Copy full table</button></span></div>`+
     '<div class="psd-table-scroll"><table class="psd-table"><thead><tr>'+columns.map(label=>`<th scope="col">${esc(label)}</th>`).join('')+'</tr></thead><tbody>'+
     (rows||'<tr><td colspan="14">No Line–EWO–Color starts on this date.</td></tr>')+'</tbody></table></div>'+
     '<p class="psd-table-note">First PSD across POs for each Line–EWO–Color in the selected Plan. Plan Qty covers all Plan/Day dates. Embroidery and Print include dated activity through PSD; without activity they show the selected Plan’s Yes/No flag. Outsource follows the selected Plan. Fabric/Cutting and Size Set are current report snapshots.'+
     (missing.length?' Unavailable report access: '+esc(missing.join(', '))+'.':'')+'</p>';
+}
+async function copyGanttPsdTableImage(){
+  const button=document.getElementById('gantt-psd-copy'),section=document.getElementById('gantt-psd-table');
+  if(!button||!section)return;
+  const label=button.textContent;
+  button.disabled=true;button.textContent='Capturing…';
+  try{
+    if(typeof html2canvas!=='function')throw Error('Screenshot library unavailable');
+    const table=section.querySelector('.psd-table');
+    const fullWidth=Math.ceil(Math.max(section.scrollWidth,table?.scrollWidth||0));
+    const canvas=await html2canvas(section,{backgroundColor:'#ffffff',scale:Math.min(2,window.devicePixelRatio||2),useCORS:true,logging:false,
+      windowWidth:Math.max(document.documentElement.clientWidth,fullWidth),
+      windowHeight:Math.max(document.documentElement.clientHeight,section.scrollHeight),
+      onclone:doc=>{
+        const clone=doc.getElementById('gantt-psd-table'),scroll=clone?.querySelector('.psd-table-scroll');
+        if(clone){clone.style.width=fullWidth+'px';clone.style.maxWidth='none';clone.style.height='auto';clone.style.overflow='visible';}
+        if(scroll){scroll.style.width='100%';scroll.style.maxHeight='none';scroll.style.height='auto';scroll.style.overflow='visible';}
+        clone?.querySelector('#gantt-psd-copy')?.remove();
+      }});
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+    if(!blob)throw Error('PNG capture failed');
+    if(navigator.clipboard?.write&&typeof ClipboardItem!=='undefined'){
+      try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);button.textContent='Image copied';return;}
+      catch(error){console.warn('Clipboard unavailable; downloading PNG instead',error);}
+    }
+    const link=document.createElement('a'),url=URL.createObjectURL(blob);
+    link.href=url;link.download=`EKWL_PSD_table_${GANTT_ACTION_MONTH}_${GANTT_ACTION_DAY}.png`;link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);button.textContent='PNG downloaded';
+  }catch(error){console.warn('PSD table screenshot unavailable',error);button.textContent='Capture failed';}
+  finally{button.disabled=false;setTimeout(()=>button.textContent=label,2500);}
 }
 async function renderGanttPsdTable(dayEvents,token){
   const slot=document.getElementById('gantt-psd-table'),summary=document.getElementById('gantt-psd-summary');if(!slot)return;
@@ -207,6 +240,10 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 #s11 .psd-summary-table .psd-summary-line{background:#989ca0;color:white;font-weight:800;text-align:left}
 #s11 .psd-summary-table .psd-summary-ewos{text-align:left}
 #s11 .psd-summary-table .psd-summary-products{text-align:left;min-width:150px}
+#s11 .psd-title-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#s11 #gantt-psd-copy{border:1px solid #cad8e9;background:#eaf1fa;color:#173960;border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer}
+#s11 #gantt-psd-copy:hover{background:#d8e8fb}
+#s11 #gantt-psd-copy:disabled{opacity:.65;cursor:wait}
 #s11 .psd-summary-table tfoot{position:sticky;bottom:0}
 #s11 .psd-summary-table tfoot td:not(.psd-summary-line){background:#f7f8f9;color:#e87900;font-weight:800}
 #s11 .psd-summary-note{font-size:11px;color:#60778d;margin:8px 0 0;line-height:1.4}
