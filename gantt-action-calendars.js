@@ -2,10 +2,11 @@
 const GANTT_ACTION_NAMES={pcd:'PCD',psd:'PSD',size:'Size Set',accessories:'Accessories',print:'Print',embroidery:'Embroidery',cutting:'Cutting'};
 const GANTT_ACTION_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const GANTT_ACTION_CACHE=new Map();
+const GANTT_PSD_SOURCE_CACHE=new Map();
 let GANTT_ACTION_TAB='gantt',GANTT_ACTION_MONTH='',GANTT_ACTION_DAY=0,GANTT_ACTION_REQUEST=0;
 let GANTT_ACTION_VISIBLE=[],GANTT_ACTION_NOTICE='';
-function resetGanttActionCache(){GANTT_ACTION_CACHE.clear();++GANTT_ACTION_REQUEST;if(GANTT_ACTION_TAB!=='gantt')renderGanttActionCalendar();}
-function ganttActionRefresh(){GANTT_ACTION_CACHE.delete(GANTT_ACTION_TAB);GANTT_ACTION_NOTICE='Reloaded active SQL report.';renderGanttActionCalendar();}
+function resetGanttActionCache(){GANTT_ACTION_CACHE.clear();GANTT_PSD_SOURCE_CACHE.clear();++GANTT_ACTION_REQUEST;if(GANTT_ACTION_TAB!=='gantt')renderGanttActionCalendar();}
+function ganttActionRefresh(){GANTT_ACTION_CACHE.delete(GANTT_ACTION_TAB);GANTT_PSD_SOURCE_CACHE.clear();GANTT_ACTION_NOTICE='Reloaded active SQL report.';renderGanttActionCalendar();}
 function ganttActionToday(){
   const now=new Date(),key=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   const select=document.getElementById('action-month-select');
@@ -52,8 +53,102 @@ function ganttActionAdd(events,raw,ewo,line,color,action,detail,source){
   const date=ganttActionDate(raw);if(!date||!String(ewo??'').trim())return;
   events.push({date,ewo:String(ewo).trim(),line:String(line??'').trim(),color:String(color??'').trim(),action:String(action??'').trim(),detail:String(detail??'').trim(),source});
 }
+function ganttPsdKey(line,ewo,color){return [Number(line)||0,ganttKey(ewo),ganttColorKey(color)].join('|');}
+function ganttPsdGroups(){
+  const groups=new Map();
+  for(const row of DATA){
+    const date=ganttActionDate(row.startdate),key=ganttPsdKey(row.line,row.ewo,row.color);
+    if(!date?.year||!ganttKey(row.ewo)||!Number(row.line))continue;
+    if(!groups.has(key))groups.set(key,{key,line:row.line,ewo:row.ewo,color:row.color,date,recordIds:new Set()});
+    const group=groups.get(key);
+    if(row.record_id!=null)group.recordIds.add(String(row.record_id));
+    if([date.year,date.month,date.day].join('-').localeCompare([group.date.year,group.date.month,group.date.day].join('-'),undefined,{numeric:true})<0)group.date=date;
+  }
+  return groups;
+}
+function ganttPsdPlanTotals(groups){
+  const byId=new Map(),seen=new Set(),totals=new Map();
+  for(const group of groups.values())for(const id of group.recordIds)byId.set(id,group.key);
+  for(const daily of DAILY_PLAN){
+    const id=String(daily.record_id),key=byId.get(id),date=String(daily.date||'');
+    if(!key||!date||seen.has(id+'|'+date))continue;
+    seen.add(id+'|'+date);totals.set(key,(totals.get(key)||0)+(Number(daily.value)||0));
+  }
+  return totals;
+}
+function ganttPsdNumber(value){const n=Number(String(value??'').replace(/,/g,'').trim());return Number.isFinite(n)?n:0;}
+async function ganttPsdPaged(build){
+  const all=[];for(let from=0;;from+=500){const {data,error}=await build().range(from,from+499);if(error)throw error;
+    all.push(...(data||[]));if(!data||data.length<500)break;}return all;
+}
+async function ganttPsdSources(ewos){
+  const ids=[...new Set(ewos.map(ganttKey))].filter(Boolean).sort(),key=ids.join('|');
+  const saved=GANTT_PSD_SOURCE_CACHE.get(key);if(saved&&Date.now()-saved.at<60000)return saved.promise;
+  const promise=Promise.allSettled([
+    ganttPsdPaged(()=>SB.from('order_bank_latest_all').select('EWO,GmtColor,OrderQty').in('EWO',ids)),
+    ganttActionSqlRows('size_set_rows','row_data'),
+    ganttPsdPaged(()=>SB.from('embellishment_send_receive_rows').select('"Date","EWO No","Color","Today Print Send Qty\n"," Today Print Receive Qty","Today EMB Send Qty","Today EMB Receive Qty"').eq('is_active',true).in('EWO No',ids).order('source_row_no',{ascending:true}))
+  ]);
+  GANTT_PSD_SOURCE_CACHE.set(key,{at:Date.now(),promise});
+  return promise;
+}
+function ganttPsdDateKey(date){return date?.year?`${date.year}-${String(date.month).padStart(2,'0')}-${String(date.day).padStart(2,'0')}`:'';}
+function ganttPsdStatus(rows,field){return [...new Set(rows.map(r=>String(r.row_data?.[field]||'').trim()).filter(Boolean))].join(' · ')||'—';}
+function ganttPsdTable(dayEvents,results){
+  const groups=ganttPsdGroups(),plan=ganttPsdPlanTotals(groups);
+  const available=i=>results[i]?.status==='fulfilled';
+  const source=i=>available(i)?results[i].value:[];
+  const byKey=(rows,ewoField,colorField)=>{
+    const map=new Map();for(const row of rows){const key=ganttKey(ewoField(row))+'|'+ganttColorKey(colorField(row));
+      if(!map.has(key))map.set(key,[]);map.get(key).push(row);}return map;
+  };
+  const orders=byKey(source(0),r=>r.EWO,r=>r.GmtColor);
+  const sizes=byKey(source(1),r=>r.row_data?.EWO,r=>r.row_data?.Color);
+  const embellishments=byKey(source(2),r=>r['EWO No'],r=>r.Color);
+  const cutting=byKey(FABRIC_CUTTING_DATA||[],r=>r.ewo,r=>r.color_name);
+  const fmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2});
+  const cell=n=>n==null?'—':fmt(n);
+  const sum=(rows,field)=>rows.length?rows.reduce((total,r)=>total+ganttPsdNumber(r[field]),0):null;
+  const metric=(send,received)=>send==null?'—':`Sent ${fmt(send)} · Received ${fmt(received)}<br><small>Balance ${fmt(send-received)} pcs</small>`;
+  const rows=dayEvents.map(event=>{
+    const group=groups.get(ganttPsdKey(event.line,event.ewo,event.color));if(!group)return '';
+    const match=ganttKey(group.ewo)+'|'+ganttColorKey(group.color),fabric=cutting.get(match)||[];
+    const size=sizes.get(match)||[],order=orders.get(match)||[];
+    const emb=(embellishments.get(match)||[]).filter(r=>{
+      const date=ganttActionDate(r.Date);return date?.year&&ganttPsdDateKey(date)<=ganttPsdDateKey(group.date);
+    });
+    const cuttingStatus=fabric.length?`${esc([...new Set(fabric.map(r=>String(r.status||'').trim()).filter(Boolean))].join(' · ')||'Cutting report')}<br><small>Cut ${cell(sum(fabric,'total_cut_qty'))} · Balance ${cell(sum(fabric,'cutting_balance'))} pcs</small>`:'—';
+    const sizeStatus=available(1)&&size.length?`${esc(ganttPsdStatus(size,'Next Action to Do\n(What)'))}<br><small>When: ${esc(ganttPsdStatus(size,'When'))}</small>`:'—';
+    const activity=(send,receive)=>available(2)&&emb.length?metric(sum(emb,send),sum(emb,receive)):'—';
+    return `<tr><td><strong>${esc(String(group.line).padStart(2,'0'))}</strong></td><td><strong>${esc(group.ewo)}</strong></td><td>${esc(group.color)}</td>`+
+      `<td class="psd-num">${available(0)?cell(sum(order,'OrderQty')):'—'}</td><td class="psd-num">${fmt(plan.get(group.key)||0)}</td><td>${esc(group.date.label)}</td>`+
+      `<td class="psd-num">${cell(sum(fabric,'fabric_booking_qty'))}</td><td class="psd-num">${cell(sum(fabric,'total_fabric_received'))}</td><td class="psd-num">${cell(sum(fabric,'fabric_balance'))}</td>`+
+      `<td>${sizeStatus}</td><td>${cuttingStatus}</td><td>${activity('Today EMB Send Qty','Today EMB Receive Qty')}</td><td>${activity('Today Print Send Qty\n',' Today Print Receive Qty')}</td></tr>`;
+  }).join('');
+  const missing=['Order Bank','Size Set','Embellishment'].filter((_,i)=>!available(i));
+  const columns=['Line','EWO','Color','Order Qty · pcs','Cumulative Plan Qty · pcs','First PSD','Fabrics Booking · kg','Fabrics Received · kg','Fabrics Balance · kg','Size Set status','Cutting status','Embroidery status','Print status'];
+  return `<div class="psd-table-title"><strong>Line-wise PSD & prior activity</strong><span>${dayEvents.length} Line–EWO–Color rows</span></div>`+
+    '<div class="psd-table-scroll"><table class="psd-table"><thead><tr>'+columns.map(label=>`<th scope="col">${esc(label)}</th>`).join('')+'</tr></thead><tbody>'+
+    (rows||'<tr><td colspan="13">No Line–EWO–Color starts on this date.</td></tr>')+'</tbody></table></div>'+
+    '<p class="psd-table-note">First PSD across POs for each Line–EWO–Color in the selected Plan. Plan Qty covers all Plan/Day dates. Embroidery and Print include dated activity through PSD; Fabric/Cutting and Size Set are current report snapshots.'+
+    (missing.length?' Unavailable report access: '+esc(missing.join(', '))+'.':'')+'</p>';
+}
+async function renderGanttPsdTable(dayEvents,token){
+  const slot=document.getElementById('gantt-psd-table');if(!slot)return;
+  if(!dayEvents.length){slot.innerHTML=ganttPsdTable([],[]);return;}
+  const result=await ganttPsdSources(dayEvents.map(e=>e.ewo));
+  if(token!==GANTT_ACTION_REQUEST||GANTT_ACTION_TAB!=='psd')return;
+  slot.innerHTML=ganttPsdTable(dayEvents,result);
+}
+document.head.insertAdjacentHTML('beforeend',`<style>
+#gantt-psd-table{margin-top:18px;color:#17263d}.psd-table-title{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 19px;background:#fff;border:1px solid #e0e7ef;border-bottom:0;border-radius:14px 14px 0 0}.psd-table-title strong{font-size:16px}.psd-table-title span{font-size:13px;color:#496684}.psd-table-scroll{overflow:auto;background:#fff;border:1px solid #e0e7ef;border-radius:0 0 14px 14px}.psd-table{border-collapse:separate;border-spacing:0;min-width:1500px;width:100%;font-size:13px}.psd-table th{background:#eaf1fa;color:#294265;text-align:left;font-size:12px;white-space:nowrap;padding:12px 13px;border-bottom:1px solid #cfdce9}.psd-table td{padding:14px 13px;min-width:85px;vertical-align:top;border-bottom:1px solid #e9eef5;line-height:1.5}.psd-table tbody tr:hover{background:#f4f9ff}.psd-table td small{color:#63768c}.psd-table .psd-num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}.psd-table-note{font-size:13px;line-height:1.55;color:#52647b;margin:10px 0 0}
+</style>`);
 async function ganttActionEvents(tab){
-  if(tab==='pcd'||tab==='psd'){
+  if(tab==='psd'){
+    return [...ganttPsdGroups().values()].map(group=>({date:group.date,ewo:String(group.ewo),line:String(group.line),color:String(group.color),
+      action:'First PSD / production start',detail:'First PSD across POs for this line, EWO and color',source:'Planning SQL · selected version'}));
+  }
+  if(tab==='pcd'){
     const events=[];
     for(const r of DATA){ganttActionAdd(events,tab==='pcd'?r.pcddate:r.startdate,r.ewo,r.line,r.color,
       tab==='pcd'?'PCD milestone':'PSD / production start',`Buyer: ${r.buyer||'—'} · PO: ${r.po||'—'}`,'Planning SQL · selected version');}
@@ -195,8 +290,10 @@ async function renderGanttActionCalendar(){
       `<div class="action-month"><button type="button" onclick="ganttActionMoveMonth(-1)" ${idx===0?'disabled':''} aria-label="Previous month">←</button><span>${GANTT_ACTION_MONTHS[month-1]} ${year||'· year not supplied'}</span><button type="button" onclick="ganttActionMoveMonth(1)" ${idx===months.length-1?'disabled':''} aria-label="Next month">→</button><span>${monthEvents.length.toLocaleString('en-US')} events</span></div>`+
       (year?'':'<p class="action-note">Source dates have no year; weekday and overdue status are not inferred.</p>')+
       `<div class="action-grid">${weekday}${cells}</div><h3>${GANTT_ACTION_DAY} ${GANTT_ACTION_MONTHS[month-1]} · ${dayEvents.length.toLocaleString('en-US')} events</h3>`+
-      `<div class="action-events">${details||'<p class="action-note">No events for this day.</p>'}</div>`+
+      (tab==='psd'?'<div id="gantt-psd-table" class="action-note">Loading matching Order Bank and activity reports…</div>':`<div class="action-events">${details||'<p class="action-note">No events for this day.</p>'}</div>`)+
       (dayEvents.length>300?'<p class="action-note">Showing first 300 events. Filter by EWO or line for the rest.</p>':'');
+    if(tab==='psd')renderGanttPsdTable(dayEvents,token).catch(error=>{if(token!==GANTT_ACTION_REQUEST)return;console.warn('PSD activity table source unavailable',error);
+      const slot=document.getElementById('gantt-psd-table');if(slot)slot.innerHTML='<p class="action-note">The activity table could not load. Try Refresh SQL.</p>';});
   }catch(error){if(token!==GANTT_ACTION_REQUEST)return;console.warn('Action calendar source unavailable',error);
     body.innerHTML='<p class="action-note">This calendar could not read its SQL source. Check report access and try again.</p>';}
 }
