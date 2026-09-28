@@ -59,10 +59,13 @@ function ganttPsdGroups(){
   for(const row of DATA){
     const date=ganttActionDate(row.startdate),key=ganttPsdKey(row.line,row.ewo,row.color);
     if(!date?.year||!ganttKey(row.ewo)||!Number(row.line))continue;
-    if(!groups.has(key))groups.set(key,{key,line:row.line,ewo:row.ewo,color:row.color,date,recordIds:new Set()});
+    if(!groups.has(key))groups.set(key,{key,line:row.line,ewo:row.ewo,color:row.color,date,recordIds:new Set(),printFlags:new Set(),embFlags:new Set(),outsourceValues:new Set()});
     const group=groups.get(key);
     if(row.record_id!=null)group.recordIds.add(String(row.record_id));
-    if([date.year,date.month,date.day].join('-').localeCompare([group.date.year,group.date.month,group.date.day].join('-'),undefined,{numeric:true})<0)group.date=date;
+    if(ganttPsdDateKey(date)<ganttPsdDateKey(group.date))group.date=date;
+    if(String(row.print||'').trim())group.printFlags.add(String(row.print).trim().toLowerCase());
+    if(String(row.emb||'').trim())group.embFlags.add(String(row.emb).trim().toLowerCase());
+    if(String(row.outsource||'').trim())group.outsourceValues.add(String(row.outsource).trim());
   }
   return groups;
 }
@@ -94,6 +97,39 @@ async function ganttPsdSources(ewos){
 }
 function ganttPsdDateKey(date){return date?.year?`${date.year}-${String(date.month).padStart(2,'0')}-${String(date.day).padStart(2,'0')}`:'';}
 function ganttPsdStatus(rows,field){return [...new Set(rows.map(r=>String(r.row_data?.[field]||'').trim()).filter(Boolean))].join(' · ')||'—';}
+function ganttPsdFlag(flags){return flags?.has('yes')?'Yes':flags?.has('no')?'No':'—';}
+function ganttPsdSummary(dayEvents,results){
+  const groups=ganttPsdGroups(),plan=ganttPsdPlanTotals(groups),lines=new Map();
+  const orders=results[0]?.status==='fulfilled'?results[0].value:null;
+  const byOrder=new Map();
+  for(const row of orders||[]){const key=ganttKey(row.EWO)+'|'+ganttColorKey(row.GmtColor);
+    byOrder.set(key,(byOrder.get(key)||0)+ganttPsdNumber(row.OrderQty));}
+  for(const event of dayEvents){
+    const group=groups.get(ganttPsdKey(event.line,event.ewo,event.color));if(!group)continue;
+    const line=Number(group.line),ewo=ganttKey(group.ewo);
+    if(!lines.has(line))lines.set(line,{ewos:new Set(),colors:new Set(),order:0,orderKnown:!!orders,plan:0});
+    const item=lines.get(line);item.ewos.add(ewo);
+    const colorKey=ewo+'|'+ganttColorKey(group.color);
+    if(!item.colors.has(colorKey)){
+      item.colors.add(colorKey);
+      if(byOrder.has(colorKey))item.order+=byOrder.get(colorKey);
+      else item.orderKnown=false;
+    }
+    item.plan+=plan.get(group.key)||0;
+  }
+  const fmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2});
+  const counts=[...lines.values()],totalPairs=counts.reduce((n,x)=>n+x.ewos.size,0);
+  const totalPlan=counts.reduce((n,x)=>n+x.plan,0),allOrdersKnown=counts.every(x=>x.orderKnown);
+  const totalOrder=counts.reduce((n,x)=>n+x.order,0);
+  const rows=[...lines.entries()].sort((a,b)=>a[0]-b[0]).map(([line,item])=>`<tr><td class="psd-summary-line">${esc(String(line).padStart(2,'0'))}</td>`+
+    `<td>${item.ewos.size}</td><td class="psd-summary-ewos">${esc([...item.ewos].sort().join(', '))}</td><td>${item.ewos.size}</td>`+
+    `<td>${item.orderKnown?fmt(item.order):'—'}</td><td>${fmt(item.plan)}</td><td>${fmt(Math.round(item.plan/item.ewos.size))}</td></tr>`).join('');
+  return `<div class="psd-summary-head"><span>${esc(GANTT_ACTION_MONTHS[Number(GANTT_ACTION_MONTH.slice(-2))-1]||'')} ${esc(GANTT_ACTION_MONTH.slice(0,4))}</span><strong>PSD Summary · ${esc(dayEvents[0]?.date.label||'Selected date')}</strong></div>`+
+    '<div class="psd-summary-scroll"><table class="psd-summary-table"><thead><tr><th>Line</th><th>Total PSD</th><th>EWO</th><th>Total EWO</th><th>Total Order Qty · pcs</th><th>Total Plan Qty · pcs</th><th>AVG Plan Qty / EWO</th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="7">No PSD for this date.</td></tr>')+'</tbody><tfoot><tr><td class="psd-summary-line">G.Total</td>'+
+    `<td>${totalPairs}</td><td>—</td><td>${totalPairs}</td><td>${allOrdersKnown?fmt(totalOrder):'—'}</td><td>${fmt(totalPlan)}</td><td>${totalPairs?fmt(Math.round(totalPlan/totalPairs)):'—'}</td></tr></tfoot></table></div>`+
+    '<p class="psd-summary-note">Selected Plan · one PSD per Line and EWO, regardless of color. Order Qty follows Order Bank by EWO and color.</p>';
+}
 function ganttPsdTable(dayEvents,results){
   const groups=ganttPsdGroups(),plan=ganttPsdPlanTotals(groups);
   const available=i=>results[i]?.status==='fulfilled';
@@ -119,29 +155,62 @@ function ganttPsdTable(dayEvents,results){
     });
     const cuttingStatus=fabric.length?`${esc([...new Set(fabric.map(r=>String(r.status||'').trim()).filter(Boolean))].join(' · ')||'Cutting report')}<br><small>Cut ${cell(sum(fabric,'total_cut_qty'))} · Balance ${cell(sum(fabric,'cutting_balance'))} pcs</small>`:'—';
     const sizeStatus=available(1)&&size.length?`${esc(ganttPsdStatus(size,'Next Action to Do\n(What)'))}<br><small>When: ${esc(ganttPsdStatus(size,'When'))}</small>`:'—';
-    const activity=(send,receive)=>available(2)&&emb.length?metric(sum(emb,send),sum(emb,receive)):'—';
+    const activity=(send,receive,flag)=>{
+      if(!available(2))return '—';
+      const sent=sum(emb,send)||0,received=sum(emb,receive)||0;
+      return sent||received?metric(sent,received):`<strong class="psd-flag ${flag==='Yes'?'yes':'no'}">${esc(flag)}</strong>`;
+    };
+    const outsource=group.outsourceValues.size?`<strong class="psd-flag yes">Yes</strong><br><small>${esc([...group.outsourceValues].join(' · '))}</small>`:'<strong class="psd-flag no">No</strong>';
     return `<tr><td><strong>${esc(String(group.line).padStart(2,'0'))}</strong></td><td><strong>${esc(group.ewo)}</strong></td><td>${esc(group.color)}</td>`+
       `<td class="psd-num">${available(0)?cell(sum(order,'OrderQty')):'—'}</td><td class="psd-num">${fmt(plan.get(group.key)||0)}</td><td>${esc(group.date.label)}</td>`+
       `<td class="psd-num">${cell(sum(fabric,'fabric_booking_qty'))}</td><td class="psd-num">${cell(sum(fabric,'total_fabric_received'))}</td><td class="psd-num">${cell(sum(fabric,'fabric_balance'))}</td>`+
-      `<td>${sizeStatus}</td><td>${cuttingStatus}</td><td>${activity('Today EMB Send Qty','Today EMB Receive Qty')}</td><td>${activity('Today Print Send Qty\n',' Today Print Receive Qty')}</td></tr>`;
+      `<td>${sizeStatus}</td><td>${cuttingStatus}</td><td>${activity('Today EMB Send Qty','Today EMB Receive Qty',ganttPsdFlag(group.embFlags))}</td><td>${activity('Today Print Send Qty\n',' Today Print Receive Qty',ganttPsdFlag(group.printFlags))}</td><td>${outsource}</td></tr>`;
   }).join('');
   const missing=['Order Bank','Size Set','Embellishment'].filter((_,i)=>!available(i));
-  const columns=['Line','EWO','Color','Order Qty · pcs','Cumulative Plan Qty · pcs','First PSD','Fabrics Booking · kg','Fabrics Received · kg','Fabrics Balance · kg','Size Set status','Cutting status','Embroidery status','Print status'];
+  const columns=['Line','EWO','Color','Order Qty · pcs','Cumulative Plan Qty · pcs','First PSD','Fabrics Booking · kg','Fabrics Received · kg','Fabrics Balance · kg','Size Set status','Cutting status','Embroidery status','Print status','Outsource status'];
   return `<div class="psd-table-title"><strong>Line-wise PSD & prior activity</strong><span>${dayEvents.length} Line–EWO–Color rows</span></div>`+
     '<div class="psd-table-scroll"><table class="psd-table"><thead><tr>'+columns.map(label=>`<th scope="col">${esc(label)}</th>`).join('')+'</tr></thead><tbody>'+
-    (rows||'<tr><td colspan="13">No Line–EWO–Color starts on this date.</td></tr>')+'</tbody></table></div>'+
-    '<p class="psd-table-note">First PSD across POs for each Line–EWO–Color in the selected Plan. Plan Qty covers all Plan/Day dates. Embroidery and Print include dated activity through PSD; Fabric/Cutting and Size Set are current report snapshots.'+
+    (rows||'<tr><td colspan="14">No Line–EWO–Color starts on this date.</td></tr>')+'</tbody></table></div>'+
+    '<p class="psd-table-note">First PSD across POs for each Line–EWO–Color in the selected Plan. Plan Qty covers all Plan/Day dates. Embroidery and Print include dated activity through PSD; without activity they show the selected Plan’s Yes/No flag. Outsource follows the selected Plan. Fabric/Cutting and Size Set are current report snapshots.'+
     (missing.length?' Unavailable report access: '+esc(missing.join(', '))+'.':'')+'</p>';
 }
 async function renderGanttPsdTable(dayEvents,token){
-  const slot=document.getElementById('gantt-psd-table');if(!slot)return;
-  if(!dayEvents.length){slot.innerHTML=ganttPsdTable([],[]);return;}
+  const slot=document.getElementById('gantt-psd-table'),summary=document.getElementById('gantt-psd-summary');if(!slot)return;
+  if(!dayEvents.length){slot.innerHTML=ganttPsdTable([],[]);if(summary)summary.innerHTML=ganttPsdSummary([],[]);return;}
   const result=await ganttPsdSources(dayEvents.map(e=>e.ewo));
   if(token!==GANTT_ACTION_REQUEST||GANTT_ACTION_TAB!=='psd')return;
+  if(summary)summary.innerHTML=ganttPsdSummary(dayEvents,result);
   slot.innerHTML=ganttPsdTable(dayEvents,result);
 }
 document.head.insertAdjacentHTML('beforeend',`<style>
 #gantt-psd-table{margin-top:18px;color:#17263d}.psd-table-title{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 19px;background:#fff;border:1px solid #e0e7ef;border-bottom:0;border-radius:14px 14px 0 0}.psd-table-title strong{font-size:16px}.psd-table-title span{font-size:13px;color:#496684}.psd-table-scroll{overflow:auto;background:#fff;border:1px solid #e0e7ef;border-radius:0 0 14px 14px}.psd-table{border-collapse:separate;border-spacing:0;min-width:1500px;width:100%;font-size:13px}.psd-table th{background:#eaf1fa;color:#294265;text-align:left;font-size:12px;white-space:nowrap;padding:12px 13px;border-bottom:1px solid #cfdce9}.psd-table td{padding:14px 13px;min-width:85px;vertical-align:top;border-bottom:1px solid #e9eef5;line-height:1.5}.psd-table tbody tr:hover{background:#f4f9ff}.psd-table td small{color:#63768c}.psd-table .psd-num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}.psd-table-note{font-size:13px;line-height:1.55;color:#52647b;margin:10px 0 0}
+</style>`);
+document.head.insertAdjacentHTML('beforeend',`<style>
+#s11 .psd-overview{display:grid;grid-template-columns:minmax(315px,365px) minmax(0,1fr);gap:14px;align-items:start;margin:12px 0 16px}
+#s11 .psd-compact-calendar,#s11 .psd-summary{background:#fff;border:1px solid #d9e5ee;border-radius:10px;padding:12px;min-width:0}
+#s11 .psd-compact-calendar .action-month{justify-content:center;gap:9px;margin:0 0 9px;font-size:12px}
+#s11 .psd-compact-calendar .action-month button{padding:4px 8px}
+#s11 .psd-compact-calendar .action-grid{gap:3px}
+#s11 .psd-compact-calendar .action-day{min-height:38px;padding:3px 4px;text-align:center;border-radius:5px}
+#s11 .psd-compact-calendar .action-day b{font-size:11px}
+#s11 .psd-compact-calendar .action-day small{font-size:8px;margin-top:1px}
+#s11 .psd-summary{padding:10px 12px}
+#s11 .psd-summary-head{display:grid;grid-template-columns:86px 1fr;text-align:center;border:1px solid #34485b;border-bottom:0;color:#405c77;font-size:13px;font-weight:800}
+#s11 .psd-summary-head span{border-right:1px solid #34485b;padding:5px}
+#s11 .psd-summary-head strong{padding:5px}
+#s11 .psd-summary-scroll{overflow:auto;max-height:259px;border:1px solid #34485b}
+#s11 .psd-summary-table{width:100%;min-width:790px;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+#s11 .psd-summary-table th{background:#fffbc8;color:#1f2937;border:1px solid #6e7c86;padding:7px 4px;text-align:center;line-height:1.25}
+#s11 .psd-summary-table td{border:1px solid #9da9b2;padding:6px;text-align:center}
+#s11 .psd-summary-table .psd-summary-line{background:#989ca0;color:white;font-weight:800;text-align:left}
+#s11 .psd-summary-table .psd-summary-ewos{text-align:left}
+#s11 .psd-summary-table tfoot{position:sticky;bottom:0}
+#s11 .psd-summary-table tfoot td:not(.psd-summary-line){background:#f7f8f9;color:#e87900;font-weight:800}
+#s11 .psd-summary-note{font-size:11px;color:#60778d;margin:8px 0 0;line-height:1.4}
+#s11 .psd-flag{display:inline-block;padding:3px 8px;border-radius:5px;font-size:12px}
+#s11 .psd-flag.yes{background:#e3f4e9;color:#176b44}
+#s11 .psd-flag.no{background:#edf1f4;color:#536779}
+@media(max-width:900px){#s11 .psd-overview{grid-template-columns:1fr}}
 </style>`);
 async function ganttActionEvents(tab){
   if(tab==='psd'){
@@ -214,6 +283,12 @@ function showGanttActionTab(tab){
 }
 function ganttActionPickMonth(month){GANTT_ACTION_MONTH=month;GANTT_ACTION_DAY=0;renderGanttActionCalendar();}
 function ganttActionPickDay(day){GANTT_ACTION_DAY=Number(day);renderGanttActionCalendar();}
+function ganttActionLines(event){return String(event.line||'').split('/').map(x=>Number(x.trim())).filter(Boolean);}
+function ganttActionSelect(id,values,label){
+  const select=document.getElementById(id),selected=select?.value||'';if(!select)return '';
+  select.innerHTML=`<option value="">All ${label}</option>`+values.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+  select.value=values.includes(selected)?selected:'';return select.value;
+}
 function ganttActionMoveMonth(delta){
   const months=[...document.getElementById('action-month-select').options].map(x=>x.value);
   const next=months[months.indexOf(GANTT_ACTION_MONTH)+delta];if(next)ganttActionPickMonth(next);
@@ -250,9 +325,13 @@ async function renderGanttActionCalendar(){
       return true;
     });
     const ewo=document.getElementById('action-ewo')?.value.trim().toUpperCase()||'';
-    const line=document.getElementById('action-line')?.value.trim().toUpperCase()||'';
-    const color=document.getElementById('action-color')?.value.trim().toUpperCase()||'';
-    events=events.filter(e=>(!ewo||e.ewo.toUpperCase().includes(ewo))&&(!line||e.line.toUpperCase().includes(line))&&(!color||e.color.toUpperCase().includes(color)));
+    if(ewo)events=events.filter(e=>e.ewo.toUpperCase().includes(ewo));
+    const lines=[...new Set(events.flatMap(ganttActionLines))].sort((a,b)=>a-b).map(x=>String(x).padStart(2,'0'));
+    const line=ganttActionSelect('action-line',lines,'lines');
+    if(line)events=events.filter(e=>ganttActionLines(e).includes(Number(line)));
+    const colors=[...new Set(events.map(e=>String(e.color||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    const color=ganttActionSelect('action-color',colors,'colors');
+    if(color)events=events.filter(e=>ganttColorKey(e.color)===ganttColorKey(color));
     const types=[...new Set(events.map(e=>e.source.split(' · ').at(-1)))].sort();
     const typeSelect=document.getElementById('action-type');const selectedType=typeSelect?.value||'';
     if(typeSelect){typeSelect.innerHTML='<option value="">All event types</option>'+types.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');typeSelect.value=types.includes(selectedType)?selectedType:'';}
@@ -285,11 +364,13 @@ async function renderGanttActionCalendar(){
     const details=dayEvents.slice(0,300).map(e=>`<div class="action-event"><strong>EWO ${esc(e.ewo)} · ${esc(e.action)}</strong><div>${e.line?'Line '+esc(e.line)+' · ':''}${e.color?'Color '+esc(e.color)+' · ':''}${esc(e.detail)}</div><small>${esc(e.source)}</small></div>`).join('');
     const idx=months.indexOf(GANTT_ACTION_MONTH);
     const counts=[['Events',monthEvents.length],['EWOs',new Set(monthEvents.map(e=>ganttKey(e.ewo))).size],['Active dates',groups.size],['Colors',new Set(monthEvents.map(e=>ganttColorKey(e.color)).filter(Boolean)).size]];
+    const calendar=`<div class="action-month"><button type="button" onclick="ganttActionMoveMonth(-1)" ${idx===0?'disabled':''} aria-label="Previous month">←</button><span>${GANTT_ACTION_MONTHS[month-1]} ${year||'· year not supplied'}</span><button type="button" onclick="ganttActionMoveMonth(1)" ${idx===months.length-1?'disabled':''} aria-label="Next month">→</button><span>${monthEvents.length.toLocaleString('en-US')} events</span></div>`+
+      (year?'':'<p class="action-note">Source dates have no year; weekday and overdue status are not inferred.</p>')+
+      `<div class="action-grid">${weekday}${cells}</div>`;
     body.innerHTML=banner+(GANTT_ACTION_NOTICE?`<p class="action-note">${esc(GANTT_ACTION_NOTICE)}</p>`:'')+
       '<div class="action-kpis">'+counts.map(([name,value])=>`<div class="action-kpi">${esc(name)}<strong>${value.toLocaleString('en-US')}</strong></div>`).join('')+'</div>'+
-      `<div class="action-month"><button type="button" onclick="ganttActionMoveMonth(-1)" ${idx===0?'disabled':''} aria-label="Previous month">←</button><span>${GANTT_ACTION_MONTHS[month-1]} ${year||'· year not supplied'}</span><button type="button" onclick="ganttActionMoveMonth(1)" ${idx===months.length-1?'disabled':''} aria-label="Next month">→</button><span>${monthEvents.length.toLocaleString('en-US')} events</span></div>`+
-      (year?'':'<p class="action-note">Source dates have no year; weekday and overdue status are not inferred.</p>')+
-      `<div class="action-grid">${weekday}${cells}</div><h3>${GANTT_ACTION_DAY} ${GANTT_ACTION_MONTHS[month-1]} · ${dayEvents.length.toLocaleString('en-US')} events</h3>`+
+      (tab==='psd'?`<div class="psd-overview"><div class="psd-compact-calendar">${calendar}</div><section id="gantt-psd-summary" class="psd-summary">Loading PSD summary…</section></div>`:calendar)+
+      `<h3>${GANTT_ACTION_DAY} ${GANTT_ACTION_MONTHS[month-1]} · ${dayEvents.length.toLocaleString('en-US')} events</h3>`+
       (tab==='psd'?'<div id="gantt-psd-table" class="action-note">Loading matching Order Bank and activity reports…</div>':`<div class="action-events">${details||'<p class="action-note">No events for this day.</p>'}</div>`)+
       (dayEvents.length>300?'<p class="action-note">Showing first 300 events. Filter by EWO or line for the rest.</p>':'');
     if(tab==='psd')renderGanttPsdTable(dayEvents,token).catch(error=>{if(token!==GANTT_ACTION_REQUEST)return;console.warn('PSD activity table source unavailable',error);

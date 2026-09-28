@@ -2443,8 +2443,8 @@ input,select,textarea{
     </div>
     <div id="gantt-action-view" hidden><div class="action-tools">
       <input type="search" id="action-ewo" placeholder="Filter EWO" aria-label="Filter action calendar EWO" oninput="renderGanttActionCalendar()">
-      <input type="search" id="action-line" placeholder="Filter line" aria-label="Filter action calendar line" oninput="renderGanttActionCalendar()">
-      <input type="search" id="action-color" placeholder="Filter color" aria-label="Filter action calendar color" oninput="renderGanttActionCalendar()">
+      <select id="action-line" aria-label="Filter action calendar line" onchange="renderGanttActionCalendar()"><option value="">All lines</option></select>
+      <select id="action-color" aria-label="Filter action calendar color" onchange="renderGanttActionCalendar()"><option value="">All colors</option></select>
       <select id="action-type" aria-label="Filter action type" onchange="renderGanttActionCalendar()"><option value="">All event types</option></select>
       <select id="action-month-select" aria-label="Select calendar month" onchange="ganttActionPickMonth(this.value)"></select>
       <button type="button" onclick="ganttActionToday()">Today</button>
@@ -3677,7 +3677,7 @@ async function sbAll(table,select,filters=[]){
 async function fetchPlanningSnapshot(upload){
   const [records,daily]=await Promise.all([
     sbPaged(()=>SB.from('plan_records')
-      .select('id,source_row,line_no,buyer,product_type,product,ewo,po,col,order_qty,pcd,delivery,psd,pfd,manpower,smv,criteria,total,is_summary_row')
+      .select('id,source_row,line_no,buyer,product_type,product,ewo,po,col,print,emb,outsource,order_qty,pcd,delivery,psd,pfd,manpower,smv,criteria,total,is_summary_row')
       .eq('upload_id',upload.id).eq('is_summary_row',false)
       .in('criteria',['Plan/Day','SAH/Day','Clock Hour/Day','Effi/Day'])
       .order('source_row',{ascending:true}).order('id',{ascending:true})),
@@ -3699,6 +3699,7 @@ async function fetchPlanningSnapshot(upload){
   const DATA_LOCAL=planRows.map(r=>({
     record_id:r.id,month:monthFromISO(r.psd||r.pfd||r.delivery),line:lineNumber(r.line_no),
     ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),buyer:r.buyer||'',color:r.col||'',po:r.po||'',
+    print:r.print||'',emb:r.emb||'',outsource:r.outsource||'',
     style:dashboardStyle(r.product_type||r.product),manpower:N(r.manpower),smv:N(r.smv),
     orderqty:N(r.order_qty),planqty:N(r.total),deliverydate:r.delivery||'',pcddate:r.pcd||'',
     startdate:r.psd||'',enddate:r.pfd||''
