@@ -173,7 +173,7 @@ function ganttPsdTable(dayEvents,results){
   }).join('');
   const missing=['Order Bank','Size Set','Embellishment'].filter((_,i)=>!available(i));
   const columns=['Line','EWO','Color','Order Qty · pcs','Cumulative Plan Qty · pcs','First PSD','Fabrics Booking · kg','Fabrics Received · kg','Fabrics Balance · kg','Size Set status','Cutting status','Embroidery status','Print status','Outsource status'];
-  return `<div class="psd-table-title"><strong>Line-wise PSD & prior activity</strong><span class="psd-title-actions"><span>${dayEvents.length} Line–EWO–Color rows</span><button type="button" id="gantt-psd-excel" onclick="exportGanttPsdExcel()" title="Export all rows and columns to Excel">Export Excel</button><button type="button" id="gantt-psd-copy" onclick="copyGanttPsdTableImage()" title="Copy all PSD table rows and columns as an image">Copy full table</button></span></div>`+
+  return `<div class="psd-table-title"><strong>Line-wise PSD & prior activity</strong><span class="psd-title-actions"><span>${dayEvents.length} Line–EWO–Color rows</span><a id="gantt-psd-excel" href="#" onclick="return exportGanttPsdExcel(event)" title="Download every PSD table row and column as Excel">Export Excel</a><button type="button" id="gantt-psd-copy" onclick="copyGanttPsdTableImage()" title="Copy all PSD table rows and columns as an image">Copy full table</button></span></div>`+
     '<div class="psd-table-scroll"><table class="psd-table"><thead><tr>'+columns.map(label=>`<th scope="col">${esc(label)}</th>`).join('')+'</tr></thead><tbody>'+
     (rows||'<tr><td colspan="14">No Line–EWO–Color starts on this date.</td></tr>')+'</tbody></table></div>'+
     '<p class="psd-table-note">First PSD across POs for each Line–EWO–Color in the selected Plan. Plan Qty covers all Plan/Day dates. Embroidery and Print include dated activity through PSD; without activity they show the selected Plan’s Yes/No flag. Outsource follows the selected Plan. Fabric/Cutting and Size Set are current report snapshots.'+
@@ -275,15 +275,29 @@ function ganttPsdExcelFile(rows){
   e.setUint32(12,centralSize,true);e.setUint32(16,offset,true);
   return new Blob([...parts,...central,end],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 }
-function exportGanttPsdExcel(){
-  const table=document.querySelector('#gantt-psd-table .psd-table');if(!table)return;
-  const rows=[...table.querySelectorAll('tr')].map(tr=>[...tr.querySelectorAll('th,td')].map(cell=>{
-    const copy=cell.cloneNode(true);copy.querySelectorAll('br').forEach(br=>br.replaceWith(' | '));
-    return (copy.textContent||'').replace(/\s+/g,' ').trim();
-  }));
-  const url=URL.createObjectURL(ganttPsdExcelFile(rows)),link=document.createElement('a');
-  link.href=url;link.download=`EKWL_PSD_activity_${GANTT_ACTION_MONTH}_${GANTT_ACTION_DAY}.xlsx`;link.click();
-  setTimeout(()=>URL.revokeObjectURL(url),30000);
+function exportGanttPsdExcel(event){
+  const link=event?.currentTarget,table=document.querySelector('#gantt-psd-table .psd-table');
+  if(!link||!table){event?.preventDefault();return false;}
+  try{
+    // Read the actual table DOM, including rows and columns outside the scroll viewport.
+    const rows=[...table.rows].map(tr=>[...tr.cells].map(cell=>{
+      const copy=cell.cloneNode(true);copy.querySelectorAll('br').forEach(br=>br.replaceWith(' | '));
+      return (copy.textContent||'').replace(/\s+/g,' ').trim();
+    }));
+    if(rows.length<2)throw Error('No PSD activity rows available for this date');
+    const url=URL.createObjectURL(ganttPsdExcelFile(rows));
+    link.href=url;
+    link.download=`EKWL_PSD_activity_${GANTT_ACTION_MONTH}_${GANTT_ACTION_DAY}.xlsx`;
+    link.textContent='Downloading…';
+    // Keep the link in the document and let the browser handle its real click.
+    // A synthetic click on a detached anchor can be blocked by an embedded browser.
+    setTimeout(()=>{URL.revokeObjectURL(url);link.removeAttribute('download');link.href='#';link.textContent='Export Excel';},60000);
+    return true;
+  }catch(error){
+    event.preventDefault();console.warn('PSD Excel export unavailable',error);
+    link.textContent='Export failed · retry';setTimeout(()=>link.textContent='Export Excel',3500);
+    return false;
+  }
 }
 async function renderGanttPsdTable(dayEvents,token){
   const slot=document.getElementById('gantt-psd-table'),summary=document.getElementById('gantt-psd-summary');if(!slot)return;
@@ -320,6 +334,7 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 #s11 .psd-summary-table .psd-summary-products{text-align:left;min-width:150px}
 #s11 .psd-title-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 #s11 #gantt-psd-copy,#s11 #gantt-psd-excel,#s11 #gantt-psd-summary-copy{border:1px solid #cad8e9;background:#eaf1fa;color:#173960;border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer}
+#s11 #gantt-psd-excel{text-decoration:none;display:inline-flex;align-items:center}
 #s11 #gantt-psd-copy:hover,#s11 #gantt-psd-excel:hover,#s11 #gantt-psd-summary-copy:hover{background:#d8e8fb}
 #s11 #gantt-psd-copy:disabled,#s11 #gantt-psd-summary-copy:disabled{opacity:.65;cursor:wait}
 #s11 .psd-summary-table tfoot{position:sticky;bottom:0}
