@@ -163,7 +163,7 @@ async function loadEmbellishmentModule(force=false){
   }
 }
 async function uploadEmbellishmentFile(){
-  if(!siteIsAdmin()){emMessage('em-upload-msg','Admin access required.');return;}
+  if(!siteHasPerm('embellishment_upload')){emMessage('em-upload-msg','Embellishment Upload permission required.');return;}
   const file=document.getElementById('em-file')?.files?.[0];
   if(!file){emMessage('em-upload-msg','Select Embellishment Send Receive.csv first.');return;}
   const button=document.getElementById('em-upload-btn');button.disabled=true;

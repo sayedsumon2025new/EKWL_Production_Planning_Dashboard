@@ -2135,7 +2135,7 @@ input,select,textarea{
     </div>
     <div id="upload-panel-embellishment" class="upload-report-panel" style="display:none">
       <div class="card" style="margin-top:12px">
-        <div class="card-title">🎨 Embellishment Send Receive · Daily CSV <span class="ct-right">ADMIN ONLY</span></div>
+        <div class="card-title">🎨 Embellishment Send Receive · Daily CSV <span class="ct-right">UPLOAD PERMISSION</span></div>
         <div class="ac-controls">
           <label>CSV file<input id="em-file" type="file" accept=".csv,text/csv" onchange="previewEmbellishmentFile()"></label>
           <button id="em-upload-btn" type="button" class="top-btn primary" onclick="uploadEmbellishmentFile()">Upload &amp; Activate SQL Snapshot</button>
@@ -3478,7 +3478,7 @@ function applySitePermissions(){
   });
 
   // Upload/Data Control is visible only when at least one upload permission exists.
-  const canAnyUpload=siteHasPerm('planning_upload')||siteHasPerm('fabric')||siteHasPerm('sewing')||siteHasPerm('production')||siteIsAdmin()||siteHasPerm('admin_settings');
+  const canAnyUpload=siteHasPerm('planning_upload')||siteHasPerm('fabric')||siteHasPerm('sewing')||siteHasPerm('production')||siteHasPerm('embellishment_upload')||siteIsAdmin()||siteHasPerm('admin_settings');
   document.querySelectorAll('[data-upload-launch]').forEach(el=>el.style.display=canAnyUpload?'':'none');
 
   // Admin/User modules are additionally role protected.
@@ -5823,7 +5823,7 @@ function getDashboardSlideRegistry(){
 }
 function getUserPermissionKeys(){
   const slideKeys=getDashboardSlideRegistry().map(x=>x.key);
-  return [...new Set([...slideKeys,'planning_upload','fabric','sewing','production'])];
+  return [...new Set([...slideKeys,'planning_upload','fabric','sewing','production','embellishment_upload'])];
 }
 function getMaxDashboardSlide(){
   const nums=[...document.querySelectorAll('.slide[data-logical-slide]')]
@@ -5905,7 +5905,8 @@ async function loadSiteUsers(){
     {key:'planning_upload',title:'Plan Upload'},
     {key:'fabric',title:'Fabric Upload'},
     {key:'sewing',title:'Sewing Upload'},
-    {key:'production',title:'Production Upload'}
+    {key:'production',title:'Production Upload'},
+    {key:'embellishment_upload',title:'Embellishment Upload'}
   ];
   const totalCols=4+slides.length+fixedPerms.length+1;
 
@@ -6189,7 +6190,7 @@ document.addEventListener('keydown',e=>{
 /* ══ INTEGRATED SUPABASE CSV UPLOAD ════════════ */
 function openUploadModal(){
   setTimeout(refreshUploadReportOptions,0);
-  const canAny=siteHasPerm('planning_upload')||siteHasPerm('fabric')||siteHasPerm('sewing')||siteHasPerm('production');
+  const canAny=siteHasPerm('planning_upload')||siteHasPerm('fabric')||siteHasPerm('sewing')||siteHasPerm('production')||siteHasPerm('embellishment_upload')||siteIsAdmin()||siteHasPerm('admin_settings');
   if(!canAny){alert('Upload / Data Control access আপনার জন্য অনুমোদিত নয়।');return}
   document.getElementById('upload-modal').classList.add('open');
   refreshSbAuth();
@@ -6825,7 +6826,7 @@ function refreshUploadReportOptions(){
     orderbank:siteIsAdmin()||siteHasPerm('admin_settings'),
     sizeset:siteIsAdmin(),
     accessories:siteIsAdmin(),
-    embellishment:siteIsAdmin()
+    embellishment:siteHasPerm('embellishment_upload')
   };
   [...sel.options].forEach(o=>o.hidden=!allowed[o.value]);
   const chosen=[...sel.options].find(o=>o.value===sel.value&&!o.hidden)||[...sel.options].find(o=>!o.hidden);
