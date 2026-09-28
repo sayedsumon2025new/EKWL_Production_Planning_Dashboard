@@ -59,13 +59,14 @@ function ganttPsdGroups(){
   for(const row of DATA){
     const date=ganttActionDate(row.startdate),key=ganttPsdKey(row.line,row.ewo,row.color);
     if(!date?.year||!ganttKey(row.ewo)||!Number(row.line))continue;
-    if(!groups.has(key))groups.set(key,{key,line:row.line,ewo:row.ewo,color:row.color,date,recordIds:new Set(),printFlags:new Set(),embFlags:new Set(),outsourceValues:new Set()});
+    if(!groups.has(key))groups.set(key,{key,line:row.line,ewo:row.ewo,color:row.color,date,recordIds:new Set(),printFlags:new Set(),embFlags:new Set(),outsourceValues:new Set(),products:new Set()});
     const group=groups.get(key);
     if(row.record_id!=null)group.recordIds.add(String(row.record_id));
     if(ganttPsdDateKey(date)<ganttPsdDateKey(group.date))group.date=date;
     if(String(row.print||'').trim())group.printFlags.add(String(row.print).trim().toLowerCase());
     if(String(row.emb||'').trim())group.embFlags.add(String(row.emb).trim().toLowerCase());
     if(String(row.outsource||'').trim())group.outsourceValues.add(String(row.outsource).trim());
+    if(String(row.productName||'').trim())group.products.add(String(row.productName).trim());
   }
   return groups;
 }
@@ -107,8 +108,9 @@ function ganttPsdSummary(dayEvents,results){
   for(const event of dayEvents){
     const group=groups.get(ganttPsdKey(event.line,event.ewo,event.color));if(!group)continue;
     const line=Number(group.line),ewo=ganttKey(group.ewo);
-    if(!lines.has(line))lines.set(line,{ewos:new Set(),colors:new Set(),order:0,orderKnown:!!orders,plan:0});
+    if(!lines.has(line))lines.set(line,{ewos:new Set(),products:new Set(),colors:new Set(),order:0,orderKnown:!!orders,plan:0});
     const item=lines.get(line);item.ewos.add(ewo);
+    for(const product of group.products)item.products.add(product);
     const colorKey=ewo+'|'+ganttColorKey(group.color);
     if(!item.colors.has(colorKey)){
       item.colors.add(colorKey);
@@ -122,12 +124,12 @@ function ganttPsdSummary(dayEvents,results){
   const totalPlan=counts.reduce((n,x)=>n+x.plan,0),allOrdersKnown=counts.every(x=>x.orderKnown);
   const totalOrder=counts.reduce((n,x)=>n+x.order,0);
   const rows=[...lines.entries()].sort((a,b)=>a[0]-b[0]).map(([line,item])=>`<tr><td class="psd-summary-line">${esc(String(line).padStart(2,'0'))}</td>`+
-    `<td>${item.ewos.size}</td><td class="psd-summary-ewos">${esc([...item.ewos].sort().join(', '))}</td><td>${item.ewos.size}</td>`+
+    `<td>${item.ewos.size}</td><td class="psd-summary-products">${item.products.size?esc([...item.products].sort().join(' · ')):'—'}</td><td class="psd-summary-ewos">${esc([...item.ewos].sort().join(', '))}</td><td>${item.ewos.size}</td>`+
     `<td>${item.orderKnown?fmt(item.order):'—'}</td><td>${fmt(item.plan)}</td><td>${fmt(Math.round(item.plan/item.ewos.size))}</td></tr>`).join('');
   return `<div class="psd-summary-head"><span>${esc(GANTT_ACTION_MONTHS[Number(GANTT_ACTION_MONTH.slice(-2))-1]||'')} ${esc(GANTT_ACTION_MONTH.slice(0,4))}</span><strong>PSD Summary · ${esc(dayEvents[0]?.date.label||'Selected date')}</strong></div>`+
-    '<div class="psd-summary-scroll"><table class="psd-summary-table"><thead><tr><th>Line</th><th>Total PSD</th><th>EWO</th><th>Total EWO</th><th>Total Order Qty · pcs</th><th>Total Plan Qty · pcs</th><th>AVG Plan Qty / EWO</th></tr></thead><tbody>'+
-    (rows||'<tr><td colspan="7">No PSD for this date.</td></tr>')+'</tbody><tfoot><tr><td class="psd-summary-line">G.Total</td>'+
-    `<td>${totalPairs}</td><td>—</td><td>${totalPairs}</td><td>${allOrdersKnown?fmt(totalOrder):'—'}</td><td>${fmt(totalPlan)}</td><td>${totalPairs?fmt(Math.round(totalPlan/totalPairs)):'—'}</td></tr></tfoot></table></div>`+
+    '<div class="psd-summary-scroll"><table class="psd-summary-table"><thead><tr><th>Line</th><th>Total PSD</th><th>Plan Product Name</th><th>EWO</th><th>Total EWO</th><th>Total Order Qty · pcs</th><th>Total Plan Qty · pcs</th><th>AVG Plan Qty / EWO</th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="8">No PSD for this date.</td></tr>')+'</tbody><tfoot><tr><td class="psd-summary-line">G.Total</td>'+
+    `<td>${totalPairs}</td><td>—</td><td>—</td><td>${totalPairs}</td><td>${allOrdersKnown?fmt(totalOrder):'—'}</td><td>${fmt(totalPlan)}</td><td>${totalPairs?fmt(Math.round(totalPlan/totalPairs)):'—'}</td></tr></tfoot></table></div>`+
     '<p class="psd-summary-note">Selected Plan · one PSD per Line and EWO, regardless of color. Order Qty follows Order Bank by EWO and color.</p>';
 }
 function ganttPsdTable(dayEvents,results){
@@ -199,11 +201,12 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 #s11 .psd-summary-head span{border-right:1px solid #34485b;padding:5px}
 #s11 .psd-summary-head strong{padding:5px}
 #s11 .psd-summary-scroll{overflow:auto;max-height:259px;border:1px solid #34485b}
-#s11 .psd-summary-table{width:100%;min-width:790px;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+#s11 .psd-summary-table{width:100%;min-width:940px;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
 #s11 .psd-summary-table th{background:#fffbc8;color:#1f2937;border:1px solid #6e7c86;padding:7px 4px;text-align:center;line-height:1.25}
 #s11 .psd-summary-table td{border:1px solid #9da9b2;padding:6px;text-align:center}
 #s11 .psd-summary-table .psd-summary-line{background:#989ca0;color:white;font-weight:800;text-align:left}
 #s11 .psd-summary-table .psd-summary-ewos{text-align:left}
+#s11 .psd-summary-table .psd-summary-products{text-align:left;min-width:150px}
 #s11 .psd-summary-table tfoot{position:sticky;bottom:0}
 #s11 .psd-summary-table tfoot td:not(.psd-summary-line){background:#f7f8f9;color:#e87900;font-weight:800}
 #s11 .psd-summary-note{font-size:11px;color:#60778d;margin:8px 0 0;line-height:1.4}

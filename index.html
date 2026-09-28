@@ -3699,7 +3699,7 @@ async function fetchPlanningSnapshot(upload){
   const DATA_LOCAL=planRows.map(r=>({
     record_id:r.id,month:monthFromISO(r.psd||r.pfd||r.delivery),line:lineNumber(r.line_no),
     ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,''),buyer:r.buyer||'',color:r.col||'',po:r.po||'',
-    print:r.print||'',emb:r.emb||'',outsource:r.outsource||'',
+    print:r.print||'',emb:r.emb||'',outsource:r.outsource||'',productName:String(r.product||'').trim(),
     style:dashboardStyle(r.product_type||r.product),manpower:N(r.manpower),smv:N(r.smv),
     orderqty:N(r.order_qty),planqty:N(r.total),deliverydate:r.delivery||'',pcddate:r.pcd||'',
     startdate:r.psd||'',enddate:r.pfd||''
