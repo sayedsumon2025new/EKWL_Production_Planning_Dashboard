@@ -49,13 +49,31 @@ function emDateTime(value){
 }
 function parseEmbellishmentCSV(text){
   const records=parseEmbellishmentRecords(text),headers=records.shift();
-  if(!headers||headers.length!==21||headers.some((header,i)=>header!==EM_HEADERS[i]))
-    throw Error('CSV headings must match all 21 source columns in the original order, including whitespace and the last blank heading.');
-  if(!records.length||records.length>100000)throw Error('CSV must contain 1–100,000 data rows.');
-  return records.map((cells,i)=>{
-    if(cells.length!==21)throw Error(`CSV row ${i+2}: expected 21 cells, got ${cells.length}.`);
-    if(!Number.isFinite(emDateTime(cells[1])))throw Error(`CSV row ${i+2}: invalid Date. Expected D-Mon-YY.`);
-    const values=Object.fromEntries(EM_HEADERS.map((header,j)=>[j===20?'csv_column_21':header,cells[j]]));
+  if(!headers)throw Error('CSV headings are missing.');
+  // Report exports differ in line breaks, spacing, case and sometimes omit the
+  // final unnamed column. Match by name; keep the original cell text unchanged.
+  const key=header=>String(header).replace(/[\u00a0\s]+/g,' ').trim().toLowerCase();
+  const expected=EM_HEADERS.slice(0,20).map(key),positions=new Map();
+  headers.forEach((header,index)=>{
+    const name=key(header);
+    if(!name)return;
+    if(positions.has(name))throw Error(`Duplicate CSV heading: ${header.trim()}`);
+    positions.set(name,index);
+  });
+  const missing=expected.filter(name=>!positions.has(name));
+  const unexpected=[...positions.keys()].filter(name=>!expected.includes(name));
+  if(missing.length||unexpected.length)
+    throw Error(`CSV headings do not match the Embellishment report.${missing.length?' Missing: '+missing.join(', ')+'.':''}${unexpected.length?' Unexpected: '+unexpected.join(', ')+'.':''}`);
+  const unnamed=headers.findIndex(header=>!key(header)),indices=expected.map(name=>positions.get(name));
+  const data=records.filter(cells=>cells.length!==1||cells[0]!=='');
+  if(!data.length||data.length>100000)throw Error('CSV must contain 1–100,000 data rows.');
+  return data.map((cells,i)=>{
+    if(cells.length>headers.length&&cells.slice(headers.length).some(value=>value!==''))
+      throw Error(`CSV row ${i+2}: unexpected data after the report columns.`);
+    if(indices.some(index=>index>=cells.length))throw Error(`CSV row ${i+2}: one or more report cells are missing.`);
+    if(!Number.isFinite(emDateTime(cells[indices[1]])))throw Error(`CSV row ${i+2}: invalid Date. Expected D-Mon-YY.`);
+    const values=Object.fromEntries(EM_HEADERS.map((header,j)=>
+      [j===20?'csv_column_21':header,j===20?(unnamed<0?'':(cells[unnamed]??'')):cells[indices[j]]]));
     return {source_row_no:i+2,...values};
   });
 }

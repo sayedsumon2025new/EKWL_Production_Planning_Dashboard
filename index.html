@@ -6795,6 +6795,10 @@ async function uploadOrderBank(){
 
 function selectUploadReport(type){
   const types=['plan','fabric','sewing','production','orderbank','sizeset','accessories','embellishment'];
+  const sel=document.getElementById('upload-report-select');
+  if(!types.includes(type)||!sel)return;
+  // Keep the visible report picker and its corresponding upload panel in sync.
+  sel.value=type;
   types.forEach(t=>{
     const el=document.getElementById('upload-panel-'+t);
     if(el)el.style.display=(t===type)?'block':'none';
@@ -6824,8 +6828,8 @@ function refreshUploadReportOptions(){
     embellishment:siteIsAdmin()
   };
   [...sel.options].forEach(o=>o.hidden=!allowed[o.value]);
-  let chosen=[...sel.options].find(o=>!o.hidden);
-  if(chosen){sel.value=chosen.value;selectUploadReport(chosen.value);}
+  const chosen=[...sel.options].find(o=>o.value===sel.value&&!o.hidden)||[...sel.options].find(o=>!o.hidden);
+  if(chosen)selectUploadReport(chosen.value);
 }
 
 
