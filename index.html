@@ -824,6 +824,12 @@ table.cal td.priority-2{color:#ffd166}
 
 
 /* Plan Qty Analysis — fitted top table + pie */
+#s2 .slide-header{gap:12px;flex-wrap:wrap}
+#s2 .s2-date-tools{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+#s2 .s2-date-tools label{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2)}
+#s2 .s2-date-tools input[type=date]{width:132px;box-sizing:border-box;padding:5px 7px;border:1px solid #abc0d5;border-radius:6px;background:#fff;color:#17314e;font:inherit;cursor:pointer}
+#s2 .s2-date-tools input[type=date]:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:760px){#s2 .s2-date-tools{order:3;width:100%;margin-left:0}#s2 .s2-date-tools input[type=date]{width:122px}}
 .s2-range-top{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.85fr);gap:16px;align-items:stretch}
 #s2-tbl-wrap{width:100%;overflow:hidden}
 .qty-range-ref{width:100%!important;table-layout:fixed!important}
@@ -2244,6 +2250,11 @@ input,select,textarea{
 <div class="slide" id="s2" data-logical-slide="2">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">02</span> Plan Quantity Details <span class="slide-subtitle" id="s2-months"></span></div>
+    <div class="s2-date-tools" role="group" aria-label="Plan date range">
+      <label>From <input id="s2-date-from" type="date" aria-label="Plan from date" onchange="s2DateRangeChanged('from')"></label>
+      <label>To <input id="s2-date-to" type="date" aria-label="Plan to date" onchange="s2DateRangeChanged('to')"></label>
+      <button type="button" class="pg-btn" id="s2-date-all" onclick="s2ResetDateRange()">All dates</button>
+    </div>
     <div class="pager-btns">
       <button class="pg-btn" onclick="goSlide(1)">← Back</button>
       <button class="pg-btn" onclick="goSlide(3)">Next →</button>
@@ -4515,6 +4526,26 @@ function renderS1(data){
 /* ══ SLIDE 2: PLAN QTY ANALYSIS ════════════════ */
 
 let S2_LINE_DETAILS=[];
+let S2_RANGE_PLAN_ID=null,S2_RANGE_FROM='',S2_RANGE_TO='';
+function s2DateRangeRows(rows,daily,from,to){
+  if(!from||!to)return rows;
+  const totals=new Map();
+  for(const day of daily){
+    if(day.date<from||day.date>to||N(day.value)<=0)continue;
+    const id=String(day.record_id);
+    totals.set(id,(totals.get(id)||0)+N(day.value));
+  }
+  return rows.filter(row=>totals.has(String(row.record_id)))
+    .map(row=>({...row,planqty:totals.get(String(row.record_id))}));
+}
+function s2DateRangeChanged(which){
+  const from=document.getElementById('s2-date-from'),to=document.getElementById('s2-date-to');
+  if(!from||!to)return;
+  if(from.value>to.value){if(which==='from')to.value=from.value;else from.value=to.value;}
+  S2_RANGE_FROM=from.value;S2_RANGE_TO=to.value;
+  renderS2(getFiltered());
+}
+function s2ResetDateRange(){S2_RANGE_PLAN_ID=null;renderS2(getFiltered());}
 function closeS2LineDetails(){
   const dialog=document.getElementById('s2-line-dialog');
   if(dialog){if(dialog.open)dialog.close();dialog.remove();}
@@ -4547,8 +4578,8 @@ function openS2LineDetails(index){
   const dialog=document.createElement('dialog');dialog.id='s2-line-dialog';
   dialog.setAttribute('aria-labelledby','s2-line-dialog-title');
   const list=values=>[...values].map(esc).join(', ')||'—';
-  dialog.innerHTML='<header><div><h2 id="s2-line-dialog-title">Line '+esc(detail.line)+' · '+esc(detail.range)+'</h2><p>'+esc(sortedMonths(detail.rows).join(' & '))+' · '+groups.length+' EWO(s)</p></div><button type="button" class="s2-dialog-close" aria-label="Close EWO details">✕</button></header>'+
-    '<p class="s2-detail-note">Range is based on cumulative Order Qty for this Line + EWO across all PO and colours in the selected plan. All totals below use only matching rows on this line; blank Colour and PO values are excluded.</p>'+
+  dialog.innerHTML='<header><div><h2 id="s2-line-dialog-title">Line '+esc(detail.line)+' · '+esc(detail.range)+'</h2><p>'+esc(S2_RANGE_FROM&&S2_RANGE_TO?S2_RANGE_FROM+' – '+S2_RANGE_TO:sortedMonths(detail.rows).join(' & '))+' · '+groups.length+' EWO(s)</p></div><button type="button" class="s2-dialog-close" aria-label="Close EWO details">✕</button></header>'+
+    '<p class="s2-detail-note">Range uses Order Qty for this Line + EWO across matching PO and colours with Plan/Day activity in the selected dates. Plan Qty is the sum within those dates; blank Colour and PO values are excluded from their unique counts.</p>'+
     '<div class="s2-line-kpis">'+[
       ['Total EWO',fmt(totals.ewos)],['Unique Colours',fmt(totals.colors)],
       ['Total Order Qty',fmt(totals.orderqty)],['Total Plan Qty',fmt(totals.planqty)],
@@ -4567,16 +4598,32 @@ function openS2LineDetails(index){
 function renderS2(data){
   closeS2LineDetails();
   S2_LINE_DETAILS=[];
-  const ms=sortedMonths(data);
-  document.getElementById('s2-months').textContent=ms.join(' & ');
+  const dates=[...new Set(DAILY_PLAN.filter(d=>N(d.value)>0&&validDate(d.date)).map(d=>d.date))].sort();
+  const planId=String(ACTIVE_PLAN_UPLOAD?.id||'local');
+  if(S2_RANGE_PLAN_ID!==planId){
+    S2_RANGE_PLAN_ID=planId;S2_RANGE_FROM=dates[0]||'';S2_RANGE_TO=dates.at(-1)||'';
+  }
+  const from=document.getElementById('s2-date-from'),to=document.getElementById('s2-date-to'),all=document.getElementById('s2-date-all');
+  for(const input of [from,to]){
+    input.disabled=!dates.length;input.min=dates[0]||'';input.max=dates.at(-1)||'';
+  }
+  if(dates.length){
+    const clamp=value=>!value||value<dates[0]?dates[0]:value>dates.at(-1)?dates.at(-1):value;
+    S2_RANGE_FROM=clamp(S2_RANGE_FROM);S2_RANGE_TO=clamp(S2_RANGE_TO);
+    if(S2_RANGE_FROM>S2_RANGE_TO)S2_RANGE_TO=S2_RANGE_FROM;
+  }
+  from.value=S2_RANGE_FROM;to.value=S2_RANGE_TO;all.disabled=!dates.length;
+  const formatDate=value=>new Date(value+'T00:00:00Z').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
+  document.getElementById('s2-months').textContent=dates.length
+    ?formatDate(S2_RANGE_FROM)+' – '+formatDate(S2_RANGE_TO):sortedMonths(data).join(' & ');
 
   // Slide 02 authoritative source = Planning Data rows where Criteria = Plan/Day.
   // This matches the Excel cross-check: Order qty column filtered to Plan/Day.
   // `data` is already the normalized Plan/Day planning dataset used by this dashboard.
   // Do not re-filter on r.criteria here: that field is not retained in this runtime view.
-  const s2Source=data;
+  const s2Source=dates.length?s2DateRangeRows(data,DAILY_PLAN,S2_RANGE_FROM,S2_RANGE_TO):data;
 
-  // Approved range basis: sum all PO/colour Plan/Day rows by Line + EWO in this planning version.
+  // Range basis: sum Order Qty across rows active in the selected dates by Line + EWO.
   const ewoOrderMap=new Map();
   s2Source.forEach(r=>{
     const k=JSON.stringify([String(r.line),String(r.ewo??'').trim()]);
@@ -4631,7 +4678,7 @@ function renderS2(data){
     html+=`</tr>`;
   });
   html+=`<tr class="range-total">
-    <td>Total Line–EWO</td><td class="num">${fmt(totalStyles)}</td><td class="num">${fmt(totalOrderQty)}</td><td class="num">100%</td><td class="num">100%</td>
+    <td>Total Line–EWO</td><td class="num">${fmt(totalStyles)}</td><td class="num">${fmt(totalOrderQty)}</td><td class="num">${totalStyles?'100%':'0%'}</td><td class="num">${totalStyles?'100%':'0%'}</td>
   </tr></tbody></table>`;
   document.getElementById('s2-tbl-wrap').innerHTML=`
     <div style="display:flex;justify-content:flex-end;align-items:center;margin:0 0 8px">
