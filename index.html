@@ -236,6 +236,8 @@ body{background:var(--navy);color:var(--text)}
 #s12 .s12-summary-table{max-height:330px;overflow:auto}
 #s12 .s12-summary-table table{min-width:390px}
 #s12 .s12-summary-table td{vertical-align:top;overflow-wrap:anywhere}
+#s12 .s12-summary-table .s12-list-cell{min-width:140px;max-width:260px;white-space:normal;line-height:1.4}
+#s12 .s12-summary-table .s12-list-cell summary{cursor:pointer;color:#1769aa;font-weight:700}
 @media(max-width:600px){#s12 .s12-pie{width:150px;height:150px}}
 
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -2693,7 +2695,7 @@ input,select,textarea{
       <div class="card-title">⚠️ Cutting Difficulties</div>
       <div class="bar-chart" id="s12-diff-chart"></div>
       <div class="s12-analysis-block"><div class="s12-analysis-title">Row share by cutting difficulty</div><div id="s12-diff-pie"></div></div>
-      <div class="s12-analysis-block"><div class="s12-analysis-title">Difficulty summary · all filtered rows</div><div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Cutting Difficulty</th><th class="num">Rows</th><th class="num">Share</th></tr></thead><tbody id="s12-diff-summary"></tbody><tfoot><tr id="s12-diff-total"></tr></tfoot></table></div></div>
+      <div class="s12-analysis-block"><div class="s12-analysis-title">Difficulty summary · all filtered rows</div><div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Cutting Difficulty</th><th>Planned Line No.</th><th>EWO</th><th class="num">Rows</th><th class="num">Share</th></tr></thead><tbody id="s12-diff-summary"></tbody><tfoot><tr id="s12-diff-total"></tr></tfoot></table></div></div>
     </div>
   </div>
   <div class="card">
@@ -4520,17 +4522,28 @@ function renderS12(changed=''){
   ).join('')||'<tr><td colspan="6">No data</td></tr>';
   document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
 
-  const dm={};rows.forEach(r=>{const k=String(r.cutting_difficulties||'No Difficulty').trim()||'No Difficulty';dm[k]=(dm[k]||0)+1});
+  const dm={},difficultyEwos=new Map(),difficultyLines=new Map();
+  rows.forEach(r=>{
+    const k=String(r.cutting_difficulties||'No Difficulty').trim()||'No Difficulty',ewo=ewoKey(r.ewo);
+    dm[k]=(dm[k]||0)+1;
+    if(!difficultyEwos.has(k)){difficultyEwos.set(k,new Set());difficultyLines.set(k,new Set())}
+    if(ewo)difficultyEwos.get(k).add(ewo);
+    (plannedLinesByEwo.get(ewo)||[]).forEach(line=>difficultyLines.get(k).add(line));
+  });
   const difficultyRows=Object.entries(dm).sort((a,b)=>b[1]-a[1]);
   const dr=difficultyRows.slice(0,10),mx=Math.max(1,...dr.map(x=>x[1]));
   document.getElementById('s12-diff-chart').innerHTML=dr.map(x=>
     '<div class="bar-row"><div class="bar-label">'+esc(x[0])+'</div><div class="bar-track"><div class="bar-fill" style="width:'+x[1]/mx*100+'%"><span>'+fmt(x[1])+'</span></div></div></div>'
   ).join('')||'<div class="muted">No data</div>';
   document.getElementById('s12-diff-pie').innerHTML=renderS12Pie(difficultyRows,'rows');
+  const listCell=(items,limit)=>{
+    const all=items.map(esc),head=all.slice(0,limit).join(', ');
+    return head+(all.length>limit?'<details><summary>Show all '+fmt(all.length)+'</summary>'+all.join(', ')+'</details>':'')||'—';
+  };
   document.getElementById('s12-diff-summary').innerHTML=difficultyRows.map(([name,count])=>
-    '<tr><td>'+esc(name)+'</td><td class="num">'+fmt(count)+'</td><td class="num">'+(rows.length?count/rows.length*100:0).toFixed(1)+'%</td></tr>'
-  ).join('')||'<tr><td colspan="3">No data</td></tr>';
-  document.getElementById('s12-diff-total').innerHTML='<td>Total</td><td class="num">'+fmt(rows.length)+'</td><td class="num">'+(rows.length?'100.0':'0.0')+'%</td>';
+    '<tr><td>'+esc(name)+'</td><td class="s12-list-cell">'+listCell([...difficultyLines.get(name)].sort((a,b)=>Number(a)-Number(b)).map(x=>x.padStart(2,'0')),10)+'</td><td class="s12-list-cell">'+listCell([...difficultyEwos.get(name)].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})),8)+'</td><td class="num">'+fmt(count)+'</td><td class="num">'+(rows.length?count/rows.length*100:0).toFixed(1)+'%</td></tr>'
+  ).join('')||'<tr><td colspan="5">No data</td></tr>';
+  document.getElementById('s12-diff-total').innerHTML='<td>Total</td><td>—</td><td>—</td><td class="num">'+fmt(rows.length)+'</td><td class="num">'+(rows.length?'100.0':'0.0')+'%</td>';
 
   document.getElementById('s12-body').innerHTML=rows.map(r=>'<tr>'+
     '<td>'+esc(r.buyer||'')+'</td><td>'+esc(r.ewo||'')+'</td><td>'+esc(r.color_name||'')+'</td>'+
