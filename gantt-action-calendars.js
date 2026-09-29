@@ -107,27 +107,45 @@ function ganttPsdPriorityMatch(styles,priority){
   const allowed=new Set((priority||[]).slice(1).flatMap(value=>norm(value).split('/').map(s=>s.trim()).filter(Boolean)));
   return styles.size>0&&[...styles].every(style=>allowed.has(norm(style)));
 }
-function ganttPsdSummary(dayEvents,results){
-  const groups=ganttPsdGroups(),plan=ganttPsdPlanTotals(groups),lines=new Map();
+function ganttPsdFirstLineEwo(groups){
+  const pairs=new Map();
+  for(const group of groups.values()){
+    const line=Number(group.line),ewo=ganttKey(group.ewo),key=line+'|'+ewo;
+    if(!pairs.has(key))pairs.set(key,{line,ewo,date:group.date,groups:[]});
+    const pair=pairs.get(key);pair.groups.push(group);
+    if(ganttPsdDateKey(group.date)<ganttPsdDateKey(pair.date))pair.date=group.date;
+  }
+  return [...pairs.values()];
+}
+function ganttPsdSelectedSummaryPairs(groups){
+  const selectedDate=GANTT_ACTION_MONTH+'-'+String(GANTT_ACTION_DAY).padStart(2,'0');
+  const ewo=String(document.getElementById('action-ewo')?.value||'').trim().toUpperCase();
+  const line=Number(document.getElementById('action-line')?.value)||0;
+  return ganttPsdFirstLineEwo(groups).filter(pair=>ganttPsdDateKey(pair.date)===selectedDate&&
+    (!ewo||pair.ewo.includes(ewo))&&(!line||pair.line===line));
+}
+function ganttPsdSummary(pairs,results,groups){
+  const plan=ganttPsdPlanTotals(groups),lines=new Map();
   const priorities=new Map(getChassisPriority().map(row=>[Number(row[0]),row]));
   const orders=results[0]?.status==='fulfilled'?results[0].value:null;
   const byOrder=new Map();
   for(const row of orders||[]){const key=ganttKey(row.EWO)+'|'+ganttColorKey(row.GmtColor);
     byOrder.set(key,(byOrder.get(key)||0)+ganttPsdNumber(row.OrderQty));}
-  for(const event of dayEvents){
-    const group=groups.get(ganttPsdKey(event.line,event.ewo,event.color));if(!group)continue;
-    const line=Number(group.line),ewo=ganttKey(group.ewo);
+  for(const pair of pairs){
+    const line=pair.line,ewo=pair.ewo;
     if(!lines.has(line))lines.set(line,{ewos:new Set(),products:new Set(),styles:new Set(),colors:new Set(),order:0,orderKnown:!!orders,plan:0});
     const item=lines.get(line);item.ewos.add(ewo);
-    for(const product of group.products)item.products.add(product);
-    for(const style of group.styles)item.styles.add(style);
-    const colorKey=ewo+'|'+ganttColorKey(group.color);
-    if(!item.colors.has(colorKey)){
-      item.colors.add(colorKey);
-      if(byOrder.has(colorKey))item.order+=byOrder.get(colorKey);
-      else item.orderKnown=false;
+    for(const group of pair.groups){
+      for(const product of group.products)item.products.add(product);
+      for(const style of group.styles)item.styles.add(style);
+      const colorKey=ewo+'|'+ganttColorKey(group.color);
+      if(!item.colors.has(colorKey)){
+        item.colors.add(colorKey);
+        if(byOrder.has(colorKey))item.order+=byOrder.get(colorKey);
+        else item.orderKnown=false;
+      }
+      item.plan+=plan.get(group.key)||0;
     }
-    item.plan+=plan.get(group.key)||0;
   }
   const fmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2});
   const counts=[...lines.values()],totalPairs=counts.reduce((n,x)=>n+x.ewos.size,0);
@@ -138,11 +156,12 @@ function ganttPsdSummary(dayEvents,results){
     `<td class="psd-summary-products">${priorities.get(line)?.slice(1).map((name,i)=>name?`${i+1}${i?'nd':'st'}: ${esc(name)}`:'').filter(Boolean).join(' · ')||'—'}</td>`+
     `<td class="psd-summary-ewos">${esc([...item.ewos].sort().join(', '))}</td><td>${item.ewos.size}</td>`+
     `<td>${item.orderKnown?fmt(item.order):'—'}</td><td>${fmt(item.plan)}</td><td>${fmt(Math.round(item.plan/item.ewos.size))}</td></tr>`).join('');
-  return `<div class="psd-summary-toolbar"><div class="psd-summary-head"><span>${esc(GANTT_ACTION_MONTHS[Number(GANTT_ACTION_MONTH.slice(-2))-1]||'')} ${esc(GANTT_ACTION_MONTH.slice(0,4))}</span><strong>PSD Summary · ${esc(dayEvents[0]?.date.label||'Selected date')}</strong></div><button type="button" id="gantt-psd-summary-copy" onclick="copyGanttPsdSummaryImage()" title="Copy the complete PSD summary as an image">Copy full summary</button></div>`+
+  const selectedLabel=GANTT_ACTION_DAY+' '+(GANTT_ACTION_MONTHS[Number(GANTT_ACTION_MONTH.slice(-2))-1]||'')+' '+GANTT_ACTION_MONTH.slice(0,4);
+  return `<div class="psd-summary-toolbar"><div class="psd-summary-head"><span>${esc(GANTT_ACTION_MONTHS[Number(GANTT_ACTION_MONTH.slice(-2))-1]||'')} ${esc(GANTT_ACTION_MONTH.slice(0,4))}</span><strong>PSD Summary · ${esc(selectedLabel)}</strong></div><button type="button" id="gantt-psd-summary-copy" onclick="copyGanttPsdSummaryImage()" title="Copy the complete PSD summary as an image">Copy full summary</button></div>`+
     '<div class="psd-summary-scroll"><table class="psd-summary-table"><thead><tr><th>Line</th><th>Total PSD</th><th>Plan Product Name</th><th>Line Priority Product Name</th><th>EWO</th><th>Total EWO</th><th>Total Order Qty · pcs</th><th>Total Plan Qty · pcs</th><th>AVG Plan Qty / EWO</th></tr></thead><tbody>'+
     (rows||'<tr><td colspan="9">No PSD for this date.</td></tr>')+'</tbody><tfoot><tr><td class="psd-summary-line">G.Total</td>'+
     `<td>${totalPairs}</td><td>—</td><td>—</td><td>—</td><td>${totalPairs}</td><td>${allOrdersKnown?fmt(totalOrder):'—'}</td><td>${fmt(totalPlan)}</td><td>${totalPairs?fmt(Math.round(totalPlan/totalPairs)):'—'}</td></tr></tfoot></table></div>`+
-    '<p class="psd-summary-note">Selected Plan · one PSD per Line and EWO, regardless of color. Order Qty follows Order Bank by EWO and color.</p>';
+    '<p class="psd-summary-note">Selected Plan/Day · each Line and EWO appears only on its first PSD date across all colors. Order Qty follows Order Bank by EWO and color.</p>';
 }
 function ganttPsdTable(dayEvents,results){
   const groups=ganttPsdGroups(),plan=ganttPsdPlanTotals(groups);
@@ -310,10 +329,11 @@ function exportGanttPsdExcel(event){
 }
 async function renderGanttPsdTable(dayEvents,token){
   const slot=document.getElementById('gantt-psd-table'),summary=document.getElementById('gantt-psd-summary');if(!slot)return;
-  if(!dayEvents.length){slot.innerHTML=ganttPsdTable([],[]);if(summary)summary.innerHTML=ganttPsdSummary([],[]);return;}
-  const result=await ganttPsdSources(dayEvents.map(e=>e.ewo));
+  const groups=ganttPsdGroups(),pairs=ganttPsdSelectedSummaryPairs(groups);
+  const ewos=[...new Set([...dayEvents.map(e=>e.ewo),...pairs.map(pair=>pair.ewo)])];
+  const result=ewos.length?await ganttPsdSources(ewos):[0,1,2].map(()=>({status:'fulfilled',value:[]}));
   if(token!==GANTT_ACTION_REQUEST||GANTT_ACTION_TAB!=='psd')return;
-  if(summary)summary.innerHTML=ganttPsdSummary(dayEvents,result);
+  if(summary)summary.innerHTML=ganttPsdSummary(pairs,result,groups);
   slot.innerHTML=ganttPsdTable(dayEvents,result);
 }
 document.head.insertAdjacentHTML('beforeend',`<style>
