@@ -230,19 +230,11 @@ body{background:var(--navy);color:var(--text)}
 #s12 .s12-date-tools label{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2)}
 #s12 .s12-date-tools input[type=date]{width:142px;box-sizing:border-box;padding:5px 7px;border:1px solid #abc0d5;border-radius:6px;background:#fff;color:#17314e;font:inherit;cursor:pointer}
 #s12 .s12-date-note{font-size:12px;font-weight:700;color:var(--text2)}
-#s12 .s12-analysis-block{margin-top:18px}
-#s12 .s12-analysis-title{font-size:12px;font-weight:800;color:var(--amber2);margin-bottom:8px}
-#s12 .s12-pie-layout{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-#s12 .s12-pie{width:180px;height:180px;flex:none;border-radius:50%;border:1px solid var(--border)}
-#s12 .s12-pie-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;flex:1;min-width:210px;font-size:12px}
-#s12 .s12-pie-legend div{display:flex;align-items:flex-start;gap:6px;line-height:1.35}
-#s12 .s12-pie-legend i{display:inline-block;flex:none;width:10px;height:10px;margin-top:3px;border-radius:2px}
 #s12 .s12-summary-table{max-height:330px;overflow:auto}
 #s12 .s12-summary-table table{min-width:390px}
 #s12 .s12-summary-table td{vertical-align:top;overflow-wrap:anywhere}
 #s12 .s12-summary-table .s12-list-cell{min-width:140px;max-width:260px;white-space:normal;line-height:1.4}
 #s12 .s12-summary-table .s12-list-cell summary{cursor:pointer;color:#1769aa;font-weight:700}
-@media(max-width:600px){#s12 .s12-pie{width:150px;height:150px}}
 
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table.dt{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
@@ -2700,10 +2692,8 @@ input,select,textarea{
       <div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Product</th><th>Planned Line No.</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Cutting %</th><th class="num">Fabrics Balance · kg</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div>
     </div>
     <div class="card">
-      <div class="card-title">⚠️ Cutting Difficulties</div>
-      <div class="bar-chart" id="s12-diff-chart"></div>
-      <div class="s12-analysis-block"><div class="s12-analysis-title">Row share by cutting difficulty</div><div id="s12-diff-pie"></div></div>
-      <div class="s12-analysis-block"><div class="s12-analysis-title">Difficulty summary · all filtered rows</div><div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Cutting Difficulty</th><th>Planned Line No.</th><th>EWO</th><th class="num">Rows</th><th class="num">Share</th></tr></thead><tbody id="s12-diff-summary"></tbody><tfoot><tr id="s12-diff-total"></tr></tfoot></table></div></div>
+      <div class="card-title">⚠️ Cutting Difficulties · Summary</div>
+      <div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Cutting Difficulty</th><th>Planned Line No.</th><th>EWO</th><th class="num">Rows</th><th class="num">Share</th></tr></thead><tbody id="s12-diff-summary"></tbody><tfoot><tr id="s12-diff-total"></tr></tfoot></table></div>
     </div>
   </div>
   <div class="card">
@@ -4465,16 +4455,6 @@ function fabricCuttingCascade(all,planEwoSet,planMatch,search,selected,changed='
   const rows=base.filter(r=>matches(r,''));
   return {rows,available,values};
 }
-function renderS12Pie(entries,unit){
-  const palette=['#125eae','#e59321','#20a58a','#7549b8','#d35658','#4d86c5','#a3702e','#338661','#a84d98','#7b8798'];
-  const positive=entries.filter(x=>x[1]>0),total=positive.reduce((sum,x)=>sum+x[1],0);
-  if(!total)return '<div class="muted">No data</div>';
-  const visible=positive.length>9?[...positive.slice(0,9),['Other',positive.slice(9).reduce((sum,x)=>sum+x[1],0)]]:positive;
-  let start=0;
-  const stops=visible.map((x,i)=>{const end=start+x[1]/total*100,stop=palette[i]+' '+start+'% '+end+'%';start=end;return stop});
-  const legend=visible.map((x,i)=>'<div><i style="background:'+palette[i]+'"></i><span>'+esc(x[0])+' · '+fmt(x[1])+' '+unit+' ('+(x[1]/total*100).toFixed(1)+'%)</span></div>').join('');
-  return '<div class="s12-pie-layout"><div class="s12-pie" role="img" aria-label="'+esc(unit)+' share pie chart" style="background:conic-gradient('+stops.join(',')+')"></div><div class="s12-pie-legend">'+legend+'</div></div>';
-}
 function renderS12(changed=''){
   const all=FABRIC_CUTTING_DATA||[];
   const buyerEl=document.getElementById('s12-buyer'),prodEl=document.getElementById('s12-product'),
@@ -4570,11 +4550,6 @@ function renderS12(changed=''){
     (plannedLinesByEwo.get(ewo)||[]).forEach(line=>difficultyLines.get(k).add(line));
   });
   const difficultyRows=Object.entries(dm).sort((a,b)=>b[1]-a[1]);
-  const dr=difficultyRows.slice(0,10),mx=Math.max(1,...dr.map(x=>x[1]));
-  document.getElementById('s12-diff-chart').innerHTML=dr.map(x=>
-    '<div class="bar-row"><div class="bar-label">'+esc(x[0])+'</div><div class="bar-track"><div class="bar-fill" style="width:'+x[1]/mx*100+'%"><span>'+fmt(x[1])+'</span></div></div></div>'
-  ).join('')||'<div class="muted">No data</div>';
-  document.getElementById('s12-diff-pie').innerHTML=renderS12Pie(difficultyRows,'rows');
   const listCell=(items,limit)=>{
     const all=items.map(esc),head=all.slice(0,limit).join(', ');
     return head+(all.length>limit?'<details><summary>Show all '+fmt(all.length)+'</summary>'+all.join(', ')+'</details>':'')||'—';
