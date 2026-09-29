@@ -830,6 +830,12 @@ table.cal td.priority-2{color:#ffd166}
 #s2 .s2-date-tools input[type=date]{width:132px;box-sizing:border-box;padding:5px 7px;border:1px solid #abc0d5;border-radius:6px;background:#fff;color:#17314e;font:inherit;cursor:pointer}
 #s2 .s2-date-tools input[type=date]:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:760px){#s2 .s2-date-tools{order:3;width:100%;margin-left:0}#s2 .s2-date-tools input[type=date]{width:122px}}
+#s11 .slide-header{gap:12px;flex-wrap:wrap}
+#s11 .s11-date-tools{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+#s11 .s11-date-tools label{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2)}
+#s11 .s11-date-tools input[type=date]{width:132px;box-sizing:border-box;padding:5px 7px;border:1px solid #abc0d5;border-radius:6px;background:#fff;color:#17314e;font:inherit;cursor:pointer}
+#s11 .s11-date-tools input[type=date]:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:760px){#s11 .s11-date-tools{order:3;width:100%;margin-left:0}#s11 .s11-date-tools input[type=date]{width:122px}}
 .s2-range-top{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.85fr);gap:16px;align-items:stretch}
 #s2-tbl-wrap{width:100%;overflow:hidden}
 .qty-range-ref{width:100%!important;table-layout:fixed!important}
@@ -2417,6 +2423,11 @@ input,select,textarea{
 <div class="slide" id="s11" data-logical-slide="7">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">07</span> EWO Gantt Chart <span class="slide-subtitle" id="s11-month"></span></div>
+    <div class="s11-date-tools" role="group" aria-label="Gantt and action calendar date range">
+      <label>From <input id="s11-date-from" type="date" aria-label="Gantt from date" onchange="s11DateRangeChanged('from')"></label>
+      <label>To <input id="s11-date-to" type="date" aria-label="Gantt to date" onchange="s11DateRangeChanged('to')"></label>
+      <button type="button" class="pg-btn" id="s11-date-all" onclick="s11ResetDateRange()">All dates</button>
+    </div>
     <div class="pager-btns">
       <button class="pg-btn" onclick="goSlide(6)">← Back</button>
       <button class="pg-btn" onclick="goSlide(8)">Next →</button>
@@ -5046,6 +5057,15 @@ function renderS6(data){
 /* ══ SLIDE 7: CHARTS (Canvas) ═══════════════════ */
 let GANTT_EWO_SEARCH='';
 let GANTT_LINE_FILTER='';
+let S11_RANGE_PLAN_ID=null,S11_RANGE_FROM='',S11_RANGE_TO='',S11_RANGE_NARROWED=false;
+function s11DateRangeChanged(which){
+  const from=document.getElementById('s11-date-from'),to=document.getElementById('s11-date-to');
+  if(!from||!to)return;
+  if(from.value>to.value){if(which==='from')to.value=from.value;else from.value=to.value;}
+  S11_RANGE_FROM=from.value;S11_RANGE_TO=to.value;
+  renderS11(getFiltered());
+}
+function s11ResetDateRange(){S11_RANGE_PLAN_ID=null;renderS11(getFiltered());}
 
 function renderS11(data){
   const selected='';
@@ -5053,8 +5073,23 @@ function renderS11(data){
   const allDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(Boolean))].sort();
   const candidateDates=selected ? allDates.filter(d=>monthFromISO(d)===selected) : allDates;
   const activeDateSet=new Set(DAILY_PLAN.filter(d=>candidateDates.includes(d.date)&&d.value>0&&master.has(Number(d.line))).map(d=>d.date));
-  const dates=candidateDates.filter(d=>activeDateSet.has(d));
-  const scope=DAILY_PLAN.filter(d=>dates.includes(d.date)&&d.value>0&&master.has(Number(d.line)));
+  const planDates=candidateDates.filter(d=>activeDateSet.has(d));
+  const planId=String(ACTIVE_PLAN_UPLOAD?.id||'local');
+  if(S11_RANGE_PLAN_ID!==planId){
+    S11_RANGE_PLAN_ID=planId;S11_RANGE_FROM=planDates[0]||'';S11_RANGE_TO=planDates.at(-1)||'';
+  }
+  const from=document.getElementById('s11-date-from'),to=document.getElementById('s11-date-to'),all=document.getElementById('s11-date-all');
+  for(const input of [from,to]){input.disabled=!planDates.length;input.min=planDates[0]||'';input.max=planDates.at(-1)||'';}
+  if(planDates.length){
+    const clamp=value=>!value||value<planDates[0]?planDates[0]:value>planDates.at(-1)?planDates.at(-1):value;
+    S11_RANGE_FROM=clamp(S11_RANGE_FROM);S11_RANGE_TO=clamp(S11_RANGE_TO);
+    if(S11_RANGE_FROM>S11_RANGE_TO)S11_RANGE_TO=S11_RANGE_FROM;
+  }
+  from.value=S11_RANGE_FROM;to.value=S11_RANGE_TO;all.disabled=!planDates.length;
+  S11_RANGE_NARROWED=!!planDates.length&&(S11_RANGE_FROM!==planDates[0]||S11_RANGE_TO!==planDates.at(-1));
+  const dates=planDates.filter(d=>d>=S11_RANGE_FROM&&d<=S11_RANGE_TO);
+  // Retain the complete plan for cumulative coverage, even when showing a short date range.
+  const scope=DAILY_PLAN.filter(d=>activeDateSet.has(d.date)&&d.value>0&&master.has(Number(d.line)));
   document.getElementById('s11-month').textContent=activePlanningLabel();
 
   // Shared Gantt normalizers: function scope, available to aggregation, indexing and rendering.

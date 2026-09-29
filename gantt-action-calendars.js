@@ -457,6 +457,15 @@ async function renderGanttActionCalendar(){
       if(!line)event.line=[...lines].sort((a,b)=>a-b).map(x=>String(x).padStart(2,'0')).join(' / ');
       return true;
     });
+    // The header range narrows dated action events only when the user changes it.
+    // An untouched full-plan range keeps earlier PCD and later report milestones visible.
+    if(typeof S11_RANGE_NARROWED!=='undefined'&&S11_RANGE_NARROWED){
+      events=events.filter(e=>{
+        if(!e.date.year)return false;
+        const date=String(e.date.year).padStart(4,'0')+'-'+String(e.date.month).padStart(2,'0')+'-'+String(e.date.day).padStart(2,'0');
+        return date>=S11_RANGE_FROM&&date<=S11_RANGE_TO;
+      });
+    }
     const ewo=document.getElementById('action-ewo')?.value.trim().toUpperCase()||'';
     if(ewo)events=events.filter(e=>e.ewo.toUpperCase().includes(ewo));
     const lines=[...new Set(events.flatMap(ganttActionLines))].sort((a,b)=>a-b).map(x=>String(x).padStart(2,'0'));
