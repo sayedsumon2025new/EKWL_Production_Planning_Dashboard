@@ -2689,7 +2689,7 @@ input,select,textarea{
   <div class="two-col">
     <div class="card">
       <div class="card-title">📊 Cutting Progress by Product · Summary</div>
-      <div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Product</th><th>Planned Line No.</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Cutting %</th><th class="num">Fabrics Balance · kg</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div>
+      <div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Product</th><th>Planned Line No.</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Cutting WIP · pcs</th><th class="num">Cutting %</th><th class="num">Fabrics Balance · kg</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div>
     </div>
     <div class="card">
       <div class="card-title">⚠️ Cutting Difficulties · Summary</div>
@@ -4530,16 +4530,23 @@ function renderS12(changed=''){
     if(!plannedLinesByEwo.has(ewo))plannedLinesByEwo.set(ewo,new Set());
     plannedLinesByEwo.get(ewo).add(line);
   });
-  const prod={};
-  rows.forEach(r=>{const k=r.item_product_type||'Other';if(!prod[k])prod[k]={o:0,c:0,f:0,lines:new Set()};
+  const sewingInputByEwo=new Map();
+  (SEWING_IO_DATA||[]).forEach(r=>{
+    const ewo=ewoKey(r.ewo);if(ewo)sewingInputByEwo.set(ewo,(sewingInputByEwo.get(ewo)||0)+N(r.input));
+  });
+  const prod={},filteredEwos=new Set();
+  rows.forEach(r=>{const k=r.item_product_type||'Other',ewo=ewoKey(r.ewo);
+    if(!prod[k])prod[k]={o:0,c:0,f:0,lines:new Set(),ewos:new Set()};
     prod[k].o+=N(r.color_order_qty);prod[k].c+=N(r.total_cut_qty);prod[k].f+=N(r.fabric_balance);
-    (plannedLinesByEwo.get(ewoKey(r.ewo))||[]).forEach(line=>prod[k].lines.add(line));
+    if(ewo){prod[k].ewos.add(ewo);filteredEwos.add(ewo)}
+    (plannedLinesByEwo.get(ewo)||[]).forEach(line=>prod[k].lines.add(line));
   });
   const productTotals=Object.entries(prod).sort((a,b)=>b[1].c-a[1].c);
   document.getElementById('s12-product-summary').innerHTML=productTotals.map(([name,v])=>
-    '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>'
-  ).join('')||'<tr><td colspan="6">No data</td></tr>';
-  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
+    '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+fmt(v.c-[...v.ewos].reduce((sum,ewo)=>sum+(sewingInputByEwo.get(ewo)||0),0))+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>'
+  ).join('')||'<tr><td colspan="7">No data</td></tr>';
+  const totalSewingInput=[...filteredEwos].reduce((sum,ewo)=>sum+(sewingInputByEwo.get(ewo)||0),0);
+  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+fmt(cut-totalSewingInput)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
 
   const dm={},difficultyEwos=new Map(),difficultyLines=new Map();
   rows.forEach(r=>{
