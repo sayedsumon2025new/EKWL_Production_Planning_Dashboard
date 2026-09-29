@@ -4251,6 +4251,16 @@ function renderAll(){
 }
 
 let HOME_RANGE_PLAN_ID='';
+function homeFirstPSDCount(rows,from='',to=''){
+  const firstByLineEwo=new Map();
+  for(const row of rows){
+    const line=Number(row.line),ewo=String(row.ewo||'').trim(),psd=String(row.startdate||'').slice(0,10);
+    if(!line||!ewo||!validDate(psd))continue;
+    const key=JSON.stringify([line,ewo]);
+    if(!firstByLineEwo.has(key)||psd<firstByLineEwo.get(key))firstByLineEwo.set(key,psd);
+  }
+  return [...firstByLineEwo.values()].filter(psd=>(!from||psd>=from)&&(!to||psd<=to)).length;
+}
 function clearHomeDateRange(){
   document.getElementById('home-date-from').value='';
   document.getElementById('home-date-to').value='';
@@ -4270,7 +4280,10 @@ function renderHome(){
     HOME_RANGE_PLAN_ID=planId;
     fromInput.value='';toInput.value='';
   }
-  const availableDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(validDate))].sort();
+  const allData=getFiltered();
+  const availableDates=[...new Set([
+    ...DAILY_PLAN.map(d=>d.date),...allData.map(r=>String(r.startdate||'').slice(0,10))
+  ].filter(validDate))].sort();
   const minDate=availableDates[0]||'',maxDate=availableDates.at(-1)||'';
   for(const input of [fromInput,toInput]){input.min=minDate;input.max=maxDate;input.disabled=!availableDates.length;}
   const from=fromInput.value,to=toInput.value;
@@ -4288,12 +4301,11 @@ function renderHome(){
     const id=String(day.record_id);
     planByRecord.set(id,(planByRecord.get(id)||0)+N(day.value));
   }
-  const allData=getFiltered();
   const data=from||to ? allData.filter(r=>planByRecord.has(String(r.record_id)))
     .map(r=>({...r,planqty:planByRecord.get(String(r.record_id))})) : allData;
 
-  if(!data.length){
-    host.innerHTML='<div class="home-quick-box"><b class="home-live-kpi-val">0</b><span>'+(allData.length?'No plan in selected dates':'No planning data loaded')+'</span></div>';
+  if(!allData.length){
+    host.innerHTML='<div class="home-quick-box"><b class="home-live-kpi-val">0</b><span>No planning data loaded</span></div>';
     detail.innerHTML='';
     return;
   }
@@ -4307,8 +4319,7 @@ function renderHome(){
 
   const dateScope=scopedDaily.filter(d=>master.has(Number(d.line)));
   const activeDates=new Set(dateScope.map(d=>d.date)).size;
-  const feedUnits=new Set(data.map(r=>JSON.stringify([r.month,String(r.ewo||'').trim(),String(r.line||'').trim()])));
-  const totalFeeding=[...feedUnits].filter(x=>x!=='["","",""]').length;
+  const totalPSD=homeFirstPSDCount(allData,from,to);
 
   const kpis=[
     ['Total Order Qty',fmt(orderQty),'PCS'],
@@ -4317,7 +4328,7 @@ function renderHome(){
     ['Buyers',fmt(buyers),'Active'],
     ['Active Lines',fmt(activeLines),'Master lines only'],
     ['Active Plan Days',fmt(activeDates),'Off-days excluded'],
-    ['Total Feeding',fmt(totalFeeding),'EWO × Line'],
+    ['Total PSD',fmt(totalPSD),'Unique Line × EWO · 1st PSD'],
     ['Plan Rows',fmt(data.length),'Plan/Day rows']
   ];
   host.innerHTML=kpis.map(x=>'<div class="home-quick-box"><b class="home-live-kpi-val">'+x[1]+'</b><span>'+x[0]+'</span><div class="home-live-kpi-label">'+x[2]+'</div></div>').join('');
