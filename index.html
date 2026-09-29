@@ -842,6 +842,9 @@ table.cal td.priority-2{color:#ffd166}
 #s4 .s4-date-tools input[type=date]{width:132px;box-sizing:border-box;padding:5px 7px;border:1px solid #abc0d5;border-radius:6px;background:#fff;color:#17314e;font:inherit;cursor:pointer}
 #s4 .s4-date-tools input[type=date]:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:760px){#s4 .s4-date-tools{order:3;width:100%;margin-left:0}#s4 .s4-date-tools input[type=date]{width:122px}}
+#s4 .s4-capture-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}
+#s4 .s4-capture-actions .pg-btn{white-space:nowrap}
+#s4 .s4-capture-status{font-size:12px;font-weight:600;color:var(--text2)}
 .s2-range-top{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.85fr);gap:16px;align-items:stretch}
 #s2-tbl-wrap{width:100%;overflow:hidden}
 .qty-range-ref{width:100%!important;table-layout:fixed!important}
@@ -2341,7 +2344,9 @@ input,select,textarea{
     </div>
   </div>
   <div class="card">
-    <div class="card-title">🏭 Chassis Loading Summary <span class="ct-right">🔴 Over 100% &nbsp; 🟢 ≤100%</span></div>
+    <div class="card-title">🏭 Chassis Loading Summary <span class="ct-right">🔴 Over 100% &nbsp; 🟢 ≤100%</span>
+      <span class="s4-capture-actions"><button type="button" class="pg-btn" id="s4-copy-image" onclick="captureS4Image('copy')">Copy screenshot</button><button type="button" class="pg-btn" id="s4-download-image" onclick="captureS4Image('download')">Download PNG</button><span id="s4-capture-status" class="s4-capture-status" role="status" aria-live="polite"></span></span>
+    </div>
     <div class="tbl-wrap"><table class="dt" id="s4-tbl">
       <thead><tr>
         <th>Chassis (Item)</th>
@@ -4880,6 +4885,36 @@ function s4DateRangeChanged(which){
   renderS4(getFiltered());
 }
 function s4ResetDateRange(){S4_RANGE_PLAN_ID=null;renderS4(getFiltered());}
+async function captureS4Image(mode){
+  const section=document.getElementById('s4');
+  const copy=document.getElementById('s4-copy-image'),download=document.getElementById('s4-download-image');
+  const status=document.getElementById('s4-capture-status');
+  if(!section||!copy||!download||!status||copy.disabled)return;
+  copy.disabled=true;download.disabled=true;status.textContent='Capturing both tables…';
+  try{
+    if(typeof html2canvas!=='function')throw Error('Screenshot library unavailable');
+    const fullWidth=Math.ceil(section.scrollWidth),fullHeight=Math.ceil(section.scrollHeight);
+    const canvas=await html2canvas(section,{backgroundColor:'#ffffff',scale:Math.min(2,window.devicePixelRatio||2),useCORS:true,logging:false,
+      windowWidth:Math.max(document.documentElement.clientWidth,fullWidth),
+      windowHeight:Math.max(document.documentElement.clientHeight,fullHeight),
+      onclone:doc=>{
+        const clone=doc.getElementById('s4');
+        clone?.querySelectorAll('.s4-capture-actions,.pager-btns').forEach(el=>el.style.display='none');
+        clone?.querySelectorAll('.tbl-wrap').forEach(el=>{el.style.maxHeight='none';el.style.overflow='visible';});
+      }});
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+    if(!blob)throw Error('PNG capture failed');
+    if(mode==='copy'&&navigator.clipboard?.write&&typeof ClipboardItem!=='undefined'){
+      try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);status.textContent='Both tables copied as one image';return;}
+      catch(error){console.warn('Image clipboard unavailable; downloading PNG instead',error);}
+    }
+    const url=URL.createObjectURL(blob),link=document.createElement('a');
+    link.href=url;link.download=`EKWL_Chassis_Plan_${S4_RANGE_FROM||'all'}_${S4_RANGE_TO||'dates'}.png`;link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+    status.textContent=mode==='copy'?'Clipboard unavailable · PNG downloaded':'PNG downloaded';
+  }catch(error){console.warn('Slide 04 screenshot unavailable',error);status.textContent='Screenshot failed';}
+  finally{copy.disabled=false;download.disabled=false;setTimeout(()=>status.textContent='',4000);}
+}
 function renderS4(data){
   const hw=strengths();
   const baseChassis=Object.keys(hw);
