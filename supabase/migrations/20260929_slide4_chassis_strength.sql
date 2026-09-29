@@ -69,7 +69,9 @@ begin
   if v_count>0 then raise exception 'Duplicate chassis item name'; end if;
 
   perform pg_advisory_xact_lock(hashtext('public.slide4_chassis_strength'));
-  delete from public.slide4_chassis_strength;
+  -- Every stored row has sort_order 1..100. Keep a WHERE clause for
+  -- Supabase's safe-update protection on authenticated RPC requests.
+  delete from public.slide4_chassis_strength where sort_order between 1 and 100;
   insert into public.slide4_chassis_strength (item_name,line_strength,sort_order,updated_at)
   select btrim(r.value->>'item_name'),(r.value->>'line_strength')::numeric,
          r.ordinality::integer,now()
