@@ -2687,7 +2687,7 @@ input,select,textarea{
       <div class="card-title">📊 Cutting Progress by Product</div>
       <div class="bar-chart" id="s12-product-chart"></div>
       <div class="s12-analysis-block"><div class="s12-analysis-title">Cut quantity share by product</div><div id="s12-product-pie"></div></div>
-      <div class="s12-analysis-block"><div class="s12-analysis-title">Product summary · all filtered products</div><div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Product</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Cutting %</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div></div>
+      <div class="s12-analysis-block"><div class="s12-analysis-title">Product summary · all filtered products</div><div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Product</th><th>Planned Line No.</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Cutting %</th><th class="num">Fabrics Balance · kg</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div></div>
     </div>
     <div class="card">
       <div class="card-title">⚠️ Cutting Difficulties</div>
@@ -4496,8 +4496,18 @@ function renderS12(changed=''){
   ];
   document.getElementById('s12-kpi').innerHTML=kpis.map(x=>'<div class="kpi"><div class="kpi-val">'+x[1]+'</div><div class="kpi-label">'+x[0]+'</div><div class="kpi-sub">'+x[2]+'</div></div>').join('');
 
+  const plannedLinesByEwo=new Map();
+  (DATA||[]).filter(r=>!r.is_summary_row&&N(r.planqty)>0).forEach(r=>{
+    const ewo=ewoKey(r.ewo),line=String(r.line??'').trim();
+    if(!ewo||!line||line==='0')return;
+    if(!plannedLinesByEwo.has(ewo))plannedLinesByEwo.set(ewo,new Set());
+    plannedLinesByEwo.get(ewo).add(line);
+  });
   const prod={};
-  rows.forEach(r=>{const k=r.item_product_type||'Other';if(!prod[k])prod[k]={o:0,c:0};prod[k].o+=N(r.color_order_qty);prod[k].c+=N(r.total_cut_qty)});
+  rows.forEach(r=>{const k=r.item_product_type||'Other';if(!prod[k])prod[k]={o:0,c:0,f:0,lines:new Set()};
+    prod[k].o+=N(r.color_order_qty);prod[k].c+=N(r.total_cut_qty);prod[k].f+=N(r.fabric_balance);
+    (plannedLinesByEwo.get(ewoKey(r.ewo))||[]).forEach(line=>prod[k].lines.add(line));
+  });
   const prodRows=Object.entries(prod).map(([k,v])=>[k,v.o?v.c/v.o*100:0,v.c]).sort((a,b)=>b[1]-a[1]);
   const maxP=Math.max(1,...prodRows.map(x=>x[1]));
   document.getElementById('s12-product-chart').innerHTML=prodRows.slice(0,12).map(x=>
@@ -4506,9 +4516,9 @@ function renderS12(changed=''){
   const productTotals=Object.entries(prod).sort((a,b)=>b[1].c-a[1].c);
   document.getElementById('s12-product-pie').innerHTML=renderS12Pie(productTotals.map(([name,v])=>[name,v.c]),'pcs');
   document.getElementById('s12-product-summary').innerHTML=productTotals.map(([name,v])=>
-    '<tr><td>'+esc(name)+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td></tr>'
-  ).join('')||'<tr><td colspan="4">No data</td></tr>';
-  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td>';
+    '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>'
+  ).join('')||'<tr><td colspan="6">No data</td></tr>';
+  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
 
   const dm={};rows.forEach(r=>{const k=String(r.cutting_difficulties||'No Difficulty').trim()||'No Difficulty';dm[k]=(dm[k]||0)+1});
   const difficultyRows=Object.entries(dm).sort((a,b)=>b[1]-a[1]);
