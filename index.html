@@ -226,6 +226,17 @@ body{background:var(--navy);color:var(--text)}
 #s12 .status-filter-control select{width:100%;box-sizing:border-box;border:2px solid #2563eb;background:#eff6ff;color:#002b5b;font-weight:700}
 #s12 .status-filter-control select:focus{outline:2px solid #f59e0b;outline-offset:2px}
 #s12 .status-filter-link{border:0;background:none;color:inherit;font:inherit;letter-spacing:inherit;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+#s12 .s12-analysis-block{margin-top:18px}
+#s12 .s12-analysis-title{font-size:12px;font-weight:800;color:var(--amber2);margin-bottom:8px}
+#s12 .s12-pie-layout{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+#s12 .s12-pie{width:180px;height:180px;flex:none;border-radius:50%;border:1px solid var(--border)}
+#s12 .s12-pie-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;flex:1;min-width:210px;font-size:12px}
+#s12 .s12-pie-legend div{display:flex;align-items:flex-start;gap:6px;line-height:1.35}
+#s12 .s12-pie-legend i{display:inline-block;flex:none;width:10px;height:10px;margin-top:3px;border-radius:2px}
+#s12 .s12-summary-table{max-height:330px;overflow:auto}
+#s12 .s12-summary-table table{min-width:390px}
+#s12 .s12-summary-table td{vertical-align:top;overflow-wrap:anywhere}
+@media(max-width:600px){#s12 .s12-pie{width:150px;height:150px}}
 
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table.dt{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
@@ -2675,10 +2686,14 @@ input,select,textarea{
     <div class="card">
       <div class="card-title">📊 Cutting Progress by Product</div>
       <div class="bar-chart" id="s12-product-chart"></div>
+      <div class="s12-analysis-block"><div class="s12-analysis-title">Cut quantity share by product</div><div id="s12-product-pie"></div></div>
+      <div class="s12-analysis-block"><div class="s12-analysis-title">Product summary · all filtered products</div><div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Product</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Cutting %</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div></div>
     </div>
     <div class="card">
       <div class="card-title">⚠️ Cutting Difficulties</div>
       <div class="bar-chart" id="s12-diff-chart"></div>
+      <div class="s12-analysis-block"><div class="s12-analysis-title">Row share by cutting difficulty</div><div id="s12-diff-pie"></div></div>
+      <div class="s12-analysis-block"><div class="s12-analysis-title">Difficulty summary · all filtered rows</div><div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Cutting Difficulty</th><th class="num">Rows</th><th class="num">Share</th></tr></thead><tbody id="s12-diff-summary"></tbody><tfoot><tr id="s12-diff-total"></tr></tfoot></table></div></div>
     </div>
   </div>
   <div class="card">
@@ -4425,6 +4440,16 @@ function fabricCuttingCascade(all,planEwoSet,planMatch,search,selected,changed='
   const rows=base.filter(r=>matches(r,''));
   return {rows,available,values};
 }
+function renderS12Pie(entries,unit){
+  const palette=['#125eae','#e59321','#20a58a','#7549b8','#d35658','#4d86c5','#a3702e','#338661','#a84d98','#7b8798'];
+  const positive=entries.filter(x=>x[1]>0),total=positive.reduce((sum,x)=>sum+x[1],0);
+  if(!total)return '<div class="muted">No data</div>';
+  const visible=positive.length>9?[...positive.slice(0,9),['Other',positive.slice(9).reduce((sum,x)=>sum+x[1],0)]]:positive;
+  let start=0;
+  const stops=visible.map((x,i)=>{const end=start+x[1]/total*100,stop=palette[i]+' '+start+'% '+end+'%';start=end;return stop});
+  const legend=visible.map((x,i)=>'<div><i style="background:'+palette[i]+'"></i><span>'+esc(x[0])+' · '+fmt(x[1])+' '+unit+' ('+(x[1]/total*100).toFixed(1)+'%)</span></div>').join('');
+  return '<div class="s12-pie-layout"><div class="s12-pie" role="img" aria-label="'+esc(unit)+' share pie chart" style="background:conic-gradient('+stops.join(',')+')"></div><div class="s12-pie-legend">'+legend+'</div></div>';
+}
 function renderS12(changed=''){
   const all=FABRIC_CUTTING_DATA||[];
   const buyerEl=document.getElementById('s12-buyer'),prodEl=document.getElementById('s12-product'),
@@ -4478,12 +4503,24 @@ function renderS12(changed=''){
   document.getElementById('s12-product-chart').innerHTML=prodRows.slice(0,12).map(x=>
     '<div class="bar-row"><div class="bar-label">'+esc(x[0])+'</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.min(100,x[1])+'%"><span>'+x[1].toFixed(1)+'%</span></div></div></div>'
   ).join('')||'<div class="muted">No data</div>';
+  const productTotals=Object.entries(prod).sort((a,b)=>b[1].c-a[1].c);
+  document.getElementById('s12-product-pie').innerHTML=renderS12Pie(productTotals.map(([name,v])=>[name,v.c]),'pcs');
+  document.getElementById('s12-product-summary').innerHTML=productTotals.map(([name,v])=>
+    '<tr><td>'+esc(name)+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td></tr>'
+  ).join('')||'<tr><td colspan="4">No data</td></tr>';
+  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td>';
 
   const dm={};rows.forEach(r=>{const k=String(r.cutting_difficulties||'No Difficulty').trim()||'No Difficulty';dm[k]=(dm[k]||0)+1});
-  const dr=Object.entries(dm).sort((a,b)=>b[1]-a[1]).slice(0,10),mx=Math.max(1,...dr.map(x=>x[1]));
+  const difficultyRows=Object.entries(dm).sort((a,b)=>b[1]-a[1]);
+  const dr=difficultyRows.slice(0,10),mx=Math.max(1,...dr.map(x=>x[1]));
   document.getElementById('s12-diff-chart').innerHTML=dr.map(x=>
     '<div class="bar-row"><div class="bar-label">'+esc(x[0])+'</div><div class="bar-track"><div class="bar-fill" style="width:'+x[1]/mx*100+'%"><span>'+fmt(x[1])+'</span></div></div></div>'
   ).join('')||'<div class="muted">No data</div>';
+  document.getElementById('s12-diff-pie').innerHTML=renderS12Pie(difficultyRows,'rows');
+  document.getElementById('s12-diff-summary').innerHTML=difficultyRows.map(([name,count])=>
+    '<tr><td>'+esc(name)+'</td><td class="num">'+fmt(count)+'</td><td class="num">'+(rows.length?count/rows.length*100:0).toFixed(1)+'%</td></tr>'
+  ).join('')||'<tr><td colspan="3">No data</td></tr>';
+  document.getElementById('s12-diff-total').innerHTML='<td>Total</td><td class="num">'+fmt(rows.length)+'</td><td class="num">'+(rows.length?'100.0':'0.0')+'%</td>';
 
   document.getElementById('s12-body').innerHTML=rows.map(r=>'<tr>'+
     '<td>'+esc(r.buyer||'')+'</td><td>'+esc(r.ewo||'')+'</td><td>'+esc(r.color_name||'')+'</td>'+
