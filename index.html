@@ -845,6 +845,12 @@ table.cal td.priority-2{color:#ffd166}
 #s4 .s4-capture-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}
 #s4 .s4-capture-actions .pg-btn{white-space:nowrap}
 #s4 .s4-capture-status{font-size:12px;font-weight:600;color:var(--text2)}
+.s4-strength-table{max-width:780px}
+.s4-strength-table th:nth-child(1){width:52%}
+.s4-strength-table th:nth-child(2){width:32%}
+.s4-strength-table th:nth-child(3){width:16%}
+.s4-strength-table input{width:100%;box-sizing:border-box;min-height:32px;padding:5px 8px;border:1px solid #abc0d5;border-radius:5px;background:#fff;color:#17314e;font:inherit}
+.s4-strength-table td:last-child{text-align:center}
 .s2-range-top{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.85fr);gap:16px;align-items:stretch}
 #s2-tbl-wrap{width:100%;overflow:hidden}
 .qty-range-ref{width:100%!important;table-layout:fixed!important}
@@ -2687,6 +2693,13 @@ input,select,textarea{
       <span class="admin-setting-title">Master Analysis</span>
       <span class="admin-setting-sub">Master planning analysis parameters</span>
     </button>
+
+    <button class="admin-setting-card" onclick="openAdminSetting('slide4strength')">
+      <span class="admin-setting-no">05</span>
+      <span class="admin-setting-icon">🏭</span>
+      <span class="admin-setting-title">Slide 04 · HW Line Strength</span>
+      <span class="admin-setting-sub">Chassis item strengths · Slide 04 only</span>
+    </button>
   </div>
 
   <div class="card admin-setting-panel" id="admin-setting-panel">
@@ -3038,7 +3051,8 @@ const ADMIN_SETTING_NAMES={
   efficiency:'Efficiency & Run Day Ladder',
   chassis:'Line Wise Chassis Priority',
   abp:'ABP Target',
-  master:'Master Analysis'
+  master:'Master Analysis',
+  slide4strength:'Slide 04 · HW Line Strength'
 };
 const DEFAULT_EFF_LADDER=[
  ['T-Shirt',45,50,55,58,60,65],
@@ -3433,13 +3447,14 @@ function renderABPTarget(){
  </div>`;
 }
 function openAdminSetting(key){
-  document.querySelectorAll('.admin-setting-card').forEach((el,i)=>{
-    const keys=['efficiency','chassis','abp','master'];
+  document.querySelectorAll('.admin-setting-grid .admin-setting-card').forEach((el,i)=>{
+    const keys=['efficiency','chassis','abp','master','slide4strength'];
     el.classList.toggle('active',keys[i]===key);
   });
   if(key==='efficiency'){renderEfficiencyLadder();loadEfficiencyLadderFromSQL(true);return}
   if(key==='chassis'){renderChassisPriority();loadChassisPriorityFromSQL(true);return}
   if(key==='abp'){renderABPTarget();loadABPTargetFromSQL(true);return}
+  if(key==='slide4strength'){renderS4StrengthSettings();loadS4StrengthsFromSQL(true);return}
   const title=ADMIN_SETTING_NAMES[key]||'Parameter Setting';
   document.getElementById('admin-setting-panel-title').textContent='⚙ '+title;
   if(key==='master'){
@@ -3542,6 +3557,7 @@ function requireSitePerm(key,label='এই module'){
 function goSlide(n){
   closeS2LineDetails();
   if(Number(n)===12 && canAccessSlide(12)){setTimeout(loadFloorAllocationAdmin,0);setTimeout(()=>loadEfficiencyLadderFromSQL(false),0);setTimeout(()=>loadChassisPriorityFromSQL(false),0);setTimeout(()=>loadABPTargetFromSQL(false),0);}
+  if(Number(n)===4 && canAccessSlide(4))setTimeout(()=>loadS4StrengthsFromSQL(false),0);
   const maxSlide=getMaxDashboardSlide();
   n=Math.max(0,Math.min(Number(n)||0,maxSlide));
   if(!canAccessSlide(n)){
@@ -3873,6 +3889,7 @@ async function bootLiveSupabaseData(){
   setSupabaseLiveBadge('','Supabase · checking live data…');
   await Promise.all([
     loadCentralAdminSettingsBeforeData(),
+    loadS4StrengthsFromSQL(false),
     loadDashboardMasterSettingsFromSQL(),
     loadABPTargetEfficiencyLive()
   ]);
@@ -4876,6 +4893,87 @@ function renderS3(data){
 }
 
 /* ══ SLIDE 4: LINE PLAN & LOADING ══════════════ */
+const S4_DEFAULT_STRENGTHS=[
+  {item_name:'T-Shirt',line_strength:12},{item_name:'Hoody/Jacket',line_strength:13},
+  {item_name:'Sweat Shirt',line_strength:3},{item_name:'Polo',line_strength:12},
+  {item_name:"TOP's",line_strength:1},{item_name:'Bottom',line_strength:6}
+];
+let S4_STRENGTHS_CACHE=null,S4_STRENGTHS_ERROR='';
+function getS4Strengths(){
+  const rows=S4_STRENGTHS_CACHE||S4_DEFAULT_STRENGTHS;
+  return Object.fromEntries(rows.map(r=>[r.item_name,Number(r.line_strength)]));
+}
+async function loadS4StrengthsFromSQL(render=false){
+  try{
+    const {data,error}=await SB.from('slide4_chassis_strength')
+      .select('item_name,line_strength,sort_order').order('sort_order');
+    if(error)throw error;
+    if(!data?.length)throw Error('Slide 04 strength table has no rows');
+    S4_STRENGTHS_CACHE=data.map(r=>({item_name:String(r.item_name),line_strength:Number(r.line_strength)}));
+    S4_STRENGTHS_ERROR='';
+    if(render)renderS4StrengthSettings();
+    if(CURRENT_SLIDE===4)renderS4(getFiltered());
+    return true;
+  }catch(error){
+    S4_STRENGTHS_ERROR=error?.message||String(error);
+    console.error('Slide 04 HW Line Strength SQL load failed',error);
+    if(render)renderS4StrengthSettings();
+    return false;
+  }
+}
+function s4StrengthRow(name='',value='0.0'){
+  return `<tr><td><input class="s4-strength-name" type="text" maxlength="80" value="${esc(name)}" placeholder="Chassis / Product item" aria-label="Chassis item name"></td>
+    <td><input class="s4-strength-value" type="number" min="0" max="9999" step="0.1" value="${Number(value).toFixed(1)}" aria-label="HW Line Strength"></td>
+    <td><button type="button" class="eff-delete-btn" onclick="this.closest('tr').remove()" aria-label="Delete item">✕</button></td></tr>`;
+}
+function renderS4StrengthSettings(){
+  const panel=document.getElementById('admin-setting-panel-body');
+  if(!panel)return;
+  document.getElementById('admin-setting-panel-title').textContent='🏭 Slide 04 · HW Line Strength';
+  const rows=S4_STRENGTHS_CACHE||S4_DEFAULT_STRENGTHS;
+  panel.innerHTML=`<div class="eff-toolbar"><div>
+      <div class="eff-note">Chassis (Item) · HW Line Strength</div>
+      <div class="eff-note2">Values are saved centrally in SQL and used only by Slide 04. Add a name matching a Plan product item to show it separately; deleted items move to Unmapped if planned.</div>
+    </div><div class="eff-actions"><span id="s4-strength-msg" role="status"></span>
+      <button type="button" class="top-btn" onclick="addS4StrengthItem()">＋ Add Item</button>
+      <button type="button" class="top-btn primary" onclick="saveS4Strengths()">💾 Save Changes</button></div></div>
+    ${S4_STRENGTHS_ERROR?`<p class="modal-msg" style="color:#b91c1c">SQL load failed: ${esc(S4_STRENGTHS_ERROR)}. Save will retry when the table is available.</p>`:''}
+    <div class="tbl-wrap"><table class="dt s4-strength-table"><thead><tr><th>Chassis (Item)</th><th>HW Line Strength</th><th>Delete</th></tr></thead>
+      <tbody id="s4-strength-body">${rows.map(r=>s4StrengthRow(r.item_name,r.line_strength)).join('')}</tbody></table></div>`;
+}
+function addS4StrengthItem(){
+  const body=document.getElementById('s4-strength-body');if(!body)return;
+  body.insertAdjacentHTML('beforeend',s4StrengthRow());
+  body.lastElementChild?.querySelector('.s4-strength-name')?.focus();
+}
+async function saveS4Strengths(){
+  if(!requireSitePerm('admin_settings','Slide 04 HW Line Strength'))return;
+  const msg=document.getElementById('s4-strength-msg');
+  const button=msg?.parentElement?.querySelector('.primary');
+  try{
+    const rows=[...document.querySelectorAll('#s4-strength-body tr')].map((tr,i)=>{
+      const item_name=tr.querySelector('.s4-strength-name').value.trim();
+      const raw=tr.querySelector('.s4-strength-value').value.trim();
+      const line_strength=Number(raw);
+      if(!item_name||item_name.length>80)throw Error(`Row ${i+1}: enter an item name (max 80 characters)`);
+      if(item_name.toLocaleLowerCase()==='unmapped')throw Error('Unmapped is a reserved item name');
+      if(!raw||!Number.isFinite(line_strength)||line_strength<0||line_strength>9999||Number(line_strength.toFixed(1))!==line_strength)
+        throw Error(`Row ${i+1}: strength must be 0–9999 with one decimal place`);
+      return {item_name,line_strength};
+    });
+    if(!rows.length||rows.length>100)throw Error('Keep 1 to 100 chassis items');
+    if(new Set(rows.map(r=>r.item_name.toLocaleLowerCase())).size!==rows.length)throw Error('Duplicate chassis item name');
+    if(button)button.disabled=true;
+    if(msg)msg.textContent='Saving to SQL…';
+    const {data,error}=await SB.rpc('replace_slide4_chassis_strength',{p_rows:rows});
+    if(error)throw error;
+    if(data?.status!=='SUCCESS'||Number(data.row_count)!==rows.length)throw Error('SQL row-count check failed');
+    if(!await loadS4StrengthsFromSQL(false))throw Error('Saved, but SQL reload failed: '+S4_STRENGTHS_ERROR);
+    renderS4StrengthSettings();
+    const saved=document.getElementById('s4-strength-msg');if(saved)saved.textContent='✓ Saved in SQL · Slide 04 updated';
+  }catch(error){if(msg)msg.textContent='Save failed: '+(error?.message||error);}
+  finally{if(button)button.disabled=false;}
+}
 let S4_RANGE_PLAN_ID=null,S4_RANGE_FROM='',S4_RANGE_TO='';
 function s4DateRangeChanged(which){
   const from=document.getElementById('s4-date-from'),to=document.getElementById('s4-date-to');
@@ -4916,7 +5014,7 @@ async function captureS4Image(mode){
   finally{copy.disabled=false;download.disabled=false;setTimeout(()=>status.textContent='',4000);}
 }
 function renderS4(data){
-  const hw=strengths();
+  const hw=getS4Strengths();
   const baseChassis=Object.keys(hw);
 
   // EXACT SAME SOURCE / SCOPE AS LINE RUNNING CALENDAR + ITEM COUNT PER DAY.
@@ -4967,7 +5065,7 @@ function renderS4(data){
   const chassisPlan=Object.fromEntries(baseChassis.map(c=>[c,0]));
   let unmapped=0;
   Object.entries(productAvg).forEach(([st,avg])=>{
-    const c=chassisOf(st);
+    const c=Object.hasOwn(hw,st)?st:chassisOf(st);
     if(Object.hasOwn(chassisPlan,c)) chassisPlan[c]+=avg;
     else unmapped+=avg;
   });
@@ -6316,6 +6414,7 @@ async function siteLogout(){
   FABRIC_CUTTING_DATA=[];SEWING_IO_DATA=[];DATE_WISE_PRODUCTION_DATA=[];
   resetGanttHoverCache();
   PLAN_VERSION_CACHE.clear();PLAN_UPLOAD_CATALOG=[];ACTIVE_PLAN_UPLOAD=null;
+  S4_STRENGTHS_CACHE=null;S4_STRENGTHS_ERROR='';
   EFF15_METRIC_DAILY=[];EFF15_METRIC_UPLOAD_ID=null;
   ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];
   resetOrderExecutionSlide();
