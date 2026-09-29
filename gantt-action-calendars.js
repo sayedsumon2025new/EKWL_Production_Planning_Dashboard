@@ -59,7 +59,7 @@ function ganttPsdGroups(){
   for(const row of DATA){
     const date=ganttActionDate(row.startdate),key=ganttPsdKey(row.line,row.ewo,row.color);
     if(!date?.year||!ganttKey(row.ewo)||!Number(row.line))continue;
-    if(!groups.has(key))groups.set(key,{key,line:row.line,ewo:row.ewo,color:row.color,date,recordIds:new Set(),printFlags:new Set(),embFlags:new Set(),outsourceValues:new Set(),products:new Set()});
+    if(!groups.has(key))groups.set(key,{key,line:row.line,ewo:row.ewo,color:row.color,date,recordIds:new Set(),printFlags:new Set(),embFlags:new Set(),outsourceValues:new Set(),products:new Set(),styles:new Set()});
     const group=groups.get(key);
     if(row.record_id!=null)group.recordIds.add(String(row.record_id));
     if(ganttPsdDateKey(date)<ganttPsdDateKey(group.date))group.date=date;
@@ -67,6 +67,7 @@ function ganttPsdGroups(){
     if(String(row.emb||'').trim())group.embFlags.add(String(row.emb).trim().toLowerCase());
     if(String(row.outsource||'').trim())group.outsourceValues.add(String(row.outsource).trim());
     if(String(row.productName||'').trim())group.products.add(String(row.productName).trim());
+    if(String(row.style||'').trim())group.styles.add(String(row.style).trim());
   }
   return groups;
 }
@@ -99,6 +100,13 @@ async function ganttPsdSources(ewos){
 function ganttPsdDateKey(date){return date?.year?`${date.year}-${String(date.month).padStart(2,'0')}-${String(date.day).padStart(2,'0')}`:'';}
 function ganttPsdStatus(rows,field){return [...new Set(rows.map(r=>String(r.row_data?.[field]||'').trim()).filter(Boolean))].join(' · ')||'—';}
 function ganttPsdFlag(flags){return flags?.has('yes')?'Yes':flags?.has('no')?'No':'—';}
+function ganttPsdPriorityMatch(styles,priority){
+  const norm=value=>String(value||'').trim().toUpperCase()
+    .replace(/HOODIE/g,'HOODY').replace(/SWEATSHIRT/g,'SWEAT SHIRT')
+    .replace(/TANK TOP/g,'TANKTOP').replace(/RUGBY\s+POLO/g,'RUGBY POLO').replace(/\s+/g,' ');
+  const allowed=new Set((priority||[]).slice(1).flatMap(value=>norm(value).split('/').map(s=>s.trim()).filter(Boolean)));
+  return styles.size>0&&[...styles].every(style=>allowed.has(norm(style)));
+}
 function ganttPsdSummary(dayEvents,results){
   const groups=ganttPsdGroups(),plan=ganttPsdPlanTotals(groups),lines=new Map();
   const priorities=new Map(getChassisPriority().map(row=>[Number(row[0]),row]));
@@ -109,9 +117,10 @@ function ganttPsdSummary(dayEvents,results){
   for(const event of dayEvents){
     const group=groups.get(ganttPsdKey(event.line,event.ewo,event.color));if(!group)continue;
     const line=Number(group.line),ewo=ganttKey(group.ewo);
-    if(!lines.has(line))lines.set(line,{ewos:new Set(),products:new Set(),colors:new Set(),order:0,orderKnown:!!orders,plan:0});
+    if(!lines.has(line))lines.set(line,{ewos:new Set(),products:new Set(),styles:new Set(),colors:new Set(),order:0,orderKnown:!!orders,plan:0});
     const item=lines.get(line);item.ewos.add(ewo);
     for(const product of group.products)item.products.add(product);
+    for(const style of group.styles)item.styles.add(style);
     const colorKey=ewo+'|'+ganttColorKey(group.color);
     if(!item.colors.has(colorKey)){
       item.colors.add(colorKey);
@@ -125,7 +134,7 @@ function ganttPsdSummary(dayEvents,results){
   const totalPlan=counts.reduce((n,x)=>n+x.plan,0),allOrdersKnown=counts.every(x=>x.orderKnown);
   const totalOrder=counts.reduce((n,x)=>n+x.order,0);
   const rows=[...lines.entries()].sort((a,b)=>a[0]-b[0]).map(([line,item])=>`<tr><td class="psd-summary-line">${esc(String(line).padStart(2,'0'))}</td>`+
-    `<td>${item.ewos.size}</td><td class="psd-summary-products">${item.products.size?esc([...item.products].sort().join(' · ')):'—'}</td>`+
+    `<td>${item.ewos.size}</td><td class="psd-summary-products ${ganttPsdPriorityMatch(item.styles,priorities.get(line))?'psd-priority-match':'psd-priority-miss'}">${item.products.size?esc([...item.products].sort().join(' · ')):'—'}</td>`+
     `<td class="psd-summary-products">${priorities.get(line)?.slice(1).map((name,i)=>name?`${i+1}${i?'nd':'st'}: ${esc(name)}`:'').filter(Boolean).join(' · ')||'—'}</td>`+
     `<td class="psd-summary-ewos">${esc([...item.ewos].sort().join(', '))}</td><td>${item.ewos.size}</td>`+
     `<td>${item.orderKnown?fmt(item.order):'—'}</td><td>${fmt(item.plan)}</td><td>${fmt(Math.round(item.plan/item.ewos.size))}</td></tr>`).join('');
@@ -332,6 +341,8 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 #s11 .psd-summary-table .psd-summary-line{background:#989ca0;color:white;font-weight:800;text-align:left}
 #s11 .psd-summary-table .psd-summary-ewos{text-align:left}
 #s11 .psd-summary-table .psd-summary-products{text-align:left;min-width:150px}
+#s11 .psd-summary-table td.psd-priority-match{background:#166534!important;color:#fff!important;font-weight:800}
+#s11 .psd-summary-table td.psd-priority-miss{background:#991b1b!important;color:#fff!important;font-weight:800}
 #s11 .psd-title-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 #s11 #gantt-psd-copy,#s11 #gantt-psd-excel,#s11 #gantt-psd-summary-copy{border:1px solid #cad8e9;background:#eaf1fa;color:#173960;border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer}
 #s11 #gantt-psd-excel{text-decoration:none;display:inline-flex;align-items:center}
