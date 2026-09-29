@@ -1922,6 +1922,13 @@ input,select,textarea{
 #s0 .home-status,#s0 .home-quick{border-radius:13px!important;box-shadow:0 4px 16px rgba(18,49,82,.05)!important}
 #s0 .home-quick{padding:19px!important}
 #s0 .home-quick-title{font-size:14px!important;margin-bottom:14px}
+#s0 .home-live-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+#s0 .home-live-heading .home-quick-title{margin:0}
+#s0 .home-live-date-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap;color:#334155;font-size:12px;font-weight:700}
+#s0 .home-live-date-controls input{height:32px;min-width:132px;padding:4px 7px;border:1px solid #b7c9d8;border-radius:7px;background:#fff;color:#172d46;font:inherit}
+#s0 .home-live-date-controls button{height:32px;padding:0 10px;border:1px solid #afc3d7;border-radius:7px;background:#eef5fb;color:#173d60;font-weight:700;cursor:pointer}
+#s0 .home-live-date-controls button:hover{background:#dcebf8}
+#s0 #home-live-date-error{color:#b42318;font-size:12px;font-weight:700}
 #s0 .load-panel{display:block!important}
 #s0 .load-fill{transition:width .45s cubic-bezier(.2,.7,.3,1)}
 #s0 #home-live-kpis .home-quick-box{border-radius:10px!important;background:linear-gradient(145deg,#0d2947,#163a5d)!important;box-shadow:0 6px 16px rgba(12,38,68,.14)!important;transition:transform .23s ease,box-shadow .23s ease}
@@ -2229,7 +2236,15 @@ input,select,textarea{
       </div>
     </div>
     <div class="home-quick">
-      <div class="home-quick-title">📊 LIVE PLANNING SUMMARY <span id="home-live-month" style="color:var(--text2);font-weight:600"></span></div>
+      <div class="home-live-heading">
+        <div class="home-quick-title">📊 LIVE PLANNING SUMMARY <span id="home-live-month" style="color:var(--text2);font-weight:600"></span></div>
+        <div class="home-live-date-controls" aria-label="Live planning summary date range">
+          <label for="home-date-from">From</label><input id="home-date-from" type="date" onchange="renderHome()">
+          <label for="home-date-to">To</label><input id="home-date-to" type="date" onchange="renderHome()">
+          <button type="button" onclick="clearHomeDateRange()">All dates</button>
+          <span id="home-live-date-error" role="status"></span>
+        </div>
+      </div>
       <div class="home-quick-grid" id="home-live-kpis"></div>
       <div id="home-live-detail" style="margin-top:12px"></div>
     </div>
@@ -4235,18 +4250,50 @@ function renderAll(){
  }
 }
 
+let HOME_RANGE_PLAN_ID='';
+function clearHomeDateRange(){
+  document.getElementById('home-date-from').value='';
+  document.getElementById('home-date-to').value='';
+  renderHome();
+}
 function renderHome(){
   const host=document.getElementById('home-live-kpis');
   const detail=document.getElementById('home-live-detail');
   const monthEl=document.getElementById('home-live-month');
   if(!host||!detail)return;
 
-  const data=getFiltered();
-  const selected='';
-  if(monthEl) monthEl.textContent='· '+activePlanningLabel();
+  const fromInput=document.getElementById('home-date-from');
+  const toInput=document.getElementById('home-date-to');
+  const errorEl=document.getElementById('home-live-date-error');
+  const planId=String(ACTIVE_PLAN_UPLOAD?.id||'');
+  if(HOME_RANGE_PLAN_ID!==planId){
+    HOME_RANGE_PLAN_ID=planId;
+    fromInput.value='';toInput.value='';
+  }
+  const availableDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(validDate))].sort();
+  const minDate=availableDates[0]||'',maxDate=availableDates.at(-1)||'';
+  for(const input of [fromInput,toInput]){input.min=minDate;input.max=maxDate;input.disabled=!availableDates.length;}
+  const from=fromInput.value,to=toInput.value;
+  const invalid=from&&to&&from>to;
+  errorEl.textContent=invalid?'From date must be before To date.':'';
+  const selected=from||to ? [from||minDate,to||maxDate].join(' – ') : '';
+  if(monthEl) monthEl.textContent='· '+activePlanningLabel()+(selected?' · '+selected:'');
+  if(invalid){host.innerHTML='';detail.innerHTML='';return;}
+
+  // Match the selected calendar days to Plan/Day record IDs; plan quantity
+  // uses the sum of daily values inside the range, not the full record total.
+  const scopedDaily=DAILY_PLAN.filter(d=>d.value>0&&(!from||d.date>=from)&&(!to||d.date<=to));
+  const planByRecord=new Map();
+  for(const day of scopedDaily){
+    const id=String(day.record_id);
+    planByRecord.set(id,(planByRecord.get(id)||0)+N(day.value));
+  }
+  const allData=getFiltered();
+  const data=from||to ? allData.filter(r=>planByRecord.has(String(r.record_id)))
+    .map(r=>({...r,planqty:planByRecord.get(String(r.record_id))})) : allData;
 
   if(!data.length){
-    host.innerHTML='<div class="home-quick-box"><b class="home-live-kpi-val">0</b><span>No planning data loaded</span></div>';
+    host.innerHTML='<div class="home-quick-box"><b class="home-live-kpi-val">0</b><span>'+(allData.length?'No plan in selected dates':'No planning data loaded')+'</span></div>';
     detail.innerHTML='';
     return;
   }
@@ -4258,7 +4305,7 @@ function renderHome(){
   const master=getChassisMasterLines();
   const activeLines=new Set(data.map(r=>Number(r.line)).filter(n=>master.has(n))).size;
 
-  const dateScope=DAILY_PLAN.filter(d=>(!selected||monthFromISO(d.date)===selected)&&d.value>0&&master.has(Number(d.line)));
+  const dateScope=scopedDaily.filter(d=>master.has(Number(d.line)));
   const activeDates=new Set(dateScope.map(d=>d.date)).size;
   const feedUnits=new Set(data.map(r=>JSON.stringify([r.month,String(r.ewo||'').trim(),String(r.line||'').trim()])));
   const totalFeeding=[...feedUnits].filter(x=>x!=='["","",""]').length;
