@@ -226,6 +226,10 @@ body{background:var(--navy);color:var(--text)}
 #s12 .status-filter-control select{width:100%;box-sizing:border-box;border:2px solid #2563eb;background:#eff6ff;color:#002b5b;font-weight:700}
 #s12 .status-filter-control select:focus{outline:2px solid #f59e0b;outline-offset:2px}
 #s12 .status-filter-link{border:0;background:none;color:inherit;font:inherit;letter-spacing:inherit;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+#s12 .s12-date-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+#s12 .s12-date-tools label{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2)}
+#s12 .s12-date-tools input[type=date]{width:142px;box-sizing:border-box;padding:5px 7px;border:1px solid #abc0d5;border-radius:6px;background:#fff;color:#17314e;font:inherit;cursor:pointer}
+#s12 .s12-date-note{font-size:12px;font-weight:700;color:var(--text2)}
 #s12 .s12-analysis-block{margin-top:18px}
 #s12 .s12-analysis-title{font-size:12px;font-weight:800;color:var(--amber2);margin-bottom:8px}
 #s12 .s12-pie-layout{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -2665,10 +2669,16 @@ input,select,textarea{
   <div class="kpi-row" id="s12-kpi"></div>
   <div class="card">
     <div class="card-title">🔎 Fabric &amp; Cutting Filters <span class="ct-right" id="s12-count"></span></div>
+    <div class="s12-date-tools" role="group" aria-label="Plan date range">
+      <label>Plan from <input id="s12-date-from" type="date" aria-label="Plan from date" onchange="s12DateRangeChanged('from')"></label>
+      <label>Plan to <input id="s12-date-to" type="date" aria-label="Plan to date" onchange="s12DateRangeChanged('to')"></label>
+      <button type="button" class="pg-btn" id="s12-date-all" onclick="s12ResetDateRange()">All dates</button>
+      <span class="s12-date-note" id="s12-date-note"></span>
+    </div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap">
       <span style="font-size:11px;font-weight:900;color:#002b5b">PLAN EWO FILTER:</span>
       <select id="s12-plan-match" onchange="renderS12('plan')" style="min-width:220px;border:2px solid #f59e0b;background:#fff8e7;font-weight:900;color:#002b5b;padding:6px 9px;border-radius:6px">
-        <option value="">All EWO</option>
+        <option value="">All planned EWO in dates</option>
         <option value="match">✓ Plan EWO Match Only</option>
         <option value="nomatch">✕ Not in Plan</option>
       </select>
@@ -4412,7 +4422,21 @@ function renderHome(){
 }
 
 
-function fabricCuttingCascade(all,planEwoSet,planMatch,search,selected,changed=''){
+let S12_RANGE_PLAN_ID='',S12_RANGE_FROM='',S12_RANGE_TO='';
+function s12DateRangeChanged(side){
+  const from=document.getElementById('s12-date-from'),to=document.getElementById('s12-date-to');
+  S12_RANGE_FROM=from.value;S12_RANGE_TO=to.value;
+  if(S12_RANGE_FROM&&S12_RANGE_TO&&S12_RANGE_FROM>S12_RANGE_TO){
+    if(side==='from')S12_RANGE_TO=S12_RANGE_FROM;else S12_RANGE_FROM=S12_RANGE_TO;
+  }
+  renderS12('date');
+}
+function s12ResetDateRange(){
+  const dates=DAILY_PLAN.filter(d=>N(d.value)>0&&validDate(d.date)).map(d=>d.date).sort();
+  S12_RANGE_FROM=dates[0]||'';S12_RANGE_TO=dates.at(-1)||'';
+  renderS12('date');
+}
+function fabricCuttingCascade(all,planEwoSet,planMatch,search,selected,changed='',dateEwoSet=null){
   const ewoKey=v=>{
     let s=String(v??'').trim().toUpperCase();
     if(/^\d+\.0+$/.test(s))s=s.replace(/\.0+$/,'');
@@ -4421,8 +4445,9 @@ function fabricCuttingCascade(all,planEwoSet,planMatch,search,selected,changed='
   const text=v=>String(v??'').trim();
   const options=rows=>[...new Set(rows.map(text).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const base=all.filter(r=>{
-    const match=planEwoSet.has(ewoKey(r.ewo));
-    return (!planMatch||(planMatch==='match'?match:!match))&&
+    const ewo=ewoKey(r.ewo),match=planEwoSet.has(ewo);
+    const inRange=!dateEwoSet||dateEwoSet.has(ewo);
+    return (planMatch==='nomatch'?!match:match&&inRange)&&
       (!search||[r.ewo,r.color_name,r.buyer,r.item_product_type,r.style_embellishment_type]
         .some(v=>text(v).toLowerCase().includes(search)));
   });
@@ -4466,9 +4491,30 @@ function renderS12(changed=''){
   const planEwoSet=new Set((DATA||[])
     .filter(r=>!r.is_summary_row && ewoKey(r.ewo))
     .map(r=>ewoKey(r.ewo)));
+  const activeDates=[...new Set(DAILY_PLAN.filter(d=>N(d.value)>0&&validDate(d.date)).map(d=>d.date))].sort();
+  const planId=String(ACTIVE_PLAN_UPLOAD?.id||'local');
+  if(S12_RANGE_PLAN_ID!==planId){
+    S12_RANGE_PLAN_ID=planId;S12_RANGE_FROM=activeDates[0]||'';S12_RANGE_TO=activeDates.at(-1)||'';
+  }
+  const dateFrom=document.getElementById('s12-date-from'),dateTo=document.getElementById('s12-date-to');
+  for(const input of [dateFrom,dateTo]){
+    input.disabled=!activeDates.length;input.min=activeDates[0]||'';input.max=activeDates.at(-1)||'';
+  }
+  if(activeDates.length){
+    const clamp=value=>!value||value<activeDates[0]?activeDates[0]:value>activeDates.at(-1)?activeDates.at(-1):value;
+    S12_RANGE_FROM=clamp(S12_RANGE_FROM);S12_RANGE_TO=clamp(S12_RANGE_TO);
+    if(S12_RANGE_FROM>S12_RANGE_TO)S12_RANGE_TO=S12_RANGE_FROM;
+  }
+  dateFrom.value=S12_RANGE_FROM;dateTo.value=S12_RANGE_TO;
+  document.getElementById('s12-date-all').disabled=!activeDates.length;
+  const scopedDaily=DAILY_PLAN.filter(d=>N(d.value)>0&&d.date>=S12_RANGE_FROM&&d.date<=S12_RANGE_TO);
+  const dateEwoSet=new Set(scopedDaily.map(d=>ewoKey(d.ewo)).filter(Boolean));
+  document.getElementById('s12-date-note').textContent=planMatch==='nomatch'
+    ?'Not in Plan: date range does not apply'
+    :fmt(dateEwoSet.size)+' planned EWO in selected dates';
   const {rows,available,values}=fabricCuttingCascade(all,planEwoSet,planMatch,q,{
     buyer:buyerEl.value,product:prodEl.value,status:statusEl.value,difficulty:diffEl.value
-  },changed);
+  },changed,dateEwoSet);
   const setOpts=(el,label,vals,val)=>{
     el.innerHTML='<option value="">'+label+'</option>'+vals.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
     el.value=val;
@@ -4497,7 +4543,8 @@ function renderS12(changed=''){
   document.getElementById('s12-kpi').innerHTML=kpis.map(x=>'<div class="kpi"><div class="kpi-val">'+x[1]+'</div><div class="kpi-label">'+x[0]+'</div><div class="kpi-sub">'+x[2]+'</div></div>').join('');
 
   const plannedLinesByEwo=new Map();
-  (DATA||[]).filter(r=>!r.is_summary_row&&N(r.planqty)>0).forEach(r=>{
+  const scopedPlanRecords=new Set(scopedDaily.map(d=>String(d.record_id)));
+  (DATA||[]).filter(r=>!r.is_summary_row&&scopedPlanRecords.has(String(r.record_id))).forEach(r=>{
     const ewo=ewoKey(r.ewo),line=String(r.line??'').trim();
     if(!ewo||!line||line==='0')return;
     if(!plannedLinesByEwo.has(ewo))plannedLinesByEwo.set(ewo,new Set());
