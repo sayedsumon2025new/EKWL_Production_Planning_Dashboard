@@ -4898,33 +4898,41 @@ const S4_DEFAULT_STRENGTHS=[
   {item_name:'Sweat Shirt',line_strength:3},{item_name:'Polo',line_strength:12},
   {item_name:"TOP's",line_strength:1},{item_name:'Bottom',line_strength:6}
 ];
-let S4_STRENGTHS_CACHE=null,S4_STRENGTHS_ERROR='';
+let S4_STRENGTHS_CACHE=null,S4_STRENGTHS_ERROR='',S4_STRENGTHS_DIRTY=false,S4_STRENGTHS_SAVING=false,S4_STRENGTHS_LOAD_TOKEN=0;
 function getS4Strengths(){
   const rows=S4_STRENGTHS_CACHE||S4_DEFAULT_STRENGTHS;
   return Object.fromEntries(rows.map(r=>[r.item_name,Number(r.line_strength)]));
 }
 async function loadS4StrengthsFromSQL(render=false){
+  const token=++S4_STRENGTHS_LOAD_TOKEN;
   try{
     const {data,error}=await SB.from('slide4_chassis_strength')
       .select('item_name,line_strength,sort_order').order('sort_order');
+    if(token!==S4_STRENGTHS_LOAD_TOKEN)return false;
     if(error)throw error;
     if(!data?.length)throw Error('Slide 04 strength table has no rows');
     S4_STRENGTHS_CACHE=data.map(r=>({item_name:String(r.item_name),line_strength:Number(r.line_strength)}));
     S4_STRENGTHS_ERROR='';
-    if(render)renderS4StrengthSettings();
+    if(render&&!S4_STRENGTHS_DIRTY)renderS4StrengthSettings();
     if(CURRENT_SLIDE===4)renderS4(getFiltered());
     return true;
   }catch(error){
+    if(token!==S4_STRENGTHS_LOAD_TOKEN)return false;
     S4_STRENGTHS_ERROR=error?.message||String(error);
     console.error('Slide 04 HW Line Strength SQL load failed',error);
-    if(render)renderS4StrengthSettings();
+    if(render&&!S4_STRENGTHS_DIRTY)renderS4StrengthSettings();
     return false;
   }
 }
 function s4StrengthRow(name='',value='0.0'){
-  return `<tr><td><input class="s4-strength-name" type="text" maxlength="80" value="${esc(name)}" placeholder="Chassis / Product item" aria-label="Chassis item name"></td>
-    <td><input class="s4-strength-value" type="number" min="0" max="9999" step="0.1" value="${Number(value).toFixed(1)}" aria-label="HW Line Strength"></td>
-    <td><button type="button" class="eff-delete-btn" onclick="this.closest('tr').remove()" aria-label="Delete item">✕</button></td></tr>`;
+  return `<tr><td><input class="s4-strength-name" type="text" maxlength="80" value="${esc(name)}" placeholder="Chassis / Product item" aria-label="Chassis item name" oninput="s4StrengthChanged()"></td>
+    <td><input class="s4-strength-value" type="number" min="0" max="9999" step="0.1" value="${Number(value).toFixed(1)}" aria-label="HW Line Strength" oninput="s4StrengthChanged()"></td>
+    <td><button type="button" class="eff-delete-btn" onclick="this.closest('tr').remove();s4StrengthChanged()" aria-label="Delete item">✕</button></td></tr>`;
+}
+function s4StrengthChanged(){
+  S4_STRENGTHS_DIRTY=true;
+  const msg=document.getElementById('s4-strength-msg');
+  if(msg)msg.textContent='Unsaved changes · click Save Changes to update Slide 04';
 }
 function renderS4StrengthSettings(){
   const panel=document.getElementById('admin-setting-panel-body');
@@ -4933,7 +4941,7 @@ function renderS4StrengthSettings(){
   const rows=S4_STRENGTHS_CACHE||S4_DEFAULT_STRENGTHS;
   panel.innerHTML=`<div class="eff-toolbar"><div>
       <div class="eff-note">Chassis (Item) · HW Line Strength</div>
-      <div class="eff-note2">Values are saved centrally in SQL and used only by Slide 04. Add a name matching a Plan product item to show it separately; deleted items move to Unmapped if planned.</div>
+      <div class="eff-note2">Values are saved centrally in SQL and used only by Slide 04. Add a name matching a Plan product item to show it separately; deleted items move to Unmapped if planned. Click Save Changes after editing.</div>
     </div><div class="eff-actions"><span id="s4-strength-msg" role="status"></span>
       <button type="button" class="top-btn" onclick="addS4StrengthItem()">＋ Add Item</button>
       <button type="button" class="top-btn primary" onclick="saveS4Strengths()">💾 Save Changes</button></div></div>
@@ -4944,10 +4952,12 @@ function renderS4StrengthSettings(){
 function addS4StrengthItem(){
   const body=document.getElementById('s4-strength-body');if(!body)return;
   body.insertAdjacentHTML('beforeend',s4StrengthRow());
+  s4StrengthChanged();
   body.lastElementChild?.querySelector('.s4-strength-name')?.focus();
 }
 async function saveS4Strengths(){
   if(!requireSitePerm('admin_settings','Slide 04 HW Line Strength'))return;
+  if(S4_STRENGTHS_SAVING)return;
   const msg=document.getElementById('s4-strength-msg');
   const button=msg?.parentElement?.querySelector('.primary');
   try{
@@ -4963,16 +4973,21 @@ async function saveS4Strengths(){
     });
     if(!rows.length||rows.length>100)throw Error('Keep 1 to 100 chassis items');
     if(new Set(rows.map(r=>r.item_name.toLocaleLowerCase())).size!==rows.length)throw Error('Duplicate chassis item name');
+    S4_STRENGTHS_SAVING=true;
+    ++S4_STRENGTHS_LOAD_TOKEN; // discard any read that began before this write
     if(button)button.disabled=true;
     if(msg)msg.textContent='Saving to SQL…';
     const {data,error}=await SB.rpc('replace_slide4_chassis_strength',{p_rows:rows});
     if(error)throw error;
     if(data?.status!=='SUCCESS'||Number(data.row_count)!==rows.length)throw Error('SQL row-count check failed');
     if(!await loadS4StrengthsFromSQL(false))throw Error('Saved, but SQL reload failed: '+S4_STRENGTHS_ERROR);
+    if(rows.length!==S4_STRENGTHS_CACHE.length||rows.some((r,i)=>r.item_name!==S4_STRENGTHS_CACHE[i].item_name||r.line_strength!==S4_STRENGTHS_CACHE[i].line_strength))
+      throw Error('SQL values do not match the edited rows; please retry');
+    S4_STRENGTHS_DIRTY=false;
     renderS4StrengthSettings();
     const saved=document.getElementById('s4-strength-msg');if(saved)saved.textContent='✓ Saved in SQL · Slide 04 updated';
-  }catch(error){if(msg)msg.textContent='Save failed: '+(error?.message||error);}
-  finally{if(button)button.disabled=false;}
+  }catch(error){const current=document.getElementById('s4-strength-msg');if(current)current.textContent='Save failed: '+(error?.message||error);}
+  finally{S4_STRENGTHS_SAVING=false;const current=document.getElementById('s4-strength-msg');const currentButton=current?.parentElement?.querySelector('.primary');if(currentButton)currentButton.disabled=false;}
 }
 let S4_RANGE_PLAN_ID=null,S4_RANGE_FROM='',S4_RANGE_TO='';
 function s4DateRangeChanged(which){
