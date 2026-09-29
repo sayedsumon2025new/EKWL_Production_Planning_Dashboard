@@ -1688,6 +1688,16 @@ input,select,textarea{
 #s11 .gantt td.g-ewo.g-wip-short{background:#ffe66d!important;color:#5b4300!important;font-weight:900!important}
 #s11 .gantt .g-date{min-width:96px;font-size:10px}
 #s11 .gantt-legend{font-size:10px;margin:0 0 9px 2px;color:#526176;font-weight:700}
+#s11 .gantt-coverage-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;padding-bottom:7px;border-bottom:1px solid #dbe4ee}
+#s11 .gantt-coverage-switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:#173b60;font-weight:800}
+#s11 .gantt-coverage-switch input{position:absolute;opacity:0;width:1px;height:1px}
+#s11 .gantt-coverage-track{width:36px;height:21px;border-radius:15px;background:#94a3b8;position:relative;transition:background .2s}
+#s11 .gantt-coverage-track::after{content:"";position:absolute;top:3px;left:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s}
+#s11 .gantt-coverage-switch input:checked+.gantt-coverage-track{background:#087f64}
+#s11 .gantt-coverage-switch input:checked+.gantt-coverage-track::after{transform:translateX(15px)}
+#s11 .gantt-coverage-switch input:focus-visible+.gantt-coverage-track{outline:3px solid #2563eb;outline-offset:2px}
+#s11 #gantt-condition-filter{min-height:32px;padding:4px 8px;border:1px solid #b8cbdc;border-radius:7px;background:#fff;color:#173b60;font-weight:700}
+#s11 #gantt-condition-filter:disabled{opacity:.55}
 #s11 .gantt-note{color:#5a6a7d}
 #s11 .gantt-tabs{display:flex;gap:7px;overflow-x:auto;padding:8px 2px 13px;scrollbar-width:thin}
 #s11 .gantt-tabs button{white-space:nowrap;border:1px solid #cbdce8;background:#f5f9fc;color:#315c79;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer}
@@ -2496,6 +2506,15 @@ input,select,textarea{
     </div>
     <div class="gantt-legend">Team/Line × Date · <span class="gantt-note">একই Line/Date-এ একাধিক EWO থাকলে সর্বোচ্চ Plan Qty-এর EWO দেখানো হবে।</span></div>
     <div class="gantt-coverage-legend" style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0 10px;padding:9px 12px;background:#f8fafc;border:1px solid #dbe4ee;border-radius:8px;font-size:12px;font-weight:700;color:#243447">
+<div class="gantt-coverage-controls">
+  <label class="gantt-coverage-switch"><input id="gantt-color-condition" type="checkbox" checked onchange="renderS11(getFiltered())"><span class="gantt-coverage-track" aria-hidden="true"></span>Color condition</label>
+  <label for="gantt-condition-filter">Show</label>
+  <select id="gantt-condition-filter" aria-label="Filter Gantt color condition" onchange="renderS11(getFiltered())">
+    <option value="">All conditions</option><option value="wip">Green · Sewing WIP</option>
+    <option value="cutting">Light Blue · Cutting WIP</option><option value="cutable">Dark Indigo · Cutable Qty</option>
+    <option value="short">Red · Material short</option>
+  </select>
+</div>
 <span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#4ade80;margin-right:6px"></b>Green → Sewing WIP cumulative Plan cover করে</span>
 <span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#bae6fd;margin-right:6px"></b>Light Blue → Sewing WIP fail, কিন্তু remaining Plan Cutting WIP cover করে</span>
 <span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#312e81;margin-right:6px"></b>Dark Indigo → Sewing WIP + Cutting WIP fail, কিন্তু remaining Plan Cutable Qty cover করে</span>
@@ -5322,6 +5341,12 @@ function s11DateRangeChanged(which){
   renderS11(getFiltered());
 }
 function s11ResetDateRange(){S11_RANGE_PLAN_ID=null;renderS11(getFiltered());}
+function ganttCoverageCondition(wip,cutting,cutable,shortage){
+  return wip?'wip':cutting?'cutting':cutable?'cutable':shortage?'short':'';
+}
+function ganttConditionVisible(condition,enabled,filter){
+  return !enabled||!filter||condition===filter;
+}
 
 function renderS11(data){
   const selected='';
@@ -5535,6 +5560,11 @@ function renderS11(data){
   const ewoBtn=document.getElementById('gantt-ewo-search-btn');
   const lineSel=document.getElementById('gantt-line-filter');
   const clearBtn=document.getElementById('gantt-filter-clear');
+  const colorToggle=document.getElementById('gantt-color-condition');
+  const conditionSelect=document.getElementById('gantt-condition-filter');
+  const colorEnabled=!!colorToggle?.checked;
+  const conditionFilter=colorEnabled?conditionSelect?.value||'':'';
+  if(conditionSelect)conditionSelect.disabled=!colorEnabled;
   if(lineSel){
     const current=String(GANTT_LINE_FILTER||'');
     lineSel.innerHTML='<option value="">All Lines</option>'+allLines.map(x=>'<option value="'+x+'" '+(String(x)===current?'selected':'')+'>Line '+x+'</option>').join('');
@@ -5546,7 +5576,12 @@ function renderS11(data){
     ewoInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();runSearch();}};
     if(ewoBtn)ewoBtn.onclick=runSearch;
   }
-  if(clearBtn)clearBtn.onclick=()=>{GANTT_EWO_SEARCH='';GANTT_LINE_FILTER='';renderS11(data);};
+  if(clearBtn)clearBtn.onclick=()=>{
+    GANTT_EWO_SEARCH='';GANTT_LINE_FILTER='';
+    if(colorToggle)colorToggle.checked=true;
+    if(conditionSelect)conditionSelect.value='';
+    renderS11(data);
+  };
 
   const s11Body=document.getElementById('s11-body'); if(!s11Body)return; s11Body.innerHTML=lines.map(line=>'<tr><td class="sticky-team">'+line+'</td>'+displayDates.map(date=>{
     const w=winner.get(line+'|'+date);
@@ -5597,8 +5632,10 @@ function renderS11(data){
       w.consumableCutableQty=null;
     }
 
+    const condition=ganttCoverageCondition(wipCovered,cuttingCovered,cutableCovered,materialShort);
+    if(!ganttConditionVisible(condition,colorEnabled,conditionFilter))return '<td class="g-empty">&nbsp;</td>';
     const payloadWithWip=encodeURIComponent(JSON.stringify({line,date,...w}));
-    const coverageClass=wipCovered?' g-wip-covered':cuttingCovered?' g-cutting-covered':cutableCovered?' g-cutable-covered':materialShort?' g-material-short':'';
+    const coverageClass=!colorEnabled?'':condition==='wip'?' g-wip-covered':condition==='cutting'?' g-cutting-covered':condition==='cutable'?' g-cutable-covered':condition==='short'?' g-material-short':'';
     return '<td class="g-ewo'+coverageClass+'" data-gantt="'+payloadWithWip+'">'+esc(w.ewo)+'</td>';
   }).join('')+'</tr>').join('');
 
