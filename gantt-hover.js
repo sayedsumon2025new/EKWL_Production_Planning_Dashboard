@@ -144,8 +144,9 @@ function ganttHoverHtml(w,source){
       row('01','Total Order Qty',cutSum('color_order_qty')==null?null:fmt(cutSum('color_order_qty')))+
       row('02','Fabrics Booking (kg)',cutSum('fabric_booking_qty')==null?null:fmt(cutSum('fabric_booking_qty')))+
       row('03','Fabrics Received (kg)',cutSum('total_fabric_received')==null?null:fmt(cutSum('total_fabric_received')))+
-      row('04','Total Cutting Pcs',cutQty==null?null:fmt(cutQty))+
-      row('05','Cutting Balance',cutSum('cutting_balance')==null?null:fmt(cutSum('cutting_balance'))))+
+      row('04','Fabrics Balance (Kg)',cutSum('fabric_balance')==null?null:fmt(cutSum('fabric_balance')))+
+      row('05','Total Cutting Pcs',cutQty==null?null:fmt(cutQty))+
+      row('06','Cutting Balance',cutSum('cutting_balance')==null?null:fmt(cutSum('cutting_balance'))))+
     card('Embellishment Send / Receive','embellishment',
       '<div class="gt-emb-pair"><div><h4>Print</h4>'+
         row('','Send',send==null?null:fmt(send))+
