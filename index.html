@@ -845,7 +845,10 @@ table.cal td.priority-2{color:#ffd166}
 #s4 .s4-capture-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}
 #s4 .s4-capture-actions .pg-btn{white-space:nowrap}
 #s4 .s4-capture-status{font-size:12px;font-weight:600;color:var(--text2)}
-.s4-strength-table{max-width:780px}
+.admin-setting-placeholder:has(.s4-strength-table){display:block;min-height:0;padding:14px;border-style:solid}
+.s4-strength-table{width:100%;max-width:780px}
+.s4-strength-table+*{clear:both}
+#s4-strength-msg{font-weight:700;color:#1e5d86;white-space:normal}
 .s4-strength-table th:nth-child(1){width:52%}
 .s4-strength-table th:nth-child(2){width:32%}
 .s4-strength-table th:nth-child(3){width:16%}
@@ -4899,6 +4902,7 @@ const S4_DEFAULT_STRENGTHS=[
   {item_name:"TOP's",line_strength:1},{item_name:'Bottom',line_strength:6}
 ];
 let S4_STRENGTHS_CACHE=null,S4_STRENGTHS_ERROR='',S4_STRENGTHS_DIRTY=false,S4_STRENGTHS_SAVING=false,S4_STRENGTHS_LOAD_TOKEN=0;
+let S4_STRENGTHS_EDIT_VERSION=0,S4_STRENGTHS_AUTOSAVE_TIMER=0,S4_STRENGTHS_SAVE_PENDING=false;
 function getS4Strengths(){
   const rows=S4_STRENGTHS_CACHE||S4_DEFAULT_STRENGTHS;
   return Object.fromEntries(rows.map(r=>[r.item_name,Number(r.line_strength)]));
@@ -4925,14 +4929,17 @@ async function loadS4StrengthsFromSQL(render=false){
   }
 }
 function s4StrengthRow(name='',value='0.0'){
-  return `<tr><td><input class="s4-strength-name" type="text" maxlength="80" value="${esc(name)}" placeholder="Chassis / Product item" aria-label="Chassis item name" oninput="s4StrengthChanged()"></td>
-    <td><input class="s4-strength-value" type="number" min="0" max="9999" step="0.1" value="${Number(value).toFixed(1)}" aria-label="HW Line Strength" oninput="s4StrengthChanged()"></td>
+  return `<tr><td><input class="s4-strength-name" type="text" maxlength="80" value="${esc(name)}" placeholder="Chassis / Product item" aria-label="Chassis item name" oninput="s4StrengthChanged()" onchange="s4StrengthChanged(true)"></td>
+    <td><input class="s4-strength-value" type="number" min="0" max="9999" step="0.1" value="${Number(value).toFixed(1)}" aria-label="HW Line Strength" oninput="s4StrengthChanged()" onchange="s4StrengthChanged(true)"></td>
     <td><button type="button" class="eff-delete-btn" onclick="this.closest('tr').remove();s4StrengthChanged()" aria-label="Delete item">✕</button></td></tr>`;
 }
-function s4StrengthChanged(){
+function s4StrengthChanged(autoSave=false){
+  ++S4_STRENGTHS_EDIT_VERSION;
   S4_STRENGTHS_DIRTY=true;
+  clearTimeout(S4_STRENGTHS_AUTOSAVE_TIMER);
   const msg=document.getElementById('s4-strength-msg');
-  if(msg)msg.textContent='Unsaved changes · click Save Changes to update Slide 04';
+  if(msg)msg.textContent=autoSave?'Saving change to SQL…':'Unsaved changes · click Save Changes to update Slide 04';
+  if(autoSave)S4_STRENGTHS_AUTOSAVE_TIMER=setTimeout(()=>saveS4Strengths(true),150);
 }
 function renderS4StrengthSettings(){
   const panel=document.getElementById('admin-setting-panel-body');
@@ -4941,7 +4948,7 @@ function renderS4StrengthSettings(){
   const rows=S4_STRENGTHS_CACHE||S4_DEFAULT_STRENGTHS;
   panel.innerHTML=`<div class="eff-toolbar"><div>
       <div class="eff-note">Chassis (Item) · HW Line Strength</div>
-      <div class="eff-note2">Values are saved centrally in SQL and used only by Slide 04. Add a name matching a Plan product item to show it separately; deleted items move to Unmapped if planned. Click Save Changes after editing.</div>
+      <div class="eff-note2">Changes to an item are saved when you leave the field. Use Save Changes after adding or deleting a row. These values affect Slide 04 only.</div>
     </div><div class="eff-actions"><span id="s4-strength-msg" role="status"></span>
       <button type="button" class="top-btn" onclick="addS4StrengthItem()">＋ Add Item</button>
       <button type="button" class="top-btn primary" onclick="saveS4Strengths()">💾 Save Changes</button></div></div>
@@ -4955,11 +4962,13 @@ function addS4StrengthItem(){
   s4StrengthChanged();
   body.lastElementChild?.querySelector('.s4-strength-name')?.focus();
 }
-async function saveS4Strengths(){
+async function saveS4Strengths(autoSave=false){
   if(!requireSitePerm('admin_settings','Slide 04 HW Line Strength'))return;
-  if(S4_STRENGTHS_SAVING)return;
+  clearTimeout(S4_STRENGTHS_AUTOSAVE_TIMER);
+  if(S4_STRENGTHS_SAVING){S4_STRENGTHS_SAVE_PENDING=true;return;}
   const msg=document.getElementById('s4-strength-msg');
   const button=msg?.parentElement?.querySelector('.primary');
+  const editVersion=S4_STRENGTHS_EDIT_VERSION;
   try{
     const rows=[...document.querySelectorAll('#s4-strength-body tr')].map((tr,i)=>{
       const item_name=tr.querySelector('.s4-strength-name').value.trim();
@@ -4980,14 +4989,22 @@ async function saveS4Strengths(){
     const {data,error}=await SB.rpc('replace_slide4_chassis_strength',{p_rows:rows});
     if(error)throw error;
     if(data?.status!=='SUCCESS'||Number(data.row_count)!==rows.length)throw Error('SQL row-count check failed');
-    if(!await loadS4StrengthsFromSQL(false))throw Error('Saved, but SQL reload failed: '+S4_STRENGTHS_ERROR);
+    if(!await loadS4StrengthsFromSQL(false) && !await loadS4StrengthsFromSQL(false))
+      throw Error('Saved, but SQL reload failed: '+S4_STRENGTHS_ERROR);
     if(rows.length!==S4_STRENGTHS_CACHE.length||rows.some((r,i)=>r.item_name!==S4_STRENGTHS_CACHE[i].item_name||r.line_strength!==S4_STRENGTHS_CACHE[i].line_strength))
       throw Error('SQL values do not match the edited rows; please retry');
-    S4_STRENGTHS_DIRTY=false;
-    renderS4StrengthSettings();
-    const saved=document.getElementById('s4-strength-msg');if(saved)saved.textContent='✓ Saved in SQL · Slide 04 updated';
+    if(editVersion===S4_STRENGTHS_EDIT_VERSION){
+      S4_STRENGTHS_DIRTY=false;
+      if(document.getElementById('s4-strength-body'))renderS4StrengthSettings();
+      const saved=document.getElementById('s4-strength-msg');if(saved)saved.textContent='✓ Saved in SQL · Slide 04 updated';
+    }else S4_STRENGTHS_SAVE_PENDING=true;
   }catch(error){const current=document.getElementById('s4-strength-msg');if(current)current.textContent='Save failed: '+(error?.message||error);}
-  finally{S4_STRENGTHS_SAVING=false;const current=document.getElementById('s4-strength-msg');const currentButton=current?.parentElement?.querySelector('.primary');if(currentButton)currentButton.disabled=false;}
+  finally{
+    S4_STRENGTHS_SAVING=false;
+    const current=document.getElementById('s4-strength-msg'),currentButton=current?.parentElement?.querySelector('.primary');
+    if(currentButton)currentButton.disabled=false;
+    if(S4_STRENGTHS_SAVE_PENDING){S4_STRENGTHS_SAVE_PENDING=false;S4_STRENGTHS_AUTOSAVE_TIMER=setTimeout(()=>saveS4Strengths(true),150);}
+  }
 }
 let S4_RANGE_PLAN_ID=null,S4_RANGE_FROM='',S4_RANGE_TO='';
 function s4DateRangeChanged(which){
