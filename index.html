@@ -4940,7 +4940,7 @@ function renderS4(data){
   const chassis=[...baseChassis];
   if(unmapped>0.000001){chassis.push('Unmapped');chassisPlan.Unmapped=unmapped}
   const linePlan=c=>chassisPlan[c]||0;
-  const f1=v=>Number(v||0).toFixed(1).replace(/\.0$/,'');
+  const f1=v=>Number(v||0).toFixed(1);
 
   document.querySelector('#s4-tbl thead').innerHTML=`<tr>
     <th>Chassis (Item)</th><th class="num">HW Line Strength</th>
@@ -4954,7 +4954,7 @@ function renderS4(data){
     const over=loading!==null&&loading>100;
     return `<tr>
       <td>${esc(c)}</td>
-      <td class="num">${isUnmapped?'—':fmt(strength)}</td>
+      <td class="num">${isUnmapped?'—':f1(strength)}</td>
       <td class="num" style="background:#f6d3c0!important;color:#111!important;font-weight:800">${f1(plan)}</td>
       <td class="cen" style="background:${loading===null?'#fff4cc':(over?'#ffd9dd':'#d9f2e1')}!important;color:${loading===null?'#7a5700':(over?'#9f1239':'#14532d')}!important;font-weight:800">${loading===null?'Unmapped':loading.toFixed(1)+'%'}</td>
     </tr>`;
@@ -4966,7 +4966,7 @@ function renderS4(data){
   const totalLoading=totalHW?totalPlan/totalHW*100:0;
   document.getElementById('s4-foot').innerHTML=`
     <td style="font-weight:900;color:#c87800">Grand Total</td>
-    <td class="num">${fmt(totalHW)}</td>
+    <td class="num">${f1(totalHW)}</td>
     <td class="num" style="background:#f6d3c0!important;color:#111!important;font-weight:900">${f1(totalPlan)}</td>
     <td class="cen" style="font-weight:900">${totalLoading.toFixed(1)}%</td>`;
 
@@ -4979,6 +4979,7 @@ function renderS4(data){
 }
 
 function drawS4ChassisChart(labels, hwVals, planVals, totalHW, totalPlan){
+  const one=v=>Number(v||0).toFixed(1);
   function setup(id){
     const c=document.getElementById(id); if(!c) return null;
     const cssW=Math.max(320,c.parentElement.clientWidth-20), cssH=190, dpr=window.devicePixelRatio||1;
@@ -4995,16 +4996,16 @@ function drawS4ChassisChart(labels, hwVals, planVals, totalHW, totalPlan){
       x.fillStyle='#00b050';x.fillRect(cx-bw-2,pad.t+ch-h1,bw,h1);
       x.strokeStyle='#ff0000';x.lineWidth=2;x.strokeRect(cx+2,pad.t+ch-h2,bw,h2);
       x.font='bold 10px Segoe UI';x.textAlign='center';
-      x.fillStyle='#111';x.fillText(Number(a[i]).toFixed(1).replace(/\\.0$/,''),cx-bw/2-2,pad.t+ch-h1-4);
-      x.fillStyle='#ff0000';x.fillText(Number(b[i]).toFixed(1).replace(/\\.0$/,''),cx+bw/2+2,pad.t+ch-h2-4);
+      x.fillStyle='#111';x.fillText(one(a[i]),cx-bw/2-2,pad.t+ch-h1-4);
+      x.fillStyle='#ff0000';x.fillText(one(b[i]),cx+bw/2+2,pad.t+ch-h2-4);
       x.fillStyle='#111';x.font='10px Segoe UI';x.fillText(lab,cx,H-7);
     });
   }
   chart('s4-chassis-canvas',labels,hwVals,planVals);
   chart('s4-total-canvas',['Grand Total'],[totalHW],[totalPlan]);
   const cell='border:1px solid #111;padding:3px 5px;text-align:center';
-  document.getElementById('s4-chart-detail').innerHTML=`<tr><th style="${cell};text-align:left"></th>${labels.map(v=>`<th style="${cell}">${esc(v)}</th>`).join('')}</tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;background:#00b050;margin-right:3px"></span>HW Strength</td>${hwVals.map(v=>`<td style="${cell};font-weight:700">${v}</td>`).join('')}</tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;border:2px solid #f00;margin-right:3px"></span>Line Plan</td>${planVals.map(v=>`<td style="${cell};font-weight:700">${v}</td>`).join('')}</tr>`;
-  document.getElementById('s4-chart-total').innerHTML=`<tr><th style="${cell};text-align:left"></th><th style="${cell}">Grand Total</th></tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;background:#00b050;margin-right:3px"></span>HW Strength</td><td style="${cell};font-weight:700">${totalHW}</td></tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;border:2px solid #f00;margin-right:3px"></span>Line Plan</td><td style="${cell};font-weight:700">${Number(totalPlan).toFixed(1).replace(/\\.0$/,'')}</td></tr>`;
+  document.getElementById('s4-chart-detail').innerHTML=`<tr><th style="${cell};text-align:left"></th>${labels.map(v=>`<th style="${cell}">${esc(v)}</th>`).join('')}</tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;background:#00b050;margin-right:3px"></span>HW Strength</td>${hwVals.map(v=>`<td style="${cell};font-weight:700">${one(v)}</td>`).join('')}</tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;border:2px solid #f00;margin-right:3px"></span>Line Plan</td>${planVals.map(v=>`<td style="${cell};font-weight:700">${one(v)}</td>`).join('')}</tr>`;
+  document.getElementById('s4-chart-total').innerHTML=`<tr><th style="${cell};text-align:left"></th><th style="${cell}">Grand Total</th></tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;background:#00b050;margin-right:3px"></span>HW Strength</td><td style="${cell};font-weight:700">${one(totalHW)}</td></tr><tr><td style="${cell};text-align:left;font-weight:700"><span style="display:inline-block;width:8px;height:8px;border:2px solid #f00;margin-right:3px"></span>Line Plan</td><td style="${cell};font-weight:700">${one(totalPlan)}</td></tr>`;
 }
 
 /* ══ SLIDE 5: ITEM STATUS ═══════════════════════ */
