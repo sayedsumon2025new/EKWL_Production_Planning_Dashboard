@@ -3,70 +3,79 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>EKWL HW — Production Planning v3</title>
+<title>EKWL HW — Production Planning Suite v5 Advanced</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f0f2f5;--border:#c8d0da;--hdr:#1a3c5e;--hdr2:#2a5298;--wht:#fff;
+  --bg:#f0f2f5;--bdr:#c8d0da;
+  --hdr:#0d2137;--hdr2:#1a3c5e;--hdr3:#2a5298;
   --plan:#e8f5e9;--sah:#fff9c4;--effi:#e3f2fd;--clock:#fff3e0;
-  --fc-bg:#eaf0fb;--new-fc:#fce4ec;
-  --green:#2e7d32;--red:#c62828;--orange:#e65100;--yellow:#f9a825;--blue:#1565c0;
-  --risk-over:#ffebee;--risk-crit:#fff3e0;--risk-urg:#fffde7;--risk-watch:#e8f5e9;--risk-ok:#e3f2fd;
+  --fc:#eaf0fb;--nfc:#fce4ec;
+  --g:#2e7d32;--r:#c62828;--o:#e65100;--y:#f9a825;--b:#1565c0;--p:#6a1b9a;--t:#00695c;
+  --card:#fff;--sh:0 2px 10px rgba(0,0,0,.08);--rad:10px;
 }
-body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;background:var(--bg);color:#222;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+body{font-family:'Segoe UI',system-ui,sans-serif;font-size:11px;background:var(--bg);color:#222;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-/* ── TABS ── */
-#tabs{background:var(--hdr);display:flex;gap:0;flex-shrink:0;align-items:center}
-.tab{padding:9px 18px;color:rgba(255,255,255,.65);cursor:pointer;font-size:11.5px;font-weight:600;border-bottom:3px solid transparent;transition:.15s;white-space:nowrap}
-.tab:hover{color:#fff;background:rgba(255,255,255,.08)}
-.tab.active{color:#fff;border-bottom:3px solid #64b5f6;background:rgba(255,255,255,.12)}
-#tab-title{margin-left:auto;padding:0 14px;color:rgba(255,255,255,.5);font-size:10px}
+/* ── TOP BAR ── */
+#topbar{background:var(--hdr);height:42px;display:flex;align-items:center;padding:0 12px;gap:0;flex-shrink:0}
+.logo{color:#fff;font-size:13px;font-weight:800;letter-spacing:.4px;margin-right:10px;white-space:nowrap;padding-right:10px;border-right:1px solid rgba(255,255,255,.15)}
+.logo span{color:#42a5f5}
+.tab{padding:0 14px;height:42px;display:flex;align-items:center;gap:5px;color:rgba(255,255,255,.58);cursor:pointer;font-size:10.5px;font-weight:600;border-bottom:3px solid transparent;transition:.15s;white-space:nowrap}
+.tab:hover{color:#fff;background:rgba(255,255,255,.07)}
+.tab.active{color:#fff;border-bottom:3px solid #42a5f5;background:rgba(255,255,255,.1)}
+.tab .badge{background:var(--r);color:#fff;font-size:8.5px;padding:1px 5px;border-radius:8px;margin-left:3px}
+.tab .badge.g{background:var(--g)}
+#tr{margin-left:auto;display:flex;align-items:center;gap:10px}
+.live{background:#c62828;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+#clk{color:rgba(255,255,255,.65);font-size:10px;font-weight:600;letter-spacing:.5px}
 
 /* ── TOOLBAR ── */
-#toolbar{background:#fff;padding:6px 10px;border-bottom:2px solid var(--border);display:flex;flex-wrap:wrap;gap:5px;align-items:center;flex-shrink:0}
-select,input[type=text]{padding:3px 7px;border:1px solid var(--border);border-radius:4px;font-size:11px;height:26px;background:#fff;color:#222}
-select{min-width:95px}input[type=text]{width:128px}
-.btn{padding:3px 11px;border:none;border-radius:4px;cursor:pointer;font-size:11px;height:26px;white-space:nowrap;font-weight:600}
-.btn-p{background:var(--hdr);color:#fff}.btn-p:hover{background:var(--hdr2)}
-.btn-s{background:#546e7a;color:#fff}.btn-s:hover{background:#37474f}
-.btn-g{background:var(--green);color:#fff}.btn-g:hover{background:#1b5e20}
-.btn-r{background:var(--red);color:#fff}.btn-r:hover{background:#b71c1c}
-.btn-o{background:var(--orange);color:#fff}.btn-o:hover{background:#bf360c}
-#tog-new{background:var(--red)}.tog-active{background:var(--green)!important}
+#tb-bar{background:#fff;padding:5px 10px;border-bottom:2px solid var(--bdr);display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex-shrink:0}
+select,input[type=text]{padding:3px 7px;border:1px solid var(--bdr);border-radius:5px;font-size:11px;height:26px;background:#fff;color:#222;outline:none}
+select:focus,input:focus{border-color:var(--hdr3);box-shadow:0 0 0 2px rgba(42,82,152,.1)}
+select{min-width:90px}input[type=text]{width:124px}
+.btn{padding:0 11px;border:none;border-radius:5px;cursor:pointer;font-size:11px;height:26px;white-space:nowrap;font-weight:600;display:inline-flex;align-items:center;gap:4px;transition:.15s}
+.bp{background:var(--hdr2);color:#fff}.bp:hover{filter:brightness(1.15)}
+.bs{background:#546e7a;color:#fff}.bs:hover{filter:brightness(1.15)}
+.bg{background:var(--g);color:#fff}.bg:hover{filter:brightness(1.1)}
+.br{background:var(--r);color:#fff}.br:hover{filter:brightness(1.1)}
+.bt{background:var(--t);color:#fff}.bt:hover{filter:brightness(1.1)}
+#tog-new{background:var(--r)}.togon{background:var(--g)!important}
 
-/* ── INFO BAR ── */
-#infobar{background:var(--hdr);color:#fff;padding:3px 10px;font-size:10px;display:flex;gap:10px;align-items:center;flex-shrink:0;flex-wrap:wrap}
-#infobar b{margin-left:2px;color:#90caf9}
-.ib-risk{padding:1px 8px;border-radius:10px;font-weight:700;font-size:9.5px;margin-left:4px}
-.ib-over{background:#ef9a9a;color:#b71c1c}
-.ib-crit{background:#ffcc02;color:#7f6000}
-.ib-urg{background:#ffe082;color:#7f6000}
+/* ── STATUS BAR ── */
+#sbar{background:linear-gradient(90deg,var(--hdr),var(--hdr2));color:#fff;padding:0 10px;height:30px;display:flex;align-items:stretch;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb{padding:0 12px;border-right:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;justify-content:center;min-width:90px}
+.sb:last-child{border-right:none;margin-left:auto;flex-direction:row;align-items:center;gap:6px;min-width:auto}
+.sb-l{font-size:7.5px;opacity:.55;text-transform:uppercase;letter-spacing:.5px}
+.sb-v{font-weight:800;font-size:12px;color:#90caf9}
+.sb-v.red{color:#ef9a9a}.sb-v.amb{color:#ffcc02}.sb-v.grn{color:#a5d6a7}
+.rpill{padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap}
+.rp-ov{background:#ef9a9a;color:#7f0000}.rp-cr{background:#ffe082;color:#7f4600}.rp-ur{background:#fff9c4;color:#7f6000}
 
 /* ── LEGEND ── */
-#legend{background:#fff;border-bottom:1px solid var(--border);padding:3px 10px;display:flex;gap:10px;align-items:center;flex-shrink:0;font-size:10px;flex-wrap:wrap}
-.lbox{width:12px;height:12px;border:1px solid #bbb;border-radius:2px;display:inline-block;margin-right:3px;vertical-align:middle}
+#leg{background:#fff;border-bottom:1px solid var(--bdr);padding:2px 10px;display:flex;gap:10px;align-items:center;flex-shrink:0;font-size:10px;flex-wrap:wrap}
+.lb{width:12px;height:12px;border-radius:2px;border:1px solid #ddd;display:inline-block;margin-right:3px;vertical-align:middle}
 
 /* ── VIEWS ── */
-.view{display:none;flex:1;min-height:0;flex-direction:column}
+.view{display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden}
 .view.on{display:flex}
+.dinr{padding:12px;gap:12px;display:flex;flex-direction:column;overflow:auto;flex:1}
 
 /* ── TABLE ── */
 #wrap{flex:1;overflow:auto}
 table{border-collapse:collapse;table-layout:fixed;white-space:nowrap}
-th,td{border:1px solid var(--border);padding:2px 4px;text-align:center;vertical-align:middle;overflow:hidden;text-overflow:ellipsis}
+th,td{border:1px solid var(--bdr);padding:2px 5px;text-align:center;vertical-align:middle;overflow:hidden;text-overflow:ellipsis}
 thead th{position:sticky;top:0;z-index:20;background:var(--hdr);color:#fff;font-size:10px;font-weight:600}
 thead th.st{z-index:30}
 td.st{position:sticky;z-index:10}
-tr:hover td:not(.st){filter:brightness(.95)}
-tr.gs td{border-top:2px solid #78909c}
+tr:hover td:not(.st){background:rgba(13,33,55,.04)!important}
+tr.gs td{border-top:2px solid #90a4ae}
 .rp{background:var(--plan)}.rs{background:var(--sah)}.re{background:var(--effi)}.rc{background:var(--clock)}
-
-/* risk row coloring */
-.row-over{background:var(--risk-over)!important}
-.row-crit{background:var(--risk-crit)!important}
-.row-urg{background:var(--risk-urg)!important}
-
-/* col widths */
+.row-ov td:not(.st){background:#ffebee!important}
+.row-cr td:not(.st){background:#fff3e0!important}
+.row-ur td:not(.st){background:#fffde7!important}
 .c0{width:60px}.c1{width:52px}.c2{width:72px}.c3{width:72px}.c4{width:90px}
 .c5{width:52px}.c6{width:128px}.c7{width:85px}.c8{width:78px}
 .c9{width:34px}.c10{width:34px}.c11{width:108px}
@@ -75,270 +84,2713 @@ tr.gs td{border-top:2px solid #78909c}
 .c21{width:36px}.c22{width:88px}.c23{width:42px}.cd{width:36px}
 
 /* ── PAGER ── */
-#pager{background:#fff;border-top:2px solid var(--border);padding:5px 10px;display:flex;gap:7px;align-items:center;flex-shrink:0;font-size:11px}
-#footer-stats{margin-left:auto;font-size:10px;color:#555;background:#f5f5f5;padding:2px 10px;border-radius:4px}
+#pgr{background:#fff;border-top:2px solid var(--bdr);padding:5px 10px;display:flex;gap:6px;align-items:center;flex-shrink:0;font-size:11px}
+#fst{margin-left:auto;font-size:10px;color:#666;background:#f5f5f5;padding:2px 10px;border-radius:5px;border:1px solid #e0e0e0}
 
-/* ── DASHBOARD ── */
-#dash-view{padding:12px;gap:12px}
-.kpi-row{display:flex;gap:10px;flex-wrap:wrap}
-.kpi{background:#fff;border-radius:8px;padding:12px 16px;flex:1;min-width:130px;border-left:4px solid var(--hdr);box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.kpi-lbl{font-size:9.5px;color:#777;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
-.kpi-val{font-size:20px;font-weight:700}
-.kpi-sub{font-size:9.5px;color:#999;margin-top:2px}
-.charts-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
-.card{background:#fff;border-radius:8px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);flex:1;min-width:280px}
-.card h3{font-size:11.5px;font-weight:700;color:var(--hdr);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:6px}
-.bar-row{display:flex;align-items:center;margin-bottom:4px;gap:6px;font-size:10px}
-.bar-lbl{width:100px;text-align:right;color:#444;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;white-space:nowrap}
-.bar-track{flex:1;background:#eceff1;border-radius:3px;height:15px;min-width:0;position:relative}
-.bar-fill{height:100%;border-radius:3px}
-.bar-val{font-size:9.5px;color:#555;width:80px;flex-shrink:0;text-align:left}
-.b-blue{background:#42a5f5}.b-green{background:#66bb6a}.b-orange{background:#ffa726}
-.b-red{background:#ef5350}.b-purple{background:#ab47bc}.b-teal{background:#26a69a}
+/* ── CARDS & LAYOUT ── */
+.krow{display:flex;gap:10px;flex-wrap:wrap}
+.kpi{background:var(--card);border-radius:var(--rad);padding:13px 16px;flex:1;min-width:120px;box-shadow:var(--sh);border-top:3px solid;transition:.2s;cursor:default}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 4px 18px rgba(0,0,0,.12)}
+.kl{font-size:8.5px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.kv{font-size:21px;font-weight:800;line-height:1}
+.ks{font-size:9px;color:#bbb;margin-top:3px}
+.row2{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.card{background:var(--card);border-radius:var(--rad);padding:14px;box-shadow:var(--sh);flex:1;min-width:260px}
+.card h3{font-size:11px;font-weight:700;color:var(--hdr2);margin-bottom:9px;padding-bottom:6px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:5px}
+.card h3 .bsm{font-size:9px;background:#e3f2fd;color:var(--b);padding:1px 7px;border-radius:8px;font-weight:600;margin-left:auto}
 
-/* Risk badges */
-.rbadge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700;white-space:nowrap}
-.rb-over{background:#ffcdd2;color:#b71c1c}
-.rb-crit{background:#ffe0b2;color:#e65100}
-.rb-urg{background:#fff9c4;color:#f57f17}
-.rb-watch{background:#e8f5e9;color:#2e7d32}
-.rb-ok{background:#e3f2fd;color:#1565c0}
-.rb-unk{background:#f5f5f5;color:#757575}
+/* bars */
+.br-row{display:flex;align-items:center;margin-bottom:4px;gap:6px;font-size:10px}
+.br-lbl{width:100px;text-align:right;color:#555;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.br-trk{flex:1;background:#eceff1;border-radius:4px;height:15px;overflow:hidden}
+.br-fill{height:100%;border-radius:4px}
+.br-val{font-size:9.5px;color:#666;width:76px;flex-shrink:0}
+.c-b{background:#42a5f5}.c-g{background:#66bb6a}.c-o{background:#ffa726}.c-r{background:#ef5350}.c-p{background:#ab47bc}.c-t{background:#26a69a}
 
-/* Risk table */
-.rtbl{width:100%;border-collapse:collapse;font-size:10px}
-.rtbl th{background:#eceff1;padding:4px 6px;text-align:left;font-weight:700;color:#444;border-bottom:1px solid #ccc;white-space:nowrap;position:sticky;top:0}
-.rtbl td{padding:3px 6px;border-bottom:1px solid #f0f0f0;white-space:nowrap}
-.rtbl tr:hover td{background:#fafafa}
+/* badges */
+.rbg{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700;white-space:nowrap}
+.rb-ov{background:#ffcdd2;color:#b71c1c}.rb-cr{background:#ffe0b2;color:#e65100}
+.rb-ur{background:#fff9c4;color:#f57f17}.rb-wa{background:#e8f5e9;color:#2e7d32}
+.rb-ok{background:#e3f2fd;color:#1565c0}.rb-un{background:#f5f5f5;color:#888}
 
-/* Gap table */
+/* generic tables */
 .gtbl{width:100%;border-collapse:collapse;font-size:10px}
-.gtbl th{background:#eceff1;padding:4px 6px;text-align:left;font-weight:700;border-bottom:1px solid #ccc;white-space:nowrap}
-.gtbl td{padding:3px 6px;border-bottom:1px solid #f0f0f0}
-.gap-bar{display:inline-block;height:8px;border-radius:2px;background:#ef5350;vertical-align:middle;margin-right:4px}
-.plan-bar{display:inline-block;height:8px;border-radius:2px;background:#66bb6a;vertical-align:middle;margin-right:4px}
+.gtbl th{background:#f5f7fa;padding:5px 7px;text-align:left;font-weight:700;color:#555;border-bottom:2px solid #e0e0e0;white-space:nowrap;position:sticky;top:0;z-index:3}
+.gtbl td{padding:4px 7px;border-bottom:1px solid #f5f5f5;white-space:nowrap}
+.gtbl tr:hover td{background:#fafafa}
+.r{text-align:right!important;font-variant-numeric:tabular-nums}
 
-/* Timeline chart */
-#timeline-canvas{width:100%;height:200px;background:#fafafa;border-radius:4px}
+/* ── ALERT STYLES ── */
+.alert-item{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:7px;margin-bottom:5px;border-left:4px solid}
+.a-NO_MP{background:#fff3e0;border-color:#e65100}
+.a-OVER_PLAN{background:#e8f5e9;border-color:#2e7d32}
+.a-OVERDUE_REMAIN{background:#ffebee;border-color:#c62828}
+.a-NO_PSD{background:#fff9c4;border-color:#f9a825}
+.a-NO_SMV{background:#f3e5f5;border-color:#6a1b9a}
+.alert-icon{font-size:16px;flex-shrink:0}
+.alert-body{flex:1}
+.alert-title{font-weight:700;font-size:10.5px;color:#333;margin-bottom:2px}
+.alert-sub{font-size:9.5px;color:#777}
+.alert-badge{font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700;margin-left:6px}
 
-/* Heatmap */
-.heatmap-wrap{overflow-x:auto}
-.heatmap-table{border-collapse:collapse;font-size:9px;white-space:nowrap}
-.heatmap-table th{padding:2px 4px;background:#eceff1;color:#555;border:1px solid #ddd;min-width:32px;text-align:center;font-weight:600}
-.heatmap-table td{padding:2px 4px;border:1px solid #ddd;text-align:right;min-width:32px;cursor:default}
-.heatmap-table td.line-lbl{text-align:left;font-weight:600;color:#333;background:#f5f5f5;position:sticky;left:0;z-index:5}
-.h0{background:#fff}
-.h1{background:#bbdefb;color:#0d47a1}
-.h2{background:#64b5f6;color:#0d47a1}
-.h3{background:#1e88e5;color:#fff}
-.h4{background:#0d47a1;color:#fff}
+/* ── LINE LOAD ── */
+.line-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.line-card{background:#fff;border-radius:8px;padding:10px 12px;box-shadow:0 1px 5px rgba(0,0,0,.07);border-left:4px solid var(--hdr3)}
+.line-card.hot{border-left-color:var(--r)}.line-card.warm{border-left-color:var(--o)}.line-card.ok{border-left-color:var(--g)}
+.lc-name{font-size:12px;font-weight:800;color:var(--hdr);margin-bottom:5px}
+.lc-row{display:flex;justify-content:space-between;font-size:9.5px;color:#666;margin-bottom:2px}
+.lc-bar{height:6px;background:#eceff1;border-radius:3px;margin-top:5px;overflow:hidden}
+.lc-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#42a5f5,#1565c0)}
 
-/* SAH calculator */
-.calc-card{background:#fff;border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.calc-card h3{font-size:11.5px;font-weight:700;color:var(--hdr);margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:6px}
-.calc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
-.calc-field label{font-size:10px;color:#666;display:block;margin-bottom:3px;font-weight:600}
-.calc-field input{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px}
-.calc-result{background:#e8f5e9;border-radius:6px;padding:10px 14px;display:flex;gap:20px;flex-wrap:wrap}
-.calc-res-item{text-align:center}
-.calc-res-lbl{font-size:9.5px;color:#555;font-weight:600}
-.calc-res-val{font-size:18px;font-weight:700;color:var(--green)}
-.effi-meter{width:100%;height:18px;background:#eceff1;border-radius:9px;overflow:hidden;margin-top:6px}
-.effi-fill{height:100%;border-radius:9px;transition:width .5s;background:linear-gradient(90deg,#ef5350,#ffa726,#66bb6a)}
+/* ── AUTO LINE LOADER ── */
+.loader-wrap{display:flex;gap:12px;flex-wrap:wrap}
+.loader-left{flex:1;min-width:260px}
+.loader-right{flex:2;min-width:320px}
+.smv-match{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:6px 10px;margin-bottom:5px;font-size:10px}
+.smv-match.best{background:#c8e6c9;border-color:#66bb6a;font-weight:700}
+.smv-match.no{background:#ffebee;border-color:#ef9a9a}
 
-/* Loading */
-#loading{position:fixed;inset:0;background:rgba(26,60,94,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#fff;gap:14px}
-#loading h2{font-size:17px;font-weight:700}
-#prog-bar{width:280px;height:7px;background:rgba(255,255,255,.2);border-radius:4px}
-#prog-fill{height:100%;border-radius:4px;background:#64b5f6;transition:width .25s}
-#prog-lbl{font-size:11px;opacity:.75}
+/* ── SCHEDULE FILLER ── */
+.sf-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sf-result{background:linear-gradient(135deg,#e8f5e9,#e3f2fd);border-radius:8px;padding:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.sf-item{text-align:center}
+.sf-lbl{font-size:8.5px;color:#666;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.sf-val{font-size:18px;font-weight:800;margin-top:2px}
+.cf label{font-size:9px;color:#888;font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase}
+.cf input,.cf select{width:100%;padding:5px 8px;border:1px solid var(--bdr);border-radius:5px;font-size:12px;text-align:center;height:30px}
+.cf-g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.cf-g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.sch-tbl{width:100%;border-collapse:collapse;font-size:10px;margin-top:8px}
+.sch-tbl th{background:var(--hdr);color:#fff;padding:4px 6px;font-size:9px;font-weight:600}
+.sch-tbl td{padding:4px 6px;border-bottom:1px solid #f0f0f0;text-align:center}
 
-/* Print */
-@media print{#tabs,#toolbar,#legend,#pager,#infobar{display:none!important}#wrap{overflow:visible!important}#tbl-view{overflow:visible!important;height:auto!important}body{overflow:visible!important;height:auto!important}table{font-size:8px}th,td{padding:1px 2px}}
+/* ── SCENARIO PLANNER ── */
+.scen-controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.scen-slider-wrap{background:#f9fafb;border-radius:8px;padding:10px 14px;border:1px solid #e0e0e0;flex:1;min-width:200px}
+.scen-slider-label{font-size:10px;font-weight:700;color:#555;margin-bottom:5px}
+.slider-row{display:flex;align-items:center;gap:8px}
+input[type=range]{flex:1;height:4px;accent-color:var(--hdr3)}
+.slider-val{font-size:12px;font-weight:700;color:var(--hdr);min-width:36px;text-align:right}
+.scen-result{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.sr-item{background:#fff;border-radius:7px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.sr-lbl{font-size:9px;color:#888;font-weight:700;margin-bottom:3px}
+.sr-val{font-size:17px;font-weight:800}
+.sr-diff{font-size:9px;margin-top:2px;font-weight:700}
+
+/* ── CAPACITY UTILIZATION ── */
+.util-bar-wrap{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.util-row{display:flex;align-items:center;gap:8px;font-size:10px}
+.util-date{width:72px;color:#666;flex-shrink:0}
+.util-track{flex:1;height:18px;background:#eceff1;border-radius:4px;overflow:hidden;position:relative}
+.util-fill{height:100%;border-radius:4px;position:absolute;top:0;left:0;transition:width .5s}
+.util-fill.over{background:linear-gradient(90deg,#ef5350,#c62828)}
+.util-fill.ok{background:linear-gradient(90deg,#42a5f5,#1565c0)}
+.util-text{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;color:#fff}
+.util-pct{width:44px;text-align:right;font-weight:700;flex-shrink:0}
+
+/* ── CANVAS ── */
+canvas{display:block;width:100%!important}
+
+/* ── WEEKLY REPORT ── */
+.week-blocks{display:flex;gap:8px;flex-wrap:wrap}
+.wb{background:#fff;border-radius:9px;padding:11px 14px;min-width:130px;flex:1;box-shadow:var(--sh);border-top:4px solid}
+.wb.hot{border-top-color:var(--r)}.wb.warm{border-top-color:var(--o)}.wb.ok{border-top-color:var(--g)}
+.wb-wk{font-size:8.5px;color:#aaa;font-weight:700;text-transform:uppercase;margin-bottom:4px}
+.wb-qty{font-size:18px;font-weight:800;color:var(--hdr)}
+.wb-det{font-size:9px;color:#bbb;margin-top:3px}
+.wb-gap{font-size:9.5px;margin-top:4px;font-weight:700}
+
+/* ── HEATMAP ── */
+.htbl{border-collapse:collapse;font-size:9px;white-space:nowrap}
+.htbl th{padding:3px 5px;background:#f5f7fa;color:#555;border:1px solid #ddd;min-width:38px;text-align:center;font-weight:700;position:sticky;top:0}
+.htbl td{padding:2px 4px;border:1px solid #eee;text-align:right;min-width:38px;cursor:default}
+.htbl td.ll{text-align:left;font-weight:700;background:#f9fafb;position:sticky;left:0;z-index:5;padding-left:8px}
+.h0{background:#fff;color:#ddd}.h1{background:#bbdefb;color:#0d47a1}.h2{background:#64b5f6;color:#0d47a1}.h3{background:#1e88e5;color:#fff}.h4{background:#0d47a1;color:#fff;font-weight:700}
+
+/* ── CALCULATOR ── */
+.calc-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.calc-sec{background:#fff;border-radius:var(--rad);padding:14px;box-shadow:var(--sh)}
+.calc-sec h4{font-size:11px;font-weight:700;color:var(--hdr2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f0f0}
+.calc-res{background:linear-gradient(135deg,#e8f5e9,#e3f2fd);border-radius:7px;padding:10px 14px;display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.cr-i{text-align:center;min-width:60px}
+.cr-l{font-size:8px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.cr-v{font-size:19px;font-weight:800;margin-top:2px}
+.efm{height:12px;background:#e0e0e0;border-radius:6px;overflow:hidden;margin-top:8px}
+.efm-f{height:100%;border-radius:6px;background:linear-gradient(90deg,#ef5350 0%,#ffa726 45%,#66bb6a 75%,#2e7d32 100%);transition:width .6s}
+.batch-tbl{width:100%;border-collapse:collapse;font-size:10px;margin-top:8px}
+.batch-tbl th{background:var(--hdr);color:#fff;padding:4px 8px;font-weight:600}
+.batch-tbl td{padding:4px 8px;border-bottom:1px solid #f0f0f0;text-align:center}
+
+/* ── LOADING ── */
+#ld{position:fixed;inset:0;background:var(--hdr);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#fff;gap:16px}
+#ld .llo{font-size:20px;font-weight:800}
+#ld .llo span{color:#42a5f5}
+.ldots{display:flex;gap:6px}
+.dot{width:8px;height:8px;background:#42a5f5;border-radius:50%;animation:bounce .9s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-12px)}}
+#pb{width:300px;height:5px;background:rgba(255,255,255,.15);border-radius:3px}
+#pf{height:100%;border-radius:3px;background:linear-gradient(90deg,#42a5f5,#64b5f6);transition:width .25s}
+#pm{font-size:11px;opacity:.65}
+
+@media print{#topbar,#tb-bar,#leg,#pgr,#sbar{display:none!important}#wrap{overflow:visible!important}#tbl-view{overflow:visible!important;height:auto!important}body{overflow:visible!important;height:auto!important}table{font-size:8px}th,td{padding:1px 2px}}
+
+/* ── LINE BOARD (drag-drop) ── */
+#board-toolbar{background:#fff;padding:6px 10px;border-bottom:1px solid var(--bdr);display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+#board-toolbar button{padding:4px 10px;border:none;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;background:var(--hdr2);color:#fff}
+#board-toolbar button:disabled{opacity:.4;cursor:not-allowed}
+#board-toolbar button.secondary{background:#546e7a}
+#board-toolbar button.undo{background:#6a1b9a}
+#board-toolbar .mode-wrap{display:flex;gap:6px;align-items:center;background:#f5f5f5;padding:3px 8px;border-radius:6px;font-size:10px;border:1px solid #ddd}
+#board-wrap{flex:1;overflow:auto;background:#f5f7fa;position:relative}
+table.lboard{border-collapse:collapse;table-layout:fixed}
+table.lboard th,table.lboard td{border:1px solid #c5cdd8;height:42px;position:relative;vertical-align:middle;box-sizing:border-box}
+table.lboard thead th{position:sticky;top:0;z-index:20;background:var(--hdr);color:#fff;font-size:10px;font-weight:600;padding:4px 2px;text-align:center;height:36px}
+table.lboard .llbl{position:sticky;left:0;z-index:15;background:#e3eaf3;font-weight:700;font-size:12px;text-align:center;width:48px;min-width:48px;max-width:48px;color:var(--hdr2);border-right:2px solid #90a4ae}
+table.lboard thead .llbl{z-index:25;background:#0d2b45;color:#fff}
+table.lboard td.bcell{background:#fff;width:88px;min-width:88px;max-width:88px;padding:0;overflow:visible}
+table.lboard td.bcell.wk{background:#f0f4f8}
+.oblock{
+  position:absolute;top:4px;bottom:4px;left:3px;
+  border-radius:5px;font-size:11px;font-weight:700;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  cursor:grab;user-select:none;z-index:5;
+  box-shadow:0 1px 4px rgba(0,0,0,.22);
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  padding:0 6px;line-height:1;letter-spacing:.2px;
+  box-sizing:border-box;min-width:0;
+}
+.oblock:hover{z-index:8;filter:brightness(1.1);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.oblock.dragging{opacity:.55;cursor:grabbing;z-index:50}
+.oblock.shifting{outline:2px solid #ffee58}
+.oblock .rh{position:absolute;right:0;top:0;bottom:0;width:8px;cursor:ew-resize;background:transparent}
+.oblock .rh:hover{background:rgba(255,255,255,.25)}
+.ob0{background:linear-gradient(135deg,#1565c0,#42a5f5)}.ob1{background:linear-gradient(135deg,#2e7d32,#66bb6a)}
+.ob2{background:linear-gradient(135deg,#c62828,#ef5350)}.ob3{background:linear-gradient(135deg,#6a1b9a,#ab47bc)}
+.ob4{background:linear-gradient(135deg,#e65100,#ffa726)}.ob5{background:linear-gradient(135deg,#00838f,#26a69a)}
+td.bcell.drop-ok{background:#c8e6c9!important;outline:2px dashed #2e7d32;outline-offset:-2px}
+td.bcell.drop-shift{background:#fff9c4!important;outline:2px dashed #f9a825;outline-offset:-2px}
+#board-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--hdr);color:#fff;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:600;opacity:0;transition:opacity .3s;z-index:200;pointer-events:none;max-width:90%;text-align:center}
+#board-toast.show{opacity:1}
+
+
+
+/* ADVANCED: Dark mode */
+body.dark{
+  --bg:#12141a;--bdr:#2a3040;--hdr:#0a1628;--hdr2:#0d2137;--hdr3:#1a3c5e;
+  --plan:#1b3a2a;--sah:#3a3520;--effi:#1a2a3a;--clock:#3a2a15;
+  --fc:#1a2438;--nfc:#3a1a28;--card:#1a1f2e;
+  color:#e0e0e0;background:var(--bg);
+}
+body.dark #tb-bar,body.dark #leg,body.dark #pgr,body.dark #board-toolbar{background:#1a1f2e;color:#e0e0e0}
+body.dark select,body.dark input{background:#12141a;color:#e0e0e0;border-color:#2a3040}
+body.dark .card,body.dark .kpi{background:#1a1f2e;color:#e0e0e0}
+body.dark .gtbl th{background:#0d2137;color:#90caf9;border-color:#2a3040}
+body.dark .gtbl td{border-color:#2a3040}
+body.dark .br-trk{background:#2a3040}
+body.dark #fst{background:#2a3040;color:#aaa;border-color:#3a4050}
+body.dark table.lboard .llbl{background:#1a2438;color:#90caf9}
+body.dark table.lboard td.bcell{background:#1a1f2e}
+body.dark table.lboard td.bcell.wk{background:#151820}
+/* Date nav */
+.date-nav{display:flex;gap:6px;align-items:center;padding:4px 10px;background:#fff;border-bottom:1px solid var(--bdr);font-size:10px;flex-shrink:0}
+body.dark .date-nav{background:#1a1f2e}
+.date-nav button{height:22px;padding:1px 8px;font-size:10px;border:none;border-radius:4px;cursor:pointer;background:var(--hdr2);color:#fff;font-weight:600}
+/* 3D */
+.canvas-3d-wrap{position:relative;width:100%;height:420px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#0d1b2a,#1a3c5e);box-shadow:var(--sh)}
+.canvas-3d-wrap canvas{display:block;width:100%!important;height:100%!important}
+.canvas-controls{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:10}
+.canvas-controls button{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer}
+.canvas-legend{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,.55);color:#fff;padding:8px 12px;border-radius:8px;font-size:10px;line-height:1.5}
+.canvas-info{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.55);color:#fff;padding:8px 12px;border-radius:8px;font-size:11px;max-width:260px}
+thead th.sortable{cursor:pointer}
+thead th.sortable:hover{background:var(--hdr3)}
+
+
+/* ADVANCED PLUS */
+.oblock.selected{outline:3px solid #ffeb3b;outline-offset:1px;box-shadow:0 0 0 2px #333}
+.oblock.has-note::after{content:'📝';position:absolute;top:-2px;right:2px;font-size:9px}
+.bd-panel{background:#fff;border-bottom:1px solid var(--bdr);padding:8px 10px;font-size:11px;max-height:160px;overflow:auto;flex-shrink:0}
+body.dark .bd-panel{background:#1a1f2e}
+.bd-panel h4{font-size:11px;margin-bottom:6px;color:var(--hdr2)}
+.bd-log-item{padding:2px 0;border-bottom:1px solid #eee;font-size:10px;color:#555}
+body.dark .bd-log-item{border-color:#2a3040;color:#bbb}
+#bd-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center}
+#bd-modal.on{display:flex}
+#bd-modal .box{background:#fff;border-radius:10px;padding:16px;width:360px;max-width:92%;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+body.dark #bd-modal .box{background:#1a1f2e;color:#e0e0e0}
+#bd-modal h3{font-size:13px;margin-bottom:10px}
+#bd-modal textarea{width:100%;height:80px;padding:8px;border:1px solid var(--bdr);border-radius:6px;font-size:12px;resize:vertical}
+#bd-modal .row{display:flex;gap:8px;margin-top:10px;justify-content:flex-end}
+table.lboard td.bcell.today-col{background:#fff8e1!important;box-shadow:inset 0 0 0 2px #ffc107}
+table.lboard thead th.today-col{background:#f9a825!important;color:#000}
+.zoom-sm td.bcell,.zoom-sm th:not(.llbl){width:56px!important;min-width:56px!important;max-width:56px!important}
+.zoom-sm th, .zoom-sm td{height:32px!important}
+.zoom-lg td.bcell,.zoom-lg th:not(.llbl){width:110px!important;min-width:110px!important;max-width:110px!important}
+.zoom-lg th, .zoom-lg td{height:48px!important}
+#board-view.fs{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex!important;flex-direction:column}
+
+
+/* WORLD-CLASS MODULES */
+.wc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.wc-card{background:var(--card);border-radius:10px;padding:14px;box-shadow:var(--sh);border:1px solid var(--bdr)}
+.wc-card h3{font-size:12px;color:var(--hdr2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #eee}
+.wc-kpi{font-size:22px;font-weight:800}
+.wc-sub{font-size:10px;color:#888}
+.wc-tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700}
+.wc-tag.hi{background:#ffcdd2;color:#b71c1c}
+.wc-tag.mid{background:#ffe0b2;color:#e65100}
+.wc-tag.lo{background:#c8e6c9;color:#2e7d32}
+.wc-feed{max-height:220px;overflow:auto;font-size:11px}
+.wc-feed .ev{padding:6px 8px;border-bottom:1px solid #f0f0f0;display:flex;gap:8px}
+.wc-feed .ev .t{color:#888;min-width:64px}
+.wc-chat{display:flex;flex-direction:column;height:360px}
+.wc-chat-log{flex:1;overflow:auto;background:#f7f9fc;border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px}
+body.dark .wc-chat-log{background:#12141a}
+.wc-msg{margin:6px 0;padding:8px 10px;border-radius:8px;max-width:90%}
+.wc-msg.user{background:#e3f2fd;margin-left:auto}
+.wc-msg.bot{background:#fff;border:1px solid #e0e0e0}
+body.dark .wc-msg.user{background:#1a3c5e}
+body.dark .wc-msg.bot{background:#1a1f2e;border-color:#2a3040}
+.wc-chat-input{display:flex;gap:6px}
+.wc-chat-input input{flex:1;height:32px;border:1px solid var(--bdr);border-radius:6px;padding:0 10px}
+.prob-bar{height:8px;background:#eee;border-radius:4px;overflow:hidden}
+.prob-fill{height:100%;border-radius:4px}
+.rec-box{border-left:4px solid var(--hdr3);padding:8px 10px;margin:6px 0;background:#f5f9ff;border-radius:0 6px 6px 0;font-size:11px}
+body.dark .rec-box{background:#0d2137}
+.approval-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid var(--bdr);border-radius:6px;margin-bottom:6px;font-size:11px}
+
+
+/* SIDEBAR LAYOUT */
+#app-shell{display:flex;flex:1;min-height:0;overflow:hidden}
+#sidebar{
+  width:220px;min-width:220px;background:var(--hdr);color:#fff;
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;
+  transition:width .2s,min-width .2s;
+}
+#sidebar.collapsed{width:56px;min-width:56px}
+#sidebar.collapsed .sb-label,#sidebar.collapsed .sb-group-title,#sidebar.collapsed .sb-badge{display:none}
+#sidebar.collapsed .sb-item{justify-content:center;padding:10px 0}
+#sidebar-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 0 16px}
+.sb-group-title{
+  font-size:9px;text-transform:uppercase;letter-spacing:.6px;
+  color:rgba(255,255,255,.4);padding:12px 14px 4px;font-weight:700;
+}
+.sb-item{
+  display:flex;align-items:center;gap:10px;padding:9px 14px;
+  cursor:pointer;font-size:12px;font-weight:600;color:rgba(255,255,255,.7);
+  border-left:3px solid transparent;transition:.12s;user-select:none;white-space:nowrap;
+}
+.sb-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.sb-item.active{background:rgba(66,165,245,.18);color:#fff;border-left-color:#42a5f5}
+.sb-ico{width:22px;text-align:center;flex-shrink:0;font-size:14px}
+.sb-label{overflow:hidden;text-overflow:ellipsis}
+.sb-badge{
+  margin-left:auto;background:var(--r);color:#fff;font-size:9px;
+  padding:1px 6px;border-radius:8px;font-weight:700;
+}
+.sb-badge.g{background:var(--g)}
+#main-col{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+#topbar{height:42px}
+#topbar .tab{display:none!important} /* menus moved to sidebar */
+#sb-toggle{
+  background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;
+  border-radius:6px;padding:4px 10px;cursor:pointer;font-size:14px;margin-right:8px;
+}
+#sb-toggle:hover{background:rgba(255,255,255,.1)}
+#page-title{color:#fff;font-size:13px;font-weight:700;margin-left:4px}
+@media (max-width:900px){
+  #sidebar{position:absolute;z-index:50;height:calc(100% - 42px);top:42px;left:0;box-shadow:4px 0 24px rgba(0,0,0,.3)}
+  #sidebar.collapsed{width:0;min-width:0;overflow:hidden;padding:0;border:none}
+}
+
+
+/* FEATURES GUIDE */
+.guide-hero{background:linear-gradient(135deg,var(--hdr),var(--hdr3));color:#fff;border-radius:12px;padding:20px 22px;margin-bottom:14px}
+.guide-hero h2{font-size:18px;margin-bottom:6px}
+.guide-hero p{font-size:12px;opacity:.9;line-height:1.5}
+.guide-sec{background:var(--card);border-radius:10px;padding:14px 16px;margin-bottom:12px;box-shadow:var(--sh);border:1px solid var(--bdr)}
+.guide-sec h3{font-size:13px;color:var(--hdr2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee}
+.guide-sec h4{font-size:12px;margin:12px 0 6px;color:#333}
+body.dark .guide-sec h4{color:#e0e0e0}
+.guide-table{width:100%;border-collapse:collapse;font-size:11px}
+.guide-table th{text-align:left;background:#f5f7fa;padding:7px 8px;border-bottom:2px solid #e0e0e0}
+.guide-table td{padding:7px 8px;border-bottom:1px solid #f0f0f0;vertical-align:top;line-height:1.45}
+body.dark .guide-table th{background:#0d2137;color:#90caf9}
+body.dark .guide-table td{border-color:#2a3040}
+.guide-pill{display:inline-block;padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700;margin-right:4px}
+.guide-pill.core{background:#e3f2fd;color:#1565c0}
+.guide-pill.adv{background:#f3e5f5;color:#6a1b9a}
+.guide-pill.wc{background:#e8f5e9;color:#2e7d32}
+.guide-pill.sim{background:#fff3e0;color:#e65100}
+.guide-toc{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.guide-toc a{font-size:11px;padding:4px 10px;background:rgba(255,255,255,.15);border-radius:12px;color:#fff;text-decoration:none}
+.guide-toc a:hover{background:rgba(255,255,255,.28)}
+
+#sql-note{background:#fff3e0;color:#a34800;padding:5px 10px;font-size:11px;font-weight:600;flex-shrink:0}
 </style>
 </head>
 <body>
 
-<div id="loading">
-  <h2>🏭 EKWL HW — Production Planning v3</h2>
-  <div id="prog-bar"><div id="prog-fill" style="width:3%"></div></div>
-  <div id="prog-lbl">Starting…</div>
+<div id="ld">
+  <div class="llo">EKWL <span>HW</span> — Production Planning Suite</div>
+  <div class="ldots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  <div id="pb"><div id="pf" style="width:3%"></div></div>
+  <div id="pm">Initializing…</div>
 </div>
 
-<div id="tabs">
-  <div class="tab active" onclick="showTab('tbl')">📋 Planning Table</div>
-  <div class="tab" onclick="showTab('dash')">📊 Dashboard</div>
-  <div class="tab" onclick="showTab('risk')">🚨 Risk Tracker</div>
-  <div class="tab" onclick="showTab('gap')">⚠️ Planning Gap</div>
-  <div class="tab" onclick="showTab('heat')">🌡️ Line Heatmap</div>
-  <div class="tab" onclick="showTab('calc')">🧮 SAH Calculator</div>
-  <div class="tab" onclick="showTab('timeline')">📈 Daily Timeline</div>
-  <span id="tab-title">EKWL HW Production Planning</span>
+<!-- TOP BAR -->
+<div id="topbar">
+  <button type="button" id="sb-toggle" onclick="toggleSidebar()" title="Toggle menu">☰</button>
+  <div class="logo">EKWL <span>HW</span></div>
+  <span id="page-title">📋 Planning</span>
+  <div id="tr"><span class="live">● LIVE</span><span id="clk">--:--:--</span></div>
 </div>
 
-<div id="toolbar">
+<div id="sql-note">Waiting for authenticated SQL data…</div>
+<div id="app-shell">
+<aside id="sidebar">
+  <div id="sidebar-scroll">
+    <div class="sb-group-title">Planning</div>
+    <div class="sb-item active" data-tab="tbl" onclick="S('tbl')"><span class="sb-ico">📋</span><span class="sb-label">Planning Table</span></div>
+    <div class="sb-item" data-tab="dash" onclick="S('dash')"><span class="sb-ico">📊</span><span class="sb-label">Dashboard</span></div>
+    <div class="sb-item" data-tab="board" onclick="S('board')"><span class="sb-ico">📐</span><span class="sb-label">Line Board</span></div>
+    <div class="sb-item" data-tab="load" onclick="S('load')"><span class="sb-ico">⚖️</span><span class="sb-label">Line Load</span></div>
+
+    <div class="sb-group-title">Risk & Alerts</div>
+    <div class="sb-item" data-tab="risk" onclick="S('risk')"><span class="sb-ico">🚨</span><span class="sb-label">Risk</span><span class="sb-badge" id="tb-risk">—</span></div>
+    <div class="sb-item" data-tab="alert" onclick="S('alert')"><span class="sb-ico">🔔</span><span class="sb-label">Alerts</span><span class="sb-badge" id="tb-alert">—</span></div>
+    <div class="sb-item" data-tab="wcpredict" onclick="S('wcpredict')"><span class="sb-ico">🔮</span><span class="sb-label">Predict</span></div>
+
+    <div class="sb-group-title">Scheduling</div>
+    <div class="sb-item" data-tab="loader" onclick="S('loader')"><span class="sb-ico">🎯</span><span class="sb-label">Auto Loader</span></div>
+    <div class="sb-item" data-tab="sched" onclick="S('sched')"><span class="sb-ico">📆</span><span class="sb-label">Schedule Filler</span></div>
+    <div class="sb-item" data-tab="scenario" onclick="S('scenario')"><span class="sb-ico">🔄</span><span class="sb-label">What-If</span></div>
+    <div class="sb-item" data-tab="wcaps" onclick="S('wcaps')"><span class="sb-ico">🧠</span><span class="sb-label">APS Engine</span></div>
+
+    <div class="sb-group-title">Analytics</div>
+    <div class="sb-item" data-tab="buyer" onclick="S('buyer')"><span class="sb-ico">🏢</span><span class="sb-label">Buyer</span></div>
+    <div class="sb-item" data-tab="ship" onclick="S('ship')"><span class="sb-ico">📅</span><span class="sb-label">Shipment</span></div>
+    <div class="sb-item" data-tab="effi" onclick="S('effi')"><span class="sb-ico">📈</span><span class="sb-label">Efficiency</span></div>
+    <div class="sb-item" data-tab="heat" onclick="S('heat')"><span class="sb-ico">🌡️</span><span class="sb-label">Heatmap</span></div>
+    <div class="sb-item" data-tab="wccap" onclick="S('wccap')"><span class="sb-ico">💼</span><span class="sb-label">Capacity</span></div>
+
+    <div class="sb-group-title">Live & Ops</div>
+    <div class="sb-item" data-tab="wclive" onclick="S('wclive')"><span class="sb-ico">📡</span><span class="sb-label">Live Feed</span></div>
+    <div class="sb-item" data-tab="wcchat" onclick="S('wcchat')"><span class="sb-ico">💬</span><span class="sb-label">Chat Ops</span></div>
+    <div class="sb-item" data-tab="wcapprove" onclick="S('wcapprove')"><span class="sb-ico">✅</span><span class="sb-label">Approvals</span></div>
+
+    <div class="sb-group-title">Tools & 3D</div>
+    <div class="sb-item" data-tab="calc" onclick="S('calc')"><span class="sb-ico">🧮</span><span class="sb-label">Calculator</span></div>
+    <div class="sb-item" data-tab="factory3d" onclick="S('factory3d')"><span class="sb-ico">🏭</span><span class="sb-label">3D Factory</span></div>
+    <div class="sb-item" data-tab="pyramid3d" onclick="S('pyramid3d')"><span class="sb-ico">🔺</span><span class="sb-label">3D Risk</span></div>
+    <div class="sb-item" data-tab="guide" onclick="S('guide')"><span class="sb-ico">📖</span><span class="sb-label">Features Guide</span></div>
+  </div>
+</aside>
+<div id="main-col">
+<!-- TOOLBAR -->
+<div id="tb-bar">
   <select id="fl"><option value="">All Lines</option></select>
   <select id="fb"><option value="">All Buyers</option></select>
   <select id="fpt"><option value="">All Products</option></select>
   <select id="frisk"><option value="">All Risk</option><option>Overdue</option><option>Critical</option><option>Urgent</option><option>Watch</option><option>On Track</option></select>
-  <input id="fs" placeholder="EWO / PO / Color…" onkeydown="if(event.key==='Enter')go_filter()">
-  <input id="fd1" type="text" placeholder="EFD From (M/D/YYYY)" style="width:125px">
-  <input id="fd2" type="text" placeholder="EFD To (M/D/YYYY)" style="width:125px">
-  <button class="btn btn-p" onclick="go_filter()">🔍 Filter</button>
-  <button class="btn btn-s" onclick="clr_filter()">✖ Clear</button>
-  <button class="btn btn-r" id="tog-new" onclick="tog_new()">👁 New Only</button>
-  <button class="btn btn-g" onclick="exp_csv()">⬇ CSV</button>
-  <button class="btn btn-s" onclick="window.print()">🖨 Print</button>
-</div>
-<div id="sql-note" style="padding:4px 10px;background:#e8f5e9;color:#1b5e20;font-size:10px">Waiting for authenticated SQL data…</div>
-
-<div id="infobar">
-  <span>Total:<b id="ib-t">—</b></span>
-  <span>Filtered:<b id="ib-f">—</b></span>
-  <span>Orders:<b id="ib-o">—</b></span>
-  <span>New:<b id="ib-n">—</b></span>
-  <span>Qty:<b id="ib-q">—</b></span>
-  <span>Dates:<b id="ib-d">—</b></span>
-  <span style="margin-left:auto">
-    <span class="ib-risk ib-over" id="ib-over">Overdue: —</span>
-    <span class="ib-risk ib-crit" id="ib-crit">Critical: —</span>
-    <span class="ib-risk ib-urg" id="ib-urg">Urgent: —</span>
-  </span>
+  <input id="fs" placeholder="🔍 EWO / PO / Color…" onkeydown="if(event.key==='Enter')gf()">
+  <input id="fd1" type="date" title="EFD From" style="width:130px">
+  <input id="fd2" type="date" title="EFD To" style="width:130px">
+  <button class="btn bp" onclick="gf()">Filter</button>
+  <button class="btn bs" onclick="cf()">✖ Clear</button>
+  <button class="btn br" id="tog-new" onclick="tn()">👁 New Only</button>
+  <button class="btn bg" onclick="exportCSV()">⬇ CSV</button>
+  <button class="btn bs" onclick="window.print()">🖨 Print</button>
+  <button class="btn bs" id="dark-btn" onclick="togDark()">🌙 Dark</button>
 </div>
 
-<div id="legend">
-  <b>Criteria:</b>
-  <span><span class="lbox" style="background:var(--plan)"></span>Plan/Day</span>
-  <span><span class="lbox" style="background:var(--sah)"></span>SAH/Day</span>
-  <span><span class="lbox" style="background:var(--effi)"></span>Effi/Day</span>
-  <span><span class="lbox" style="background:var(--clock)"></span>Clock Hour/Day</span>
-  <span><span class="lbox" style="background:var(--new-fc)"></span>New (OB)</span>
-  <span><span class="lbox" style="background:var(--risk-over)"></span>Overdue</span>
-  <span><span class="lbox" style="background:var(--risk-crit)"></span>Critical ≤14d</span>
-  <span><span class="lbox" style="background:var(--risk-urg)"></span>Urgent ≤30d</span>
+<!-- STATUS BAR -->
+<div id="sbar">
+  <div class="sb"><div class="sb-l">Total</div><div class="sb-v" id="ib-t">—</div></div>
+  <div class="sb"><div class="sb-l">Filtered</div><div class="sb-v" id="ib-f">—</div></div>
+  <div class="sb"><div class="sb-l">Orders</div><div class="sb-v" id="ib-o">—</div></div>
+  <div class="sb"><div class="sb-l">New (OB)</div><div class="sb-v" id="ib-n">—</div></div>
+  <div class="sb"><div class="sb-l">Order Qty</div><div class="sb-v" id="ib-q">—</div></div>
+  <div class="sb"><div class="sb-l">Dates</div><div class="sb-v" id="ib-d" style="font-size:9px">—</div></div>
+  <div class="sb">
+    <span class="rpill rp-ov" onclick="qr('Overdue')" id="ib-ov">Overdue: —</span>
+    <span class="rpill rp-cr" onclick="qr('Critical')" id="ib-cr">Critical: —</span>
+    <span class="rpill rp-ur" onclick="qr('Urgent')" id="ib-ur">Urgent: —</span>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div id="leg">
+  <b style="color:#555">Criteria:</b>
+  <span><span class="lb" style="background:var(--plan)"></span>Plan/Day</span>
+  <span><span class="lb" style="background:var(--sah)"></span>SAH/Day</span>
+  <span><span class="lb" style="background:var(--effi)"></span>Effi/Day</span>
+  <span><span class="lb" style="background:var(--clock)"></span>Clock Hr</span>
+  <span><span class="lb" style="background:var(--nfc)"></span>New (OB)</span>
+  <span><span class="lb" style="background:#ffebee;border-color:#ef9a9a"></span>Overdue</span>
+  <span><span class="lb" style="background:#fff3e0;border-color:#ffa726"></span>Critical</span>
+  <span><span class="lb" style="background:#fffde7;border-color:#ffe082"></span>Urgent</span>
+  <span style="margin-left:auto;color:#bbb;font-size:9px">Today: 9/26/2026</span>
 </div>
 
 <!-- ① PLANNING TABLE -->
 <div class="view on" id="tbl-view" style="flex-direction:column">
+  <div class="date-nav" id="date-nav">
+    <button onclick="shiftDates(-14)">◀◀ -14d</button>
+    <button onclick="shiftDates(-7)">◀ -7d</button>
+    <span id="date-window-lbl">Date window: —</span>
+    <button onclick="shiftDates(7)">+7d ▶</button>
+    <button onclick="shiftDates(14)">+14d ▶▶</button>
+    <button onclick="resetDates()" style="background:var(--g)">Reset</button>
+    <span style="color:#888;margin-left:6px">Max 21 date cols (performance) · Click headers to sort</span>
+  </div>
   <div id="wrap"><table id="tbl"><thead id="th"></thead><tbody id="tb"></tbody></table></div>
-  <div id="pager">
-    <button class="btn btn-p" onclick="pg(-1)" style="height:24px;padding:2px 9px">◀</button>
-    <span id="pi">Page 1/1</span>
-    <button class="btn btn-p" onclick="pg(1)" style="height:24px;padding:2px 9px">▶</button>
-    <select id="ps" onchange="ps_ch()" style="height:24px">
+  <div id="pgr">
+    <button class="btn bp" onclick="pg(-1)" style="height:24px;padding:0 9px">◀</button>
+    <span id="pi">—</span>
+    <button class="btn bp" onclick="pg(1)" style="height:24px;padding:0 9px">▶</button>
+    <select id="ps" onchange="psc()" style="height:24px">
       <option value="200">200 rows</option><option value="500" selected>500 rows</option>
       <option value="1000">1000 rows</option><option value="99999">All</option>
     </select>
-    <span style="color:#999;font-size:10px;margin-left:6px">← Scroll right for dates →</span>
-    <div id="footer-stats"></div>
+    <span style="color:#bbb;font-size:10px;margin-left:8px">← Scroll right for date columns →</span>
+    <div id="fst"></div>
   </div>
 </div>
 
 <!-- ② DASHBOARD -->
-<div class="view" id="dash-view" style="overflow:auto;padding:12px;gap:12px;flex-direction:column">
-  <div class="kpi-row" id="kpi-row"></div>
-  <div class="charts-row">
-    <div class="card" style="min-width:380px"><h3>📦 Buyer-wise Order Summary</h3><div id="buyer-chart"></div></div>
-    <div class="card" style="min-width:300px"><h3>👕 Product Type</h3><div id="ptype-chart"></div></div>
-  </div>
-  <div class="charts-row">
-    <div class="card" style="flex:2;min-width:380px"><h3>📅 Monthly EFD (Orders)</h3><div id="month-chart"></div></div>
-    <div class="card" style="min-width:260px"><h3>🏭 Line Utilization</h3><div id="line-chart"></div></div>
-  </div>
-</div>
+<div class="view" id="dash-view"><div class="dinr" id="dash-inner"></div></div>
 
 <!-- ③ RISK TRACKER -->
-<div class="view" id="risk-view" style="overflow:auto;padding:12px;flex-direction:column;gap:12px">
-  <div class="kpi-row" id="risk-kpi-row"></div>
-  <div class="card" style="min-width:0">
-    <h3>🚨 At-Risk Orders <span id="risk-count" style="font-size:10px;font-weight:400;color:#888;margin-left:6px"></span></h3>
-    <div style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn btn-r" style="font-size:10px;height:22px;padding:1px 8px" onclick="filterRisk('Overdue')">Overdue</button>
-      <button class="btn btn-o" style="font-size:10px;height:22px;padding:1px 8px" onclick="filterRisk('Critical')">Critical</button>
-      <button class="btn" style="background:#f9a825;font-size:10px;height:22px;padding:1px 8px" onclick="filterRisk('Urgent')">Urgent</button>
-      <button class="btn btn-g" style="font-size:10px;height:22px;padding:1px 8px" onclick="filterRisk('all')">All Risk</button>
+<div class="view" id="risk-view"><div class="dinr" id="risk-inner"></div></div>
+
+<!-- ④ ALERTS -->
+<div class="view" id="alert-view"><div class="dinr" id="alert-inner"></div></div>
+
+<!-- ⑤ LINE LOAD -->
+<div class="view" id="load-view"><div class="dinr" id="load-inner"></div></div>
+
+<!-- LINE BOARD -->
+<div class="view" id="board-view" style="flex-direction:column">
+  <div id="board-toolbar">
+    <button class="undo" id="bd-undo" onclick="bdUndo()" disabled>↩ Undo</button>
+    <button class="undo" id="bd-redo" onclick="bdRedo()" disabled>↪ Redo</button>
+    <button class="secondary" onclick="bdReset()">↺ Reset</button>
+    <button class="secondary" onclick="bdSave()">💾 Save</button>
+    <button class="secondary" onclick="bdLoad()">📂 Load</button>
+    <button class="secondary" onclick="bdExport()">⬇ JSON</button>
+    <button class="secondary" onclick="bdExportCSV()">⬇ CSV</button>
+    <div class="mode-wrap">
+      <b>Push:</b>
+      <label><input type="radio" name="bdPush" value="right" checked onchange="bdPushDir='right'"> →</label>
+      <label><input type="radio" name="bdPush" value="left" onchange="bdPushDir='left'"> ←</label>
     </div>
-    <div style="overflow:auto;max-height:420px">
-      <table class="rtbl" id="risk-tbl">
-        <thead><tr>
-          <th>Risk</th><th>Days to EFD</th><th>Buyer</th><th>EWO</th>
-          <th>P.O.</th><th>Color</th><th>Product</th><th>Order Qty</th>
-          <th>Planned Qty</th><th>Line #</th><th>SMV</th><th>Manpower</th><th>EFD</th>
-        </tr></thead>
-        <tbody id="risk-tbody"></tbody>
-      </table>
+    <div class="mode-wrap">
+      <b>Snap:</b>
+      <label><input type="checkbox" id="bd-snap" onchange="bdSnapMode=this.checked"> Free slot</label>
     </div>
+    <div class="mode-wrap">
+      <b>Color:</b>
+      <select id="bd-color-mode" onchange="bdColorMode=this.value;bdRender()" style="height:22px;font-size:10px">
+        <option value="default">Default</option>
+        <option value="buyer">By Buyer</option>
+        <option value="risk">By Risk</option>
+      </select>
+    </div>
+    <div class="mode-wrap">
+      <b>Zoom:</b>
+      <select id="bd-zoom" onchange="bdSetZoom(this.value)" style="height:22px;font-size:10px">
+        <option value="sm">Compact</option>
+        <option value="md" selected>Normal</option>
+        <option value="lg">Wide</option>
+      </select>
+    </div>
+    <button class="secondary" onclick="bdTogglePanel('log')">📋 Log</button>
+    <button class="secondary" onclick="bdTogglePanel('bn')">⚠️ Bottleneck</button>
+    <button class="secondary" onclick="bdFullscreen()">⛶ Full</button>
+    <button class="secondary" onclick="bdMailDigest()">✉ Digest</button>
+    <button class="secondary" onclick="bdAutoPlace()">🎯 Auto-place</button>
+    <span style="font-size:10px;color:#666">Ctrl+click multi-select · Dbl-click note · Drag move</span>
+    <span id="bd-status" style="margin-left:auto;font-size:11px;font-weight:600;color:var(--g)">Ready</span>
   </div>
+  <div class="bd-panel" id="bd-panel-log" style="display:none"><h4>Change Log</h4><div id="bd-log-list"></div></div>
+  <div class="bd-panel" id="bd-panel-bn" style="display:none"><h4>Bottleneck / Overload</h4><div id="bd-bn-list"></div></div>
+  <div id="board-wrap"><table class="lboard" id="lboard"><thead id="bd-thead"></thead><tbody id="bd-tbody"></tbody></table></div>
+  <div id="board-toast"></div>
+  <div id="bd-modal"><div class="box">
+    <h3 id="bd-modal-title">Order Note</h3>
+    <textarea id="bd-modal-note" placeholder="Note: fabric delay, sample pending…"></textarea>
+    <div class="row">
+      <button class="btn bs" onclick="bdCloseModal()">Cancel</button>
+      <button class="btn bp" onclick="bdSaveNote()">Save Note</button>
+    </div>
+  </div></div>
 </div>
 
-<!-- ④ PLANNING GAP -->
-<div class="view" id="gap-view" style="overflow:auto;padding:12px;flex-direction:column;gap:12px">
-  <div class="card">
-    <h3>⚠️ Planning Gap Analysis — Buyer-wise</h3>
-    <p style="font-size:10px;color:#888;margin-bottom:10px">Gap = Order Qty − Planned Qty. High gap means production not yet scheduled.</p>
-    <div id="gap-content"></div>
-  </div>
-  <div class="card">
-    <h3>📊 Gap Summary</h3>
-    <div id="gap-chart"></div>
-  </div>
-</div>
+<!-- ⑥ AUTO LINE LOADER -->
+<div class="view" id="loader-view"><div class="dinr" id="loader-inner"></div></div>
 
-<!-- ⑤ LINE HEATMAP -->
-<div class="view" id="heat-view" style="overflow:auto;padding:12px;flex-direction:column;gap:12px">
-  <div class="card">
-    <h3>🌡️ Line Daily Production Heatmap <span style="font-size:9.5px;font-weight:400;color:#888"> — deeper blue = higher output</span></h3>
-    <div class="heatmap-wrap" id="heatmap-wrap"></div>
-  </div>
-</div>
+<!-- ⑦ SCHEDULE FILLER -->
+<div class="view" id="sched-view"><div class="dinr" id="sched-inner"></div></div>
 
-<!-- ⑥ SAH CALCULATOR -->
-<div class="view" id="calc-view" style="overflow:auto;padding:12px;flex-direction:column;gap:12px">
-  <div class="calc-card" style="max-width:600px">
-    <h3>🧮 Daily SAH & Efficiency Calculator</h3>
-    <div class="calc-grid">
-      <div class="calc-field"><label>Plan/Day (pcs)</label><input id="c-plan" type="number" value="500" oninput="calc()"></div>
-      <div class="calc-field"><label>SMV (min)</label><input id="c-smv" type="number" value="14.91" step="0.01" oninput="calc()"></div>
-      <div class="calc-field"><label>Manpower</label><input id="c-mp" type="number" value="40" oninput="calc()"></div>
-      <div class="calc-field"><label>Working Hours/Day</label><input id="c-hrs" type="number" value="8" step="0.5" oninput="calc()"></div>
-      <div class="calc-field"><label>Target Efficiency %</label><input id="c-tgt" type="number" value="75" oninput="calc()"></div>
-      <div class="calc-field"><label>Order Qty (pcs)</label><input id="c-oqty" type="number" value="5000" oninput="calc()"></div>
+<!-- ⑧ WHAT-IF SCENARIO -->
+<div class="view" id="scenario-view"><div class="dinr" id="scen-inner"></div></div>
+
+<!-- ⑨ BUYER TRACKER -->
+<div class="view" id="buyer-view"><div class="dinr" id="buyer-inner"></div></div>
+
+<!-- ⑩ SHIPMENT -->
+<div class="view" id="ship-view"><div class="dinr" id="ship-inner"></div></div>
+
+<!-- ⑪ EFFICIENCY -->
+<div class="view" id="effi-view"><div class="dinr" id="effi-inner"></div></div>
+
+<!-- ⑫ HEATMAP -->
+<div class="view" id="heat-view"><div class="dinr" id="heat-inner"></div></div>
+
+<!-- ⑬ CALCULATOR -->
+<div class="view" id="calc-view"><div class="dinr" id="calc-inner"></div></div>
+
+
+<!-- 3D FACTORY -->
+<div class="view" id="factory3d-view"><div class="dinr">
+  <div class="card" style="padding:0;overflow:hidden;min-width:0">
+    <div class="canvas-3d-wrap" id="factory-canvas-wrap">
+      <div class="canvas-info" id="factory-info">Hover a line block</div>
+      <div class="canvas-controls">
+        <button onclick="resetFactoryCam()">Reset Cam</button>
+        <button onclick="togFactoryAnim()">Toggle Spin</button>
+      </div>
+      <div class="canvas-legend"><b>3D Factory Floor</b><br>Height = load<br>
+        <span style="color:#ef5350">■</span> Overdue
+        <span style="color:#ffa726">■</span> Critical
+        <span style="color:#ffee58">■</span> Urgent
+        <span style="color:#66bb6a">■</span> OK
+      </div>
     </div>
-    <div class="calc-result" id="calc-result"></div>
-    <div style="margin-top:8px;font-size:10px;color:#888">
-      <b>Formulas:</b>
-      SAH/Day = Plan/Day × SMV ÷ 60 &nbsp;|&nbsp;
-      Efficiency = SAH/Day ÷ (Manpower × Hours) × 100 &nbsp;|&nbsp;
-      Production Days = Order Qty ÷ Plan/Day
+  </div>
+  <div class="card" style="margin-top:12px"><h3>Line Load (risk-based)</h3><div id="factory-line-list" style="display:flex;flex-wrap:wrap;gap:8px"></div></div>
+</div></div>
+<!-- 3D PYRAMID -->
+<div class="view" id="pyramid3d-view"><div class="dinr">
+  <div class="card" style="padding:0;overflow:hidden;min-width:0">
+    <div class="canvas-3d-wrap" id="pyramid-canvas-wrap">
+      <div class="canvas-info" id="pyramid-info">Risk distribution</div>
+      <div class="canvas-controls">
+        <button onclick="resetPyramidCam()">Reset Cam</button>
+        <button onclick="togPyramidAnim()">Toggle Spin</button>
+      </div>
+      <div class="canvas-legend" id="pyramid-legend"></div>
     </div>
   </div>
-  <div class="calc-card" style="max-width:600px">
-    <h3>🎯 Reverse Calculator — Target Efficiency → Required Manpower</h3>
-    <div class="calc-grid">
-      <div class="calc-field"><label>Plan/Day (pcs)</label><input id="r-plan" type="number" value="500" oninput="rcalc()"></div>
-      <div class="calc-field"><label>SMV (min)</label><input id="r-smv" type="number" value="14.91" step="0.01" oninput="rcalc()"></div>
-      <div class="calc-field"><label>Target Efficiency %</label><input id="r-tgt" type="number" value="75" oninput="rcalc()"></div>
-      <div class="calc-field"><label>Working Hours/Day</label><input id="r-hrs" type="number" value="8" step="0.5" oninput="rcalc()"></div>
-    </div>
-    <div class="calc-result" id="rcalc-result"></div>
-  </div>
-</div>
+</div></div>
 
-<!-- ⑦ DAILY TIMELINE -->
-<div class="view" id="timeline-view" style="overflow:auto;padding:12px;flex-direction:column;gap:12px">
-  <div class="card">
-    <h3>📈 Daily Production Output — All Lines Combined</h3>
-    <p style="font-size:10px;color:#888;margin-bottom:10px">Sum of Plan/Day values across all lines per date (existing planning data only)</p>
-    <canvas id="tc" style="width:100%;height:220px"></canvas>
-  </div>
-  <div class="card">
-    <h3>📦 Cumulative Production vs Target</h3>
-    <canvas id="tc2" style="width:100%;height:180px"></canvas>
-  </div>
-</div>
-
+<!-- WORLD CLASS: PREDICT -->
+<div class="view" id="wcpredict-view"><div class="dinr" id="wcpredict-inner"></div></div>
+<div class="view" id="wclive-view"><div class="dinr" id="wclive-inner"></div></div>
+<div class="view" id="wcaps-view"><div class="dinr" id="wcaps-inner"></div></div>
+<div class="view" id="wccap-view"><div class="dinr" id="wccap-inner"></div></div>
+<div class="view" id="wcchat-view"><div class="dinr" id="wcchat-inner"></div></div>
+<div class="view" id="wcapprove-view"><div class="dinr" id="wcapprove-inner"></div></div>
+<div class="view" id="guide-view"><div class="dinr" id="guide-inner"></div></div>
+</div><!-- /main-col -->
+</div><!-- /app-shell -->
 <script>
-/* Transform authenticated SQL snapshots into the uploaded v3 report's display model. */
+// ── DATA ──
+// Authenticated data arrives from the Slide 16 parent.
+async function decomp(b64){
+  const bin=atob(b64),bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  const ds=new DecompressionStream('gzip'),w=ds.writable.getWriter();
+  w.write(bytes);w.close();
+  const chunks=[],r=ds.readable.getReader();
+  for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);}
+  const tot=chunks.reduce((a,c)=>a+c.length,0),out=new Uint8Array(tot);
+  let off=0;for(const c of chunks){out.set(c,off);off+=c.length;}
+  return new TextDecoder().decode(out);
+}
+
+const CRIT={'Plan/Day':'rp','SAH/Day':'rs','Effi/Day':'re','Clock Hour/Day':'rc'};
+const LEFTS=[0,60,112,184,256,346,398,526,611];
+const STICKY=9,SCLEN=21;
+const WW=['c0','c1','c2','c3','c4','c5','c6','c7','c8','c9','c10','c11','c12','c13','c14','c15','c16','c17','c18','c19','c20','c21','c22','c23'];
+let D={},D1={},D2={},AD={},RMAP={},EX={},ALL=[],FIL=[],page=1,ps=500,_new=false;
+const built={};
+
+// clock
+setInterval(()=>{
+  const n=new Date();
+  document.getElementById('clk').textContent=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+},1000);
+
+// ── TAB ──
+const TAB_IDS=['tbl','dash','risk','alert','load','board','loader','sched','scenario','buyer','ship','effi','heat','calc','factory3d','pyramid3d','wcpredict','wclive','wcaps','wccap','wcchat','wcapprove','guide'];
+function S(t){
+  document.querySelectorAll('.sb-item').forEach(el=>el.classList.toggle('active', el.dataset.tab===t));
+  document.querySelectorAll('.tab').forEach((el,i)=>{ if(TAB_IDS[i]) el.classList.toggle('active',TAB_IDS[i]===t); });
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  const view=document.getElementById(t+'-view');
+  if(view) view.classList.add('on');
+  const titles={
+    tbl:'📋 Planning',dash:'📊 Dashboard',risk:'🚨 Risk',alert:'🔔 Alerts',load:'⚖️ Line Load',
+    board:'📐 Line Board',loader:'🎯 Auto Loader',sched:'📆 Schedule',scenario:'🔄 What-If',
+    buyer:'🏢 Buyer',ship:'📅 Shipment',effi:'📈 Efficiency',heat:'🌡️ Heatmap',calc:'🧮 Calculator',
+    factory3d:'🏭 3D Factory',pyramid3d:'🔺 3D Risk',wcpredict:'🔮 Predict',wclive:'📡 Live',
+    wcaps:'🧠 APS',wccap:'💼 Capacity',wcchat:'💬 Chat Ops',wcapprove:'✅ Approvals',guide:'📖 Features Guide'
+  };
+  const pt=document.getElementById('page-title');
+  if(pt) pt.textContent=titles[t]||t;
+  if(!built[t]){built[t]=true;buildTab(t);}
+  // mobile: auto-collapse sidebar after navigate
+  if(window.innerWidth<=900){
+    const sb=document.getElementById('sidebar');
+    if(sb&&!sb.classList.contains('collapsed')) sb.classList.add('collapsed');
+  }
+}
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  if(sb) sb.classList.toggle('collapsed');
+}
+
+function buildTab(t){
+  const m={dash:buildDash,risk:buildRisk,alert:buildAlert,load:buildLoad,
+           board:buildBoard,loader:buildLoader,factory3d:initFactory3D,pyramid3d:initPyramid3D,wcpredict:buildWCPredict,wclive:buildWCLive,wcaps:buildWCAPS,wccap:buildWCCap,wcchat:buildWCChat,wcapprove:buildWCApprove,guide:buildGuide,sched:buildSched,scenario:buildScenario,
+           buyer:buildBuyer,ship:buildShip,effi:buildEffi,heat:buildHeat,calc:buildCalc};
+  if(m[t]) m[t]();
+}
+
+// ── EXPAND ──
+function expand({sc,pc,g,existingGroupCount}){
+  const rows=[];
+  for(let gi=0;gi<g.length;gi++){
+    const{s,r}=g[gi];const isN=gi>=existingGroupCount;
+    for(let ri=0;ri<r.length;ri++){
+      const row=[...s,...r[ri]];row._n=isN;row._gs=(ri===0);row._gi=gi;rows.push(row);
+    }
+  }
+  return rows;
+}
+
+// ── TABLE ──
+let dateStartIdx=0, DATE_WINDOW=21, sortCol=-1, sortAsc=true;
+function buildHeader(){
+  const thEl=document.getElementById('th'); thEl.innerHTML='';
+  const tr=document.createElement('tr');
+  D.sc.forEach((c,i)=>{
+    const th=document.createElement('th'); th.textContent=c; th.title=c+' (sort)';
+    th.className=(i<STICKY?'st ':'')+(i<WW.length?WW[i]:'cd')+' sortable';
+    if(i<STICKY) th.style.left=LEFTS[i]+'px';
+    th.onclick=()=>sortByCol(i);
+    tr.appendChild(th);
+  });
+  D.pc.slice(0,3).forEach(c=>{
+    const th=document.createElement('th'); th.textContent=c; th.className='cd'; tr.appendChild(th);
+  });
+  const dateCols=D.pc.slice(3);
+  const end=Math.min(dateStartIdx+DATE_WINDOW, dateCols.length);
+  for(let i=dateStartIdx;i<end;i++){
+    const th=document.createElement('th'); th.textContent=dateCols[i]; th.className='cd'; tr.appendChild(th);
+  }
+  thEl.appendChild(tr);
+  const lbl=document.getElementById('date-window-lbl');
+  if(lbl&&dateCols.length) lbl.textContent=`Dates ${dateStartIdx+1}–${end}/${dateCols.length}: ${dateCols[dateStartIdx]||''} → ${dateCols[end-1]||''}`;
+}
+function shiftDates(n){
+  const max=Math.max(0,(D.pc.length-3)-DATE_WINDOW);
+  dateStartIdx=Math.max(0,Math.min(dateStartIdx+n,max));
+  buildHeader(); renderPage();
+}
+function resetDates(){ dateStartIdx=0; buildHeader(); renderPage(); }
+function sortByCol(col){
+  if(sortCol===col) sortAsc=!sortAsc; else {sortCol=col; sortAsc=true;}
+  FIL.sort((a,b)=>{
+    let va=a[col], vb=b[col];
+    const na=parseFloat(va), nb=parseFloat(vb);
+    if(!isNaN(na)&&!isNaN(nb)){va=na;vb=nb;}
+    else {va=String(va||'').toLowerCase(); vb=String(vb||'').toLowerCase();}
+    if(va<vb) return sortAsc?-1:1;
+    if(va>vb) return sortAsc?1:-1;
+    return 0;
+  });
+  page=1; renderPage();
+}
+function togDark(){
+  document.body.classList.toggle('dark');
+  const b=document.getElementById('dark-btn');
+  if(b) b.textContent=document.body.classList.contains('dark')?'☀️ Light':'🌙 Dark';
+}
+
+function renderPage(){
+  const tb=document.getElementById('tb');tb.innerHTML='';
+  const s=(page-1)*ps,e=Math.min(s+ps,FIL.length);
+  const frag=document.createDocumentFragment();
+  const ai=D.sc.length;
+  const dateCols=D.pc.slice(3);
+  const endDate=Math.min(dateStartIdx+DATE_WINDOW, dateCols.length);
+  let oqS=0,pqS=0;
+  for(let i=s;i<e;i++){
+    const row=FIL[i],crit=row[ai+1]||'',cc=CRIT[crit]||'';
+    if(crit==='Plan/Day'){oqS+=parseFloat(row[12])||0;pqS+=parseFloat(row[13])||0;}
+    const tr=document.createElement('tr');
+    if(row._gs)tr.classList.add('gs');
+    const ri=RMAP[row._gi];
+    if(ri){if(ri.r==='Overdue')tr.classList.add('row-ov');else if(ri.r==='Critical')tr.classList.add('row-cr');else if(ri.r==='Urgent')tr.classList.add('row-ur');}
+    for(let j=0;j<SCLEN+3;j++){
+      const td=document.createElement('td');
+      let v=row[j]??'';
+      td.textContent=v;td.title=String(v);
+      const isSt=j<STICKY;
+      td.className=(isSt?'st ':'')+(j<WW.length?WW[j]:'cd');
+      if(isSt){td.style.left=LEFTS[j]+'px';td.style.background=row._n?'var(--nfc)':'var(--fc)';}
+      else td.classList.add(cc);
+      tr.appendChild(td);
+    }
+    for(let di=dateStartIdx;di<endDate;di++){
+      const j=SCLEN+3+di;
+      const td=document.createElement('td');
+      let v=row[j]??'';
+      if(v==='0'||v==='')v='';
+      td.textContent=v;td.title=String(v);
+      td.className='cd '+cc;
+      tr.appendChild(td);
+    }
+    frag.appendChild(tr);
+  }
+  tb.appendChild(frag);
+  const tp=Math.ceil(FIL.length/ps)||1;
+  document.getElementById('pi').textContent=`Page ${page}/${tp} (${s+1}–${e})`;
+  document.getElementById('fst').textContent=`Visible → Order Qty: ${oqS.toLocaleString()} | Planned Qty: ${pqS.toLocaleString()}`;
+}
+
+function gf(){
+  const l=document.getElementById('fl').value.toLowerCase();
+  const b=document.getElementById('fb').value.toLowerCase();
+  const pt=document.getElementById('fpt').value.toLowerCase();
+  const rs=document.getElementById('frisk').value;
+  const q=document.getElementById('fs').value.toLowerCase().trim();
+  const d1=pd2(document.getElementById('fd1').value),d2=pd2(document.getElementById('fd2').value);
+  FIL=ALL.filter(r=>{
+    if(_showNew&&!r._n)return false;
+    if(l&&(r[1]||'').toLowerCase()!==l)return false;
+    if(b&&(r[2]||'').toLowerCase()!==b)return false;
+    if(pt&&(r[3]||'').toLowerCase()!==pt)return false;
+    if(q){const s=(r[5]||'').toLowerCase()+(r[7]||'').toLowerCase()+(r[8]||'').toLowerCase();if(!s.includes(q))return false;}
+    if(d1||d2){const dv=new Date(r[18]||'');if(isNaN(dv))return false;if(d1&&dv<d1)return false;if(d2&&dv>d2)return false;}
+    if(rs){const ri=RMAP[r._gi];if((ri?ri.r:'Unknown')!==rs)return false;}
+    return true;
+  });
+  page=1;updInfo();renderPage();
+}
+function cf(){
+  ['fl','fb','fpt','frisk','fs','fd1','fd2'].forEach(id=>document.getElementById(id).value='');
+  _showNew=false;document.getElementById('tog-new').textContent='👁 New Only';
+  document.getElementById('tog-new').classList.remove('togon');
+  FIL=ALL.slice();page=1;updInfo();renderPage();
+}
+function tn(){
+  _showNew=!_showNew;
+  const btn=document.getElementById('tog-new');
+  btn.textContent=_showNew?'👁 Show All':'👁 New Only';
+  btn.classList.toggle('togon',_showNew);gf();
+}
+function qr(r){document.getElementById('frisk').value=r;gf();}
+
+function updInfo(){
+  document.getElementById('ib-f').textContent=FIL.length.toLocaleString();
+  document.getElementById('ib-o').textContent=Math.floor(FIL.length/4).toLocaleString();
+  const nR=FIL.filter(r=>r._n).length;
+  document.getElementById('ib-n').textContent=Math.floor(nR/4).toLocaleString();
+  let qty=0;FIL.forEach(r=>{if((r[D.sc.length+1]||'')==='Plan/Day')qty+=parseFloat(r[12])||0;});
+  document.getElementById('ib-q').textContent=qty.toLocaleString();
+  let ov=0,cr=0,ur=0;
+  FIL.filter(r=>(r[D.sc.length+1]||'')==='Plan/Day').forEach(r=>{
+    const ri=RMAP[r._gi];if(!ri)return;
+    if(ri.r==='Overdue')ov++;else if(ri.r==='Critical')cr++;else if(ri.r==='Urgent')ur++;
+  });
+  document.getElementById('ib-ov').textContent='Overdue: '+ov.toLocaleString();
+  document.getElementById('ib-cr').textContent='Critical: '+cr.toLocaleString();
+  document.getElementById('ib-ur').textContent='Urgent: '+ur.toLocaleString();
+  document.getElementById('tb-risk').textContent=ov+cr;
+  document.getElementById('tb-alert').textContent=EX.total_alerts||0;
+}
+function pg(d){const tp=Math.ceil(FIL.length/ps)||1;page=Math.max(1,Math.min(page+d,tp));renderPage();}
+function psc(){ps=+document.getElementById('ps').value;page=1;renderPage();}
+function popFilters(){
+  const ls=new Set(),bs=new Set(),pts=new Set();
+  for(const r of ALL){if(r[1])ls.add(r[1]);if(r[2])bs.add(r[2]);if(r[3])pts.add(r[3]);}
+  const fl=document.getElementById('fl'),fb=document.getElementById('fb'),fp=document.getElementById('fpt');
+  [...ls].sort().forEach(v=>fl.add(new Option(v,v)));
+  [...bs].sort().forEach(v=>fb.add(new Option(v,v)));
+  [...pts].sort().forEach(v=>{if(v)fp.add(new Option(v,v));});
+}
+function exportCSV(){
+  const cols=[...D.sc,...D.pc];
+  const lines=[cols.map(c=>'"'+c.replace(/"/g,'""')+'"').join(',')];
+  for(const r of FIL)lines.push(cols.map((_,i)=>'"'+(String(r[i]??'').replace(/"/g,'""'))+'"').join(','));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download='EKWL_Planning_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+// ── HELPER: bars ──
+function bars(data,lk,vk,cls,fmt){
+  const mx=Math.max(...data.map(d=>+d[vk]||0),1);
+  return data.map(d=>{
+    const p=Math.round((+d[vk]||0)/mx*100);
+    return `<div class="br-row"><div class="br-lbl" title="${d[lk]}">${d[lk]}</div>`+
+      `<div class="br-trk"><div class="br-fill ${cls}" style="width:${p}%"></div></div>`+
+      `<div class="br-val">${fmt?fmt(+d[vk]||0):(+d[vk]||0).toLocaleString()}</div></div>`;
+  }).join('');
+}
+
+// ── HELPER: canvas chart ──
+function canvasLine(id,labels,series,opts={}){
+  const cv=document.getElementById(id);if(!cv)return;
+  const dpr=window.devicePixelRatio||1,W=cv.clientWidth||700,H=cv.clientHeight||180;
+  cv.width=W*dpr;cv.height=H*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const pad={l:58,r:16,t:18,b:46},pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+  const allV=series.flatMap(s=>s.data);
+  const maxV=opts.maxV||Math.max(...allV,1);
+  ctx.clearRect(0,0,W,H);
+  for(let i=0;i<=5;i++){
+    const y=pad.t+ph*(1-i/5);
+    ctx.strokeStyle='#f0f0f0';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#aaa';ctx.font='9px Segoe UI';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxV*i/5).toLocaleString(),pad.l-5,y+3);
+  }
+  const step=Math.max(1,Math.floor(labels.length/10));
+  ctx.fillStyle='#999';ctx.textAlign='center';ctx.font='9px Segoe UI';
+  labels.forEach((l,i)=>{if(i%step===0){const x=pad.l+i/(labels.length-1||1)*pw;ctx.fillText(l,x,H-pad.b+14);}});
+  if(opts.type==='bar'){
+    series.forEach(s=>{
+      ctx.fillStyle=s.color;
+      s.data.forEach((v,i)=>{
+        const x=pad.l+i/labels.length*pw+2,bw=pw/labels.length-4,bh=v/maxV*ph;
+        ctx.fillRect(x,pad.t+ph-bh,bw,bh);
+      });
+    });
+  } else {
+    series.forEach(s=>{
+      ctx.strokeStyle=s.color;ctx.lineWidth=2.5;ctx.lineJoin='round';
+      ctx.beginPath();
+      s.data.forEach((v,i)=>{const x=pad.l+i/Math.max(s.data.length-1,1)*pw,y=pad.t+ph*(1-v/maxV);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+      ctx.stroke();
+      ctx.globalAlpha=.1;ctx.fillStyle=s.color;
+      s.data.forEach((v,i)=>{const x=pad.l+i/Math.max(s.data.length-1,1)*pw,y=pad.t+ph*(1-v/maxV);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+      ctx.lineTo(pad.l+pw,pad.t+ph);ctx.lineTo(pad.l,pad.t+ph);ctx.closePath();ctx.fill();
+      ctx.globalAlpha=1;
+    });
+    series.forEach((s,i)=>{ctx.fillStyle=s.color;ctx.fillRect(pad.l+i*140,8,12,8);ctx.fillStyle='#555';ctx.font='9px Segoe UI';ctx.textAlign='left';ctx.fillText(s.label,pad.l+i*140+16,15);});
+  }
+}
+
+// ── HELPER: kpi card ──
+function kpi(l,v,s,c){return `<div class="kpi" style="border-top-color:${c}"><div class="kl">${l}</div><div class="kv" style="color:${c}">${v}</div><div class="ks">${s}</div></div>`;}
+function rbadge(r){const m={Overdue:'rb-ov',Critical:'rb-cr',Urgent:'rb-ur',Watch:'rb-wa','On Track':'rb-ok'};return `<span class="rbg ${m[r]||'rb-un'}">${r}</span>`;}
+
+// ── ② DASHBOARD ──
+function buildDash(){
+  const{summary,buyer,ptype,monthly,lines}=D1;
+  const el=document.getElementById('dash-inner');
+  const kpis=[
+    kpi('Total Orders',summary.total_orders.toLocaleString(),'Running @ EKWL HW','#1a3c5e'),
+    kpi('Total Qty',summary.total_qty.toLocaleString(),'pcs','#2e7d32'),
+    kpi('Existing',summary.existing_orders.toLocaleString(),'Planning Data','#1565c0'),
+    kpi('New (OB)',summary.new_orders.toLocaleString(),'FIFO appended','#c62828'),
+    kpi('Buyers',summary.buyers,'active','#6a1b9a'),
+    kpi('Alerts',EX.total_alerts.toLocaleString(),'require attention','#e65100'),
+    kpi('Lines',EX.total_lines,'production lines','#00695c'),
+  ];
+  const du=EX.daily_util||{};
+  const dates=Object.keys(du).slice(0,7);
+  const utils=dates.map(d=>du[d].util||0);
+  const avgUtil=utils.length?Math.round(utils.reduce((a,b)=>a+b,0)/utils.length):0;
+
+  el.innerHTML=`
+    <div class="krow">${kpis.join('')}</div>
+    <div class="row2">
+      <div class="card" style="min-width:340px"><h3>📦 Buyer-wise Qty</h3>${bars(buyer,'Buyer','total_qty','c-b',v=>v.toLocaleString()+' pcs')}</div>
+      <div class="card" style="min-width:260px"><h3>👕 Product Type</h3>${bars(ptype.slice(0,10),'Product Type','total_qty','c-g')}</div>
+    </div>
+    <div class="row2">
+      <div class="card" style="flex:2"><h3>📅 Monthly EFD Volume</h3><canvas id="dc-month" height="170"></canvas></div>
+      <div class="card"><h3>⚡ Capacity Utilization (Current Week) <span class="bsm">${avgUtil}% avg</span></h3>
+        <div class="util-bar-wrap" id="dc-util"></div></div>
+    </div>`;
+  const rm=monthly.filter(m=>m.month>='2026-09').slice(0,10);
+  setTimeout(()=>{
+    canvasLine('dc-month',rm.map(m=>m.month.slice(5)),[{label:'Qty',data:rm.map(m=>m.total_qty),color:'#42a5f5'}],{type:'bar'});
+    const uw=document.getElementById('dc-util');
+    uw.innerHTML=dates.map(d=>{
+      const u=du[d].util||0;
+      const cls=u>100?'over':'ok';
+      return `<div class="util-row"><div class="util-date">${d}</div><div class="util-track"><div class="util-fill ${cls}" style="width:${Math.min(u,100)}%"><span class="util-text">${u}%</span></div></div><div class="util-pct" style="color:${u>100?'var(--r)':'var(--b)'}">${u}%</div></div>`;
+    }).join('');
+  },80);
+}
+
+// ── ③ RISK ──
+let riskAll=[];
+function buildRisk(){
+  const{risk_summary}=D2;
+  const rClr={Overdue:'#c62828',Critical:'#e65100',Urgent:'#f9a825',Watch:'#2e7d32','On Track':'#1565c0'};
+  const tot=Object.values(risk_summary).reduce((a,v)=>a+v,0);
+  const el=document.getElementById('risk-inner');
+  const kpis=Object.entries(risk_summary).sort((a,b)=>b[1]-a[1]).map(([k,v])=>
+    kpi(k,v.toLocaleString(),(v/tot*100).toFixed(1)+'% of orders',rClr[k]||'#888')
+  ).join('');
+  el.innerHTML=`<div class="krow">${kpis}</div>
+    <div class="card"><h3>🚨 At-Risk Orders
+      <span style="display:flex;gap:5px;margin-left:8px">
+        <button class="btn br" style="height:20px;font-size:9px;padding:0 7px" onclick="fR('Overdue')">Overdue</button>
+        <button class="btn" style="height:20px;font-size:9px;padding:0 7px;background:var(--o)" onclick="fR('Critical')">Critical</button>
+        <button class="btn" style="height:20px;font-size:9px;padding:0 7px;background:var(--y)" onclick="fR('Urgent')">Urgent</button>
+        <button class="btn bs" style="height:20px;font-size:9px;padding:0 7px" onclick="fR('all')">All</button>
+      </span>
+      <span class="bsm" id="r-cnt" style="margin-left:auto"></span></h3>
+      <div style="overflow:auto;max-height:380px">
+        <table class="gtbl"><thead><tr>
+          <th>Risk</th><th>Days</th><th>Buyer</th><th>EWO</th><th>P.O.</th>
+          <th>Color</th><th>Product</th><th class="r">Ord Qty</th><th class="r">Pln Qty</th>
+          <th>Line</th><th>SMV</th><th>MP</th><th>EFD</th>
+        </tr></thead><tbody id="r-tbody"></tbody></table>
+      </div></div>`;
+  riskAll=D2.risk_detail||[];fR('all');
+}
+function fR(t){
+  const d=t==='all'?riskAll:riskAll.filter(r=>r.risk===t);
+  document.getElementById('r-cnt').textContent=d.length+' orders';
+  const tb=document.getElementById('r-tbody');tb.innerHTML='';
+  const frag=document.createDocumentFragment();
+  d.forEach(r=>{
+    const tr=document.createElement('tr');
+    const dd=parseInt(r.days_to_efd)||0;
+    const ds=dd<0?`<span style="color:var(--r);font-weight:700">${dd}d</span>`:`<b style="color:var(--g)">${dd}d</b>`;
+    tr.innerHTML=`<td>${rbadge(r.risk)}</td><td>${ds}</td><td>${r.Buyer||''}</td><td>${r.EWO||''}</td>
+      <td>${r['P.O.']||''}</td><td>${r.Col||''}</td><td>${r['Product Type']||''}</td>
+      <td class="r">${(+r['Order qty']||0).toLocaleString()}</td>
+      <td class="r">${r['Planned qty']||'—'}</td><td>${r['Line #']||'—'}</td>
+      <td>${r.SMV||''}</td><td>${r.Manpower||'—'}</td><td>${r.Delivery||''}</td>`;
+    frag.appendChild(tr);
+  });
+  tb.appendChild(frag);
+}
+
+// ── ④ ALERTS ──
+const AICON={NO_MP:'⚠️',OVER_PLAN:'✅',OVERDUE_REMAIN:'🔴',NO_PSD:'📅',NO_SMV:'❓'};
+const ATITLE={NO_MP:'No Manpower Assigned',OVER_PLAN:'Over-Planned Qty',OVERDUE_REMAIN:'Overdue with Remaining Qty',NO_PSD:'No PSD Set',NO_SMV:'Missing SMV'};
+let alertAll=[];
+function buildAlert(){
+  const as=EX.alert_summary||{};
+  const el=document.getElementById('alert-inner');
+  const kpis=Object.entries(as).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+    const c={NO_MP:va('--o'),OVER_PLAN:'#2e7d32',OVERDUE_REMAIN:va('--r'),NO_PSD:va('--y'),NO_SMV:va('--p')}[k]||'#888';
+    return kpi(ATITLE[k]||k,v.toLocaleString(),'alerts',c);
+  }).join('');
+  el.innerHTML=`<div class="krow">${kpis}</div>
+    <div class="card"><h3>🔔 All Alerts
+      <span style="display:flex;gap:5px;margin-left:8px">
+        ${Object.keys(as).map(k=>`<button class="btn bs" style="height:20px;font-size:9px;padding:0 7px" onclick="fA('${k}')">${AICON[k]||'🔔'} ${k}</button>`).join('')}
+        <button class="btn bp" style="height:20px;font-size:9px;padding:0 7px" onclick="fA('all')">All</button>
+      </span>
+      <span class="bsm" id="a-cnt" style="margin-left:auto"></span></h3>
+      <div id="a-list" style="overflow:auto;max-height:400px;padding-right:4px"></div></div>`;
+  alertAll=EX.alerts||[];fA('all');
+}
+function va(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()||v;}
+function fA(t){
+  const d=t==='all'?alertAll:alertAll.filter(a=>a.alert===t);
+  document.getElementById('a-cnt').textContent=d.length+' alerts';
+  const list=document.getElementById('a-list');
+  list.innerHTML=d.slice(0,200).map(a=>`
+    <div class="alert-item a-${a.alert}">
+      <div class="alert-icon">${AICON[a.alert]||'🔔'}</div>
+      <div class="alert-body">
+        <div class="alert-title">${ATITLE[a.alert]||a.alert} ${rbadge(a.risk)}</div>
+        <div class="alert-sub">${a.msg} &nbsp;|&nbsp; <b>${a.Buyer}</b> · EWO: ${a.EWO} · ${a.PO} · ${a.Col} · Line: ${a.Line||'—'} · EFD: ${a.EFD}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── ⑤ LINE LOAD ──
+function buildLoad(){
+  const ll=EX.line_load||{};
+  const du=EX.daily_util||{};
+  const el=document.getElementById('load-inner');
+  const maxBacklog=Math.max(...Object.values(ll).map(v=>v.backlog||0),1);
+  const maxCap=Math.max(...Object.values(ll).map(v=>v.cap70||0),1);
+  const cards=Object.entries(ll).map(([line,v])=>{
+    const loadPct=Math.min(Math.round((v.backlog||0)/maxBacklog*100),100);
+    const cls=loadPct>75?'hot':loadPct>40?'warm':'ok';
+    return `<div class="line-card ${cls}">
+      <div class="lc-name">${line}</div>
+      <div class="lc-row"><span>Orders</span><b>${v.orders}</b></div>
+      <div class="lc-row"><span>Cap/Day @70%</span><b>${(v.cap70||0).toLocaleString()} pcs</b></div>
+      <div class="lc-row"><span>Manpower</span><b>${v.mp}</b></div>
+      <div class="lc-row"><span>Avg SMV</span><b>${v.smv}</b></div>
+      <div class="lc-row"><span>Backlog</span><b>${(v.backlog||0).toLocaleString()} pcs</b></div>
+      <div class="lc-row"><span>Days needed</span><b>${v.days_needed}</b></div>
+      <div class="lc-bar"><div class="lc-bar-fill" style="width:${loadPct}%"></div></div>
+    </div>`;
+  }).join('');
+  const lineNames=Object.keys(ll);
+  const capVals=lineNames.map(l=>ll[l].cap70||0);
+  const backVals=lineNames.map(l=>ll[l].backlog||0);
+  el.innerHTML=`
+    <div class="card"><h3>⚖️ Line Load Summary <span class="bsm">${lineNames.length} lines</span></h3>
+      <canvas id="lc-chart" height="180"></canvas></div>
+    <div class="card"><h3>🏭 Line-by-Line Detail</h3>
+      <div class="line-grid">${cards}</div></div>`;
+  setTimeout(()=>canvasLine('lc-chart',lineNames,
+    [{label:'Capacity/Day',data:capVals,color:'#42a5f5'},{label:'Backlog',data:backVals,color:'#ef5350'}]),80);
+}
+
+// ── ⑥ AUTO LINE LOADER ──
+function buildLoader(){
+  const ll=EX.line_load||{};
+  const el=document.getElementById('loader-inner');
+  el.innerHTML=`
+    <div class="card"><h3>🎯 Auto Line Loader — SMV-based Assignment</h3>
+      <p style="font-size:10px;color:#888;margin-bottom:10px">Enter order details → system suggests best line based on SMV match & available capacity</p>
+      <div class="cf-g3">
+        <div class="cf"><label>Order SMV</label><input id="al-smv" type="number" value="14.91" step=".01" oninput="runLoader()"></div>
+        <div class="cf"><label>Order Qty (pcs)</label><input id="al-qty" type="number" value="5000" oninput="runLoader()"></div>
+        <div class="cf"><label>Required by (days)</label><input id="al-days" type="number" value="30" oninput="runLoader()"></div>
+      </div>
+      <div id="loader-result"></div>
+    </div>
+    <div class="card"><h3>📊 Line SMV & Capacity Overview</h3>
+      <div style="overflow:auto;max-height:340px">
+        <table class="gtbl"><thead><tr>
+          <th>Line</th><th class="r">Avg SMV</th><th class="r">Cap/Day@70%</th>
+          <th class="r">Manpower</th><th class="r">Orders</th><th class="r">Backlog</th><th>Load</th>
+        </tr></thead><tbody>
+          ${Object.entries(ll).map(([l,v])=>{
+            const pct=Math.min(Math.round((v.backlog||0)/(v.cap70||1)*100),200);
+            const c=pct>100?'var(--r)':pct>60?'var(--o)':'var(--g)';
+            return `<tr><td><b>${l}</b></td><td class="r">${v.smv}</td><td class="r">${(v.cap70||0).toLocaleString()}</td>
+              <td class="r">${v.mp}</td><td class="r">${v.orders}</td><td class="r">${(v.backlog||0).toLocaleString()}</td>
+              <td><div style="height:8px;background:#eceff1;border-radius:3px;width:100px;overflow:hidden"><div style="height:100%;background:${c};width:${Math.min(pct,100)}%;border-radius:3px"></div></div></td></tr>`;
+          }).join('')}
+        </tbody></table></div></div>`;
+  runLoader();
+}
+function runLoader(){
+  const smv=parseFloat(document.getElementById('al-smv')?.value)||0;
+  const qty=parseInt(document.getElementById('al-qty')?.value)||0;
+  const days=parseInt(document.getElementById('al-days')?.value)||30;
+  const ll=EX.line_load||{};
+  const scored=Object.entries(ll).map(([line,v])=>{
+    const smvDiff=Math.abs((v.smv||0)-smv);
+    const cap=v.cap70||0;
+    const daysNeeded=cap>0?Math.ceil(qty/cap):999;
+    const canMeet=daysNeeded<=days;
+    const score=smvDiff*10+(canMeet?0:100)+(v.backlog||0)/1000;
+    return {line,v,smvDiff,daysNeeded,canMeet,score};
+  }).sort((a,b)=>a.score-b.score);
+  const res=document.getElementById('loader-result');
+  if(!res)return;
+  res.innerHTML=`<div style="margin-top:8px"><b style="font-size:11px;color:var(--hdr2)">Recommendations for SMV=${smv}, Qty=${qty.toLocaleString()}, Required in ${days} days:</b></div>`+
+    scored.slice(0,6).map((s,i)=>{
+      const cls=i===0?'best smv-match':(s.canMeet?'smv-match':'smv-match no');
+      const daysNeed=s.daysNeeded||5;
+      return `<div class="${cls}" style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span>${i===0?'⭐ ':i===1?'2️⃣ ':i===2?'3️⃣ ':''}<b>${s.line}</b>
+        — SMV Δ${s.smvDiff.toFixed(2)} | Cap/day: ${s.v.cap70} | Needs: ${daysNeed}d | ${s.canMeet?'✅ Can meet':'⚠️ May miss'} | Backlog: ${(s.v.backlog||0).toLocaleString()}</span>
+        <button class="btn bt" style="height:22px;font-size:10px;padding:0 8px" onclick="bdApplyFromLoader('${s.line.replace(/'/g,"\\'")}','NEW-'+Date.now(),${qty},${daysNeed})">📐 Apply to Board</button>
+      </div>`;
+    }).join('');
+}
+
+// ── ⑦ SCHEDULE FILLER ──
+function buildSched(){
+  const el=document.getElementById('sched-inner');
+  el.innerHTML=`
+    <div class="card" style="max-width:700px"><h3>📆 Production Schedule Auto-Filler</h3>
+      <p style="font-size:10px;color:#888;margin-bottom:10px">Enter order details → generates day-by-day production schedule ending before EFD</p>
+      <div class="cf-g3">
+        <div class="cf"><label>Order Qty (pcs)</label><input id="sf-oq" type="number" value="5000" oninput="runSched()"></div>
+        <div class="cf"><label>Planned Qty (pcs)</label><input id="sf-pq" type="number" value="5000" oninput="runSched()"></div>
+        <div class="cf"><label>SMV (min)</label><input id="sf-smv" type="number" value="14.91" step=".01" oninput="runSched()"></div>
+        <div class="cf"><label>Manpower</label><input id="sf-mp" type="number" value="41" oninput="runSched()"></div>
+        <div class="cf"><label>Target Efficiency %</label><input id="sf-ef" type="number" value="65" oninput="runSched()"></div>
+        <div class="cf"><label>EFD (M/D/YYYY)</label><input id="sf-efd" type="text" value="10/30/2026" oninput="runSched()"></div>
+        <div class="cf"><label>Start Date</label><input id="sf-sd" type="text" value="9/26/2026" oninput="runSched()"></div>
+        <div class="cf"><label>Buffer Days</label><input id="sf-buf" type="number" value="3" oninput="runSched()"></div>
+        <div class="cf"><label>Work Hours/Day</label><input id="sf-hrs" type="number" value="8" step=".5" oninput="runSched()"></div>
+      </div>
+      <div id="sf-result"></div>
+      <div id="sf-tbl" style="overflow:auto;max-height:280px;margin-top:8px"></div>
+    </div>`;
+  runSched();
+}
+function runSched(){
+  const oq=+document.getElementById('sf-oq')?.value||0;
+  const pq=+document.getElementById('sf-pq')?.value||0;
+  const smv=+document.getElementById('sf-smv')?.value||0;
+  const mp=+document.getElementById('sf-mp')?.value||1;
+  const ef=+document.getElementById('sf-ef')?.value||65;
+  const hrs=+document.getElementById('sf-hrs')?.value||8;
+  const buf=+document.getElementById('sf-buf')?.value||3;
+  const efdStr=document.getElementById('sf-efd')?.value||'';
+  const sdStr=document.getElementById('sf-sd')?.value||'';
+  const efd=new Date(efdStr),sd=new Date(sdStr);
+  const dailyCap=smv>0?Math.round(mp*hrs*60/smv*(ef/100)):0;
+  const sah=dailyCap*smv/60;
+  const daysNeeded=dailyCap>0?Math.ceil(pq/dailyCap):0;
+  const res=document.getElementById('sf-result');
+  if(!res)return;
+  res.innerHTML=`<div class="sf-result">
+    <div class="sf-item"><div class="sf-lbl">Daily Cap</div><div class="sf-val" style="color:var(--b)">${dailyCap.toLocaleString()}</div></div>
+    <div class="sf-item"><div class="sf-lbl">SAH/Day</div><div class="sf-val" style="color:var(--p)">${sah.toFixed(1)}</div></div>
+    <div class="sf-item"><div class="sf-lbl">Prod Days</div><div class="sf-val" style="color:var(--o)">${daysNeeded}</div></div>
+    <div class="sf-item"><div class="sf-lbl">Efficiency</div><div class="sf-val" style="color:var(--g)">${ef}%</div></div>
+    <div class="sf-item"><div class="sf-lbl">Buffer</div><div class="sf-val" style="color:#888">${buf}d</div></div>
+    <div class="sf-item"><div class="sf-lbl">Total Days</div><div class="sf-val" style="color:${daysNeeded+buf>(isNaN(efd)||isNaN(sd)?999:(efd-sd)/86400000)?'var(--r)':'var(--g)'}">${daysNeeded+buf}</div></div>
+  </div>`;
+  const tbl=document.getElementById('sf-tbl');
+  if(!dailyCap||isNaN(sd)){tbl.innerHTML='';return;}
+  let rem=pq,rows='',d=new Date(sd);
+  rows='<table class="sch-tbl"><thead><tr><th>#</th><th>Date</th><th>Plan/Day</th><th>SAH/Day</th><th>Effi%</th><th>Cumulative</th><th>Remaining</th></tr></thead><tbody>';
+  for(let day=1;day<=daysNeeded&&rem>0;day++){
+    const dayPcs=Math.min(dailyCap,rem);
+    rem-=dayPcs;
+    const cum=pq-rem;
+    const ds=d.toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'});
+    const rowSah=(dayPcs*smv/60).toFixed(1);
+    rows+=`<tr><td>${day}</td><td>${ds}</td><td><b>${dayPcs.toLocaleString()}</b></td><td>${rowSah}</td><td>${ef}%</td><td>${cum.toLocaleString()}</td><td>${rem.toLocaleString()}</td></tr>`;
+    d.setDate(d.getDate()+1);
+    if(d.getDay()===0)d.setDate(d.getDate()+1); // skip Sunday
+  }
+  rows+='</tbody></table>';
+  tbl.innerHTML=rows;
+}
+
+// ── ⑧ WHAT-IF SCENARIO ──
+function buildScenario(){
+  const ll=EX.line_load||{};
+  const lines=Object.keys(ll).slice(0,6);
+  const el=document.getElementById('scen-inner');
+  el.innerHTML=`
+    <div class="card"><h3>🔄 What-If Scenario Planner</h3>
+      <p style="font-size:10px;color:#888;margin-bottom:10px">Adjust manpower or efficiency → see impact on daily capacity and production days</p>
+      <div class="scen-controls">
+        ${lines.map(line=>{
+          const v=ll[line];
+          return `<div class="scen-slider-wrap">
+            <div class="scen-slider-label">🏭 ${line} (base MP: ${v.mp})</div>
+            <div class="slider-row"><input type="range" min="10" max="80" value="${v.mp}" id="sc-mp-${line.replace(' ','')}" oninput="runScenario()"><span class="slider-val" id="sc-mpv-${line.replace(' ','')}">—</span></div>
+            <div style="font-size:9px;color:#aaa;margin-top:3px">SMV: ${v.smv} | Base cap: ${v.cap70}/day</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="cf-g3" style="max-width:400px">
+        <div class="cf"><label>Target Efficiency %</label><input id="sc-ef" type="number" value="70" oninput="runScenario()"></div>
+        <div class="cf"><label>Work Hours/Day</label><input id="sc-hrs" type="number" value="8" step=".5" oninput="runScenario()"></div>
+      </div>
+      <div id="scen-result" class="scen-result"></div>
+    </div>`;
+  runScenario();
+}
+function runScenario(){
+  const ll=EX.line_load||{};
+  const lines=Object.keys(ll).slice(0,6);
+  const ef=(+document.getElementById('sc-ef')?.value||70)/100;
+  const hrs=+document.getElementById('sc-hrs')?.value||8;
+  let totalBaseCap=0,totalNewCap=0,totalBacklog=0;
+  lines.forEach(line=>{
+    const v=ll[line];
+    const key=line.replace(' ','');
+    const el=document.getElementById(`sc-mp-${key}`);
+    const newMp=el?+el.value:v.mp;
+    const mpvEl=document.getElementById(`sc-mpv-${key}`);
+    if(mpvEl) mpvEl.textContent=newMp+' MP';
+    const newCap=v.smv>0?Math.round(newMp*hrs*60/v.smv*ef):0;
+    totalBaseCap+=v.cap70||0;
+    totalNewCap+=newCap;
+    totalBacklog+=v.backlog||0;
+  });
+  const diff=totalNewCap-totalBaseCap;
+  const diffPct=totalBaseCap>0?(diff/totalBaseCap*100).toFixed(1):0;
+  const daysBase=totalBaseCap>0?Math.ceil(totalBacklog/totalBaseCap):0;
+  const daysNew=totalNewCap>0?Math.ceil(totalBacklog/totalNewCap):0;
+  const saved=daysBase-daysNew;
+  const res=document.getElementById('scen-result');
+  if(!res)return;
+  res.innerHTML=`
+    <div class="sr-item"><div class="sr-lbl">Base Cap/Day</div><div class="sr-val" style="color:var(--b)">${totalBaseCap.toLocaleString()}</div><div class="sr-diff">selected lines</div></div>
+    <div class="sr-item"><div class="sr-lbl">New Cap/Day</div><div class="sr-val" style="color:${diff>=0?'var(--g)':'var(--r)'}">${totalNewCap.toLocaleString()}</div><div class="sr-diff" style="color:${diff>=0?'var(--g)':'var(--r)'}">${diff>=0?'+':''}${diff.toLocaleString()} (${diffPct>0?'+':''}${diffPct}%)</div></div>
+    <div class="sr-item"><div class="sr-lbl">Backlog</div><div class="sr-val" style="color:var(--o)">${totalBacklog.toLocaleString()}</div><div class="sr-diff">pcs unscheduled</div></div>
+    <div class="sr-item"><div class="sr-lbl">Days @ Base</div><div class="sr-val" style="color:#888">${daysBase}</div><div class="sr-diff">days to clear</div></div>
+    <div class="sr-item"><div class="sr-lbl">Days @ New</div><div class="sr-val" style="color:${daysNew<daysBase?'var(--g)':'var(--r)'}">${daysNew}</div><div class="sr-diff" style="color:${saved>0?'var(--g)':'var(--r)'}">${saved>0?`Save ${saved}d`:saved<0?`Lose ${Math.abs(saved)}d`:'No change'}</div></div>
+    <div class="sr-item"><div class="sr-lbl">Impact</div><div class="sr-val" style="color:${saved>0?'var(--g)':'var(--r)'}">${diff>=0?'📈':'📉'}</div><div class="sr-diff">${diff>=0?'Positive':'Negative'}</div></div>`;
+}
+
+// ── ⑨ BUYER TRACKER ──
+function buildBuyer(){
+  const bt=AD.buyer_tracker||[];
+  const cs=AD.color_stats||[];
+  const el=document.getElementById('buyer-inner');
+  el.innerHTML=`
+    <div class="card"><h3>🏢 Buyer Planning & Risk Status</h3>
+      <div style="overflow:auto"><table class="gtbl"><thead><tr>
+        <th>Buyer</th><th class="r">Orders</th><th class="r">Ord Qty</th>
+        <th class="r">Pln Qty</th><th class="r">Gap</th><th>Gap%</th>
+        <th class="r">Overdue</th><th class="r">Critical</th><th class="r">Urgent</th>
+        <th>Nearest EFD</th><th>Latest EFD</th><th>Progress</th>
+      </tr></thead><tbody>${
+      bt.sort((a,b)=>b.total_qty-a.total_qty).map(r=>{
+        const gpct=r.gap_pct||0,ppct=100-gpct;
+        const gc=gpct>90?'var(--r)':gpct>60?'var(--o)':'var(--g)';
+        return `<tr><td><b>${r.Buyer}</b></td>
+          <td class="r">${r.orders.toLocaleString()}</td>
+          <td class="r">${(r.total_qty||0).toLocaleString()}</td>
+          <td class="r">${(r.planned_qty||0).toLocaleString()}</td>
+          <td class="r" style="color:${gc};font-weight:700">${(r.gap||0).toLocaleString()}</td>
+          <td><span class="rbg" style="background:${gc}22;color:${gc}">${gpct}%</span></td>
+          <td class="r" style="color:${r.overdue>0?'var(--r)':'#888'};font-weight:${r.overdue>0?700:400}">${r.overdue}</td>
+          <td class="r" style="color:${r.critical>0?'var(--o)':'#888'}">${r.critical}</td>
+          <td class="r" style="color:${r.urgent>0?'var(--y)':'#888'}">${r.urgent}</td>
+          <td>${r.nearest_efd||'—'}</td><td>${r.latest_efd||'—'}</td>
+          <td><div style="display:flex;gap:1px;width:100px">
+            <div style="height:8px;border-radius:2px;background:var(--g);width:${ppct*1}px"></div>
+            <div style="height:8px;border-radius:2px;background:var(--r);width:${gpct*1}px"></div>
+          </div></td></tr>`;
+      }).join('')}</tbody></table></div></div>
+    <div class="row2">
+      <div class="card" style="min-width:300px"><h3>📊 Planning Gap by Buyer</h3>${bars((D2.gap_data||[]).sort((a,b)=>b.gap-a.gap),'Buyer','gap','c-r',v=>v.toLocaleString()+' pcs')}</div>
+      <div class="card" style="min-width:280px"><h3>🎨 Top Colors by Qty</h3>${bars(cs.slice(0,12),'Col','total_qty','c-t',v=>v.toLocaleString()+' pcs')}</div>
+    </div>`;
+}
+
+// ── ⑩ SHIPMENT ──
+function buildShip(){
+  const wk=AD.weekly||[],bw=AD.buyer_weekly||{},ld=AD.lead_dist||{};
+  const el=document.getElementById('ship-inner');
+  const wblocks=wk.slice(0,16).map(w=>{
+    const qty=w.total_qty||0,cls=qty>400000?'hot':qty>200000?'warm':'ok';
+    const wl=w.week_key?w.week_key.split('/')[0].slice(5):'';
+    return `<div class="wb ${cls}"><div class="wb-wk">W/E ${wl}</div><div class="wb-qty">${qty.toLocaleString()}</div><div class="wb-det">${w.orders} orders · ${w.buyers} buyers</div></div>`;
+  }).join('');
+  const buyers=bw.buyers||[],weeks=(bw.weeks||[]).slice(0,12),data=bw.data||{};
+  const allV=buyers.flatMap(b=>weeks.map(w=>(data[b]||{})[w]||0));
+  const maxV=Math.max(...allV,1);
+  function whcls(v){if(!v)return 'h0';const p=v/maxV;return p<.2?'h1':p<.5?'h2':p<.8?'h3':'h4';}
+  const bwHtml='<table class="htbl"><thead><tr><th>Buyer</th>'+weeks.map(w=>`<th>${w.slice(5)}</th>`).join('')+'</tr></thead><tbody>'+
+    buyers.map(b=>'<tr><td class="ll">'+b+'</td>'+weeks.map(w=>{const v=(data[b]||{})[w]||0;return`<td class="${whcls(v)}" title="${b} ${w}: ${v.toLocaleString()}">${v>0?v.toLocaleString():''}</td>`;}).join('')+'</tr>').join('')+'</tbody></table>';
+  el.innerHTML=`
+    <div class="card"><h3>📅 Weekly Shipment Schedule</h3><div class="week-blocks">${wblocks}</div></div>
+    <div class="row2">
+      <div class="card" style="flex:2"><h3>📊 Buyer × Week Delivery Heatmap</h3><div style="overflow:auto">${bwHtml}</div></div>
+      <div class="card" style="min-width:220px"><h3>⏱️ Lead Time (PSD→EFD)</h3><canvas id="ld-chart" height="200"></canvas></div>
+    </div>`;
+  setTimeout(()=>canvasLine('ld-chart',Object.keys(ld),[{label:'Orders',data:Object.values(ld),color:'#ab47bc'}],{type:'bar'}),80);
+}
+
+// ── ⑪ EFFICIENCY ──
+function buildEffi(){
+  const lc=AD.line_cap||{},ed=AD.effi_dist||{},dp=D2.daily_prod||{};
+  const el=document.getElementById('effi-inner');
+  const maxD=Math.max(...Object.values(lc).map(v=>v.daily||0),1);
+  el.innerHTML=`
+    <div class="row2">
+      <div class="card" style="min-width:300px"><h3>📈 Efficiency Distribution</h3><canvas id="ef-chart" height="220"></canvas></div>
+      <div class="card" style="min-width:300px"><h3>🏭 Line Capacity Detail</h3>
+        <div style="overflow:auto;max-height:320px">
+          <table class="gtbl"><thead><tr><th>Line</th><th class="r">Orders</th><th class="r">MP</th><th class="r">SMV</th><th class="r">Daily@70%</th><th>Bar</th></tr></thead>
+          <tbody>${Object.entries(lc).sort(([a],[b])=>a.localeCompare(b)).map(([l,v])=>{
+            const p=Math.round((v.daily||0)/maxD*100);
+            return `<tr><td><b>${l}</b></td><td class="r">${v.orders}</td><td class="r">${v.mp}</td><td class="r">${v.smv}</td><td class="r"><b>${v.daily}</b></td>
+              <td><div style="height:8px;background:#eceff1;border-radius:3px;width:80px;overflow:hidden"><div style="height:100%;background:linear-gradient(90deg,#42a5f5,#1565c0);width:${p}%;border-radius:3px"></div></div></td></tr>`;
+          }).join('')}</tbody></table></div></div></div>
+    <div class="card"><h3>📈 Daily Production Timeline</h3><canvas id="tl-chart" height="180"></canvas></div>`;
+  const dts=Object.keys(dp).sort((a,b)=>new Date(a)-new Date(b));
+  setTimeout(()=>{
+    canvasLine('ef-chart',Object.keys(ed),[{label:'Orders',data:Object.values(ed),color:'#42a5f5'}],{type:'bar'});
+    canvasLine('tl-chart',dts,[{label:'Daily Plan/Day Output (pcs)',data:dts.map(d=>dp[d]),color:'#1e88e5'}]);
+  },80);
+}
+
+// ── ⑫ HEATMAP ──
+function buildHeat(){
+  const ld=D2.line_daily||{};
+  const allDates=[...new Set(Object.values(ld).flatMap(d=>Object.keys(d)))].sort((a,b)=>new Date(a)-new Date(b)).slice(0,20);
+  const lines=Object.keys(ld).sort();
+  const allV=lines.flatMap(l=>allDates.map(d=>(ld[l]||{})[d]||0)),maxV=Math.max(...allV,1);
+  function hcls(v){if(!v)return 'h0';const p=v/maxV;return p<.25?'h1':p<.5?'h2':p<.75?'h3':'h4';}
+  const tbl='<table class="htbl"><thead><tr><th>Line</th>'+allDates.map(d=>`<th>${d}</th>`).join('')+'</tr></thead><tbody>'+
+    lines.map(l=>'<tr><td class="ll">'+l+'</td>'+allDates.map(d=>{const v=(ld[l]||{})[d]||0;return`<td class="${hcls(v)}" title="${l}·${d}=${v.toLocaleString()}">${v||''}</td>`;}).join('')+'</tr>').join('')+'</tbody></table>';
+  document.getElementById('heat-inner').innerHTML=`<div class="card"><h3>🌡️ Line × Date Production Heatmap</h3><div style="overflow:auto">${tbl}</div></div>`;
+}
+
+// ── ⑬ CALCULATOR ──
+function buildCalc(){
+  document.getElementById('calc-inner').innerHTML=`
+    <div class="calc-2col">
+      <div class="calc-sec"><h4>🧮 Forward: Plan/Day → Efficiency</h4>
+        <div class="cf-g2">
+          <div class="cf"><label>Plan/Day (pcs)</label><input id="c1" type="number" value="500" oninput="c1f()"></div>
+          <div class="cf"><label>SMV (min)</label><input id="c2" type="number" value="14.91" step=".01" oninput="c1f()"></div>
+          <div class="cf"><label>Manpower</label><input id="c3" type="number" value="41" oninput="c1f()"></div>
+          <div class="cf"><label>Work Hrs/Day</label><input id="c4" type="number" value="8" step=".5" oninput="c1f()"></div>
+          <div class="cf"><label>Order Qty</label><input id="c5" type="number" value="5000" oninput="c1f()"></div>
+          <div class="cf"><label>Target Effi %</label><input id="c6" type="number" value="75" oninput="c1f()"></div>
+        </div>
+        <div class="calc-res" id="cr1"></div>
+        <div class="efm"><div class="efm-f" id="em1"></div></div>
+        <div style="font-size:9px;color:#bbb;margin-top:7px">SAH=Plan×SMV÷60 | Effi=SAH÷(MP×Hrs)×100 | Days=Qty÷Plan</div>
+      </div>
+      <div class="calc-sec"><h4>🎯 Reverse: Target Effi → Required MP</h4>
+        <div class="cf-g2">
+          <div class="cf"><label>Plan/Day (pcs)</label><input id="r1" type="number" value="500" oninput="c2f()"></div>
+          <div class="cf"><label>SMV (min)</label><input id="r2" type="number" value="14.91" step=".01" oninput="c2f()"></div>
+          <div class="cf"><label>Target Effi %</label><input id="r3" type="number" value="75" oninput="c2f()"></div>
+          <div class="cf"><label>Work Hrs/Day</label><input id="r4" type="number" value="8" step=".5" oninput="c2f()"></div>
+        </div>
+        <div class="calc-res" id="cr2"></div>
+        <div style="font-size:9px;color:#bbb;margin-top:7px">Required MP = SAH ÷ (Target% ÷ 100 × Hours)</div>
+      </div>
+    </div>
+    <div class="calc-sec"><h4>🔢 Batch Calculator — Multiple Lines</h4>
+      <div style="font-size:10px;color:#aaa;margin-bottom:8px">Comma-separated values, same number of entries per field</div>
+      <div class="cf-g2" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="cf" style="grid-column:1/-1"><label>Plan/Day per Line</label><input id="b1" type="text" value="500,300,450,600,700" oninput="c3f()"></div>
+        <div class="cf" style="grid-column:1/-1"><label>SMV per Line</label><input id="b2" type="text" value="14.91,23.76,17,8.66,9.38" oninput="c3f()"></div>
+        <div class="cf" style="grid-column:1/-1"><label>Manpower per Line</label><input id="b3" type="text" value="41,51,41,41,31" oninput="c3f()"></div>
+      </div>
+      <div id="batch-out" style="overflow-x:auto"></div>
+    </div>`;
+  c1f();c2f();c3f();
+}
+function crH(its){return`<div class="calc-res">${its.map(i=>`<div class="cr-i"><div class="cr-l">${i.l}</div><div class="cr-v" style="color:${i.c}">${i.v}</div></div>`).join('')}</div>`;}
+function c1f(){
+  const p=+document.getElementById('c1')?.value||0,s=+document.getElementById('c2')?.value||0;
+  const m=+document.getElementById('c3')?.value||1,h=+document.getElementById('c4')?.value||8;
+  const q=+document.getElementById('c5')?.value||0,t=+document.getElementById('c6')?.value||75;
+  const sah=p*s/60,ef=sah/(m*h)*100,days=p>0?Math.ceil(q/p):0;
+  const ec=ef>=t?'var(--g)':ef>=60?'var(--y)':'var(--r)';
+  const cr=document.getElementById('cr1');if(cr)cr.outerHTML=crH([
+    {l:'SAH/Day',v:sah.toFixed(2),c:'var(--b)'},{l:'Efficiency',v:ef.toFixed(1)+'%',c:ec},
+    {l:'vs Target',v:(ef-t>=0?'+':'')+(ef-t).toFixed(1)+'%',c:ef>=t?'var(--g)':'var(--r)'},
+    {l:'Prod Days',v:days,c:'var(--p)'},{l:'Clk Hr/Day',v:(m>0?sah/m:0).toFixed(2),c:'var(--o)'},
+  ]).replace('<div class="calc-res"','<div class="calc-res" id="cr1"');
+  const em=document.getElementById('em1');if(em)em.style.width=Math.min(ef,100)+'%';
+}
+function c2f(){
+  const p=+document.getElementById('r1')?.value||0,s=+document.getElementById('r2')?.value||0;
+  const t=+document.getElementById('r3')?.value||75,h=+document.getElementById('r4')?.value||8;
+  const sah=p*s/60,mp=t>0?sah/(t/100*h):0;
+  const cr=document.getElementById('cr2');if(cr)cr.outerHTML=crH([
+    {l:'SAH/Day',v:sah.toFixed(2),c:'var(--b)'},{l:'Req. MP',v:Math.ceil(mp),c:'var(--o)'},
+    {l:'Exact MP',v:mp.toFixed(2),c:'#888'},{l:'At Effi',v:t+'%',c:'var(--g)'},
+  ]).replace('<div class="calc-res"','<div class="calc-res" id="cr2"');
+}
+function c3f(){
+  const parse=id=>(document.getElementById(id)?.value||'').split(',').map(v=>parseFloat(v.trim())||0);
+  const plans=parse('b1'),smvs=parse('b2'),mps=parse('b3');
+  const n=Math.min(plans.length,smvs.length,mps.length);
+  if(!n){const o=document.getElementById('batch-out');if(o)o.innerHTML='';return;}
+  let h='<table class="batch-tbl"><thead><tr><th>Line</th><th>Plan/Day</th><th>SMV</th><th>MP</th><th>SAH/Day</th><th>Efficiency</th><th>Clock Hr</th></tr></thead><tbody>';
+  for(let i=0;i<n;i++){
+    const sah=plans[i]*smvs[i]/60,ef=sah/(mps[i]*8)*100,clk=mps[i]>0?sah/mps[i]:0;
+    const c=ef>=75?'var(--g)':ef>=60?'var(--y)':'var(--r)';
+    h+=`<tr><td><b>Line ${i+1}</b></td><td>${plans[i]}</td><td>${smvs[i]}</td><td>${mps[i]}</td><td>${sah.toFixed(2)}</td><td style="font-weight:800;color:${c}">${ef.toFixed(1)}%</td><td>${clk.toFixed(2)}h</td></tr>`;
+  }
+  h+='</tbody></table>';
+  const o=document.getElementById('batch-out');if(o)o.innerHTML=h;
+}
+
+
+// ── LINE BOARD (Drag-Drop + Auto-Shift + Undo) ──
+let bdOrders=[], bdInitial=[], bdUndoStack=[], bdRedoStack=[], bdPushDir='right';
+let bdDates=[], bdLines=[], bdDragId=null, bdBuilt=false;
+const BD_MAX_H=40, BD_COLORS=['ob0','ob1','ob2','ob3','ob4','ob5'];
+
+function bdFmt(d){
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  return dd+'-'+mm;
+}
+function bdIsWk(d){const x=d.getDay();return x===0||x===6;}
+function bdOverlap(a1,a2,b1,b2){return a1<=b2&&b1<=a2;}
+
+function buildBoard(){
+  if(bdBuilt){ bdRender(); return; }
+  bdBuilt=true;
+  // Build date axis from planning pc (first ~30 working-ish dates for UI)
+  const pc=(D.pc||[]).slice(3);
+  const startIdx=0;
+  const windowDays=Math.min(28, pc.length);
+  bdDates=[];
+  for(let i=startIdx;i<startIdx+windowDays;i++){
+    const p=pc[i];
+    const d=new Date(p);
+    if(!isNaN(d)) bdDates.push({raw:p, date:d, idx:i});
+    else bdDates.push({raw:p, date:new Date(2026,8,22+i), idx:i});
+  }
+  // Lines from data
+  const lineSet=new Set();
+  (D1.lines||[]).forEach(l=>{ if(l['Line #']) lineSet.add(String(l['Line #'])); });
+  Object.keys(EX.line_load||{}).forEach(l=>lineSet.add(l));
+  // normalize Line 01 style
+  bdLines=[...lineSet].sort((a,b)=>{
+    const na=parseInt(String(a).replace(/\D/g,''))||0;
+    const nb=parseInt(String(b).replace(/\D/g,''))||0;
+    return na-nb || String(a).localeCompare(b);
+  });
+  if(!bdLines.length){
+    for(let i=1;i<=20;i++) bdLines.push('Line '+String(i).padStart(2,'0'));
+  }
+
+  // Build orders from schedule_status + risk_detail fallback
+  bdOrders=[];
+  const ss=EX.schedule_status||[];
+  const date0=bdDates[0]?bdDates[0].date:new Date(2026,8,22);
+  ss.forEach((s,i)=>{
+    if(i>=400) return; // cap for performance
+    let line=String(s.Line||s['Line #']||'').trim();
+    if(!line) return;
+    // normalize
+    if(!bdLines.includes(line)){
+      const match=bdLines.find(L=>L.replace(/\s/g,'').toLowerCase()===line.replace(/\s/g,'').toLowerCase());
+      if(match) line=match;
+      else bdLines.push(line);
+    }
+    const daysLeft=parseInt(s.days)||14;
+    const efd=s.EFD?new Date(s.EFD):null;
+    let startDay=0;
+    if(efd && !isNaN(efd)){
+      const diff=Math.round((efd-date0)/(86400000))-Math.max(daysLeft,3);
+      startDay=Math.max(0, Math.min(diff, bdDates.length-2));
+    } else {
+      startDay=Math.min(i%12, bdDates.length-3);
+    }
+    let span=Math.max(2, Math.min(Math.ceil((parseFloat(s.oqty)||1000)/800), 8));
+    if(startDay+span>bdDates.length) span=Math.max(1, bdDates.length-startDay);
+    const buyer=s.Buyer||'';
+    const color=Math.abs(hashStr(buyer||s.EWO||''))%6;
+    bdOrders.push({
+      id:String(s.EWO||('ORD'+i)),
+      line, start:startDay, span,
+      buyer, oqty:s.oqty, pqty:s.pqty, efd:s.EFD||'',
+      color, sched:s.sched, completion:s.completion
+    });
+  });
+  // If empty, seed from risk_detail
+  if(!bdOrders.length){
+    (D2.risk_detail||[]).slice(0,150).forEach((r,i)=>{
+      let line=String(r['Line #']||'Line 01');
+      if(!bdLines.includes(line)) bdLines.push(line);
+      const start=i%10;
+      const span=Math.max(2, Math.min(5, bdDates.length-start));
+      bdOrders.push({
+        id:String(r.EWO||('R'+i)), line, start, span,
+        buyer:r.Buyer||'', oqty:r['Order qty'], color:i%6, efd:r.Delivery||''
+      });
+    });
+  }
+  bdLines.sort((a,b)=>{
+    const na=parseInt(String(a).replace(/\D/g,''))||0;
+    const nb=parseInt(String(b).replace(/\D/g,''))||0;
+    return na-nb || String(a).localeCompare(b);
+  });
+  // Resolve initial overlaps per line with pack
+  bdLines.forEach(L=>{
+    const onL=bdOrders.filter(o=>o.line===L);
+    if(onL.length<2) return;
+    const packed=bdPack(onL, null, null, null, 'right');
+    if(packed) packed.forEach(p=>{
+      const o=bdOrders.find(x=>x.id===p.id);
+      if(o){o.start=p.start;o.span=p.span;}
+    });
+  });
+  bdInitial=JSON.parse(JSON.stringify(bdOrders));
+  bdBuildGrid();
+  bdRender();
+  bdUpdBtns();
+}
+
+function hashStr(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h)+s.charCodeAt(i)|0;return h;}
+
+function bdPack(lineOrders, movedId, newStart, newSpan, dir){
+  const others=lineOrders.filter(o=>o.id!==movedId).map(o=>({...o}));
+  if(movedId!=null){
+    // inserting moved
+  } else {
+    // just pack all
+    others.sort((a,b)=>a.start-b.start);
+    const result=[];
+    let cursor=0;
+    for(const o of others){
+      let s=Math.max(o.start, cursor);
+      let sp=o.span;
+      if(s+sp>bdDates.length){sp=Math.max(1,bdDates.length-s); if(s>=bdDates.length) continue;}
+      result.push({id:o.id,start:s,span:sp});
+      cursor=s+sp;
+    }
+    return result;
+  }
+  dir=dir||bdPushDir;
+  if(dir==='right'){
+    others.sort((a,b)=>a.start-b.start);
+    const result=[{id:movedId,start:newStart,span:newSpan}];
+    let cursor=newStart+newSpan;
+    for(const o of others){
+      let s=o.start; if(s<cursor)s=cursor;
+      if(s+o.span>bdDates.length){
+        if(s>=bdDates.length) return null;
+        const fit=bdDates.length-s; if(fit<1) return null;
+        result.push({id:o.id,start:s,span:fit}); cursor=s+fit;
+      } else {
+        result.push({id:o.id,start:s,span:o.span}); cursor=s+o.span;
+      }
+    }
+    return result;
+  } else {
+    others.sort((a,b)=>b.start-a.start);
+    const result=[{id:movedId,start:newStart,span:newSpan}];
+    let cursor=newStart;
+    for(const o of others){
+      let s=o.start, sp=o.span;
+      if(bdOverlap(s,s+sp-1,newStart,newStart+newSpan-1)||s>=newStart){
+        s=cursor-sp;
+        if(s<0){sp=cursor;s=0;if(sp<1)return null;}
+        cursor=s;
+      }
+      result.push({id:o.id,start:s,span:sp});
+    }
+    const sorted=result.slice().sort((a,b)=>a.start-b.start);
+    for(let i=1;i<sorted.length;i++){
+      if(sorted[i].start<sorted[i-1].start+sorted[i-1].span){
+        sorted[i].start=sorted[i-1].start+sorted[i-1].span;
+        if(sorted[i].start+sorted[i].span>bdDates.length){
+          sorted[i].span=Math.max(1,bdDates.length-sorted[i].start);
+          if(sorted[i].start>=bdDates.length) return null;
+        }
+      }
+    }
+    return sorted;
+  }
+}
+
+function bdBuildGrid(){
+  const thead=document.getElementById('bd-thead');
+  const tbody=document.getElementById('bd-tbody');
+  if(!thead||!tbody) return;
+  thead.innerHTML=''; tbody.innerHTML='';
+  const hr=document.createElement('tr');
+  const c=document.createElement('th'); c.className='llbl'; c.textContent='Line';
+  hr.appendChild(c);
+  bdDates.forEach(d=>{
+    const th=document.createElement('th');
+    th.textContent=bdFmt(d.date);
+    if(bdIsWk(d.date)) th.style.background='#0d2b45';
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr);
+  bdLines.forEach(L=>{
+    const tr=document.createElement('tr');
+    const lbl=document.createElement('td'); lbl.className='llbl'; lbl.textContent=String(L).replace(/^Line\s*/i,'');
+    tr.appendChild(lbl);
+    bdDates.forEach((d,di)=>{
+      const td=document.createElement('td');
+      td.className='bcell'+(bdIsWk(d.date)?' wk':'');
+      td.dataset.line=L; td.dataset.day=di;
+      td.addEventListener('dragover', bdOver);
+      td.addEventListener('dragleave', e=>e.currentTarget.classList.remove('drop-ok','drop-shift'));
+      td.addEventListener('drop', bdDrop);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function bdCell(line, day){
+  return document.querySelector(`td.bcell[data-line="${CSS.escape(String(line))}"][data-day="${day}"]`);
+}
+
+function bdRender(){
+  document.querySelectorAll('.oblock').forEach(b=>b.remove());
+  const sample=document.querySelector('td.bcell');
+  const cellW=sample?(sample.getBoundingClientRect().width||sample.offsetWidth||88):88;
+  // today highlight
+  const today=new Date(); today.setHours(0,0,0,0);
+  document.querySelectorAll('td.bcell.today-col, th.today-col').forEach(el=>el.classList.remove('today-col'));
+  bdDates.forEach((d,di)=>{
+    const dt=new Date(d.date); dt.setHours(0,0,0,0);
+    if(dt.getTime()===today.getTime()){
+      document.querySelectorAll(`td.bcell[data-day="${di}"]`).forEach(c=>c.classList.add('today-col'));
+      const ths=document.querySelectorAll('#bd-thead th');
+      if(ths[di+1]) ths[di+1].classList.add('today-col');
+    }
+  });
+  bdOrders.forEach(o=>{
+    const cell=bdCell(o.line, o.start);
+    if(!cell) return;
+    const endDay=Math.min(o.start+o.span-1, bdDates.length-1);
+    const endCell=bdCell(o.line, endDay);
+    const block=document.createElement('div');
+    block.className='oblock '+bdColorFor(o);
+    if(bdSelected.has(o.id)) block.classList.add('selected');
+    if(bdNotes[o.id]) block.classList.add('has-note');
+    block.draggable=true;
+    block.dataset.id=o.id;
+    block.textContent=String(o.id);
+    const note=bdNotes[o.id]?('\\nNote: '+bdNotes[o.id]):'';
+    block.title=`${o.id} | ${o.buyer||''} | ${o.line} | ${o.span}d | Qty:${o.oqty||'—'}${note}\\nCtrl+click select · Dbl-click note`;
+    let widthPx;
+    if(endCell && endCell!==cell){
+      const r1=cell.getBoundingClientRect(), r2=endCell.getBoundingClientRect();
+      widthPx=Math.max(r2.right-r1.left-6, cellW-6);
+    } else widthPx=cellW*o.span-6;
+    block.style.width=Math.max(widthPx,40)+'px';
+    block.style.fontSize=o.span===1?'10px':(String(o.id).length>8?'10px':'11px');
+    block.addEventListener('dragstart', bdDragStart);
+    block.addEventListener('dragend', bdDragEnd);
+    block.addEventListener('click', e=>{
+      if(e.ctrlKey||e.metaKey){
+        e.stopPropagation();
+        if(bdSelected.has(o.id)) bdSelected.delete(o.id); else bdSelected.add(o.id);
+        bdRender();
+        bdStatus(bdSelected.size+' selected');
+      }
+    });
+    block.addEventListener('dblclick', e=>{ e.stopPropagation(); bdOpenNote(o.id); });
+    const rh=document.createElement('div'); rh.className='rh';
+    rh.addEventListener('mousedown', e=>bdResizeStart(e,o));
+    block.appendChild(rh);
+    cell.style.position='relative';
+    cell.appendChild(block);
+  });
+}
+function bdUndo(){
+  if(!bdUndoStack.length)return;
+  bdRedoStack.push(bdSnap());
+  bdOrders=bdUndoStack.pop();
+  bdRender(); bdUpdBtns(); bdToast('↩ Undo');
+}
+function bdRedo(){
+  if(!bdRedoStack.length)return;
+  bdUndoStack.push(bdSnap());
+  bdOrders=bdRedoStack.pop();
+  bdRender(); bdUpdBtns(); bdToast('↪ Redo');
+}
+function bdUpdBtns(){
+  const u=document.getElementById('bd-undo'), r=document.getElementById('bd-redo');
+  if(u) u.disabled=!bdUndoStack.length;
+  if(r) r.disabled=!bdRedoStack.length;
+}
+function bdReset(){
+  bdPushHist();
+  bdOrders=JSON.parse(JSON.stringify(bdInitial));
+  bdRender(); bdToast('↺ Reset board');
+}
+function bdExport(){
+  const data=bdOrders.map(o=>({
+    id:o.id, line:o.line,
+    from:bdDates[o.start]?bdFmt(bdDates[o.start].date):'',
+    days:o.span, buyer:o.buyer, oqty:o.oqty, efd:o.efd
+  }));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download='EKWL_LineBoard.json'; a.click();
+  bdToast('⬇ Exported');
+}
+function bdToast(m){
+  const el=document.getElementById('board-toast');
+  if(!el)return;
+  el.textContent=m; el.classList.add('show');
+  clearTimeout(bdToast._t); bdToast._t=setTimeout(()=>el.classList.remove('show'),3000);
+}
+function bdStatus(t){const s=document.getElementById('bd-status'); if(s)s.textContent=t;}
+
+function bdDragStart(e){
+  bdDragId=e.target.dataset.id;
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain', bdDragId);
+  bdStatus('Dragging '+bdDragId);
+}
+function bdDragEnd(e){
+  e.target.classList.remove('dragging');
+  document.querySelectorAll('.drop-ok,.drop-shift').forEach(c=>c.classList.remove('drop-ok','drop-shift'));
+  bdDragId=null; bdStatus('Ready');
+}
+function bdOver(e){
+  e.preventDefault();
+  const td=e.currentTarget;
+  document.querySelectorAll('.drop-ok,.drop-shift').forEach(c=>{if(c!==td)c.classList.remove('drop-ok','drop-shift');});
+  const o=bdOrders.find(x=>x.id===bdDragId);
+  if(!o) return;
+  const line=td.dataset.line, day=+td.dataset.day;
+  let span=o.span;
+  if(day+span>bdDates.length) span=bdDates.length-day;
+  if(span<1){td.classList.add('drop-shift');return;}
+  const need=bdOrders.some(x=>x.id!==o.id&&x.line===line&&bdOverlap(day,day+span-1,x.start,x.start+x.span-1));
+  td.classList.add(need?'drop-shift':'drop-ok');
+}
+function bdDrop(e){
+  e.preventDefault();
+  const td=e.currentTarget;
+  td.classList.remove('drop-ok','drop-shift');
+  const id=e.dataTransfer.getData('text/plain')||bdDragId;
+  const o=bdOrders.find(x=>x.id===id);
+  if(!o) return;
+  const newLine=td.dataset.line;
+  let newStart=+td.dataset.day;
+  let newSpan=o.span;
+  if(newStart+newSpan>bdDates.length) newSpan=bdDates.length-newStart;
+  if(newSpan<1){bdToast('⚠️ Not enough days');return;}
+
+  // multi-select move: move all selected with same delta
+  const idsToMove = bdSelected.has(id) && bdSelected.size>1 ? [...bdSelected] : [id];
+
+  if(bdSnapMode){
+    const free=bdFindFreeSlot(newLine, newSpan, newStart);
+    if(free==null){ bdToast('⚠️ No free slot on '+newLine); return; }
+    if(free!==newStart){ bdToast('Snap → day index '+free); newStart=free; }
+  }
+
+  const cap=bdCapacityOK(newLine, newSpan*idsToMove.length, id);
+  if(!cap.ok){
+    if(!confirm(cap.msg+'. Move anyway?')) return;
+  }
+
+  const onLine=bdOrders.filter(x=>x.line===newLine && !idsToMove.includes(x.id));
+  // For primary order pack
+  const packed=bdPack([...onLine, ...bdOrders.filter(x=>idsToMove.includes(x.id) && x.line===newLine)], id, newStart, newSpan, bdPushDir);
+  // simpler approach for multi: sequential
+  bdPushHist();
+  const oldLine=o.line, oldStart=o.start;
+  if(idsToMove.length===1){
+    const pack=bdPack(bdOrders.filter(x=>x.line===newLine), o.id, newStart, newSpan, bdPushDir);
+    if(!pack){ bdToast('⚠️ Cannot fit'); bdUndoStack.pop(); bdUpdBtns(); return; }
+    const shifted=[];
+    pack.forEach(p=>{
+      const ord=bdOrders.find(x=>x.id===p.id);
+      if(!ord) return;
+      if(ord.id===o.id){ ord.line=newLine; ord.start=p.start; ord.span=p.span; }
+      else if(ord.start!==p.start||ord.span!==p.span){ shifted.push(ord.id); ord.start=p.start; ord.span=p.span; }
+    });
+    bdRender();
+    bdLogAdd(`${o.id}: ${oldLine}→${newLine} @${newStart}`+(shifted.length?' (shifted '+shifted.length+')':''));
+    bdToast(shifted.length?`✅ ${o.id} moved · shifted ${shifted.length}`:`✅ ${o.id} → ${newLine}`);
+  } else {
+    // multi move: place primary, others relative
+    const delta=newStart-oldStart;
+    idsToMove.forEach(mid=>{
+      const ord=bdOrders.find(x=>x.id===mid);
+      if(!ord) return;
+      ord.line=newLine;
+      ord.start=Math.max(0, Math.min(ord.start+delta, bdDates.length-ord.span));
+    });
+    // pack line to resolve overlaps
+    const pack=bdPack(bdOrders.filter(x=>x.line===newLine), null, null, null, 'right');
+    if(pack) pack.forEach(p=>{ const ord=bdOrders.find(x=>x.id===p.id); if(ord){ord.start=p.start;ord.span=p.span;} });
+    bdSelected.clear();
+    bdRender();
+    bdLogAdd(`Multi-move ${idsToMove.length} orders → ${newLine}`);
+    bdToast('✅ Moved '+idsToMove.length+' orders to '+newLine);
+  }
+  bdStatus('Ready');
+}
+function bdResizeMove(e){
+  if(!bdRes) return;
+  const cellW=document.querySelector('td.bcell')?.getBoundingClientRect().width||document.querySelector('td.bcell')?.offsetWidth||88;
+  let ns=Math.round(bdRes.orig+(e.clientX-bdRes.startX)/cellW);
+  ns=Math.max(1, Math.min(ns, bdDates.length-bdRes.order.start));
+  const block=document.querySelector(`.oblock[data-id="${CSS.escape(bdRes.order.id)}"]`);
+  if(block) block.style.width=(cellW*ns-4)+'px';
+  bdRes.preview=ns;
+}
+function bdResizeEnd(){
+  if(!bdRes) return;
+  const o=bdRes.order, ns=bdRes.preview||o.span;
+  const onLine=bdOrders.filter(x=>x.line===o.line);
+  const packed=bdPack(onLine, o.id, o.start, ns, bdPushDir);
+  if(!packed){bdToast('⚠️ Resize exceeds calendar'); bdRender();}
+  else {
+    bdPushHist();
+    packed.forEach(p=>{
+      const ord=bdOrders.find(x=>x.id===p.id);
+      if(ord){ord.start=p.start;ord.span=p.span;}
+    });
+    bdRender();
+    bdToast(`✅ Resized ${o.id} → ${o.span}d`);
+  }
+  document.removeEventListener('mousemove', bdResizeMove);
+  document.removeEventListener('mouseup', bdResizeEnd);
+  bdRes=null;
+}
+
+document.addEventListener('keydown', e=>{
+  if(!(e.ctrlKey||e.metaKey)) return;
+  const boardOn=document.getElementById('board-view')?.classList.contains('on');
+  if(!boardOn) return;
+  if(e.key==='z'&&!e.shiftKey){e.preventDefault();bdUndo();}
+  if(e.key==='y'||(e.key==='z'&&e.shiftKey)){e.preventDefault();bdRedo();}
+});
+
+// Hook: Auto Loader "Apply suggestion to board"
+window.addEventListener('resize',()=>{ if(bdBuilt){ clearTimeout(window._bdR); window._bdR=setTimeout(bdRender,120);} });
+function bdApplyFromLoader(line, ewo, qty, days){
+  if(!bdBuilt) buildBoard();
+  const id=String(ewo||('NEW'+Date.now()));
+  const start=0;
+  const span=Math.max(2, Math.min(days||5, bdDates.length));
+  const onLine=bdOrders.filter(x=>x.line===line);
+  const packed=bdPack(onLine, id, start, span, bdPushDir);
+  if(!packed){bdToast('Cannot place on '+line);return;}
+  bdPushHist();
+  bdOrders.push({id, line, start, span, buyer:'', oqty:qty, color:0});
+  packed.forEach(p=>{
+    const ord=bdOrders.find(x=>x.id===p.id);
+    if(ord){ord.start=p.start;ord.span=p.span; if(ord.id===id) ord.line=line;}
+  });
+  bdRender();
+  bdToast(`✅ ${id} applied to ${line} from Auto Loader`);
+  S('board');
+}
+
+
+
+
+// ══════ ADVANCED PLUS (Board) ══════
+let bdSnapMode=false, bdColorMode='default', bdSelected=new Set(), bdNotes={}, bdLog=[], bdModalId=null;
+const BD_STORE='ekwl_line_board_v1';
+
+function bdLogAdd(msg){
+  const t=new Date().toLocaleTimeString();
+  bdLog.unshift({t,msg});
+  if(bdLog.length>100) bdLog.pop();
+  bdRenderLog();
+}
+function bdRenderLog(){
+  const el=document.getElementById('bd-log-list');
+  if(!el) return;
+  el.innerHTML=bdLog.slice(0,40).map(x=>`<div class="bd-log-item"><b>${x.t}</b> — ${x.msg}</div>`).join('')||'<i>No changes yet</i>';
+}
+function bdTogglePanel(which){
+  const log=document.getElementById('bd-panel-log');
+  const bn=document.getElementById('bd-panel-bn');
+  if(which==='log'){
+    log.style.display=log.style.display==='none'?'block':'none';
+    if(log.style.display==='block'){ bn.style.display='none'; bdRenderLog(); }
+  } else {
+    bn.style.display=bn.style.display==='none'?'block':'none';
+    if(bn.style.display==='block'){ log.style.display='none'; bdBottleneck(); }
+  }
+}
+function bdBottleneck(){
+  const el=document.getElementById('bd-bn-list');
+  if(!el) return;
+  const byLine={};
+  bdOrders.forEach(o=>{
+    if(!byLine[o.line]) byLine[o.line]={count:0,qty:0,days:0};
+    byLine[o.line].count++;
+    byLine[o.line].qty+=Number(o.oqty)||0;
+    byLine[o.line].days+=o.span||0;
+  });
+  const ll=EX.line_load||{};
+  const rows=Object.keys(byLine).map(line=>{
+    const v=byLine[line];
+    const cap=(ll[line]&&ll[line].cap70)||0;
+    const backlog=(ll[line]&&ll[line].backlog)||0;
+    const load=cap?Math.round((backlog||v.qty)/cap):0;
+    return {line, ...v, cap, backlog, load};
+  }).sort((a,b)=>b.count-a.count);
+  el.innerHTML=`<table class="gtbl"><thead><tr><th>Line</th><th>Orders</th><th>Qty</th><th>Cap/day</th><th>Backlog</th><th>Days used</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td><b>${r.line}</b></td><td>${r.count}</td><td>${(r.qty||0).toLocaleString()}</td><td>${r.cap||'—'}</td><td>${(r.backlog||0).toLocaleString()}</td><td>${r.days}</td></tr>`).join('')+
+    `</tbody></table>`;
+}
+function bdSetZoom(z){
+  const tbl=document.getElementById('lboard');
+  if(!tbl) return;
+  tbl.classList.remove('zoom-sm','zoom-lg');
+  if(z==='sm') tbl.classList.add('zoom-sm');
+  if(z==='lg') tbl.classList.add('zoom-lg');
+  setTimeout(bdRender,50);
+}
+function bdFullscreen(){
+  const v=document.getElementById('board-view');
+  if(!v) return;
+  v.classList.toggle('fs');
+  if(v.classList.contains('fs')) bdToast('⛶ Fullscreen — press ⛶ again to exit');
+  setTimeout(bdRender,100);
+}
+function bdSave(){
+  const payload={orders:bdOrders, notes:bdNotes, log:bdLog.slice(0,50), savedAt:new Date().toISOString()};
+  try{
+    localStorage.setItem(BD_STORE, JSON.stringify(payload));
+    bdToast('💾 Plan saved in browser');
+    bdLogAdd('Plan saved');
+  }catch(e){ bdToast('Save failed: '+e.message); }
+}
+function bdLoad(){
+  try{
+    const raw=localStorage.getItem(BD_STORE);
+    if(!raw){ bdToast('No saved plan'); return; }
+    const data=JSON.parse(raw);
+    bdPushHist();
+    if(data.orders) bdOrders=data.orders;
+    if(data.notes) bdNotes=data.notes;
+    if(data.log) bdLog=data.log;
+    bdRender(); bdRenderLog();
+    bdToast('📂 Loaded ('+(data.savedAt||'')+')');
+    bdLogAdd('Plan loaded');
+  }catch(e){ bdToast('Load failed'); }
+}
+function bdExportCSV(){
+  const lines=[['EWO','Line','StartDay','Span','Buyer','Qty','EFD','Note'].join(',')];
+  bdOrders.forEach(o=>{
+    const from=bdDates[o.start]?bdFmt(bdDates[o.start].date):o.start;
+    const note=(bdNotes[o.id]||'').replace(/"/g,'""');
+    lines.push([o.id,o.line,from,o.span,o.buyer||'',o.oqty||'',o.efd||'',`"${note}"`].join(','));
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download='EKWL_LineBoard.csv'; a.click();
+  bdToast('⬇ CSV exported');
+}
+function bdMailDigest(){
+  const byLine={};
+  bdOrders.forEach(o=>{ byLine[o.line]=(byLine[o.line]||0)+1; });
+  const top=Object.entries(byLine).sort((a,b)=>b[1]-a[1]).slice(0,10)
+    .map(([l,c])=>l+': '+c+' orders').join('%0A');
+  const rs=D2.risk_summary||{};
+  const sub='EKWL Planning Digest';
+  const body=`Overdue: ${rs.Overdue||0}%0ACritical: ${rs.Critical||0}%0AUrgent: ${rs.Urgent||0}%0A%0ALine load (board):%0A${top}`;
+  window.open(`mailto:?subject=${encodeURIComponent(sub)}&body=${body}`);
+}
+function bdCapacityOK(line, span, excludeId){
+  const ll=EX.line_load||{};
+  const info=ll[line];
+  if(!info) return {ok:true, msg:''};
+  const onLine=bdOrders.filter(x=>x.line===line&&x.id!==excludeId);
+  const usedDays=onLine.reduce((s,x)=>s+(x.span||0),0)+span;
+  const backlog=info.backlog||0;
+  const cap=info.cap70||0;
+  if(cap && backlog>cap*60) return {ok:false, msg:`${line} high backlog (${backlog})`};
+  if(usedDays>bdDates.length*0.95) return {ok:false, msg:`${line} nearly full on board`};
+  return {ok:true, msg: cap?`Cap/day ${cap}`:''};
+}
+function bdFindFreeSlot(line, span, preferStart){
+  const occupied=bdOrders.filter(o=>o.line===line).map(o=>({s:o.start,e:o.start+o.span}));
+  const tryStart=preferStart!=null?preferStart:0;
+  for(let s=tryStart;s<=bdDates.length-span;s++){
+    const e=s+span-1;
+    if(!occupied.some(r=>!(e<r.s||s>=r.e))) return s;
+  }
+  for(let s=0;s<tryStart;s++){
+    const e=s+span-1;
+    if(s+span>bdDates.length) break;
+    if(!occupied.some(r=>!(e<r.s||s>=r.e))) return s;
+  }
+  return null;
+}
+function bdColorFor(o){
+  if(bdColorMode==='buyer'){
+    return BD_COLORS[Math.abs(hashStr(o.buyer||o.id))%6];
+  }
+  if(bdColorMode==='risk'){
+    // approximate from days to efd if present in risk detail
+    const rd=(D2.risk_detail||[]).find(r=>String(r.EWO)===String(o.id));
+    if(rd){
+      if(rd.risk==='Overdue') return 'ob2';
+      if(rd.risk==='Critical') return 'ob4';
+      if(rd.risk==='Urgent') return 'ob4';
+      if(rd.risk==='Watch') return 'ob1';
+      return 'ob0';
+    }
+  }
+  return BD_COLORS[o.color%6]||'ob0';
+}
+function bdOpenNote(id){
+  bdModalId=id;
+  const o=bdOrders.find(x=>x.id===id);
+  document.getElementById('bd-modal-title').textContent='Note: '+(o?o.id:'');
+  document.getElementById('bd-modal-note').value=bdNotes[id]||'';
+  document.getElementById('bd-modal').classList.add('on');
+}
+function bdCloseModal(){ document.getElementById('bd-modal').classList.remove('on'); bdModalId=null; }
+function bdSaveNote(){
+  if(!bdModalId) return;
+  bdNotes[bdModalId]=document.getElementById('bd-modal-note').value;
+  bdLogAdd('Note updated: '+bdModalId);
+  bdCloseModal(); bdRender();
+  bdToast('📝 Note saved');
+}
+function bdAutoPlace(){
+  // move overlapping orders to free slots per line
+  bdPushHist();
+  let moved=0;
+  bdLines.forEach(line=>{
+    const list=bdOrders.filter(o=>o.line===line).sort((a,b)=>a.start-b.start);
+    let cursor=0;
+    list.forEach(o=>{
+      if(o.start<cursor){
+        o.start=cursor; moved++;
+      }
+      if(o.start+o.span>bdDates.length){
+        o.span=Math.max(1, bdDates.length-o.start);
+      }
+      cursor=o.start+o.span;
+    });
+  });
+  bdRender();
+  bdLogAdd('Auto-place: adjusted '+moved+' blocks');
+  bdToast('🎯 Auto-place done ('+moved+' moved)');
+}
+
+// Patch selection into render via monkey-patch after original bdRender
+const _bdRenderOrig = typeof bdRender==='function' ? bdRender : null;
+
+// ── 3D FACTORY + RISK PYRAMID ──
+let factoryScene,factoryCam,factoryRenderer,factorySpin=true,factoryMeshes=[];
+let pyrScene,pyrCam,pyrRenderer,pyrSpin=true;
+
+function initFactory3D(){
+  const wrap=document.getElementById('factory-canvas-wrap');
+  if(!wrap) return;
+  if(wrap.querySelector('canvas')) return;
+  if(typeof THREE==='undefined'){
+    wrap.insertAdjacentHTML('beforeend','<div style="color:#fff;padding:40px;text-align:center">Three.js load failed (need internet)</div>');
+    return;
+  }
+  const W=wrap.clientWidth||800,H=wrap.clientHeight||420;
+  factoryScene=new THREE.Scene();
+  factoryScene.fog=new THREE.Fog(0x0d1b2a,40,120);
+  factoryCam=new THREE.PerspectiveCamera(50,W/H,0.1,500);
+  factoryCam.position.set(18,22,28);
+  factoryCam.lookAt(0,2,0);
+  factoryRenderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  factoryRenderer.setSize(W,H);
+  factoryRenderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  wrap.insertBefore(factoryRenderer.domElement,wrap.firstChild);
+  factoryScene.add(new THREE.AmbientLight(0xffffff,0.55));
+  const dir=new THREE.DirectionalLight(0xffffff,0.8); dir.position.set(10,20,10); factoryScene.add(dir);
+  factoryScene.add(new THREE.GridHelper(40,20,0x2a5298,0x1a3c5e));
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:0x0d1b2a,roughness:0.9}));
+  floor.rotation.x=-Math.PI/2; floor.position.y=-0.01; factoryScene.add(floor);
+
+  const lineStats={};
+  (D2.risk_detail||[]).forEach(r=>{
+    const ln=r['Line #']||'Unassigned';
+    if(!lineStats[ln]) lineStats[ln]={orders:0,overdue:0,crit:0,urg:0,qty:0};
+    lineStats[ln].orders++;
+    lineStats[ln].qty+=Number(r['Order qty'])||0;
+    if(r.risk==='Overdue') lineStats[ln].overdue++;
+    else if(r.risk==='Critical') lineStats[ln].crit++;
+    else if(r.risk==='Urgent') lineStats[ln].urg++;
+  });
+  Object.keys(EX.line_load||{}).forEach(ln=>{
+    if(!lineStats[ln]) lineStats[ln]={orders:0,overdue:0,crit:0,urg:0,qty:0};
+  });
+  const lines=Object.keys(lineStats).sort();
+  const maxOrd=Math.max(...lines.map(l=>lineStats[l].orders),1);
+  const cols=5; factoryMeshes=[];
+  lines.forEach((ln,i)=>{
+    const st=lineStats[ln];
+    const h=0.5+(st.orders/maxOrd)*8;
+    let color=0x66bb6a;
+    if(st.overdue>st.orders*0.4) color=0xef5350;
+    else if(st.crit>st.orders*0.25) color=0xffa726;
+    else if(st.urg>st.orders*0.2) color=0xffee58;
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(2.8,h,2.8), new THREE.MeshStandardMaterial({color,metalness:0.2,roughness:0.55}));
+    const row=Math.floor(i/cols), col=i%cols;
+    mesh.position.set((col-2)*4.2, h/2, (row-1.5)*4.2);
+    mesh.userData={line:ln,stats:st};
+    factoryScene.add(mesh); factoryMeshes.push(mesh);
+    const canvas=document.createElement('canvas'); canvas.width=128; canvas.height=32;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,128,32);
+    ctx.fillStyle='#fff'; ctx.font='bold 14px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText(String(ln).replace('Line ',''),64,22);
+    const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(canvas),transparent:true}));
+    spr.scale.set(2.5,0.6,1); spr.position.set(mesh.position.x,h+0.5,mesh.position.z);
+    factoryScene.add(spr);
+  });
+  const list=document.getElementById('factory-line-list');
+  if(list) list.innerHTML=lines.map(ln=>{
+    const st=lineStats[ln];
+    return `<div style="background:var(--card);border:1px solid var(--bdr);border-radius:6px;padding:6px 10px;font-size:11px">
+      <b>${ln}</b> — ${st.orders} orders
+      ${st.overdue?`<span class="rbg rb-ov">${st.overdue} OD</span>`:''}
+      ${st.crit?`<span class="rbg rb-cr">${st.crit} Crit</span>`:''}
+    </div>`;
+  }).join('');
+
+  const raycaster=new THREE.Raycaster(), mouse=new THREE.Vector2();
+  const info=document.getElementById('factory-info');
+  wrap.addEventListener('mousemove',e=>{
+    const rect=wrap.getBoundingClientRect();
+    mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+    mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+    raycaster.setFromCamera(mouse,factoryCam);
+    const hits=raycaster.intersectObjects(factoryMeshes);
+    if(hits.length){
+      const ud=hits[0].object.userData;
+      info.innerHTML=`<b>${ud.line}</b><br>Orders: ${ud.stats.orders}<br>Overdue: ${ud.stats.overdue} | Crit: ${ud.stats.crit}<br>Qty: ${ud.stats.qty.toLocaleString()}`;
+      hits[0].object.material.emissive=new THREE.Color(0x222222);
+    } else {
+      info.textContent='Hover a line block';
+      factoryMeshes.forEach(m=>m.material.emissive=new THREE.Color(0x000000));
+    }
+  });
+  let dragging=false, prevX=0;
+  wrap.addEventListener('mousedown',e=>{dragging=true;prevX=e.clientX;});
+  window.addEventListener('mouseup',()=>dragging=false);
+  wrap.addEventListener('mousemove',e=>{
+    if(!dragging||!factoryCam) return;
+    const dx=e.clientX-prevX; prevX=e.clientX;
+    const sph=new THREE.Spherical().setFromVector3(factoryCam.position);
+    sph.theta-=dx*0.01;
+    factoryCam.position.setFromSpherical(sph);
+    factoryCam.lookAt(0,2,0);
+  });
+  (function animate(){
+    requestAnimationFrame(animate);
+    if(factorySpin&&factoryCam){
+      factoryCam.position.applyAxisAngle(new THREE.Vector3(0,1,0),0.003);
+      factoryCam.lookAt(0,2,0);
+    }
+    if(factoryRenderer) factoryRenderer.render(factoryScene,factoryCam);
+  })();
+}
+function resetFactoryCam(){ if(factoryCam){factoryCam.position.set(18,22,28);factoryCam.lookAt(0,2,0);} }
+function togFactoryAnim(){ factorySpin=!factorySpin; }
+
+function initPyramid3D(){
+  const wrap=document.getElementById('pyramid-canvas-wrap');
+  if(!wrap) return;
+  if(wrap.querySelector('canvas')) return;
+  if(typeof THREE==='undefined'){
+    wrap.insertAdjacentHTML('beforeend','<div style="color:#fff;padding:40px;text-align:center">Three.js load failed</div>');
+    return;
+  }
+  const W=wrap.clientWidth||800,H=wrap.clientHeight||420;
+  pyrScene=new THREE.Scene();
+  pyrScene.fog=new THREE.Fog(0x0d1b2a,30,90);
+  pyrCam=new THREE.PerspectiveCamera(45,W/H,0.1,200);
+  pyrCam.position.set(0,12,28); pyrCam.lookAt(0,5,0);
+  pyrRenderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  pyrRenderer.setSize(W,H);
+  pyrRenderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  wrap.insertBefore(pyrRenderer.domElement,wrap.firstChild);
+  pyrScene.add(new THREE.AmbientLight(0xffffff,0.6));
+  const dir=new THREE.DirectionalLight(0xffffff,0.7); dir.position.set(5,15,8); pyrScene.add(dir);
+  const rs=D2.risk_summary||{};
+  const layers=[
+    {key:'Overdue',color:0xef5350,y:0},{key:'Critical',color:0xffa726,y:3.2},
+    {key:'Urgent',color:0xffee58,y:5.8},{key:'Watch',color:0x66bb6a,y:7.8},
+    {key:'On Track',color:0x42a5f5,y:9.4}
+  ];
+  const total=Object.values(rs).reduce((a,v)=>a+v,0)||1;
+  layers.forEach((L,i)=>{
+    const count=rs[L.key]||0, pct=count/total, w=14*(1-i*0.15), h=2.4;
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,w*0.7),
+      new THREE.MeshStandardMaterial({color:L.color,metalness:0.25,roughness:0.45,transparent:true,opacity:0.92}));
+    mesh.position.y=L.y+h/2; pyrScene.add(mesh);
+    const canvas=document.createElement('canvas'); canvas.width=256; canvas.height=48;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(0,0,256,48);
+    ctx.fillStyle='#fff'; ctx.font='bold 16px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText(`${L.key}: ${count.toLocaleString()} (${(pct*100).toFixed(1)}%)`,128,30);
+    const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(canvas),transparent:true}));
+    spr.scale.set(8,1.5,1); spr.position.set(0,L.y+h+0.6,w*0.4); pyrScene.add(spr);
+  });
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(10,10,0.3,32), new THREE.MeshStandardMaterial({color:0x1a3c5e}));
+  base.position.y=-0.2; pyrScene.add(base);
+  const leg=document.getElementById('pyramid-legend');
+  if(leg) leg.innerHTML=layers.map(L=>`<span style="color:#${L.color.toString(16).padStart(6,'0')}">■</span> ${L.key}: ${(rs[L.key]||0).toLocaleString()}`).join('<br>');
+  let dragging=false, prevX=0;
+  wrap.addEventListener('mousedown',e=>{dragging=true;prevX=e.clientX;});
+  window.addEventListener('mouseup',()=>dragging=false);
+  wrap.addEventListener('mousemove',e=>{
+    if(!dragging||!pyrCam) return;
+    const dx=e.clientX-prevX; prevX=e.clientX;
+    const sph=new THREE.Spherical().setFromVector3(pyrCam.position);
+    sph.theta-=dx*0.01;
+    pyrCam.position.setFromSpherical(sph);
+    pyrCam.lookAt(0,5,0);
+  });
+  (function animate(){
+    requestAnimationFrame(animate);
+    if(pyrSpin&&pyrCam){ pyrCam.position.applyAxisAngle(new THREE.Vector3(0,1,0),0.004); pyrCam.lookAt(0,5,0); }
+    if(pyrRenderer) pyrRenderer.render(pyrScene,pyrCam);
+  })();
+}
+function resetPyramidCam(){ if(pyrCam){pyrCam.position.set(0,12,28);pyrCam.lookAt(0,5,0);} }
+function togPyramidAnim(){ pyrSpin=!pyrSpin; }
+
+
+
+// ══════════════════════════════════════════
+// WORLD-CLASS MODULES (simulated enterprise layer)
+// ══════════════════════════════════════════
+let wcLiveTimer=null, wcEvents=[], wcApprovals=[], wcChatBuilt=false;
+
+function wcProb(days){
+  // late probability model (demo)
+  if(days==null||isNaN(days)) return 0.35;
+  if(days<0) return Math.min(0.95, 0.7+Math.abs(days)/60);
+  if(days<=7) return 0.55;
+  if(days<=14) return 0.35;
+  if(days<=30) return 0.18;
+  return 0.08;
+}
+function wcProbColor(p){
+  if(p>=0.5) return '#c62828';
+  if(p>=0.3) return '#e65100';
+  return '#2e7d32';
+}
+
+function buildWCPredict(){
+  const el=document.getElementById('wcpredict-inner');
+  if(!el) return;
+  const detail=(D2.risk_detail||[]).slice(0,80);
+  const rows=detail.map(r=>{
+    const days=parseInt(r.days_to_efd);
+    const p=wcProb(days);
+    return {...r, days, p};
+  }).sort((a,b)=>b.p-a.p);
+
+  const hi=rows.filter(r=>r.p>=0.5).length;
+  const mid=rows.filter(r=>r.p>=0.3&&r.p<0.5).length;
+
+  el.innerHTML=`
+  <div class="wc-grid">
+    <div class="wc-card"><div class="wc-sub">HIGH RISK (≥50%)</div><div class="wc-kpi" style="color:#c62828">${hi}</div><div class="wc-sub">Orders likely to miss EFD</div></div>
+    <div class="wc-card"><div class="wc-sub">WATCH (30–50%)</div><div class="wc-kpi" style="color:#e65100">${mid}</div><div class="wc-sub">Needs attention</div></div>
+    <div class="wc-card"><div class="wc-sub">MODEL</div><div class="wc-kpi" style="font-size:14px;padding-top:8px">Days-to-EFD + backlog</div><div class="wc-sub">Demo predictive engine (not ML cloud)</div></div>
+  </div>
+  <div class="wc-card" style="margin-top:12px">
+    <h3>🔮 Predictive EFD Risk + Recovery Options</h3>
+    <div style="overflow:auto;max-height:420px">
+      <table class="gtbl"><thead><tr>
+        <th>Risk%</th><th>EWO</th><th>Buyer</th><th>Line</th><th>Days</th><th>Qty</th><th>Recovery plan</th>
+      </tr></thead><tbody>
+      ${rows.slice(0,40).map(r=>{
+        const pct=Math.round(r.p*100);
+        const rec=wcRecovery(r);
+        return `<tr>
+          <td><div class="prob-bar" style="width:72px"><div class="prob-fill" style="width:${pct}%;background:${wcProbColor(r.p)}"></div></div> ${pct}%</td>
+          <td><b>${r.EWO||''}</b></td><td>${r.Buyer||''}</td><td>${r['Line #']||''}</td>
+          <td>${r.days}</td><td>${(Number(r['Order qty'])||0).toLocaleString()}</td>
+          <td style="white-space:normal;max-width:280px;font-size:10px">${rec}</td>
+        </tr>`;
+      }).join('')}
+      </tbody></table>
+    </div>
+  </div>`;
+}
+function wcRecovery(r){
+  const days=parseInt(r.days_to_efd)||0;
+  const line=r['Line #']||'Line';
+  const opts=[];
+  if(days<0||days<=7){
+    opts.push('① OT +2h/day on '+line);
+    opts.push('② Split 30% to alternate line (SMV match)');
+    opts.push('③ Negotiate EFD +5 days with buyer');
+  } else if(days<=14){
+    opts.push('① Hold changeovers on '+line);
+    opts.push('② Pull forward material if PCD risk');
+  } else {
+    opts.push('① Monitor weekly · keep buffer');
+  }
+  return opts.join(' · ');
+}
+
+function buildWCLive(){
+  const el=document.getElementById('wclive-inner');
+  if(!el) return;
+  el.innerHTML=`
+  <div class="wc-grid">
+    <div class="wc-card"><div class="wc-sub">PLAN vs ACTUAL (SIM)</div><div class="wc-kpi" id="wc-var">—</div><div class="wc-sub">Variance today (simulated)</div></div>
+    <div class="wc-card"><div class="wc-sub">LINES RUNNING</div><div class="wc-kpi" id="wc-run">—</div><div class="wc-sub">With output ticks</div></div>
+    <div class="wc-card"><div class="wc-sub">FEED</div><div class="wc-sub">Simulated shop-floor events every few sec</div>
+      <button class="btn bp" style="margin-top:8px" onclick="wcToggleLive()">Start / Pause Live</button>
+    </div>
+  </div>
+  <div class="wc-card" style="margin-top:12px"><h3>📡 Live production feed (simulated)</h3>
+    <div class="wc-feed" id="wc-feed"></div>
+  </div>
+  <div class="wc-card" style="margin-top:12px"><h3>Hourly plan vs actual by line (demo)</h3>
+    <div id="wc-pva" style="overflow:auto"></div>
+  </div>`;
+  wcRenderPVA();
+  if(!wcEvents.length) wcSeedEvents();
+  wcRenderFeed();
+}
+function wcSeedEvents(){
+  const lines=Object.keys(EX.line_load||{}).slice(0,12);
+  const types=['OUTPUT','BUNDLE','DELAY','QUALITY','CHANGEOVER'];
+  for(let i=0;i<15;i++){
+    wcEvents.unshift({
+      t:new Date(Date.now()-i*60000).toLocaleTimeString(),
+      type:types[i%types.length],
+      msg: `${lines[i%Math.max(lines.length,1)]||'Line'} — ${['+120 pcs','bundle complete','needle break 8m','reject 2%','buyer change'][i%5]}`
+    });
+  }
+}
+function wcToggleLive(){
+  if(wcLiveTimer){ clearInterval(wcLiveTimer); wcLiveTimer=null; bdToast?.('Live paused')||alert('Live paused'); return; }
+  wcLiveTimer=setInterval(()=>{
+    const lines=Object.keys(EX.line_load||{});
+    const ln=lines[Math.floor(Math.random()*lines.length)]||'Line 01';
+    const msgs=[`+${50+Math.floor(Math.random()*100)} pcs`,`efficiency ${(60+Math.random()*25).toFixed(0)}%`,`bundle out`,`minor stop ${1+Math.floor(Math.random()*5)}m`];
+    wcEvents.unshift({t:new Date().toLocaleTimeString(), type:'OUTPUT', msg:ln+' — '+msgs[Math.floor(Math.random()*msgs.length)]});
+    if(wcEvents.length>80) wcEvents.pop();
+    wcRenderFeed();
+    const varEl=document.getElementById('wc-var');
+    if(varEl) varEl.textContent=(Math.random()>0.5?'+':'-')+Math.floor(Math.random()*12)+'%';
+  }, 3000);
+}
+function wcRenderFeed(){
+  const el=document.getElementById('wc-feed');
+  if(!el) return;
+  el.innerHTML=wcEvents.slice(0,25).map(e=>`<div class="ev"><span class="t">${e.t}</span><span class="wc-tag lo">${e.type}</span><span>${e.msg}</span></div>`).join('');
+  const run=document.getElementById('wc-run');
+  if(run) run.textContent=Object.keys(EX.line_load||{}).length||'—';
+}
+function wcRenderPVA(){
+  const el=document.getElementById('wc-pva');
+  if(!el) return;
+  const lines=Object.entries(EX.line_load||{}).slice(0,15);
+  el.innerHTML=`<table class="gtbl"><thead><tr><th>Line</th><th>Plan/hr</th><th>Actual/hr (sim)</th><th>Var</th><th>Status</th></tr></thead><tbody>`+
+    lines.map(([l,v])=>{
+      const plan=Math.round((v.cap70||400)/8);
+      const act=Math.round(plan*(0.75+Math.random()*0.4));
+      const varp=plan?Math.round((act-plan)/plan*100):0;
+      const st=varp<-10?'Behind':varp>5?'Ahead':'On track';
+      return `<tr><td><b>${l}</b></td><td>${plan}</td><td>${act}</td><td style="color:${varp<0?'#c62828':'#2e7d32'}">${varp>0?'+':''}${varp}%</td><td>${st}</td></tr>`;
+    }).join('')+'</tbody></table>';
+}
+
+function buildWCAPS(){
+  const el=document.getElementById('wcaps-inner');
+  if(!el) return;
+  // Suggest lines for a sample of high-gap / risk orders
+  const risks=(D2.risk_detail||[]).filter(r=>r.risk==='Overdue'||r.risk==='Critical').slice(0,12);
+  const ll=EX.line_load||{};
+  el.innerHTML=`
+  <div class="wc-card"><h3>🧠 APS — Explainable line suggestions</h3>
+    <p class="wc-sub" style="margin-bottom:10px">Rule engine: SMV proximity + capacity + backlog + EFD pressure (demo, not full MIP solver)</p>
+    ${risks.map(r=>{
+      const smv=parseFloat(r.SMV)||15;
+      const scored=Object.entries(ll).map(([line,v])=>{
+        const smvDiff=Math.abs((v.smv||smv)-smv);
+        const cap=v.cap70||1;
+        const score=smvDiff*8+(v.backlog||0)/5000+(cap<100?20:0);
+        return {line,v,smvDiff,score,cap};
+      }).sort((a,b)=>a.score-b.score).slice(0,3);
+      const best=scored[0];
+      return `<div class="rec-box">
+        <b>${r.EWO||''}</b> · ${r.Buyer||''} · ${r.risk} · SMV ${smv}
+        <div style="margin-top:4px">✅ <b>${best?best.line:'—'}</b> — SMV Δ${best?best.smvDiff.toFixed(2):'—'}, Cap/day ${best?best.cap:'—'}, backlog ${(best&&best.v.backlog)||0}
+        <br><span style="color:#666">Why: closest SMV, acceptable capacity, lower backlog than alternatives (${scored.slice(1).map(s=>s.line).join(', ')||'n/a'})</span></div>
+        <button class="btn bt" style="margin-top:6px;height:22px;font-size:10px" onclick="bdApplyFromLoader('${(best&&best.line)||'Line 01'}','${r.EWO||('APS'+Date.now())}',${Number(r['Order qty'])||1000},5)">Apply to Line Board</button>
+      </div>`;
+    }).join('')||'<i>No critical rows in sample</i>'}
+  </div>
+  <div class="wc-card" style="margin-top:12px"><h3>Material readiness (from PCD/schedule flags)</h3>
+    <div id="wc-mat"></div>
+  </div>`;
+  // material sim from schedule_status
+  const ss=(EX.schedule_status||[]).slice(0,30);
+  const mat=document.getElementById('wc-mat');
+  if(mat){
+    mat.innerHTML=`<table class="gtbl"><thead><tr><th>EWO</th><th>Line</th><th>Completion</th><th>Material gate</th><th>Schedule lock</th></tr></thead><tbody>`+
+      ss.map(s=>{
+        const comp=parseFloat(s.completion)||0;
+        const ready=comp>0||Math.random()>0.3;
+        return `<tr><td>${s.EWO||''}</td><td>${s.Line||''}</td><td>${s.completion||'—'}</td>
+          <td>${ready?'<span class="wc-tag lo">READY</span>':'<span class="wc-tag hi">WAIT PCD</span>'}</td>
+          <td>${ready?'Open':'🔒 Locked until fabric'}</td></tr>`;
+      }).join('')+'</tbody></table>';
+  }
+}
+
+function buildWCCap(){
+  const el=document.getElementById('wccap-inner');
+  if(!el) return;
+  const ll=EX.line_load||{};
+  let freeSah=0, used=0;
+  const rows=Object.entries(ll).map(([line,v])=>{
+    const cap=v.cap70||0;
+    const backlog=v.backlog||0;
+    const free=Math.max(0, cap*20-backlog/10); // demo free SAH-ish
+    freeSah+=free; used+=backlog;
+    return {line,cap,backlog,free:Math.round(free),smv:v.smv};
+  }).sort((a,b)=>b.free-a.free);
+
+  el.innerHTML=`
+  <div class="wc-grid">
+    <div class="wc-card"><div class="wc-sub">CAPACITY FOR SALE (demo)</div><div class="wc-kpi">${Math.round(freeSah).toLocaleString()}</div><div class="wc-sub">Approx free units over ~20 days</div></div>
+    <div class="wc-card"><div class="wc-sub">BACKLOG PRESSURE</div><div class="wc-kpi" style="color:#e65100">${Math.round(used).toLocaleString()}</div><div class="wc-sub">From line_load backlog</div></div>
+    <div class="wc-card"><div class="wc-sub">SALES MESSAGE</div><div style="font-size:12px;margin-top:8px">“Next 3 weeks: top free lines ${rows.slice(0,3).map(r=>r.line).join(', ')}”</div></div>
+  </div>
+  <div class="wc-card" style="margin-top:12px"><h3>💼 Line free capacity ranking</h3>
+    <table class="gtbl"><thead><tr><th>Line</th><th>SMV</th><th>Cap/day@70%</th><th>Backlog</th><th>Free index</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td><b>${r.line}</b></td><td>${r.smv||'—'}</td><td>${r.cap}</td><td>${(r.backlog||0).toLocaleString()}</td><td style="color:#2e7d32;font-weight:700">${r.free}</td></tr>`).join('')}
+    </tbody></table>
+  </div>
+  <div class="wc-card" style="margin-top:12px"><h3>Buyer OTIF pressure (from risk)</h3>
+    <div id="wc-otif"></div>
+  </div>`;
+  const bt=EX.buyer_tracker||D1.buyer||[];
+  // use risk detail aggregate
+  const by={};
+  (D2.risk_detail||[]).forEach(r=>{
+    const b=r.Buyer||'?';
+    if(!by[b]) by[b]={n:0,od:0,cr:0};
+    by[b].n++;
+    if(r.risk==='Overdue') by[b].od++;
+    if(r.risk==='Critical') by[b].cr++;
+  });
+  const ot=document.getElementById('wc-otif');
+  if(ot){
+    ot.innerHTML=`<table class="gtbl"><thead><tr><th>Buyer</th><th>Sample orders</th><th>Overdue</th><th>Critical</th><th>OTIF risk</th></tr></thead><tbody>`+
+      Object.entries(by).sort((a,b)=>b[1].od-a[1].od).map(([b,v])=>{
+        const risk=v.n?Math.round(v.od/v.n*100):0;
+        return `<tr><td><b>${b}</b></td><td>${v.n}</td><td>${v.od}</td><td>${v.cr}</td><td><span class="wc-tag ${risk>40?'hi':risk>20?'mid':'lo'}">${risk}%</span></td></tr>`;
+      }).join('')+'</tbody></table>';
+  }
+}
+
+function buildWCChat(){
+  const el=document.getElementById('wcchat-inner');
+  if(!el) return;
+  el.innerHTML=`
+  <div class="wc-card"><h3>💬 Chat Ops — ask the plan (rule-based)</h3>
+    <div class="wc-chat">
+      <div class="wc-chat-log" id="wc-chat-log"></div>
+      <div class="wc-chat-input">
+        <input id="wc-chat-in" placeholder="e.g. show overdue, capacity Line 05, risk BESTSELLER" onkeydown="if(event.key==='Enter')wcChatSend()">
+        <button class="btn bp" onclick="wcChatSend()">Send</button>
+      </div>
+    </div>
+    <div class="wc-sub" style="margin-top:8px">Try: <code>overdue</code> · <code>critical</code> · <code>capacity</code> · <code>buyer X</code> · <code>help</code></div>
+  </div>`;
+  if(!wcChatBuilt){
+    wcChatBuilt=true;
+    wcChatPush('bot','Chat Ops online. Connected to embedded planning data (demo NLP).');
+  }
+}
+function wcChatPush(who, text){
+  const log=document.getElementById('wc-chat-log');
+  if(!log) return;
+  const d=document.createElement('div');
+  d.className='wc-msg '+who;
+  d.textContent=text;
+  log.appendChild(d);
+  log.scrollTop=log.scrollHeight;
+}
+function wcChatSend(){
+  const inp=document.getElementById('wc-chat-in');
+  if(!inp) return;
+  const q=(inp.value||'').trim();
+  if(!q) return;
+  wcChatPush('user', q);
+  inp.value='';
+  wcChatPush('bot', wcChatAnswer(q));
+}
+function wcChatAnswer(q){
+  const s=q.toLowerCase();
+  const rs=D2.risk_summary||{};
+  if(s.includes('help')) return 'Commands: overdue | critical | urgent | capacity | lines | buyer <name> | summary';
+  if(s.includes('overdue')) return `Overdue orders: ${rs.Overdue||0}. Open Risk tab or Predict for recovery options.`;
+  if(s.includes('critical')) return `Critical: ${rs.Critical||0}. Suggest APS tab for line reassignment.`;
+  if(s.includes('urgent')) return `Urgent: ${rs.Urgent||0}.`;
+  if(s.includes('summary')||s.includes('status')) return `Risk mix — Overdue ${rs.Overdue||0}, Critical ${rs.Critical||0}, Urgent ${rs.Urgent||0}, Watch ${rs.Watch||0}, On Track ${rs.OnTrack||rs['On Track']||0}.`;
+  if(s.includes('capacity')||s.includes('lines')){
+    const n=Object.keys(EX.line_load||{}).length;
+    return `${n} lines in capacity model. See Capacity tab for free index ranking.`;
+  }
+  if(s.includes('buyer')){
+    const name=q.replace(/buyer/i,'').trim();
+    const hits=(D2.risk_detail||[]).filter(r=>(r.Buyer||'').toLowerCase().includes(name.toLowerCase()));
+    if(!name) return 'Usage: buyer BESTSELLER';
+    const od=hits.filter(r=>r.risk==='Overdue').length;
+    return `Buyer filter "${name}": ${hits.length} in risk sample, ${od} overdue.`;
+  }
+  return 'Not understood. Type help for commands. (Full LLM needs server API.)';
+}
+
+function buildWCApprove(){
+  const el=document.getElementById('wcapprove-inner');
+  if(!el) return;
+  if(!wcApprovals.length){
+    // seed from risk critical moves as demo pending
+    (D2.risk_detail||[]).filter(r=>r.risk==='Critical').slice(0,5).forEach((r,i)=>{
+      wcApprovals.push({
+        id:'APR'+(i+1),
+        ewo:r.EWO,
+        action:`Move to alternate line (SMV match)`,
+        by:'Planner (demo)',
+        status:'Pending',
+        risk:r.risk
+      });
+    });
+  }
+  el.innerHTML=`
+  <div class="wc-card"><h3>✅ Approval workflow (demo queue)</h3>
+    <p class="wc-sub">Critical line changes require manager approve before board commit</p>
+    <div id="wc-apr-list"></div>
+  </div>
+  <div class="wc-card" style="margin-top:12px"><h3>Audit principles</h3>
+    <ul style="font-size:11px;line-height:1.6;margin-left:16px">
+      <li>Every board move can be logged (see Line Board → Log)</li>
+      <li>Pending approvals block auto-apply in production mode</li>
+      <li>Role-based access would gate Approve buttons (demo open)</li>
+    </ul>
+  </div>`;
+  wcRenderApprovals();
+}
+function wcRenderApprovals(){
+  const el=document.getElementById('wc-apr-list');
+  if(!el) return;
+  el.innerHTML=wcApprovals.map((a,i)=>`
+    <div class="approval-item">
+      <div><b>${a.id}</b> · EWO ${a.ewo} · ${a.action}<br><span class="wc-sub">${a.by} · ${a.risk} · ${a.status}</span></div>
+      <div style="display:flex;gap:6px">
+        ${a.status==='Pending'?`<button class="btn bg" style="height:24px" onclick="wcApprove(${i},1)">Approve</button>
+        <button class="btn br" style="height:24px" onclick="wcApprove(${i},0)">Reject</button>`:`<span class="wc-tag ${a.status==='Approved'?'lo':'hi'}">${a.status}</span>`}
+      </div>
+    </div>`).join('')||'<i>No pending</i>';
+}
+function wcApprove(i, ok){
+  if(!wcApprovals[i]) return;
+  wcApprovals[i].status=ok?'Approved':'Rejected';
+  wcRenderApprovals();
+  if(typeof bdLogAdd==='function') bdLogAdd('Approval '+wcApprovals[i].id+' '+wcApprovals[i].status);
+}
+
+
+
+function buildGuide(){
+  const el=document.getElementById('guide-inner');
+  if(!el) return;
+  el.innerHTML=`
+  <div class="guide-hero">
+    <h2>📖 EKWL Planning Suite — Features Guide</h2>
+    <p>এই পেজে সব module কী করে এবং কীভাবে ব্যবহার করবে — সংক্ষেপে লেখা আছে। Sidebar থেকে যেকোনো menu-তে যেতে পারো।</p>
+    <div class="guide-toc">
+      <a href="#g-core">Core</a><a href="#g-board">Line Board</a><a href="#g-sched">Scheduling</a>
+      <a href="#g-risk">Risk</a><a href="#g-wc">World-Class</a><a href="#g-3d">3D</a><a href="#g-tips">Tips</a>
+    </div>
+  </div>
+
+  <div class="guide-sec" id="g-core">
+    <h3>1) Core Planning <span class="guide-pill core">CORE</span></h3>
+    <table class="guide-table">
+      <tr><th style="width:22%">Menu</th><th style="width:28%">কী আছে</th><th>কীভাবে কাজ করে</th></tr>
+      <tr><td><b>📋 Planning Table</b></td><td>সব order/line/date plan</td>
+        <td>Filter (Line, Buyer, Product, Risk, EFD date, search) → table। Date window ◀▶ দিয়ে 21 দিনের column দেখো। Header click = sort। CSV export toolbar-এ।</td></tr>
+      <tr><td><b>📊 Dashboard</b></td><td>KPI, charts, summary</td>
+        <td>Tab খুললে auto-build। Orders, qty, risk mix, buyer/line charts।</td></tr>
+      <tr><td><b>⚖️ Line Load</b></td><td>Line-wise load</td>
+        <td>প্রতি line-এ orders / capacity চাপ দেখায়।</td></tr>
+      <tr><td><b>🧮 Calculator</b></td><td>SAH / efficiency / MP</td>
+        <td>Forward: Plan→Effi। Reverse: target effi→MP। Batch: comma-separated multi-line।</td></tr>
+    </table>
+  </div>
+
+  <div class="guide-sec" id="g-board">
+    <h3>2) Line Board <span class="guide-pill adv">ADVANCED</span></h3>
+    <table class="guide-table">
+      <tr><th style="width:22%">Action</th><th>কীভাবে</th></tr>
+      <tr><td><b>Move order</b></td><td>Block ধরে অন্য Line/Date-এ drop করো। Overlap হলে auto-shift (Push → বা ←)।</td></tr>
+      <tr><td><b>Resize</b></td><td>Block-এর ডান edge ধরে টানো।</td></tr>
+      <tr><td><b>Multi-select</b></td><td><b>Ctrl+Click</b> কয়েকটা block → একসাথে drag।</td></tr>
+      <tr><td><b>Note</b></td><td><b>Double-click</b> block → note লিখে Save।</td></tr>
+      <tr><td><b>Snap free slot</b></td><td>Toolbar-এ checkbox on → খালি gap-এ বসবে।</td></tr>
+      <tr><td><b>Save / Load</b></td><td>Browser localStorage-এ plan রাখে।</td></tr>
+      <tr><td><b>Color / Zoom</b></td><td>Default · By Buyer · By Risk | Compact / Normal / Wide।</td></tr>
+      <tr><td><b>Log / Bottleneck</b></td><td>Change history ও line overload table।</td></tr>
+      <tr><td><b>Undo / Redo</b></td><td>Ctrl+Z / Ctrl+Y (Board active থাকলে)।</td></tr>
+      <tr><td><b>Auto-place</b></td><td>Overlap resolve করে line-এ সাজায়।</td></tr>
+    </table>
+  </div>
+
+  <div class="guide-sec" id="g-sched">
+    <h3>3) Scheduling tools <span class="guide-pill core">CORE</span></h3>
+    <table class="guide-table">
+      <tr><th style="width:22%">Menu</th><th style="width:28%">কী আছে</th><th>কীভাবে কাজ করে</th></tr>
+      <tr><td><b>🎯 Auto Loader</b></td><td>SMV-based line suggest</td>
+        <td>SMV, Qty, Days দাও → ranked lines। <b>Apply to Board</b> চাপলে Line Board-এ যায়।</td></tr>
+      <tr><td><b>📆 Schedule Filler</b></td><td>Day-by-day plan</td>
+        <td>Qty, SMV, MP, Effi, EFD → daily schedule generate।</td></tr>
+      <tr><td><b>🔄 What-If</b></td><td>Scenario simulation</td>
+        <td>Parameter বদলে impact দেখো (live plan অপরিবর্তিত demo)।</td></tr>
+    </table>
+  </div>
+
+  <div class="guide-sec" id="g-risk">
+    <h3>4) Risk, Alerts & Analytics <span class="guide-pill core">CORE</span></h3>
+    <table class="guide-table">
+      <tr><th style="width:22%">Menu</th><th style="width:28%">কী আছে</th><th>কীভাবে কাজ করে</th></tr>
+      <tr><td><b>🚨 Risk</b></td><td>Overdue / Critical / …</td><td>Risk list ও filters। Badge sidebar-এ count।</td></tr>
+      <tr><td><b>🔔 Alerts</b></td><td>Actionable alerts</td><td>Alert feed from embedded rules.</td></tr>
+      <tr><td><b>🏢 Buyer / 📅 Ship</b></td><td>Buyer & shipment views</td><td>Buyer pressure, shipment-oriented tables.</td></tr>
+      <tr><td><b>📈 Efficiency / 🌡️ Heatmap</b></td><td>Effi + line×date heat</td><td>Charts ও color intensity by volume.</td></tr>
+    </table>
+  </div>
+
+  <div class="guide-sec" id="g-wc">
+    <h3>5) World-Class modules <span class="guide-pill wc">WORLD-CLASS</span> <span class="guide-pill sim">SIM / DEMO</span></h3>
+    <p style="font-size:11px;color:#666;margin-bottom:8px">এগুলো enterprise APS-স্টাইল UI — পুরো IoT/ERP ছাড়াই demo logic চলে।</p>
+    <table class="guide-table">
+      <tr><th style="width:22%">Menu</th><th style="width:28%">কী আছে</th><th>কীভাবে কাজ করে</th></tr>
+      <tr><td><b>🔮 Predict</b></td><td>EFD miss probability</td>
+        <td>Days-to-EFD থেকে risk % + recovery (OT / split / negotiate)।</td></tr>
+      <tr><td><b>📡 Live</b></td><td>Shop-floor feed</td>
+        <td><b>Start/Pause Live</b> → simulated output ticks। Plan vs actual table。</td></tr>
+      <tr><td><b>🧠 APS</b></td><td>Explainable line suggest</td>
+        <td>SMV + capacity + backlog score। Material READY/WAIT gate। Apply to Board。</td></tr>
+      <tr><td><b>💼 Capacity</b></td><td>Capacity for sale</td>
+        <td>Free index by line + buyer OTIF risk %。</td></tr>
+      <tr><td><b>💬 Chat Ops</b></td><td>Command chat</td>
+        <td>লিখো: <code>overdue</code>, <code>critical</code>, <code>capacity</code>, <code>buyer NAME</code>, <code>help</code>.</td></tr>
+      <tr><td><b>✅ Approvals</b></td><td>Approval queue</td>
+        <td>Critical moves Approve/Reject (demo workflow)।</td></tr>
+    </table>
+  </div>
+
+  <div class="guide-sec" id="g-3d">
+    <h3>6) 3D & UI <span class="guide-pill adv">ADVANCED</span></h3>
+    <table class="guide-table">
+      <tr><th style="width:22%">Menu / Control</th><th>কীভাবে</th></tr>
+      <tr><td><b>🏭 3D Factory</b></td><td>Internet লাগে (Three.js)। Height = load, color = risk। Drag = orbit, Toggle Spin.</td></tr>
+      <tr><td><b>🔺 3D Risk</b></td><td>Risk pyramid layers (Overdue→On Track)。</td></tr>
+      <tr><td><b>☰ Sidebar</b></td><td>Collapse/expand। Mobile-এ menu select করলে auto-close.</td></tr>
+      <tr><td><b>🌙 Dark</b></td><td>Toolbar-এ Dark/Light toggle.</td></tr>
+    </table>
+  </div>
+
+  <div class="guide-sec" id="g-tips">
+    <h3>7) Quick tips</h3>
+    <ul style="font-size:12px;line-height:1.7;margin-left:18px">
+      <li>সবচেয়ে ব্যবহারযোগ্য flow: <b>Risk / Predict</b> → <b>APS</b> suggest → <b>Apply to Board</b> → adjust drag → <b>Save</b>。</li>
+      <li>Planning table ভারী হলে date window (±7 / ±14) ব্যবহার করো。</li>
+      <li>Board data মূল table থেকে আলাদা working layer — Export/Save দিয়ে রাখো。</li>
+      <li>3D ও Live simulation demo — real machine feed পরে API দিয়ে যোগ করতে হয়。</li>
+      <li>Badge (Risk/Alerts) data load হলে update হয়。</li>
+    </ul>
+    <h4>Legend</h4>
+    <span class="guide-pill core">CORE</span> Production data views &nbsp;
+    <span class="guide-pill adv">ADVANCED</span> Interactive tools &nbsp;
+    <span class="guide-pill wc">WORLD-CLASS</span> Enterprise-style &nbsp;
+    <span class="guide-pill sim">SIM</span> Simulated (no live IoT)
+  </div>
+  `;
+}
+
+// ── INIT ──
+function sp(p,m){document.getElementById('pf').style.width=p+'%';document.getElementById('pm').textContent=m;}
 const OE_SHARED=[
   'Unit','Line #','Buyer','Product Type','Product','EWO','Stroke','P.O.','Col',
   'Print','Emb','Outsource','Order qty','Planned qty','PCD','PSD','PFD',
@@ -525,501 +2977,79 @@ function oeDataset({orders,records,daily,dateRange,planningReady}){
   };
 }
 
+
+
+function oeAdvanced(model){
+  const colors=new Map(), buyers=new Map(), lines=new Map(), alerts=[], counts={}, schedules=[];
+  const dist={'≤7d':0,'8-14d':0,'15-21d':0,'22-30d':0,'>30d':0};
+  for(const g of model.plan.g){
+    const s=g.s, qty=oeNumber(s[12]), planned=oeNumber(s[13]), risk=g._risk||{r:'Unknown',d:null};
+    const c=colors.get(s[8])||{Col:s[8],orders:0,total_qty:0};c.orders++;c.total_qty+=qty;colors.set(s[8],c);
+    const b=buyers.get(s[2])||{Buyer:s[2],orders:0,total_qty:0,planned_qty:0,overdue:0,critical:0,urgent:0,nearest_efd:'',latest_efd:''};
+    b.orders++;b.total_qty+=qty;b.planned_qty+=planned;
+    if(risk.r==='Overdue')b.overdue++;if(risk.r==='Critical')b.critical++;if(risk.r==='Urgent')b.urgent++;
+    const date=oeDate(s[18]);if(date!==null){if(!b.nearest_efd||date<oeDate(b.nearest_efd))b.nearest_efd=s[18];if(!b.latest_efd||date>oeDate(b.latest_efd))b.latest_efd=s[18];}
+    buyers.set(s[2],b);
+    if(risk.d!==null)dist[risk.d<=7?'≤7d':risk.d<=14?'8-14d':risk.d<=21?'15-21d':risk.d<=30?'22-30d':'>30d']++;
+    for(const line of s[1].split(',').map(x=>x.trim()).filter(Boolean)){
+      const l=lines.get(line)||{mp:0,smv:0,count:0,orders:0,backlog:0,scheduled:0,unscheduled:0};
+      l.mp+=oeNumber(s[19]);l.smv+=oeNumber(s[20]);l.count++;l.orders++;l.backlog+=Math.max(0,qty-planned);
+      if(planned)l.scheduled++;else l.unscheduled++;
+      lines.set(line,l);
+      schedules.push({EWO:s[5],Buyer:s[2],Line:line,oqty:qty,pqty:planned,sched:planned,completion:qty?Math.round(planned/qty*1000)/10:0,EFD:s[18],days:risk.d});
+    }
+    const add=(type,msg)=>{alerts.push({alert:type,msg,Buyer:s[2],EWO:s[5],PO:s[7],Col:s[8],Line:s[1],EFD:s[18],risk:risk.r,days:risk.d,oqty:qty,pqty:planned});counts[type]=(counts[type]||0)+1;};
+    if(planned>qty)add('OVER_PLAN',`Planned ${planned} > Order ${qty}`);
+    if(planned<qty&&risk.r==='Overdue')add('OVERDUE_REMAIN',`Overdue with ${qty-planned} pcs remaining`);
+    if(planned&&!oeNumber(s[19]))add('NO_MP','No manpower assigned');
+    if(planned&&!s[15])add('NO_PSD','No PSD set');
+    if(planned&&!oeNumber(s[20]))add('NO_SMV','Missing SMV');
+  }
+  const load={},range={},base={},cap={};
+  for(const [name,l] of lines){
+    const mp=Math.round(l.mp/l.count),smv=Math.round(l.smv/l.count*100)/100,cap70=smv?Math.round(mp*480*.7/smv):0;
+    load[name]={mp,smv,cap70,orders:l.orders,backlog:l.backlog,days_needed:cap70?Math.round(l.backlog/cap70*10)/10:0,scheduled:l.scheduled,unscheduled:l.unscheduled};
+    range[name]={smv,cap:cap70,orders:l.orders};base[name]={...load[name]};cap[name]={mp,smv,daily:cap70,orders:l.orders};
+  }
+  const totalCap=Object.values(load).reduce((n,l)=>n+l.cap70,0),daily={};
+  for(const [day,pcs] of Object.entries(model.risk.daily_prod))daily[day]={pcs,cap:totalCap,util:totalCap?Math.round(pcs/totalCap*1000)/10:0};
+  return {
+    advanced:{weekly:[],buyer_weekly:{buyers:[],weeks:[],values:[]},effi_dist:{},line_cap:cap,color_stats:[...colors.values()].sort((a,b)=>b.total_qty-a.total_qty),lead_dist:dist,buyer_tracker:[...buyers.values()].map(b=>({...b,gap:Math.max(0,b.total_qty-b.planned_qty),gap_pct:b.total_qty?Math.round(Math.max(0,b.total_qty-b.planned_qty)/b.total_qty*1000)/10:0}))},
+    execution:{line_load:load,line_smv_range:range,alerts:alerts.slice(0,500),alert_summary:counts,weekly_summary:[],scenario_base:base,schedule_status:schedules,daily_util:daily,today:oeDayLabel(new Date(oeToday()).toISOString().slice(0,10)),total_lines:lines.size,total_alerts:alerts.length}
+  };
+}
 function applySQLSnapshot(payload){
   try{
-    sp(5,'Loading authenticated SQL data…');
     if(!Array.isArray(payload.orders))throw Error('Order Bank rows are missing');
-    const model=oeDataset(payload);
-    D=model.plan;D1=model.dashboard;D2=model.risk;RISK_MAP=model.riskMap;
-    ALL=expand(D);FIL=ALL.slice();page=1;_showNew=false;
-    dashLoaded=false;riskLoaded=false;
-    for(const id of ['kpi-row','risk-kpi-row','buyer-chart','ptype-chart','month-chart','line-chart']){
-      document.getElementById(id).replaceChildren();
-    }
-    document.getElementById('th').replaceChildren();
-    for(const id of ['fl','fb','fpt']){
-      const select=document.getElementById(id);
-      while(select.options.length>1)select.remove(1);
-    }
-    document.getElementById('tog-new').disabled=!payload.planningReady;
-    buildHeader();popFilters();
+    sp(10,'Building authenticated SQL report…');
+    const model=oeDataset(payload),extras=oeAdvanced(model);
+    D=model.plan;D1=model.dashboard;D2=model.risk;RMAP=model.riskMap;AD=extras.advanced;EX=extras.execution;
+    ALL=expand(D);FIL=ALL.slice();page=1;_new=false;dateStartIdx=0;
+    for(const key of Object.keys(built))delete built[key];
+    document.querySelectorAll('.view .dinr').forEach(el=>el.replaceChildren());
+    for(const id of ['fl','fb','fpt']){const el=document.getElementById(id);while(el.options.length>1)el.remove(1);}
+    buildHeader();popFilters();updInfo();renderPage();
     document.getElementById('ib-t').textContent=ALL.length.toLocaleString();
-    document.getElementById('ib-d').textContent=D.pc.length>3?
-      D.pc[3]+' → '+D.pc.at(-1):'—';
-    const note=document.getElementById('sql-note');
-    note.textContent=payload.planningReady?
-      'SQL Order Bank · Planning: '+(payload.planningLabel||'selected upload')+
-      ' · matched by EWO + PO + Color + Buyer':
-      'SQL Order Bank · Planning details unavailable'+
-      (payload.planningError?': '+payload.planningError:' · waiting for selected planning upload');
-    note.style.background=payload.planningReady?'#e8f5e9':'#fff3e0';
-    note.style.color=payload.planningReady?'#1b5e20':'#a34800';
-    updInfo();renderPage();
-    const active=document.querySelector('.tab.active');
-    const tabs=['tbl','dash','risk','gap','heat','calc','timeline'];
-    const idx=[...document.querySelectorAll('.tab')].indexOf(active);
-    if(idx>0)showTab(tabs[idx]);
-    sp(100,'Ready ✓');
-    document.getElementById('loading').style.display='none';
+    const dc=D.pc.slice(3);document.getElementById('ib-d').textContent=dc.length?dc[0]+' → '+dc.at(-1):'—';
+    const note=document.getElementById('sql-note');note.textContent=payload.planningReady?'SQL Order Bank · Planning: '+(payload.planningLabel||'selected upload')+' · EWO + PO + Color + Buyer':'SQL Order Bank · Planning unavailable'+(payload.planningError?': '+payload.planningError:'');
+    note.style.background=payload.planningReady?'#e8f5e9':'#fff3e0';note.style.color=payload.planningReady?'#1b5e20':'#a34800';
+    const current=document.querySelector('.view.on')?.id?.replace('-view','');if(current&&current!=='tbl')S(current);
+    sp(100,'Ready ✓');document.getElementById('ld').style.display='none';
     window.parent.postMessage({type:'ekwl-execution-rendered',key:payload.key},'*');
   }catch(err){
-    const note=document.getElementById('sql-note');
-    note.textContent='Order Execution Plan failed to render: '+String(err?.message||err);
-    note.style.background='#ffebee';note.style.color='#b71c1c';
-    document.getElementById('loading').style.display='none';
+    document.getElementById('sql-note').textContent='Order Execution Plan failed: '+String(err?.message||err);
+    document.getElementById('ld').style.display='none';
     window.parent.postMessage({type:'ekwl-execution-error',message:String(err?.message||err)},'*');
   }
 }
 window.addEventListener('message',event=>{
   if(event.source!==window.parent||!event.data)return;
-  if(event.data.type==='ekwl-execution-loading'){
-    document.getElementById('loading').style.display='flex';
-    sp(5,'Loading Order Bank SQL…');
-  }
-  if(event.data.type==='ekwl-execution-error'){
-    document.getElementById('loading').style.display='none';
-    const note=document.getElementById('sql-note');
-    note.textContent=String(event.data.message||'SQL data unavailable');
-    note.style.background='#ffebee';note.style.color='#b71c1c';
-  }
+  if(event.data.type==='ekwl-execution-loading'){document.getElementById('ld').style.display='flex';sp(5,'Loading Order Bank SQL…');}
+  else if(event.data.type==='ekwl-execution-error'){document.getElementById('sql-note').textContent=String(event.data.message||'SQL data unavailable');document.getElementById('ld').style.display='none';}
+  else if(event.data.type==='ekwl-execution-data')applySQLSnapshot(event.data);
 });
+window.parent.postMessage({type:'ekwl-execution-ready'},'*');
 
-</script>
-<script>
-// ── DATA ──
-
-
-
-
-async function decomp(b64){
-  const bin=atob(b64), bytes=new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-  const ds=new DecompressionStream('gzip'), w=ds.writable.getWriter();
-  w.write(bytes); w.close();
-  const chunks=[], r=ds.readable.getReader();
-  for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);}
-  const tot=chunks.reduce((a,c)=>a+c.length,0), out=new Uint8Array(tot);
-  let off=0; for(const c of chunks){out.set(c,off);off+=c.length;}
-  return new TextDecoder().decode(out);
-}
-
-const CRIT={'Plan/Day':'rp','SAH/Day':'rs','Effi/Day':'re','Clock Hour/Day':'rc'};
-const LEFTS=[0,60,112,184,256,346,398,526,611];
-const STICKY=9, SCLEN=21;
-const W=['c0','c1','c2','c3','c4','c5','c6','c7','c8','c9','c10','c11','c12','c13','c14','c15','c16','c17','c18','c19','c20','c21','c22','c23'];
-
-let D={}, ALL=[], FIL=[], RISK_MAP={}, page=1, ps=500, showNew=false;
-let D1={}, D2={}, dashLoaded=false, riskLoaded=false;
-const RISK_CLS={'Overdue':'row-over','Critical':'row-crit','Urgent':'row-urg'};
-
-// ── Tab ──
-function showTab(t){
-  document.querySelectorAll('.tab').forEach((el,i)=>{
-    el.classList.toggle('active',['tbl','dash','risk','gap','heat','calc','timeline'][i]===t);
-  });
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
-  document.getElementById(t+'-view').classList.add('on');
-  if(t==='dash'&&!dashLoaded) buildDash();
-  if((t==='risk'||t==='gap')&&!riskLoaded) buildRisk();
-  if(t==='heat'&&!riskLoaded) buildRisk();
-  if(t==='timeline') buildTimeline();
-  if(t==='calc'){calc();rcalc();}
-}
-
-// ── Expand ──
-function expand({sc,pc,g,existingGroupCount}){
-  const rows=[];
-  for(let gi=0;gi<g.length;gi++){
-    const{s,r}=g[gi]; const isNew=gi>=existingGroupCount;
-    for(let ri=0;ri<r.length;ri++){
-      const row=[...s,...r[ri]]; row._n=isNew; row._gs=(ri===0); row._gi=gi;
-      rows.push(row);
-    }
-  }
-  return rows;
-}
-
-// ── Header ──
-function buildHeader(){
-  const cols=[...D.sc,...D.pc], tr=document.createElement('tr');
-  cols.forEach((c,i)=>{
-    const th=document.createElement('th'); th.textContent=c; th.title=c;
-    th.className=(i<STICKY?'st ':'')+( i<W.length?W[i]:'cd');
-    if(i<STICKY) th.style.left=LEFTS[i]+'px';
-    tr.appendChild(th);
-  });
-  document.getElementById('th').appendChild(tr);
-}
-
-// ── Render ──
-function renderPage(){
-  const tb=document.getElementById('tb'); tb.innerHTML='';
-  const s=(page-1)*ps, e=Math.min(s+ps,FIL.length);
-  const frag=document.createDocumentFragment();
-  const totalCols=D.sc.length+D.pc.length, avgIdx=D.sc.length;
-  let oqSum=0, pqSum=0;
-  for(let i=s;i<e;i++){
-    const row=FIL[i], crit=row[avgIdx+1]||'', cc=CRIT[crit]||'';
-    if(crit==='Plan/Day'){oqSum+=parseFloat(row[12])||0; pqSum+=parseFloat(row[13])||0;}
-    const tr=document.createElement('tr');
-    if(row._gs) tr.classList.add('gs');
-    // risk coloring (from Plan/Day row index)
-    const rInfo=RISK_MAP[row._gi];
-    if(rInfo){const rc=RISK_CLS[rInfo.r]; if(rc) tr.classList.add(rc);}
-    for(let j=0;j<totalCols;j++){
-      const td=document.createElement('td');
-      let v=row[j]??'';
-      if(j>=SCLEN+3&&(v==='0'||v==='')) v='';
-      td.textContent=v; td.title=v;
-      const isSt=j<STICKY;
-      td.className=(isSt?'st ':'')+( j<W.length?W[j]:'cd');
-      if(isSt){td.style.left=LEFTS[j]+'px'; td.style.background=row._n?'var(--new-fc)':'var(--fc-bg)';}
-      else td.classList.add(cc);
-      tr.appendChild(td);
-    }
-    frag.appendChild(tr);
-  }
-  tb.appendChild(frag);
-  const tp=Math.ceil(FIL.length/ps)||1;
-  document.getElementById('pi').textContent=`Page ${page}/${tp} (${FIL.length?s+1:0}–${e})`;
-  document.getElementById('footer-stats').textContent=
-    `Visible → Order Qty: ${oqSum.toLocaleString()} | Planned Qty: ${pqSum.toLocaleString()}`;
-}
-
-// ── Filter ──
-let _showNew=false;
-function pd(s){if(!s||!s.trim())return null;const d=new Date(s.trim());return isNaN(d)?null:d;}
-function go_filter(){
-  const l=document.getElementById('fl').value.toLowerCase();
-  const b=document.getElementById('fb').value.toLowerCase();
-  const pt=document.getElementById('fpt').value.toLowerCase();
-  const rs=document.getElementById('frisk').value;
-  const q=document.getElementById('fs').value.toLowerCase().trim();
-  const d1=pd(document.getElementById('fd1').value);
-  const d2=pd(document.getElementById('fd2').value);
-  FIL=ALL.filter(r=>{
-    if(_showNew&&!r._n) return false;
-    if(l&&(r[1]||'').toLowerCase()!==l) return false;
-    if(b&&(r[2]||'').toLowerCase()!==b) return false;
-    if(pt&&(r[3]||'').toLowerCase()!==pt) return false;
-    if(q){const s=(r[5]||'').toLowerCase()+(r[7]||'').toLowerCase()+(r[8]||'').toLowerCase();if(!s.includes(q))return false;}
-    if(d1||d2){const dv=new Date(r[18]||'');if(isNaN(dv))return false;if(d1&&dv<d1)return false;if(d2&&dv>d2)return false;}
-    if(rs){const ri=RISK_MAP[r._gi];const rv=ri?ri.r:'Unknown';if(rv!==rs)return false;}
-    return true;
-  });
-  page=1; updInfo(); renderPage();
-}
-function clr_filter(){
-  ['fl','fb','fpt','frisk','fs','fd1','fd2'].forEach(id=>document.getElementById(id).value='');
-  _showNew=false;
-  document.getElementById('tog-new').textContent='👁 New Only';
-  document.getElementById('tog-new').classList.remove('tog-active');
-  FIL=ALL.slice(); page=1; updInfo(); renderPage();
-}
-function tog_new(){
-  _showNew=!_showNew;
-  const btn=document.getElementById('tog-new');
-  btn.textContent=_showNew?'👁 Show All':'👁 New Only';
-  btn.classList.toggle('tog-active',_showNew);
-  go_filter();
-}
-
-// ── Info bar ──
-function updInfo(){
-  document.getElementById('ib-f').textContent=FIL.length;
-  document.getElementById('ib-o').textContent=Math.floor(FIL.length/4).toLocaleString();
-  const nR=FIL.filter(r=>r._n).length;
-  document.getElementById('ib-n').textContent=D1.summary.planning_ready?
-    Math.floor(nR/4).toLocaleString():'—';
-  let qty=0; FIL.forEach(r=>{if((r[D.sc.length+1]||'')==='Plan/Day')qty+=parseFloat(r[12])||0;});
-  document.getElementById('ib-q').textContent=qty.toLocaleString();
-  // risk counts in filtered
-  let ov=0,cr=0,ur=0;
-  FIL.filter(r=>(r[D.sc.length+1]||'')==='Plan/Day').forEach(r=>{
-    const ri=RISK_MAP[r._gi]; if(!ri) return;
-    if(ri.r==='Overdue') ov++;
-    else if(ri.r==='Critical') cr++;
-    else if(ri.r==='Urgent') ur++;
-  });
-  document.getElementById('ib-over').textContent='Overdue: '+ov;
-  document.getElementById('ib-crit').textContent='Critical: '+cr;
-  document.getElementById('ib-urg').textContent='Urgent: '+ur;
-}
-
-function pg(d){const tp=Math.ceil(FIL.length/ps)||1;page=Math.max(1,Math.min(page+d,tp));renderPage();}
-function ps_ch(){ps=+document.getElementById('ps').value;page=1;renderPage();}
-
-function popFilters(){
-  const ls=new Set(),bs=new Set(),pts=new Set();
-  for(const r of ALL){if(r[1])ls.add(r[1]);if(r[2])bs.add(r[2]);if(r[3])pts.add(r[3]);}
-  const fl=document.getElementById('fl'),fb=document.getElementById('fb'),fpt=document.getElementById('fpt');
-  [...ls].sort().forEach(v=>{fl.add(new Option(v,v));});
-  [...bs].sort().forEach(v=>{fb.add(new Option(v,v));});
-  [...pts].sort().forEach(v=>{if(v)fpt.add(new Option(v,v));});
-}
-
-// ── CSV ──
-function exp_csv(){
-  const cols=[...D.sc,...D.pc];
-  const lines=[cols.map(c=>'"'+c.replace(/"/g,'""')+'"').join(',')];
-  for(const r of FIL) lines.push(cols.map((_,i)=>'"'+(String(r[i]??'').replace(/"/g,'""'))+'"').join(','));
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
-  a.download='EKWL_Planning_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
-}
-
-// ── DASHBOARD ──
-function oeEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function bars(data,labelKey,valKey,cls,fmt){
-  const mx=Math.max(...data.map(d=>d[valKey]),1);
-  return data.map(d=>{
-    const pct=Math.round(d[valKey]/mx*100);
-    const fv=fmt?fmt(d[valKey]):d[valKey].toLocaleString();
-    return `<div class="bar-row"><div class="bar-lbl" title="${oeEsc(d[labelKey])}">${oeEsc(d[labelKey])}</div>`+
-      `<div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>`+
-      `<div class="bar-val">${fv}</div></div>`;
-  }).join('');
-}
-
-function buildDash(){
-  if(dashLoaded)return; dashLoaded=true;
-  const{summary,buyer,ptype,monthly,lines}=D1;
-  const kpis=[
-    {l:'Total Orders',v:summary.total_orders.toLocaleString(),s:'Latest SQL Order Bank rows',c:'#1a3c5e'},
-    {l:'Total Order Qty',v:summary.total_qty.toLocaleString(),s:'Latest SQL Order Bank snapshot',c:'#2e7d32'},
-    {l:'Existing Orders',v:summary.planning_ready?summary.existing_orders.toLocaleString():'—',s:'Matched SQL Planning',c:'#1565c0'},
-    {l:'New from OB',v:summary.planning_ready?summary.new_orders.toLocaleString():'—',s:'Unmatched in selected plan',c:'#c62828'},
-    {l:'Buyers',v:summary.buyers,s:'Active buyers',c:'#6a1b9a'},
-    {l:'Date Coverage',v:summary.date_count?summary.date_count+' days':'—',s:summary.date_from+' → '+summary.date_to,c:'#e65100'},
-  ];
-  const kr=document.getElementById('kpi-row');
-  kpis.forEach(k=>{
-    const d=document.createElement('div'); d.className='kpi'; d.style.borderLeftColor=k.c;
-    d.innerHTML=`<div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c}">${k.v}</div><div class="kpi-sub">${k.s}</div>`;
-    kr.appendChild(d);
-  });
-  document.getElementById('buyer-chart').innerHTML=bars(buyer,'Buyer','total_qty','b-blue',v=>v.toLocaleString()+' pcs');
-  document.getElementById('ptype-chart').innerHTML=bars(ptype.slice(0,10),'Product Type','total_qty','b-green');
-  const rm=monthly;
-  document.getElementById('month-chart').innerHTML=bars(rm,'month','orders','b-purple',v=>v+' orders');
-  document.getElementById('line-chart').innerHTML=bars(lines,'Line #','orders','b-orange',v=>v+' orders');
-}
-
-// ── RISK ──
-let riskAll=[];
-function buildRisk(){
-  if(riskLoaded)return; riskLoaded=true;
-  const rs=D2.risk_summary;
-  const total=Object.values(rs).reduce((a,v)=>a+v,0);
-  const kpiRow=document.getElementById('risk-kpi-row');
-  const rColors={'Overdue':'#c62828','Critical':'#e65100','Urgent':'#f9a825','Watch':'#2e7d32','On Track':'#1565c0'};
-  Object.entries(rs).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
-    const d=document.createElement('div'); d.className='kpi'; d.style.borderLeftColor=rColors[k]||'#666';
-    d.innerHTML=`<div class="kpi-lbl">${k}</div><div class="kpi-val" style="color:${rColors[k]||'#444'}">${v.toLocaleString()}</div><div class="kpi-sub">${(v/total*100).toFixed(1)}% of orders</div>`;
-    kpiRow.appendChild(d);
-  });
-  riskAll=D2.risk_detail;
-  renderRiskTable(riskAll);
-  buildGap();
-  buildHeatmap();
-}
-
-function rbadge(r){
-  const m={'Overdue':'rb-over','Critical':'rb-crit','Urgent':'rb-urg','Watch':'rb-watch','On Track':'rb-ok'};
-  return `<span class="rbadge ${m[r]||'rb-unk'}">${r}</span>`;
-}
-
-function renderRiskTable(data){
-  const tb=document.getElementById('risk-tbody'); tb.innerHTML='';
-  document.getElementById('risk-count').textContent=`(first ${data.length} of ${D2.risk_total} at-risk orders)`;
-  const frag=document.createDocumentFragment();
-  data.forEach(r=>{
-    const tr=document.createElement('tr');
-    const days=parseInt(r.days_to_efd)||0;
-    const dStr=days<0?`<span style="color:#c62828;font-weight:700">${days}d</span>`:`<span style="color:#2e7d32">${days}d</span>`;
-    tr.innerHTML=`<td>${rbadge(r.risk)}</td><td>${dStr}</td><td>${oeEsc(r.Buyer)}</td>
-      <td>${oeEsc(r.EWO)}</td><td>${oeEsc(r['P.O.'])}</td><td>${oeEsc(r.Col)}</td>
-      <td>${oeEsc(r['Product Type'])}</td><td>${oeEsc(r['Order qty'])}</td>
-      <td>${oeEsc(r['Planned qty']||'—')}</td><td>${oeEsc(r['Line #']||'—')}</td>
-      <td>${oeEsc(r.SMV)}</td><td>${oeEsc(r.Manpower||'—')}</td><td>${oeEsc(r.Delivery)}</td>`;
-    frag.appendChild(tr);
-  });
-  tb.appendChild(frag);
-}
-
-function filterRisk(type){
-  if(type==='all') renderRiskTable(riskAll);
-  else renderRiskTable(riskAll.filter(r=>r.risk===type));
-}
-
-// ── GAP ──
-function buildGap(){
-  const gd=D2.gap_data||[];
-  if(!D1.summary.planning_ready){
-    document.getElementById('gap-content').textContent='Selected SQL Planning data is not available yet.';
-    document.getElementById('gap-chart').textContent='';
-    return;
-  }
-  // table
-  let thtml=`<table class="gtbl"><thead><tr>
-    <th>Buyer</th><th>Order Qty</th><th>Planned Qty</th><th>Gap (Unplanned)</th><th>Gap %</th><th>Visual</th>
-  </tr></thead><tbody>`;
-  const maxGap=Math.max(...gd.map(d=>d.gap||0),1);
-  gd.sort((a,b)=>(b.gap_pct||0)-(a.gap_pct||0)).forEach(d=>{
-    const gpct=d.gap_pct||0;
-    const ppct=100-gpct;
-    const barW=Math.round((d.gap||0)/maxGap*120);
-    const color=gpct>90?'#ef5350':gpct>60?'#ffa726':'#66bb6a';
-    thtml+=`<tr><td><b>${oeEsc(d.Buyer)}</b></td>
-      <td>${(d.order_qty||0).toLocaleString()}</td>
-      <td>${(d.planned_qty||0).toLocaleString()}</td>
-      <td style="color:${color};font-weight:700">${(d.gap||0).toLocaleString()}</td>
-      <td><span class="rbadge" style="background:${color}22;color:${color}">${gpct}%</span></td>
-      <td><span class="plan-bar" style="width:${Math.round(ppct*1.2)}px"></span><span class="gap-bar" style="width:${Math.round(gpct*1.2)}px"></span></td>
-    </tr>`;
-  });
-  thtml+='</tbody></table>';
-  document.getElementById('gap-content').innerHTML=thtml;
-
-  // summary bar chart
-  document.getElementById('gap-chart').innerHTML=bars(
-    gd.sort((a,b)=>b.gap-a.gap),'Buyer','gap','b-red',v=>v.toLocaleString()+' pcs'
-  );
-}
-
-// ── HEATMAP ──
-function buildHeatmap(){
-  const ld=D2.line_daily||{};
-  const allDates=[...new Set(Object.values(ld).flatMap(d=>Object.keys(d)))].sort((a,b)=>new Date(a)-new Date(b));
-  if(allDates.length===0){document.getElementById('heatmap-wrap').textContent='No data.';return;}
-  const showDates=allDates.slice(0,25);
-  const lines=Object.keys(ld).sort();
-  const allVals=lines.flatMap(l=>showDates.map(d=>ld[l][d]||0));
-  const maxV=Math.max(...allVals,1);
-  function hcls(v){if(!v)return 'h0';const p=v/maxV;if(p<.25)return 'h1';if(p<.5)return 'h2';if(p<.75)return 'h3';return 'h4';}
-  let h='<table class="heatmap-table"><thead><tr><th>Line</th>'+ 
-    showDates.map(d=>`<th>${d}</th>`).join('')+'</tr></thead><tbody>';
-  lines.forEach(l=>{
-    h+=`<tr><td class="line-lbl">${oeEsc(l)}</td>`;
-    showDates.forEach(d=>{
-      const v=ld[l][d]||0;
-      h+=`<td class="${hcls(v)}" title="${oeEsc(l)}: ${oeEsc(d)} = ${v.toLocaleString()} pcs">${v?v.toLocaleString():''}</td>`;
-    });
-    h+='</tr>';
-  });
-  h+='</tbody></table>';
-  document.getElementById('heatmap-wrap').innerHTML=h;
-}
-
-// ── TIMELINE ──
-function buildTimeline(){
-  const dp=D2.daily_prod||{};
-  const dates=Object.keys(dp).sort((a,b)=>new Date(a)-new Date(b));
-  const vals=dates.map(d=>dp[d]);
-  if(!dates.length){document.getElementById('tc').style.display='none';return;}
-  drawLineChart('tc', dates, [{label:'Daily Plan/Day Output (pcs)',data:vals,color:'#1e88e5'}]);
-  // cumulative
-  let cum=0;
-  const cumVals=vals.map(v=>{cum+=v;return cum;});
-  drawLineChart('tc2', dates, [{label:'Cumulative (pcs)',data:cumVals,color:'#66bb6a'}]);
-}
-
-function drawLineChart(canvasId, labels, series){
-  const canvas=document.getElementById(canvasId);
-  if(!canvas)return;
-  const dpr=window.devicePixelRatio||1;
-  const W=canvas.clientWidth||800, H=canvas.clientHeight||180;
-  canvas.width=W*dpr; canvas.height=H*dpr;
-  const ctx=canvas.getContext('2d');
-  ctx.scale(dpr,dpr);
-  const pad={l:60,r:20,t:15,b:45};
-  const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
-  const allV=series.flatMap(s=>s.data);
-  const maxV=Math.max(...allV,1);
-  ctx.clearRect(0,0,W,H);
-  // grid
-  ctx.strokeStyle='#eceff1'; ctx.lineWidth=1;
-  for(let i=0;i<=5;i++){
-    const y=pad.t+ph*(1-i/5);
-    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
-    ctx.fillStyle='#999';ctx.font='9px Segoe UI';ctx.textAlign='right';
-    ctx.fillText(Math.round(maxV*i/5).toLocaleString(),pad.l-4,y+3);
-  }
-  // x labels
-  const step=Math.max(1,Math.floor(labels.length/12));
-  ctx.fillStyle='#777';ctx.font='9px Segoe UI';ctx.textAlign='center';
-  labels.forEach((l,i)=>{
-    if(i%step===0){
-      const x=pad.l+i/Math.max(labels.length-1,1)*pw;
-      ctx.fillText(l,x,H-pad.b+14);
-      ctx.beginPath();ctx.strokeStyle='#ddd';ctx.lineWidth=1;
-      ctx.moveTo(x,pad.t);ctx.lineTo(x,pad.t+ph);ctx.stroke();
-    }
-  });
-  // lines
-  series.forEach(s=>{
-    ctx.strokeStyle=s.color; ctx.lineWidth=2.5; ctx.lineJoin='round';
-    ctx.beginPath();
-    s.data.forEach((v,i)=>{
-      const x=pad.l+i/Math.max(s.data.length-1,1)*pw;
-      const y=pad.t+ph*(1-v/maxV);
-      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-    });
-    ctx.stroke();
-    // fill
-    ctx.globalAlpha=.12;
-    ctx.fillStyle=s.color;
-    ctx.lineTo(pad.l+pw,pad.t+ph); ctx.lineTo(pad.l,pad.t+ph); ctx.closePath(); ctx.fill();
-    ctx.globalAlpha=1;
-    // label
-    ctx.fillStyle=s.color;ctx.font='bold 10px Segoe UI';ctx.textAlign='left';
-    ctx.fillText(s.label,pad.l+4,pad.t+13);
-  });
-}
-
-// ── SAH CALC ──
-function calc(){
-  const plan=+document.getElementById('c-plan').value||0;
-  const smv=+document.getElementById('c-smv').value||0;
-  const mp=+document.getElementById('c-mp').value||1;
-  const hrs=+document.getElementById('c-hrs').value||8;
-  const tgt=+document.getElementById('c-tgt').value||75;
-  const oqty=+document.getElementById('c-oqty').value||0;
-  const sah=plan*smv/60;
-  const effi=mp>0&&hrs>0?sah/(mp*hrs)*100:0;
-  const days=plan>0?Math.ceil(oqty/plan):0;
-  const gap=effi-tgt;
-  const effiColor=effi>=tgt?'#2e7d32':effi>=60?'#f9a825':'#c62828';
-  document.getElementById('calc-result').innerHTML=`
-    <div class="calc-res-item"><div class="calc-res-lbl">SAH/Day</div><div class="calc-res-val" style="color:#1565c0">${sah.toFixed(2)}</div></div>
-    <div class="calc-res-item"><div class="calc-res-lbl">Efficiency</div><div class="calc-res-val" style="color:${effiColor}">${effi.toFixed(1)}%</div></div>
-    <div class="calc-res-item"><div class="calc-res-lbl">vs Target</div><div class="calc-res-val" style="color:${gap>=0?'#2e7d32':'#c62828'}">${gap>=0?'+':''}${gap.toFixed(1)}%</div></div>
-    <div class="calc-res-item"><div class="calc-res-lbl">Prod Days</div><div class="calc-res-val" style="color:#6a1b9a">${days}</div></div>
-    <div class="effi-meter" style="width:300px"><div class="effi-fill" style="width:${Math.min(effi,100)}%"></div></div>`;
-}
-
-function rcalc(){
-  const plan=+document.getElementById('r-plan').value||0;
-  const smv=+document.getElementById('r-smv').value||0;
-  const tgt=+document.getElementById('r-tgt').value||75;
-  const hrs=+document.getElementById('r-hrs').value||8;
-  const sah=plan*smv/60;
-  const reqMp=tgt>0&&hrs>0?sah/(tgt/100*hrs):0;
-  document.getElementById('rcalc-result').innerHTML=`
-    <div class="calc-res-item"><div class="calc-res-lbl">SAH/Day</div><div class="calc-res-val" style="color:#1565c0">${sah.toFixed(2)}</div></div>
-    <div class="calc-res-item"><div class="calc-res-lbl">Required Manpower</div><div class="calc-res-val" style="color:#e65100">${reqMp.toFixed(1)} workers</div></div>
-    <div class="calc-res-item"><div class="calc-res-lbl">At ${tgt}% efficiency</div><div class="calc-res-val" style="color:#2e7d32">${plan} pcs/day</div></div>`;
-}
-
-// ── PROGRESS ──
-function sp(p,msg){document.getElementById('prog-fill').style.width=p+'%';document.getElementById('prog-lbl').textContent=msg;}
-
-// ── SQL snapshot arrives from the authenticated parent dashboard ──
-window.addEventListener('message', event => {
-  if(event.source !== window.parent || !event.data || event.data.type !== 'ekwl-execution-data') return;
-  applySQLSnapshot(event.data);
-});
-window.parent.postMessage({type:'ekwl-execution-ready'}, '*');
 </script>
 </body>
 </html>
