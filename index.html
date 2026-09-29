@@ -2649,7 +2649,7 @@ input,select,textarea{
     <div class="card-title">🔎 Fabric &amp; Cutting Filters <span class="ct-right" id="s12-count"></span></div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap">
       <span style="font-size:11px;font-weight:900;color:#002b5b">PLAN EWO FILTER:</span>
-      <select id="s12-plan-match" onchange="renderS12()" style="min-width:220px;border:2px solid #f59e0b;background:#fff8e7;font-weight:900;color:#002b5b;padding:6px 9px;border-radius:6px">
+      <select id="s12-plan-match" onchange="renderS12('plan')" style="min-width:220px;border:2px solid #f59e0b;background:#fff8e7;font-weight:900;color:#002b5b;padding:6px 9px;border-radius:6px">
         <option value="">All EWO</option>
         <option value="match">✓ Plan EWO Match Only</option>
         <option value="nomatch">✕ Not in Plan</option>
@@ -2657,11 +2657,11 @@ input,select,textarea{
       <span id="s12-match-note" style="font-size:10px;font-weight:800;color:#64748b"></span>
     </div>
     <div style="display:grid;grid-template-columns:1.35fr repeat(4,1fr);gap:8px">
-      <input id="s12-search" type="search" placeholder="Search EWO / Color / Buyer..." oninput="renderS12()">
-      <select id="s12-buyer" onchange="renderS12()"><option value="">All Buyers</option></select>
-      <select id="s12-product" onchange="renderS12()"><option value="">All Products</option></select>
-      <select id="s12-status" onchange="renderS12()"><option value="">All Status</option></select>
-      <select id="s12-difficulty" onchange="renderS12()"><option value="">All Cutting Difficulty</option></select>
+      <input id="s12-search" type="search" placeholder="Search EWO / Color / Buyer..." oninput="renderS12('search')">
+      <select id="s12-buyer" onchange="renderS12('buyer')"><option value="">All Buyers</option></select>
+      <select id="s12-product" onchange="renderS12('product')"><option value="">All Products</option></select>
+      <select id="s12-status" onchange="renderS12('status')"><option value="">All Status</option></select>
+      <select id="s12-difficulty" onchange="renderS12('difficulty')"><option value="">All Cutting Difficulty</option></select>
     </div>
   </div>
   <div class="two-col">
@@ -4390,20 +4390,39 @@ function renderHome(){
 }
 
 
-function renderS12(){
+function fabricCuttingCascade(all,planEwoSet,planMatch,search,selected,changed=''){
+  const ewoKey=v=>{
+    let s=String(v??'').trim().toUpperCase();
+    if(/^\d+\.0+$/.test(s))s=s.replace(/\.0+$/,'');
+    return s;
+  };
+  const text=v=>String(v??'').trim();
+  const options=rows=>[...new Set(rows.map(text).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const base=all.filter(r=>{
+    const match=planEwoSet.has(ewoKey(r.ewo));
+    return (!planMatch||(planMatch==='match'?match:!match))&&
+      (!search||[r.ewo,r.color_name,r.buyer,r.item_product_type,r.style_embellishment_type]
+        .some(v=>text(v).toLowerCase().includes(search)));
+  });
+  const fields=[['buyer','buyer'],['product','item_product_type'],['status','status'],['difficulty','cutting_difficulties']];
+  const values={},available={};
+  const order=changed&&fields.some(([name])=>name===changed)?
+    [fields.find(([name])=>name===changed),...fields.filter(([name])=>name!==changed)]:fields;
+  let narrowed=base;
+  for(const [name,field] of order){
+    values[name]=options(narrowed.map(r=>r[field])).includes(selected[name])?selected[name]:'';
+    if(values[name])narrowed=narrowed.filter(r=>text(r[field])===values[name]);
+  }
+  const matches=(r,except)=>fields.every(([name,field])=>name===except||!values[name]||text(r[field])===values[name]);
+  for(const [name,field] of fields)available[name]=options(base.filter(r=>matches(r,name)).map(r=>r[field]));
+  const rows=base.filter(r=>matches(r,''));
+  return {rows,available,values};
+}
+function renderS12(changed=''){
   const all=FABRIC_CUTTING_DATA||[];
   const buyerEl=document.getElementById('s12-buyer'),prodEl=document.getElementById('s12-product'),
         statusEl=document.getElementById('s12-status'),diffEl=document.getElementById('s12-difficulty');
   if(!buyerEl)return;
-  const keep=(el)=>el.value;
-  const bv=keep(buyerEl),pv=keep(prodEl),sv=keep(statusEl),dv=keep(diffEl);
-  const opts=(arr)=>[...new Set(arr.map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  const setOpts=(el,label,vals,val)=>{el.innerHTML='<option value="">'+label+'</option>'+vals.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');if(vals.includes(val))el.value=val};
-  setOpts(buyerEl,'All Buyers',opts(all.map(r=>r.buyer)),bv);
-  setOpts(prodEl,'All Products',opts(all.map(r=>r.item_product_type)),pv);
-  setOpts(statusEl,'All Status',opts(all.map(r=>r.status)),sv);
-  setOpts(diffEl,'All Cutting Difficulty',opts(all.map(r=>r.cutting_difficulties)),dv);
-
   const q=String(document.getElementById('s12-search').value||'').trim().toLowerCase();
   const planMatch=document.getElementById('s12-plan-match').value;
   // Normalize both sources so values such as 271305 and 271305.0 match correctly.
@@ -4415,15 +4434,20 @@ function renderS12(){
   const planEwoSet=new Set((DATA||[])
     .filter(r=>!r.is_summary_row && ewoKey(r.ewo))
     .map(r=>ewoKey(r.ewo)));
-  const rows=all.filter(r=>{
-    const isPlanEwo=planEwoSet.has(ewoKey(r.ewo));
-    return (!buyerEl.value||r.buyer===buyerEl.value)&&(!prodEl.value||r.item_product_type===prodEl.value)&&
-      (!statusEl.value||r.status===statusEl.value)&&(!diffEl.value||r.cutting_difficulties===diffEl.value)&&
-      (!planMatch||(planMatch==='match'?isPlanEwo:!isPlanEwo))&&
-      (!q||[r.ewo,r.color_name,r.buyer,r.item_product_type,r.style_embellishment_type].some(v=>String(v||'').toLowerCase().includes(q)));
-  });
-  const matchedCount=all.filter(r=>planEwoSet.has(ewoKey(r.ewo))).length;
-  const matchedEwoCount=new Set(all.filter(r=>planEwoSet.has(ewoKey(r.ewo))).map(r=>ewoKey(r.ewo))).size;
+  const {rows,available,values}=fabricCuttingCascade(all,planEwoSet,planMatch,q,{
+    buyer:buyerEl.value,product:prodEl.value,status:statusEl.value,difficulty:diffEl.value
+  },changed);
+  const setOpts=(el,label,vals,val)=>{
+    el.innerHTML='<option value="">'+label+'</option>'+vals.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
+    el.value=val;
+  };
+  setOpts(buyerEl,'All Buyers',available.buyer,values.buyer);
+  setOpts(prodEl,'All Products',available.product,values.product);
+  setOpts(statusEl,'All Status',available.status,values.status);
+  setOpts(diffEl,'All Cutting Difficulty',available.difficulty,values.difficulty);
+  const matchedRows=rows.filter(r=>planEwoSet.has(ewoKey(r.ewo)));
+  const matchedCount=matchedRows.length;
+  const matchedEwoCount=new Set(matchedRows.map(r=>ewoKey(r.ewo))).size;
   document.getElementById('s12-count').textContent=fmt(rows.length)+' rows • '+fmt(matchedCount)+' Plan-EWO matched rows';
   const matchNote=document.getElementById('s12-match-note');
   if(matchNote)matchNote.textContent=fmt(matchedEwoCount)+' matched EWO • '+fmt(matchedCount)+' matched rows';
