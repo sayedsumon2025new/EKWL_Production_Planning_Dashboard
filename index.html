@@ -222,6 +222,11 @@ body{background:var(--navy);color:var(--text)}
 }
 .card-title .ct-right{margin-left:auto;font-size:11px;color:var(--text2);font-weight:400;text-transform:none;letter-spacing:0}
 
+#s12 .status-filter-control{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:10px;font-weight:800;color:#002b5b;text-transform:uppercase;letter-spacing:.4px}
+#s12 .status-filter-control select{width:100%;box-sizing:border-box;border:2px solid #2563eb;background:#eff6ff;color:#002b5b;font-weight:700}
+#s12 .status-filter-control select:focus{outline:2px solid #f59e0b;outline-offset:2px}
+#s12 .status-filter-link{border:0;background:none;color:inherit;font:inherit;letter-spacing:inherit;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table.dt{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
 table.dt thead th{
@@ -2660,7 +2665,9 @@ input,select,textarea{
       <input id="s12-search" type="search" placeholder="Search EWO / Color / Buyer..." oninput="renderS12('search')">
       <select id="s12-buyer" onchange="renderS12('buyer')"><option value="">All Buyers</option></select>
       <select id="s12-product" onchange="renderS12('product')"><option value="">All Products</option></select>
-      <select id="s12-status" onchange="renderS12('status')"><option value="">All Status</option></select>
+      <label class="status-filter-control" for="s12-status">Status filter
+        <select id="s12-status" aria-label="Filter by status" onchange="renderS12('status')"><option value="">All Status</option></select>
+      </label>
       <select id="s12-difficulty" onchange="renderS12('difficulty')"><option value="">All Cutting Difficulty</option></select>
     </div>
   </div>
@@ -2683,7 +2690,7 @@ input,select,textarea{
           <th class="num">Order Qty</th><th class="num">Fabric Booking</th><th class="num">Fabric Received</th>
           <th class="num">Fabric Balance</th><th class="num">Stock After Cut</th><th class="num">Cutable Qty</th>
           <th class="num">Total Cut Qty</th><th class="num">Cutting Balance</th><th class="num">Cutting %</th>
-          <th>Status</th><th>Cutting Difficulties</th>
+          <th><button type="button" class="status-filter-link" onclick="document.getElementById('s12-status').scrollIntoView({block:'nearest'});document.getElementById('s12-status').focus()" title="Go to Status filter">Status ▾</button></th><th>Cutting Difficulties</th>
         </tr></thead>
         <tbody id="s12-body"></tbody>
         <tfoot><tr id="s12-foot"></tr></tfoot>
