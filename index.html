@@ -836,6 +836,12 @@ table.cal td.priority-2{color:#ffd166}
 #s11 .s11-date-tools input[type=date]{width:132px;box-sizing:border-box;padding:5px 7px;border:1px solid #abc0d5;border-radius:6px;background:#fff;color:#17314e;font:inherit;cursor:pointer}
 #s11 .s11-date-tools input[type=date]:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:760px){#s11 .s11-date-tools{order:3;width:100%;margin-left:0}#s11 .s11-date-tools input[type=date]{width:122px}}
+#s4 .slide-header{gap:12px;flex-wrap:wrap}
+#s4 .s4-date-tools{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+#s4 .s4-date-tools label{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2)}
+#s4 .s4-date-tools input[type=date]{width:132px;box-sizing:border-box;padding:5px 7px;border:1px solid #abc0d5;border-radius:6px;background:#fff;color:#17314e;font:inherit;cursor:pointer}
+#s4 .s4-date-tools input[type=date]:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:760px){#s4 .s4-date-tools{order:3;width:100%;margin-left:0}#s4 .s4-date-tools input[type=date]{width:122px}}
 .s2-range-top{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.85fr);gap:16px;align-items:stretch}
 #s2-tbl-wrap{width:100%;overflow:hidden}
 .qty-range-ref{width:100%!important;table-layout:fixed!important}
@@ -2324,6 +2330,11 @@ input,select,textarea{
 <div class="slide" id="s4" data-logical-slide="4">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">04</span> Chassis Line Plan & Loading <span class="slide-subtitle" id="s4-month"></span></div>
+    <div class="s4-date-tools" role="group" aria-label="Chassis plan date range">
+      <label>From <input id="s4-date-from" type="date" aria-label="Chassis plan from date" onchange="s4DateRangeChanged('from')"></label>
+      <label>To <input id="s4-date-to" type="date" aria-label="Chassis plan to date" onchange="s4DateRangeChanged('to')"></label>
+      <button type="button" class="pg-btn" id="s4-date-all" onclick="s4ResetDateRange()">All dates</button>
+    </div>
     <div class="pager-btns">
       <button class="pg-btn" onclick="goSlide(3)">← Back</button>
       <button class="pg-btn" onclick="goSlide(5)">Next →</button>
@@ -4860,20 +4871,41 @@ function renderS3(data){
 }
 
 /* ══ SLIDE 4: LINE PLAN & LOADING ══════════════ */
+let S4_RANGE_PLAN_ID=null,S4_RANGE_FROM='',S4_RANGE_TO='';
+function s4DateRangeChanged(which){
+  const from=document.getElementById('s4-date-from'),to=document.getElementById('s4-date-to');
+  if(!from||!to)return;
+  if(from.value>to.value){if(which==='from')to.value=from.value;else from.value=to.value;}
+  S4_RANGE_FROM=from.value;S4_RANGE_TO=to.value;
+  renderS4(getFiltered());
+}
+function s4ResetDateRange(){S4_RANGE_PLAN_ID=null;renderS4(getFiltered());}
 function renderS4(data){
   const hw=strengths();
   const baseChassis=Object.keys(hw);
-  const selectedMonth='';
-  document.getElementById('s4-month').textContent=ACTIVE_PLAN_UPLOAD?planningMonthLabel(uploadMonthKey(ACTIVE_PLAN_UPLOAD)):'All Months';
 
   // EXACT SAME SOURCE / SCOPE AS LINE RUNNING CALENDAR + ITEM COUNT PER DAY.
   const masterLines=getChassisMasterLines();
-  const allDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(Boolean))].sort();
-  const candidateDates=selectedMonth ? allDates.filter(d=>monthFromISO(d)===selectedMonth) : allDates;
+  const candidateDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(Boolean))].sort();
   const activeDateSet=new Set(
     DAILY_PLAN.filter(d=>candidateDates.includes(d.date)&&d.value>0&&masterLines.has(Number(d.line))).map(d=>d.date)
   );
-  const dates=candidateDates.filter(d=>activeDateSet.has(d));
+  const planDates=candidateDates.filter(d=>activeDateSet.has(d));
+  const planId=String(ACTIVE_PLAN_UPLOAD?.id||'local');
+  if(S4_RANGE_PLAN_ID!==planId){
+    S4_RANGE_PLAN_ID=planId;S4_RANGE_FROM=planDates[0]||'';S4_RANGE_TO=planDates.at(-1)||'';
+  }
+  const from=document.getElementById('s4-date-from'),to=document.getElementById('s4-date-to'),all=document.getElementById('s4-date-all');
+  for(const input of [from,to]){input.disabled=!planDates.length;input.min=planDates[0]||'';input.max=planDates.at(-1)||'';}
+  if(planDates.length){
+    const clamp=value=>!value||value<planDates[0]?planDates[0]:value>planDates.at(-1)?planDates.at(-1):value;
+    S4_RANGE_FROM=clamp(S4_RANGE_FROM);S4_RANGE_TO=clamp(S4_RANGE_TO);
+    if(S4_RANGE_FROM>S4_RANGE_TO)S4_RANGE_TO=S4_RANGE_FROM;
+  }
+  from.value=S4_RANGE_FROM;to.value=S4_RANGE_TO;all.disabled=!planDates.length;
+  const dates=planDates.filter(d=>d>=S4_RANGE_FROM&&d<=S4_RANGE_TO);
+  const formatDate=value=>new Date(value+'T00:00:00Z').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
+  document.getElementById('s4-month').textContent=planDates.length?formatDate(S4_RANGE_FROM)+' – '+formatDate(S4_RANGE_TO):'No active plan dates';
   const daily=DAILY_PLAN.filter(d=>dates.includes(d.date)&&d.value>0&&masterLines.has(Number(d.line)));
 
   const winner=new Map();
