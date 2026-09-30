@@ -236,6 +236,14 @@ body{background:var(--navy);color:var(--text)}
 #s12 .s12-summary-table .s12-list-cell{min-width:140px;max-width:260px;white-space:normal;line-height:1.4}
 #s12 .s12-summary-table .s12-list-cell summary{cursor:pointer;color:#1769aa;font-weight:700}
 
+/* Fit all product summary columns within the slide. */
+#s12 .card{min-width:0}
+#s12 .s12-product-fit{width:100%;max-width:100%;max-height:none;overflow-x:auto}
+#s12 .s12-product-fit table{width:100%;min-width:0;table-layout:fixed}
+#s12 .s12-product-fit table th,#s12 .s12-product-fit table td{white-space:normal;overflow-wrap:anywhere;padding:5px 3px;font-size:clamp(9px,.65vw,12px);line-height:1.35;letter-spacing:0;box-sizing:border-box}
+#s12 .s12-product-fit table th{vertical-align:middle;text-align:center}
+#s12 .s12-product-fit table td:nth-child(2){line-height:1.5}
+
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table.dt{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
 table.dt thead th{
@@ -2689,7 +2697,7 @@ input,select,textarea{
   <div class="two-col">
     <div class="card">
       <div class="card-title">📊 Cutting Progress by Product · Summary <span id="s12-em-msg" class="ct-right"></span></div>
-      <div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Product</th><th>Planned Line No.</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Print Total Send · pcs</th><th class="num">Print Total Receive · pcs</th><th class="num">Print WIP · pcs</th><th class="num">Embroidery Total Send · pcs</th><th class="num">Embroidery Total Receive · pcs</th><th class="num">Embroidery WIP · pcs</th><th class="num">Cutting WIP · pcs</th><th class="num">Total Input · pcs</th><th class="num">Total Output · pcs</th><th class="num">Sewing WIP · pcs</th><th class="num">Plan Pcs · Plan/Day</th><th class="num">Plan Behind Pcs</th><th class="num">Cutting %</th><th class="num">Fabrics Balance · kg</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div>
+      <div class="tbl-wrap s12-summary-table s12-product-fit"><table class="dt"><colgroup><col style="width:8%"><col style="width:14%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"></colgroup><thead><tr><th>Product</th><th>Planned Line No.</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Print Total Send · pcs</th><th class="num">Print Total Receive · pcs</th><th class="num">Print WIP · pcs</th><th class="num">Embroidery Total Send · pcs</th><th class="num">Embroidery Total Receive · pcs</th><th class="num">Embroidery WIP · pcs</th><th class="num">Cutting WIP · pcs</th><th class="num">Total Input · pcs</th><th class="num">Total Output · pcs</th><th class="num">Sewing WIP · pcs</th><th class="num">Plan Pcs · Plan/Day</th><th class="num">Plan Behind Pcs</th><th class="num">Cutting %</th><th class="num">Fabrics Balance · kg</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div>
     </div>
     <div class="card">
       <div class="card-title">⚠️ Cutting Difficulties · Summary</div>
