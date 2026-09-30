@@ -39,15 +39,19 @@ let SS_UPLOADED_AT='';
 const ssCount=n=>Number(n||0).toLocaleString('en-US');
 const ssVal=(row,key)=>String(row?.row_data?.[key]??'');
 function ssMessage(id,message){const el=document.getElementById(id);if(el)el.textContent=message;}
-// The report has day/month text without a year. Count recorded dates, never infer lateness.
-const ssHasDate=value=>/^(?:[1-9]|[12]\d|3[01])-(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/i.test(value.trim());
-const ssPct=(n,total)=>total?`${(100*n/total).toFixed(1)}%`:'—';
+// EFD year is taken only from an explicit source date.
 const SS_TNA_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function ssTnaDateParts(value){
-  if(!ssHasDate(value))return null;
-  const [day,name]=value.trim().split('-');
-  return {day:Number(day),month:SS_TNA_MONTHS.findIndex(x=>x.toLowerCase()===name.toLowerCase())+1};
+  const m=String(value).trim().match(/^(\d{1,2})-([A-Za-z]{3})(?:-(\d{2}|\d{4}))?$/);
+  if(!m)return null;
+  const day=Number(m[1]),month=SS_TNA_MONTHS.findIndex(x=>x.toLowerCase()===m[2].toLowerCase())+1;
+  const year=m[3]?(m[3].length===2?2000+Number(m[3]):Number(m[3])):null;
+  if(!month||day<1||day>new Date(Date.UTC(year||2000,month,0)).getUTCDate())return null;
+  return {day,month,year};
 }
+const ssHasDate=value=>!!ssTnaDateParts(value);
+const ssPct=(n,total)=>total?`${(100*n/total).toFixed(1)}%`:'—';
+function ssFilterValue(row,key){return key==='__efd_year'?String(ssTnaDateParts(ssVal(row,'EFD'))?.year||''):ssVal(row,key).trim();}
 function sizeSetTNAMonthChanged(){
   const selected=!!document.getElementById('ss-tna-month')?.value;
   for(const id of ['ss-tna-from','ss-tna-to']){
@@ -101,7 +105,7 @@ function renderSizeSetTNA(valid){
   if(kpis)kpis.innerHTML=cards.map(([name,value,sub])=>
     `<div class="kpi"><div class="kpi-lbl">${name}</div><div class="kpi-val">${value}</div><div class="kpi-sub">${sub}</div></div>`).join('');
   const scope=month?`${SS_TNA_MONTHS[month-1]} ${from}–${to}`:'all plan months';
-  ssMessage('ss-tna-note',`${selectedEvent||'All 12 TNA events'} · ${scope} · ${ssCount(valid.length)} Buyer rows after the shared filters. Date selection uses the Plan date (D-Mon) for each event. Actual recorded means that same row has an Actual date; N/A and blanks are excluded. Coverage = recorded actual ÷ selected plans. Dates have no year, so late or on-time is not inferred.${month&&from>to?' Choose a From day no later than To day.':''}`);
+  ssMessage('ss-tna-note',`${selectedEvent||'All 12 TNA events'} · ${scope} · ${ssCount(valid.length)} Buyer rows after the shared filters. Year uses the source EFD date and cascades with Line, Buyer, Product and Action. Month/day uses each event Plan date. Actual recorded means that same row has an Actual date; N/A and blanks are excluded. Coverage = recorded actual ÷ selected plans. Missing/invalid EFD has no assigned year. Late or on-time is not inferred.${month&&from>to?' Choose a From day no later than To day.':''}`);
   const max=Math.max(1,...stats.map(s=>s.planned));
   const bars=document.getElementById('ss-tna-bars');
   if(bars)bars.innerHTML=stats.map(s=>`<div class="ss-tna-bar-row" title="${esc(s.label)}: ${ssCount(s.planned)} planned; ${ssCount(s.both)} actual recorded">
@@ -155,11 +159,11 @@ async function previewSizeSetFile(){
 }
 
 function populateSizeSetFilters(){
-  const columns=[['ss-line','Line','All Lines'],['ss-buyer','Buyer','All Buyers'],
+  const columns=[['ss-year','__efd_year','All EFD Years'],['ss-line','Line','All Lines'],['ss-buyer','Buyer','All Buyers'],
     ['ss-product','Product Type','All Products'],['ss-action','Next Action to Do\n(What)','All Actions']];
   for(const [id,key,label] of columns){
     const select=document.getElementById(id);if(!select)continue;
-    const options=[...new Set(SS_ROWS.map(row=>ssVal(row,key).trim()).filter(Boolean))]
+    const options=[...new Set(SS_ROWS.map(row=>ssFilterValue(row,key)).filter(Boolean))]
       .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
     select.innerHTML=`<option value="">${esc(label)}</option>`+
       options.map(value=>`<option value="${esc(value)}">${esc(value)}</option>`).join('');
@@ -180,16 +184,20 @@ function populateSizeSetFilters(){
 
 function renderSizeSetModule(){
   const table=document.getElementById('ss-table');if(!table)return;
-  const values=Object.fromEntries(['line','buyer','product','action'].map(name=>
-    [name,document.getElementById('ss-'+name)?.value||'']));
+  const columns=[['year','__efd_year','All EFD Years'],['line','Line','All Lines'],['buyer','Buyer','All Buyers'],['product','Product Type','All Products'],['action','Next Action to Do\n(What)','All Actions']];
+  const values=Object.fromEntries(columns.map(([name])=>[name,document.getElementById('ss-'+name)?.value||'']));
   const search=(document.getElementById('ss-search')?.value||'').trim().toLowerCase();
-  SS_FILTERED=SS_ROWS.filter(row=>
-    (!values.line||ssVal(row,'Line')===values.line) &&
-    (!values.buyer||ssVal(row,'Buyer')===values.buyer) &&
-    (!values.product||ssVal(row,'Product Type')===values.product) &&
-    (!values.action||ssVal(row,'Next Action to Do\n(What)')===values.action) &&
-    (!search||['EWO','Common','Color'].some(key=>ssVal(row,key).toLowerCase().includes(search)))
-  );
+  const matches=(row,exclude='')=>columns.every(([name,key])=>name===exclude||!values[name]||ssFilterValue(row,key)===values[name])&&
+    (!search||['EWO','Common','Color'].some(key=>ssVal(row,key).toLowerCase().includes(search)));
+  // Each selector reflects rows matching all other current selections.
+  for(const [name,key,label] of columns){
+    const select=document.getElementById('ss-'+name);if(!select)continue;
+    const options=[...new Set(SS_ROWS.filter(row=>matches(row,name)).map(row=>ssFilterValue(row,key)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    const selected=values[name];
+    select.innerHTML=`<option value="">${esc(label)}</option>`+options.map(value=>`<option value="${esc(value)}">${esc(value)}</option>`).join('');
+    select.value=options.includes(selected)?selected:'';values[name]=select.value;
+  }
+  SS_FILTERED=SS_ROWS.filter(row=>matches(row));
   const valid=SS_FILTERED.filter(row=>ssVal(row,'Buyer').trim());
   const qty=valid.reduce((total,row)=>{
     const value=ssVal(row,'GMT Qty').replace(/,/g,'').trim();
@@ -221,13 +229,13 @@ function renderSizeSetModule(){
   ssMessage('ss-msg',`${SS_MODE==='preview'?'LOCAL CSV PREVIEW':'SQL LIVE'} · ${ssCount(SS_FILTERED.length)} filtered / ${ssCount(SS_ROWS.length)} source rows`);
   ssMessage('ss-source',(SS_MODE==='preview'?'Local file':'Latest SQL file')+': '+SS_FILE_NAME+
     (SS_UPLOADED_AT?' · '+new Date(SS_UPLOADED_AT).toLocaleString():'')+
-    ' · All 49 named columns shown · date text has no inferred year');
+    ' · All 49 named columns shown · EFD year read from source dates');
 }
 
 function sizeSetPage(page){SS_PAGE=page;renderSizeSetModule();document.getElementById('ss-table')?.scrollTo({top:0,left:0});}
 function sizeSetSearchChanged(){clearTimeout(SS_SEARCH_TIMER);SS_SEARCH_TIMER=setTimeout(()=>{SS_PAGE=1;renderSizeSetModule()},160);}
 function clearSizeSetFilters(){
-  for(const id of ['ss-line','ss-buyer','ss-product','ss-action','ss-search']){
+  for(const id of ['ss-year','ss-line','ss-buyer','ss-product','ss-action','ss-search']){
     const el=document.getElementById(id);if(el)el.value='';
   }
   SS_PAGE=1;renderSizeSetModule();

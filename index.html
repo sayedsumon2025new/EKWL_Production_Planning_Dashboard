@@ -2945,6 +2945,7 @@ input,select,textarea{
     <div class="card-title">📐 SIZE SET REPORT <span id="ss-msg" class="ct-right">Loading SQL…</span></div>
     <div id="ss-source" class="ss-source-note"></div>
     <div class="ss-controls">
+      <label>TNA Year · EFD<select id="ss-year" onchange="renderSizeSetModule()"><option value="">All EFD Years</option></select></label>
       <label>Line<select id="ss-line" onchange="renderSizeSetModule()"><option value="">All Lines</option></select></label>
       <label>Buyer<select id="ss-buyer" onchange="renderSizeSetModule()"><option value="">All Buyers</option></select></label>
       <label>Product Type<select id="ss-product" onchange="renderSizeSetModule()"><option value="">All Products</option></select></label>
