@@ -4471,12 +4471,12 @@ async function loadS12Embellishment(){
   }catch(e){if(session===SITE_SESSION_GENERATION)S12_EM_ERROR='Embellishment data unavailable';}
   finally{S12_EM_LOADING=false;if(session===SITE_SESSION_GENERATION&&CURRENT_SLIDE===11)renderS12();}
 }
-function s12EmbellishmentTotals(rows,from='',to=''){
-  const fromTime=from?Date.parse(from+'T00:00:00Z'):-Infinity,toTime=to?Date.parse(to+'T00:00:00Z'):Infinity;
+function s12EmbellishmentTotals(rows){
+  // Latest cumulative report per EWO, color and source code, independent of plan dates.
   const latest=new Map(),result=new Map();
   for(const r of rows||[]){
     const pair=fabricEwoColorKey(r['EWO No'],r.Color);if(!pair)continue;
-    const key=JSON.stringify([pair,String(r.Code||'').trim()]),date=emDateTime(r.Date);if(!Number.isFinite(date)||date<fromTime||date>toTime)continue;
+    const key=JSON.stringify([pair,String(r.Code||'').trim()]),date=emDateTime(r.Date);if(!Number.isFinite(date))continue;
     const old=latest.get(key);
     if(!old||date>old.date)latest.set(key,{pair,date,rows:[r]});
     else if(date===old.date)old.rows.push(r);
@@ -4524,7 +4524,7 @@ function renderS12(changed=''){
   dateFrom.value=S12_RANGE_FROM;dateTo.value=S12_RANGE_TO;
   document.getElementById('s12-date-all').disabled=!activeDates.length;
   const scopedDaily=DAILY_PLAN.filter(d=>N(d.value)>0&&d.date>=S12_RANGE_FROM&&d.date<=S12_RANGE_TO);
-  const embellishmentByKey=s12EmbellishmentTotals(S12_EM_ROWS,S12_RANGE_FROM,S12_RANGE_TO);
+  const embellishmentByKey=s12EmbellishmentTotals(S12_EM_ROWS);
   const embellishmentTotal=(keys,field)=>S12_EM_ROWS===null?'—':fmt([...keys].reduce((sum,key)=>sum+(embellishmentByKey.get(key)?.[field]||0),0));
   const dateKeySet=new Set(scopedDaily.map(d=>fabricEwoColorKey(d.ewo,d.color)).filter(Boolean));
   const planPcsByKey=new Map();
