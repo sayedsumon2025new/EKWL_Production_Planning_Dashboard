@@ -2701,7 +2701,7 @@ input,select,textarea{
     <div class="tbl-wrap" style="max-height:560px">
       <table class="dt" id="s12-tbl">
         <thead><tr>
-          <th>Buyer</th><th>EWO</th><th>Color</th><th>Product</th><th>Style / Emb.</th>
+          <th>Planned Line No.</th><th>Buyer</th><th>EWO</th><th>Color</th><th>Product</th><th>Style / Emb.</th>
           <th class="num">Order Qty</th><th class="num">Fabric Booking</th><th class="num">Fabric Received</th>
           <th class="num">Fabric Balance</th><th class="num">Stock After Cut</th><th class="num">Cutable Qty</th>
           <th class="num">Total Cut Qty</th><th class="num">Cutting Balance</th><th class="num">Cutting %</th>
@@ -4526,13 +4526,19 @@ function renderS12(changed=''){
   ];
   document.getElementById('s12-kpi').innerHTML=kpis.map(x=>'<div class="kpi"><div class="kpi-val">'+x[1]+'</div><div class="kpi-label">'+x[0]+'</div><div class="kpi-sub">'+x[2]+'</div></div>').join('');
 
-  const plannedLinesByEwo=new Map();
+  const plannedLinesByEwo=new Map(),plannedLinesByEwoColor=new Map();
+  const ewoColorKey=(ewo,color)=>JSON.stringify([ewoKey(ewo),String(color??'').trim().replace(/\s+/g,' ').toUpperCase()]);
   const scopedPlanRecords=new Set(scopedDaily.map(d=>String(d.record_id)));
   (DATA||[]).filter(r=>!r.is_summary_row&&scopedPlanRecords.has(String(r.record_id))).forEach(r=>{
     const ewo=ewoKey(r.ewo),line=String(r.line??'').trim();
     if(!ewo||!line||line==='0')return;
     if(!plannedLinesByEwo.has(ewo))plannedLinesByEwo.set(ewo,new Set());
     plannedLinesByEwo.get(ewo).add(line);
+    if(String(r.color??'').trim()){
+      const key=ewoColorKey(ewo,r.color);
+      if(!plannedLinesByEwoColor.has(key))plannedLinesByEwoColor.set(key,new Set());
+      plannedLinesByEwoColor.get(key).add(line);
+    }
   });
   const sewingByEwo=new Map();
   (SEWING_IO_DATA||[]).forEach(r=>{
@@ -4583,6 +4589,7 @@ function renderS12(changed=''){
   document.getElementById('s12-diff-total').innerHTML='<td>Total</td><td>—</td><td>—</td><td class="num">'+fmt(difficultyTotal)+'</td><td class="num">'+(difficultyTotal?'100.0':'0.0')+'%</td>';
 
   document.getElementById('s12-body').innerHTML=rows.map(r=>'<tr>'+
+    '<td>'+([...plannedLinesByEwoColor.get(ewoColorKey(r.ewo,r.color_name))||[]].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td>'+
     '<td>'+esc(r.buyer||'')+'</td><td>'+esc(r.ewo||'')+'</td><td>'+esc(r.color_name||'')+'</td>'+
     '<td>'+esc(r.item_product_type||'')+'</td><td>'+esc(r.style_embellishment_type||'')+'</td>'+
     '<td class="num">'+fmt(N(r.color_order_qty))+'</td><td class="num">'+fmt(N(r.fabric_booking_qty))+'</td>'+
@@ -4591,7 +4598,7 @@ function renderS12(changed=''){
     '<td class="num">'+fmt(N(r.total_cut_qty))+'</td><td class="num">'+fmt(N(r.cutting_balance))+'</td>'+
     '<td class="num">'+N(r.cutting_percent).toFixed(1)+'%</td><td>'+esc(r.status||'')+'</td><td>'+esc(r.cutting_difficulties||'')+'</td></tr>').join('');
 
-  document.getElementById('s12-foot').innerHTML='<td colspan="5">TOTAL</td><td class="num">'+fmt(order)+'</td>'+
+  document.getElementById('s12-foot').innerHTML='<td colspan="6">TOTAL</td><td class="num">'+fmt(order)+'</td>'+
     '<td class="num">'+fmt(book)+'</td><td class="num">'+fmt(recv)+'</td><td class="num">'+fmt(total('fabric_balance'))+'</td>'+
     '<td class="num">'+fmt(total('fabric_stock_after_cut'))+'</td><td class="num">'+fmt(cutable)+'</td><td class="num">'+fmt(cut)+'</td>'+
     '<td class="num">'+fmt(bal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td colspan="2"></td>';
