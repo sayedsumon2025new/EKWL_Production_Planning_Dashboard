@@ -4472,11 +4472,11 @@ async function loadS12Embellishment(){
   finally{S12_EM_LOADING=false;if(session===SITE_SESSION_GENERATION&&CURRENT_SLIDE===11)renderS12();}
 }
 function s12EmbellishmentTotals(rows){
-  // Latest cumulative report per EWO, color and source code, independent of plan dates.
+  // Latest cumulative report per EWO and color, independent of plan dates.
   const latest=new Map(),result=new Map();
   for(const r of rows||[]){
     const pair=fabricEwoColorKey(r['EWO No'],r.Color);if(!pair)continue;
-    const key=JSON.stringify([pair,String(r.Code||'').trim()]),date=emDateTime(r.Date);if(!Number.isFinite(date))continue;
+    const key=pair,date=emDateTime(r.Date);if(!Number.isFinite(date))continue;
     const old=latest.get(key);
     if(!old||date>old.date)latest.set(key,{pair,date,rows:[r]});
     else if(date===old.date)old.rows.push(r);
@@ -4485,7 +4485,8 @@ function s12EmbellishmentTotals(rows){
   for(const g of latest.values()){
     if(!result.has(g.pair))result.set(g.pair,{print:0,emb:0,printSend:0,printReceive:0,embSend:0,embReceive:0});
     const m=result.get(g.pair);
-    for(const r of g.rows){m.printSend+=num(r['Total Print Send Qty\n']);m.printReceive+=num(r['Total Print Receive Qty']);m.embSend+=num(r['Total EMB Send Qty']);m.embReceive+=num(r['Total EMB Receive Qty']);m.print=m.printSend-m.printReceive;m.emb=m.embSend-m.embReceive;}
+    // Same-day duplicate snapshots must not multiply cumulative quantities.
+    m.printSend=Math.max(...g.rows.map(r=>num(r['Total Print Send Qty\n'])));m.printReceive=Math.max(...g.rows.map(r=>num(r['Total Print Receive Qty'])));m.embSend=Math.max(...g.rows.map(r=>num(r['Total EMB Send Qty'])));m.embReceive=Math.max(...g.rows.map(r=>num(r['Total EMB Receive Qty'])));m.print=m.printSend-m.printReceive;m.emb=m.embSend-m.embReceive;
   }
   return result;
 }
