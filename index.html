@@ -4426,7 +4426,12 @@ function s12ResetDateRange(){
   S12_RANGE_FROM=dates[0]||'';S12_RANGE_TO=dates.at(-1)||'';
   renderS12('date');
 }
-function fabricCuttingCascade(all,planEwoSet,planMatch,search,selected,changed='',dateEwoSet=null){
+function fabricEwoColorKey(ewo,color){
+  let e=String(ewo??'').trim().toUpperCase();if(/^\d+\.0+$/.test(e))e=e.replace(/\.0+$/,'');
+  const c=String(color??'').trim().replace(/\s+/g,' ').toUpperCase();
+  return e&&c?JSON.stringify([e,c]):'';
+}
+function fabricCuttingCascade(all,planKeySet,planMatch,search,selected,changed='',dateKeySet=null){
   const ewoKey=v=>{
     let s=String(v??'').trim().toUpperCase();
     if(/^\d+\.0+$/.test(s))s=s.replace(/\.0+$/,'');
@@ -4435,8 +4440,8 @@ function fabricCuttingCascade(all,planEwoSet,planMatch,search,selected,changed='
   const text=v=>String(v??'').trim();
   const options=rows=>[...new Set(rows.map(text).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const base=all.filter(r=>{
-    const ewo=ewoKey(r.ewo),match=planEwoSet.has(ewo);
-    const inRange=!dateEwoSet||dateEwoSet.has(ewo);
+    const key=fabricEwoColorKey(r.ewo,r.color_name),match=!!key&&planKeySet.has(key);
+    const inRange=!dateKeySet||dateKeySet.has(key);
     return (planMatch==='nomatch'?!match:match&&inRange)&&
       (!search||[r.ewo,r.color_name,r.buyer,r.item_product_type,r.style_embellishment_type]
         .some(v=>text(v).toLowerCase().includes(search)));
@@ -4468,9 +4473,9 @@ function renderS12(changed=''){
     if(/^\d+\.0+$/.test(s))s=s.replace(/\.0+$/,'');
     return s;
   };
-  const planEwoSet=new Set((DATA||[])
+  const planKeySet=new Set((DATA||[])
     .filter(r=>!r.is_summary_row && ewoKey(r.ewo))
-    .map(r=>ewoKey(r.ewo)));
+    .map(r=>fabricEwoColorKey(r.ewo,r.color)).filter(Boolean));
   const activeDates=[...new Set(DAILY_PLAN.filter(d=>N(d.value)>0&&validDate(d.date)).map(d=>d.date))].sort();
   const planId=String(ACTIVE_PLAN_UPLOAD?.id||'local');
   if(S12_RANGE_PLAN_ID!==planId){
@@ -4488,17 +4493,17 @@ function renderS12(changed=''){
   dateFrom.value=S12_RANGE_FROM;dateTo.value=S12_RANGE_TO;
   document.getElementById('s12-date-all').disabled=!activeDates.length;
   const scopedDaily=DAILY_PLAN.filter(d=>N(d.value)>0&&d.date>=S12_RANGE_FROM&&d.date<=S12_RANGE_TO);
-  const dateEwoSet=new Set(scopedDaily.map(d=>ewoKey(d.ewo)).filter(Boolean));
-  const planPcsByEwo=new Map();
+  const dateKeySet=new Set(scopedDaily.map(d=>fabricEwoColorKey(d.ewo,d.color)).filter(Boolean));
+  const planPcsByKey=new Map();
   scopedDaily.forEach(d=>{
-    const ewo=ewoKey(d.ewo);if(ewo)planPcsByEwo.set(ewo,(planPcsByEwo.get(ewo)||0)+N(d.value));
+    const key=fabricEwoColorKey(d.ewo,d.color);if(key)planPcsByKey.set(key,(planPcsByKey.get(key)||0)+N(d.value));
   });
   document.getElementById('s12-date-note').textContent=planMatch==='nomatch'
     ?'Not in Plan: date range does not apply'
-    :fmt(dateEwoSet.size)+' planned EWO in selected dates';
-  const {rows,available,values}=fabricCuttingCascade(all,planEwoSet,planMatch,q,{
+    :fmt(dateKeySet.size)+' planned EWO / Color pairs in selected dates';
+  const {rows,available,values}=fabricCuttingCascade(all,planKeySet,planMatch,q,{
     buyer:buyerEl.value,product:prodEl.value,status:statusEl.value,difficulty:diffEl.value
-  },changed,dateEwoSet);
+  },changed,dateKeySet);
   const setOpts=(el,label,vals,val)=>{
     el.innerHTML='<option value="">'+label+'</option>'+vals.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
     el.value=val;
@@ -4507,7 +4512,7 @@ function renderS12(changed=''){
   setOpts(prodEl,'All Products',available.product,values.product);
   setOpts(statusEl,'All Status',available.status,values.status);
   setOpts(diffEl,'All Cutting Difficulty',available.difficulty,values.difficulty);
-  const matchedRows=rows.filter(r=>planEwoSet.has(ewoKey(r.ewo)));
+  const matchedRows=rows.filter(r=>planKeySet.has(fabricEwoColorKey(r.ewo,r.color_name)));
   const matchedCount=matchedRows.length;
   const matchedEwoCount=new Set(matchedRows.map(r=>ewoKey(r.ewo))).size;
   document.getElementById('s12-count').textContent=fmt(rows.length)+' rows • '+fmt(matchedCount)+' Plan-EWO matched rows';
@@ -4527,7 +4532,7 @@ function renderS12(changed=''){
   document.getElementById('s12-kpi').innerHTML=kpis.map(x=>'<div class="kpi"><div class="kpi-val">'+x[1]+'</div><div class="kpi-label">'+x[0]+'</div><div class="kpi-sub">'+x[2]+'</div></div>').join('');
 
   const plannedLinesByEwo=new Map(),plannedLinesByEwoColor=new Map();
-  const ewoColorKey=(ewo,color)=>JSON.stringify([ewoKey(ewo),String(color??'').trim().replace(/\s+/g,' ').toUpperCase()]);
+  const ewoColorKey=fabricEwoColorKey;
   const scopedPlanRecords=new Set(scopedDaily.map(d=>String(d.record_id)));
   (DATA||[]).filter(r=>!r.is_summary_row&&scopedPlanRecords.has(String(r.record_id))).forEach(r=>{
     const ewo=ewoKey(r.ewo),line=String(r.line??'').trim();
@@ -4540,32 +4545,32 @@ function renderS12(changed=''){
       plannedLinesByEwoColor.get(key).add(line);
     }
   });
-  const sewingByEwo=new Map();
+  const sewingByKey=new Map();
   (SEWING_IO_DATA||[]).forEach(r=>{
-    const ewo=ewoKey(r.ewo);if(!ewo)return;
-    if(!sewingByEwo.has(ewo))sewingByEwo.set(ewo,{input:0,output:0,wip:0});
-    const metric=sewingByEwo.get(ewo);
+    const key=fabricEwoColorKey(r.ewo,r.color);if(!key)return;
+    if(!sewingByKey.has(key))sewingByKey.set(key,{input:0,output:0,wip:0});
+    const metric=sewingByKey.get(key);
     metric.input+=N(r.input);metric.output+=N(r.output);metric.wip+=N(r.wip);
   });
-  const sewingTotals=ewos=>[...ewos].reduce((sum,ewo)=>{
-    const m=sewingByEwo.get(ewo);if(m){sum.input+=m.input;sum.output+=m.output;sum.wip+=m.wip}
+  const sewingTotals=keys=>[...keys].reduce((sum,key)=>{
+    const m=sewingByKey.get(key);if(m){sum.input+=m.input;sum.output+=m.output;sum.wip+=m.wip}
     return sum;
   },{input:0,output:0,wip:0});
-  const prod={},filteredEwos=new Set();
-  rows.forEach(r=>{const k=r.item_product_type||'Other',ewo=ewoKey(r.ewo);
-    if(!prod[k])prod[k]={o:0,c:0,f:0,lines:new Set(),ewos:new Set()};
+  const prod={},filteredKeys=new Set();
+  rows.forEach(r=>{const k=r.item_product_type||'Other',key=fabricEwoColorKey(r.ewo,r.color_name);
+    if(!prod[k])prod[k]={o:0,c:0,f:0,lines:new Set(),keys:new Set()};
     prod[k].o+=N(r.color_order_qty);prod[k].c+=N(r.total_cut_qty);prod[k].f+=N(r.fabric_balance);
-    if(ewo){prod[k].ewos.add(ewo);filteredEwos.add(ewo)}
-    (plannedLinesByEwo.get(ewo)||[]).forEach(line=>prod[k].lines.add(line));
+    if(key){prod[k].keys.add(key);filteredKeys.add(key)}
+    (plannedLinesByEwoColor.get(key)||[]).forEach(line=>prod[k].lines.add(line));
   });
   const productTotals=Object.entries(prod).sort((a,b)=>b[1].c-a[1].c);
   document.getElementById('s12-product-summary').innerHTML=productTotals.map(([name,v])=>{
-    const sewing=sewingTotals(v.ewos);
-    const planPcs=[...v.ewos].reduce((sum,ewo)=>sum+(planPcsByEwo.get(ewo)||0),0);
+    const sewing=sewingTotals(v.keys);
+    const planPcs=[...v.keys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
     return '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+fmt(v.c-sewing.input)+'</td><td class="num">'+fmt(sewing.input)+'</td><td class="num">'+fmt(sewing.output)+'</td><td class="num">'+fmt(sewing.wip)+'</td><td class="num">'+fmt(planPcs)+'</td><td class="num">'+fmt(sewing.wip-planPcs)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>';
   }).join('')||'<tr><td colspan="12">No data</td></tr>';
-  const sewingTotal=sewingTotals(filteredEwos);
-  const planPcsTotal=[...filteredEwos].reduce((sum,ewo)=>sum+(planPcsByEwo.get(ewo)||0),0);
+  const sewingTotal=sewingTotals(filteredKeys);
+  const planPcsTotal=[...filteredKeys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
   document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+fmt(cut-sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.output)+'</td><td class="num">'+fmt(sewingTotal.wip)+'</td><td class="num">'+fmt(planPcsTotal)+'</td><td class="num">'+fmt(sewingTotal.wip-planPcsTotal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
 
   const dm={},difficultyEwos=new Map(),difficultyLines=new Map();
@@ -4575,7 +4580,7 @@ function renderS12(changed=''){
     dm[k]=(dm[k]||0)+1;
     if(!difficultyEwos.has(k)){difficultyEwos.set(k,new Set());difficultyLines.set(k,new Set())}
     if(ewo)difficultyEwos.get(k).add(ewo);
-    (plannedLinesByEwo.get(ewo)||[]).forEach(line=>difficultyLines.get(k).add(line));
+    (plannedLinesByEwoColor.get(fabricEwoColorKey(r.ewo,r.color_name))||[]).forEach(line=>difficultyLines.get(k).add(line));
   });
   const difficultyRows=Object.entries(dm).sort((a,b)=>b[1]-a[1]);
   const difficultyTotal=difficultyRows.reduce((sum,[,count])=>sum+count,0);
