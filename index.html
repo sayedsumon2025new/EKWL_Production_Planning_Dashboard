@@ -4471,11 +4471,12 @@ async function loadS12Embellishment(){
   }catch(e){if(session===SITE_SESSION_GENERATION)S12_EM_ERROR='Embellishment data unavailable';}
   finally{S12_EM_LOADING=false;if(session===SITE_SESSION_GENERATION&&CURRENT_SLIDE===11)renderS12();}
 }
-function s12EmbellishmentTotals(rows){
+function s12EmbellishmentTotals(rows,from='',to=''){
+  const fromTime=from?Date.parse(from+'T00:00:00Z'):-Infinity,toTime=to?Date.parse(to+'T00:00:00Z'):Infinity;
   const latest=new Map(),result=new Map();
   for(const r of rows||[]){
     const pair=fabricEwoColorKey(r['EWO No'],r.Color);if(!pair)continue;
-    const key=JSON.stringify([pair,String(r.Code||'').trim()]),date=emDateTime(r.Date);if(!Number.isFinite(date))continue;
+    const key=JSON.stringify([pair,String(r.Code||'').trim()]),date=emDateTime(r.Date);if(!Number.isFinite(date)||date<fromTime||date>toTime)continue;
     const old=latest.get(key);
     if(!old||date>old.date)latest.set(key,{pair,date,rows:[r]});
     else if(date===old.date)old.rows.push(r);
@@ -4490,9 +4491,7 @@ function s12EmbellishmentTotals(rows){
 }
 function renderS12(changed=''){
   if(S12_EM_ROWS===null&&!S12_EM_ERROR)loadS12Embellishment();
-  const embellishmentByKey=s12EmbellishmentTotals(S12_EM_ROWS);
   document.getElementById('s12-em-msg').textContent=S12_EM_ERROR||(S12_EM_ROWS===null?'Loading Print / Embroidery WIP…':'');
-  const embellishmentTotal=(keys,field)=>S12_EM_ROWS===null?'—':[...keys].reduce((sum,key)=>sum+(embellishmentByKey.get(key)?.[field]||0),0);
   const all=FABRIC_CUTTING_DATA||[];
   const buyerEl=document.getElementById('s12-buyer'),prodEl=document.getElementById('s12-product'),
         statusEl=document.getElementById('s12-status'),diffEl=document.getElementById('s12-difficulty');
@@ -4525,6 +4524,8 @@ function renderS12(changed=''){
   dateFrom.value=S12_RANGE_FROM;dateTo.value=S12_RANGE_TO;
   document.getElementById('s12-date-all').disabled=!activeDates.length;
   const scopedDaily=DAILY_PLAN.filter(d=>N(d.value)>0&&d.date>=S12_RANGE_FROM&&d.date<=S12_RANGE_TO);
+  const embellishmentByKey=s12EmbellishmentTotals(S12_EM_ROWS,S12_RANGE_FROM,S12_RANGE_TO);
+  const embellishmentTotal=(keys,field)=>S12_EM_ROWS===null?'—':fmt([...keys].reduce((sum,key)=>sum+(embellishmentByKey.get(key)?.[field]||0),0));
   const dateKeySet=new Set(scopedDaily.map(d=>fabricEwoColorKey(d.ewo,d.color)).filter(Boolean));
   const planPcsByKey=new Map();
   scopedDaily.forEach(d=>{
