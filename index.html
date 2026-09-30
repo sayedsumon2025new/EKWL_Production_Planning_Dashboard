@@ -2689,7 +2689,7 @@ input,select,textarea{
   <div class="two-col">
     <div class="card">
       <div class="card-title">📊 Cutting Progress by Product · Summary <span id="s12-em-msg" class="ct-right"></span></div>
-      <div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Product</th><th>Planned Line No.</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Print WIP · pcs</th><th class="num">Embroidery WIP · pcs</th><th class="num">Cutting WIP · pcs</th><th class="num">Total Input · pcs</th><th class="num">Total Output · pcs</th><th class="num">Sewing WIP · pcs</th><th class="num">Plan Pcs · Plan/Day</th><th class="num">Plan Behind Pcs</th><th class="num">Cutting %</th><th class="num">Fabrics Balance · kg</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div>
+      <div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Product</th><th>Planned Line No.</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Print Total Send · pcs</th><th class="num">Print Total Receive · pcs</th><th class="num">Print WIP · pcs</th><th class="num">Embroidery Total Send · pcs</th><th class="num">Embroidery Total Receive · pcs</th><th class="num">Embroidery WIP · pcs</th><th class="num">Cutting WIP · pcs</th><th class="num">Total Input · pcs</th><th class="num">Total Output · pcs</th><th class="num">Sewing WIP · pcs</th><th class="num">Plan Pcs · Plan/Day</th><th class="num">Plan Behind Pcs</th><th class="num">Cutting %</th><th class="num">Fabrics Balance · kg</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div>
     </div>
     <div class="card">
       <div class="card-title">⚠️ Cutting Difficulties · Summary</div>
@@ -4483,9 +4483,9 @@ function s12EmbellishmentTotals(rows){
   }
   const num=v=>Number(String(v??'').replace(/,/g,''))||0;
   for(const g of latest.values()){
-    if(!result.has(g.pair))result.set(g.pair,{print:0,emb:0});
+    if(!result.has(g.pair))result.set(g.pair,{print:0,emb:0,printSend:0,printReceive:0,embSend:0,embReceive:0});
     const m=result.get(g.pair);
-    for(const r of g.rows){m.print+=num(r['Total Print Send Qty\n'])-num(r['Total Print Receive Qty']);m.emb+=num(r['Total EMB Send Qty'])-num(r['Total EMB Receive Qty']);}
+    for(const r of g.rows){m.printSend+=num(r['Total Print Send Qty\n']);m.printReceive+=num(r['Total Print Receive Qty']);m.embSend+=num(r['Total EMB Send Qty']);m.embReceive+=num(r['Total EMB Receive Qty']);m.print=m.printSend-m.printReceive;m.emb=m.embSend-m.embReceive;}
   }
   return result;
 }
@@ -4600,11 +4600,11 @@ function renderS12(changed=''){
   document.getElementById('s12-product-summary').innerHTML=productTotals.map(([name,v])=>{
     const sewing=sewingTotals(v.keys);
     const planPcs=[...v.keys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
-    return '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'emb'))+'</td><td class="num">'+fmt(v.c-sewing.input)+'</td><td class="num">'+fmt(sewing.input)+'</td><td class="num">'+fmt(sewing.output)+'</td><td class="num">'+fmt(sewing.wip)+'</td><td class="num">'+fmt(planPcs)+'</td><td class="num">'+fmt(sewing.wip-planPcs)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>';
+    return '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'printSend'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'printReceive'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'embSend'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'embReceive'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'emb'))+'</td><td class="num">'+fmt(v.c-sewing.input)+'</td><td class="num">'+fmt(sewing.input)+'</td><td class="num">'+fmt(sewing.output)+'</td><td class="num">'+fmt(sewing.wip)+'</td><td class="num">'+fmt(planPcs)+'</td><td class="num">'+fmt(sewing.wip-planPcs)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>';
   }).join('')||'<tr><td colspan="14">No data</td></tr>';
   const sewingTotal=sewingTotals(filteredKeys);
   const planPcsTotal=[...filteredKeys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
-  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'emb'))+'</td><td class="num">'+fmt(cut-sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.output)+'</td><td class="num">'+fmt(sewingTotal.wip)+'</td><td class="num">'+fmt(planPcsTotal)+'</td><td class="num">'+fmt(sewingTotal.wip-planPcsTotal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
+  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'emb'))+'</td><td class="num">'+fmt(cut-sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.output)+'</td><td class="num">'+fmt(sewingTotal.wip)+'</td><td class="num">'+fmt(planPcsTotal)+'</td><td class="num">'+fmt(sewingTotal.wip-planPcsTotal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
 
   const dm={},difficultyEwos=new Map(),difficultyLines=new Map();
   rows.forEach(r=>{
