@@ -1273,6 +1273,8 @@ box-shadow:0 10px 28px rgba(15,39,72,.28);font-size:10px;line-height:1.35}
 #s6 #s6-tbl tbody tr:nth-child(even) td{background:#fff;color:#17314e}
 #s6 #s6-tbl td{border:1px solid #9aaeb5}
 #s6 #s6-tbl tfoot td{background:#e3f2e6;font-weight:700}
+
+#s12-tbl .s12-total-row td{background:#e5eef8;color:#14304d;font-weight:800;border:1px solid #c6d6e8;padding:8px;white-space:nowrap;}
 </style>
 
 <style id="optical-white-professional-theme">
@@ -2708,7 +2710,7 @@ input,select,textarea{
     <div class="card-title">✂️ EWO + Color Fabric &amp; Cutting Detail</div>
     <div class="tbl-wrap" style="max-height:560px">
       <table class="dt" id="s12-tbl">
-        <thead><tr>
+        <thead><tr id="s12-top-total" class="s12-total-row"></tr><tr>
           <th>Planned Line No.</th><th>Buyer</th><th>EWO</th><th>Color</th><th>Product</th><th>Style / Emb.</th>
           <th class="num">Order Qty</th><th class="num">Fabric Booking</th><th class="num">Fabric Received</th>
           <th class="num">Fabric Balance</th><th class="num">Stock After Cut</th><th class="num">Cutable Qty</th>
@@ -4671,6 +4673,7 @@ function renderS12(changed=''){
     '<td class="num">'+fmt(book)+'</td><td class="num">'+fmt(recv)+'</td><td class="num">'+fmt(total('fabric_balance'))+'</td>'+
     '<td class="num">'+fmt(total('fabric_stock_after_cut'))+'</td><td class="num">'+fmt(cutable)+'</td><td class="num">'+fmt(cut)+'</td>'+
     movementCells(filteredKeys)+sewingCells(filteredKeys)+'<td class="num">'+fmt(bal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td colspan="2"></td>';
+  document.getElementById('s12-top-total').innerHTML=document.getElementById('s12-foot').innerHTML;
 }
 
 function renderSlide(n){
