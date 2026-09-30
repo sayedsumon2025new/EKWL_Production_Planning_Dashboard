@@ -2712,7 +2712,7 @@ input,select,textarea{
           <th>Planned Line No.</th><th>Buyer</th><th>EWO</th><th>Color</th><th>Product</th><th>Style / Emb.</th>
           <th class="num">Order Qty</th><th class="num">Fabric Booking</th><th class="num">Fabric Received</th>
           <th class="num">Fabric Balance</th><th class="num">Stock After Cut</th><th class="num">Cutable Qty</th>
-          <th class="num">Total Cut Qty</th><th class="num">Cutting Balance</th><th class="num">Cutting %</th>
+          <th class="num">Total Cut Qty</th><th class="num">Print Send · pcs</th><th class="num">Print Receive · pcs</th><th class="num">Print WIP · pcs</th><th class="num">Embroidery Send · pcs</th><th class="num">Embroidery Receive · pcs</th><th class="num">Embroidery WIP · pcs</th><th class="num">Cutting Balance</th><th class="num">Cutting %</th>
           <th><button type="button" class="status-filter-link" onclick="document.getElementById('s12-status').scrollIntoView({block:'nearest'});document.getElementById('s12-status').focus()" title="Go to Status filter">Status ▾</button></th><th>Cutting Difficulties</th>
         </tr></thead>
         <tbody id="s12-body"></tbody>
@@ -4655,6 +4655,7 @@ function renderS12(changed=''){
   ).join('')||'<tr><td colspan="5">No data</td></tr>';
   document.getElementById('s12-diff-total').innerHTML='<td>Total</td><td>—</td><td>—</td><td class="num">'+fmt(difficultyTotal)+'</td><td class="num">'+(difficultyTotal?'100.0':'0.0')+'%</td>';
 
+  const movementCells=keys=>['printSend','printReceive','print','embSend','embReceive','emb'].map(field=>'<td class="num">'+esc(embellishmentTotal(keys,field))+'</td>').join('');
   document.getElementById('s12-body').innerHTML=rows.map(r=>'<tr>'+
     '<td>'+([...plannedLinesByEwoColor.get(ewoColorKey(r.ewo,r.color_name))||[]].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td>'+
     '<td>'+esc(r.buyer||'')+'</td><td>'+esc(r.ewo||'')+'</td><td>'+esc(r.color_name||'')+'</td>'+
@@ -4662,13 +4663,13 @@ function renderS12(changed=''){
     '<td class="num">'+fmt(N(r.color_order_qty))+'</td><td class="num">'+fmt(N(r.fabric_booking_qty))+'</td>'+
     '<td class="num">'+fmt(N(r.total_fabric_received))+'</td><td class="num">'+fmt(N(r.fabric_balance))+'</td>'+
     '<td class="num">'+fmt(N(r.fabric_stock_after_cut))+'</td><td class="num">'+fmt(N(r.cutable_qty))+'</td>'+
-    '<td class="num">'+fmt(N(r.total_cut_qty))+'</td><td class="num">'+fmt(N(r.cutting_balance))+'</td>'+
+    '<td class="num">'+fmt(N(r.total_cut_qty))+'</td>'+movementCells(new Set([ewoColorKey(r.ewo,r.color_name)]))+'<td class="num">'+fmt(N(r.cutting_balance))+'</td>'+
     '<td class="num">'+N(r.cutting_percent).toFixed(1)+'%</td><td>'+esc(r.status||'')+'</td><td>'+esc(r.cutting_difficulties||'')+'</td></tr>').join('');
 
   document.getElementById('s12-foot').innerHTML='<td colspan="6">TOTAL</td><td class="num">'+fmt(order)+'</td>'+
     '<td class="num">'+fmt(book)+'</td><td class="num">'+fmt(recv)+'</td><td class="num">'+fmt(total('fabric_balance'))+'</td>'+
     '<td class="num">'+fmt(total('fabric_stock_after_cut'))+'</td><td class="num">'+fmt(cutable)+'</td><td class="num">'+fmt(cut)+'</td>'+
-    '<td class="num">'+fmt(bal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td colspan="2"></td>';
+    movementCells(filteredKeys)+'<td class="num">'+fmt(bal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td colspan="2"></td>';
 }
 
 function renderSlide(n){
