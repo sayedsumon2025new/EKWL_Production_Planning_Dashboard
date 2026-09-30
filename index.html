@@ -2710,6 +2710,12 @@ input,select,textarea{
   </div>
   <div class="card">
     <div class="card-title">✂️ EWO + Color Fabric &amp; Cutting Detail</div>
+    <div class="filter-row" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+      <label>EWO search <input id="s12-detail-ewo" type="search" placeholder="Search EWO…" oninput="renderS12()"></label>
+      <label>Planned Line <select id="s12-detail-line" onchange="renderS12()"><option value="">All Lines</option></select></label>
+      <label>Status <select id="s12-detail-status" onchange="renderS12()"><option value="">All Status</option><option value="blank">Blank</option><option value="closed">Closed</option></select></label>
+      <button class="pg-btn" onclick="['s12-detail-ewo','s12-detail-line','s12-detail-status'].forEach(id=>document.getElementById(id).value='');renderS12()">Clear detail filters</button>
+    </div>
     <div class="tbl-wrap" style="max-height:560px">
       <table class="dt" id="s12-tbl">
         <thead><tr id="s12-top-total" class="s12-total-row"></tr><tr>
@@ -4659,9 +4665,20 @@ function renderS12(changed=''){
   ).join('')||'<tr><td colspan="5">No data</td></tr>';
   document.getElementById('s12-diff-total').innerHTML='<td>Total</td><td>—</td><td>—</td><td class="num">'+fmt(difficultyTotal)+'</td><td class="num">'+(difficultyTotal?'100.0':'0.0')+'%</td>';
 
+  const detailSearch=document.getElementById('s12-detail-ewo').value.trim().toLowerCase();
+  const detailStatus=document.getElementById('s12-detail-status').value;
+  const detailLineEl=document.getElementById('s12-detail-line');
+  const detailBase=rows.filter(r=>String(r.ewo??'').toLowerCase().includes(detailSearch)&&(!detailStatus||(detailStatus==='blank'?!String(r.status??'').trim():/^(close|closed)$/i.test(String(r.status??'').trim()))));
+  const detailLines=[...new Set(detailBase.flatMap(r=>[...plannedLinesByEwoColor.get(ewoColorKey(r.ewo,r.color_name))||[]]))].sort((a,b)=>Number(a)-Number(b));
+  const selectedDetailLine=detailLineEl.value;
+  detailLineEl.innerHTML='<option value="">All Lines</option>'+detailLines.map(line=>'<option value="'+esc(line)+'">'+esc(String(line).padStart(2,'0'))+'</option>').join('');
+  detailLineEl.value=detailLines.includes(selectedDetailLine)?selectedDetailLine:'';
+  const detailRows=detailBase.filter(r=>!detailLineEl.value||plannedLinesByEwoColor.get(ewoColorKey(r.ewo,r.color_name))?.has(detailLineEl.value));
+  const detailKeys=new Set(detailRows.map(r=>ewoColorKey(r.ewo,r.color_name)).filter(Boolean));
+  const detailTotal=field=>detailRows.reduce((sum,r)=>sum+N(r[field]),0);
   const movementCells=keys=>['printSend','printReceive','print','embSend','embReceive','emb'].map(field=>'<td class="num">'+esc(embellishmentTotal(keys,field))+'</td>').join('');
   const sewingCells=keys=>{const m=sewingTotals(keys);return ['input','output','wip'].map(field=>'<td class="num">'+fmt(m[field])+'</td>').join('');};
-  document.getElementById('s12-body').innerHTML=rows.map(r=>'<tr>'+
+  document.getElementById('s12-body').innerHTML=detailRows.map(r=>'<tr>'+
     '<td>'+([...plannedLinesByEwoColor.get(ewoColorKey(r.ewo,r.color_name))||[]].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td>'+
     '<td>'+esc(r.buyer||'')+'</td><td>'+esc(r.ewo||'')+'</td><td>'+esc(r.color_name||'')+'</td>'+
     '<td>'+esc(r.item_product_type||'')+'</td><td>'+esc(r.style_embellishment_type||'')+'</td>'+
@@ -4671,10 +4688,10 @@ function renderS12(changed=''){
     '<td class="num">'+fmt(N(r.total_cut_qty))+'</td>'+movementCells(new Set([ewoColorKey(r.ewo,r.color_name)]))+sewingCells(new Set([ewoColorKey(r.ewo,r.color_name)]))+'<td class="num">'+fmt(N(r.cutting_balance))+'</td>'+
     '<td class="num">'+N(r.cutting_percent).toFixed(1)+'%</td><td>'+esc(r.status||'')+'</td><td>'+esc(r.cutting_difficulties||'')+'</td></tr>').join('');
 
-  document.getElementById('s12-foot').innerHTML='<td colspan="6">TOTAL</td><td class="num">'+fmt(order)+'</td>'+
-    '<td class="num">'+fmt(book)+'</td><td class="num">'+fmt(recv)+'</td><td class="num">'+fmt(total('fabric_balance'))+'</td>'+
-    '<td class="num">'+fmt(total('fabric_stock_after_cut'))+'</td><td class="num">'+fmt(cutable)+'</td><td class="num">'+fmt(cut)+'</td>'+
-    movementCells(filteredKeys)+sewingCells(filteredKeys)+'<td class="num">'+fmt(bal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td colspan="2"></td>';
+  document.getElementById('s12-foot').innerHTML='<td colspan="6">TOTAL</td><td class="num">'+fmt(detailTotal('color_order_qty'))+'</td>'+
+    '<td class="num">'+fmt(detailTotal('fabric_booking_qty'))+'</td><td class="num">'+fmt(detailTotal('total_fabric_received'))+'</td><td class="num">'+fmt(detailTotal('fabric_balance'))+'</td>'+
+    '<td class="num">'+fmt(detailTotal('fabric_stock_after_cut'))+'</td><td class="num">'+fmt(detailTotal('cutable_qty'))+'</td><td class="num">'+fmt(detailTotal('total_cut_qty'))+'</td>'+
+    movementCells(detailKeys)+sewingCells(detailKeys)+'<td class="num">'+fmt(detailTotal('cutting_balance'))+'</td><td class="num">'+(detailTotal('color_order_qty')?100*detailTotal('total_cut_qty')/detailTotal('color_order_qty'):0).toFixed(1)+'%</td><td colspan="2"></td>';
   document.getElementById('s12-top-total').innerHTML=document.getElementById('s12-foot').innerHTML;
 }
 
