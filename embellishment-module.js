@@ -154,6 +154,7 @@ async function loadEmbellishmentModule(force=false){
       rows.push(...(data||[]));if((data||[]).length<1000)break;
     }
     embellishmentSetRows(rows,rows[0]?.file_name||'',rows[0]?.uploaded_at||'','sql');
+    S12_EM_ROWS=rows;S12_EM_ERROR='';if(CURRENT_SLIDE===11)renderS12();
     if(!rows.length)emMessage('em-msg','No SQL snapshot yet. Upload the CSV in Upload / Data Control.');
   }catch(error){
     if(token!==EM_LOAD_TOKEN||session!==SITE_SESSION_GENERATION)return;

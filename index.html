@@ -2688,8 +2688,8 @@ input,select,textarea{
   </div>
   <div class="two-col">
     <div class="card">
-      <div class="card-title">📊 Cutting Progress by Product · Summary</div>
-      <div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Product</th><th>Planned Line No.</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Cutting WIP · pcs</th><th class="num">Total Input · pcs</th><th class="num">Total Output · pcs</th><th class="num">Sewing WIP · pcs</th><th class="num">Plan Pcs · Plan/Day</th><th class="num">Plan Behind Pcs</th><th class="num">Cutting %</th><th class="num">Fabrics Balance · kg</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div>
+      <div class="card-title">📊 Cutting Progress by Product · Summary <span id="s12-em-msg" class="ct-right"></span></div>
+      <div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Product</th><th>Planned Line No.</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Print WIP · pcs</th><th class="num">Embroidery WIP · pcs</th><th class="num">Cutting WIP · pcs</th><th class="num">Total Input · pcs</th><th class="num">Total Output · pcs</th><th class="num">Sewing WIP · pcs</th><th class="num">Plan Pcs · Plan/Day</th><th class="num">Plan Behind Pcs</th><th class="num">Cutting %</th><th class="num">Fabrics Balance · kg</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div>
     </div>
     <div class="card">
       <div class="card-title">⚠️ Cutting Difficulties · Summary</div>
@@ -4460,7 +4460,39 @@ function fabricCuttingCascade(all,planKeySet,planMatch,search,selected,changed='
   const rows=base.filter(r=>matches(r,''));
   return {rows,available,values};
 }
+let S12_EM_ROWS=null,S12_EM_LOADING=false,S12_EM_ERROR='';
+async function loadS12Embellishment(){
+  if(S12_EM_LOADING||S12_EM_ROWS!==null||!SB||!SITE_AUTH_USER)return;
+  S12_EM_LOADING=true;const session=SITE_SESSION_GENERATION;
+  try{
+    const rows=await sbPaged(()=>SB.from('embellishment_send_receive_rows').select('*').eq('is_active',true).order('source_row_no',{ascending:true}));
+    if(session!==SITE_SESSION_GENERATION)return;
+    S12_EM_ROWS=rows;S12_EM_ERROR='';
+  }catch(e){if(session===SITE_SESSION_GENERATION)S12_EM_ERROR='Embellishment data unavailable';}
+  finally{S12_EM_LOADING=false;if(session===SITE_SESSION_GENERATION&&CURRENT_SLIDE===11)renderS12();}
+}
+function s12EmbellishmentTotals(rows){
+  const latest=new Map(),result=new Map();
+  for(const r of rows||[]){
+    const pair=fabricEwoColorKey(r['EWO No'],r.Color);if(!pair)continue;
+    const key=JSON.stringify([pair,String(r.Code||'').trim()]),date=emDateTime(r.Date);if(!Number.isFinite(date))continue;
+    const old=latest.get(key);
+    if(!old||date>old.date)latest.set(key,{pair,date,rows:[r]});
+    else if(date===old.date)old.rows.push(r);
+  }
+  const num=v=>Number(String(v??'').replace(/,/g,''))||0;
+  for(const g of latest.values()){
+    if(!result.has(g.pair))result.set(g.pair,{print:0,emb:0});
+    const m=result.get(g.pair);
+    for(const r of g.rows){m.print+=num(r['Total Print Send Qty\n'])-num(r['Total Print Receive Qty']);m.emb+=num(r['Total EMB Send Qty'])-num(r['Total EMB Receive Qty']);}
+  }
+  return result;
+}
 function renderS12(changed=''){
+  if(S12_EM_ROWS===null&&!S12_EM_ERROR)loadS12Embellishment();
+  const embellishmentByKey=s12EmbellishmentTotals(S12_EM_ROWS);
+  document.getElementById('s12-em-msg').textContent=S12_EM_ERROR||(S12_EM_ROWS===null?'Loading Print / Embroidery WIP…':'');
+  const embellishmentTotal=(keys,field)=>S12_EM_ROWS===null?'—':[...keys].reduce((sum,key)=>sum+(embellishmentByKey.get(key)?.[field]||0),0);
   const all=FABRIC_CUTTING_DATA||[];
   const buyerEl=document.getElementById('s12-buyer'),prodEl=document.getElementById('s12-product'),
         statusEl=document.getElementById('s12-status'),diffEl=document.getElementById('s12-difficulty');
@@ -4567,11 +4599,11 @@ function renderS12(changed=''){
   document.getElementById('s12-product-summary').innerHTML=productTotals.map(([name,v])=>{
     const sewing=sewingTotals(v.keys);
     const planPcs=[...v.keys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
-    return '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+fmt(v.c-sewing.input)+'</td><td class="num">'+fmt(sewing.input)+'</td><td class="num">'+fmt(sewing.output)+'</td><td class="num">'+fmt(sewing.wip)+'</td><td class="num">'+fmt(planPcs)+'</td><td class="num">'+fmt(sewing.wip-planPcs)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>';
-  }).join('')||'<tr><td colspan="12">No data</td></tr>';
+    return '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'emb'))+'</td><td class="num">'+fmt(v.c-sewing.input)+'</td><td class="num">'+fmt(sewing.input)+'</td><td class="num">'+fmt(sewing.output)+'</td><td class="num">'+fmt(sewing.wip)+'</td><td class="num">'+fmt(planPcs)+'</td><td class="num">'+fmt(sewing.wip-planPcs)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>';
+  }).join('')||'<tr><td colspan="14">No data</td></tr>';
   const sewingTotal=sewingTotals(filteredKeys);
   const planPcsTotal=[...filteredKeys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
-  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+fmt(cut-sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.output)+'</td><td class="num">'+fmt(sewingTotal.wip)+'</td><td class="num">'+fmt(planPcsTotal)+'</td><td class="num">'+fmt(sewingTotal.wip-planPcsTotal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
+  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'emb'))+'</td><td class="num">'+fmt(cut-sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.output)+'</td><td class="num">'+fmt(sewingTotal.wip)+'</td><td class="num">'+fmt(planPcsTotal)+'</td><td class="num">'+fmt(sewingTotal.wip-planPcsTotal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
 
   const dm={},difficultyEwos=new Map(),difficultyLines=new Map();
   rows.forEach(r=>{
@@ -6678,7 +6710,7 @@ async function siteLogout(){
   const cacheKey=dashboardCacheKey(),fastKey=fastBootCacheKey();
   ++SITE_SESSION_GENERATION;++SUPABASE_LOAD_TOKEN;++PLAN_FILTER_TOKEN;++EFF15_FR_TOKEN;
   DATA=[];DAILY_PLAN=[];SAH_DATA=[];SAH_DAILY=[];CLOCK_HOUR_DATA=[];CLOCK_HOUR_DAILY=[];BUYER_PLAN_DATA=[];MONTHS=[];
-  FABRIC_CUTTING_DATA=[];SEWING_IO_DATA=[];DATE_WISE_PRODUCTION_DATA=[];
+  FABRIC_CUTTING_DATA=[];SEWING_IO_DATA=[];DATE_WISE_PRODUCTION_DATA=[];S12_EM_ROWS=null;S12_EM_ERROR='';
   resetGanttHoverCache();
   PLAN_VERSION_CACHE.clear();PLAN_UPLOAD_CATALOG=[];ACTIVE_PLAN_UPLOAD=null;
   S4_STRENGTHS_CACHE=null;S4_STRENGTHS_ERROR='';
