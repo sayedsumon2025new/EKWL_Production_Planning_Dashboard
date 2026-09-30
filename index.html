@@ -4500,17 +4500,18 @@ function s12EmbellishmentTotals(rows){
     const pair=fabricEwoColorKey(r['EWO No'],r.Color);if(!pair)continue;
     if(!result.has(pair))result.set(pair,{print:0,emb:0,printSend:0,printReceive:0,embSend:0,embReceive:0});
     const m=result.get(pair);
-    m.printSend+=num(r['Today Print Send Qty\n']);
-    m.printReceive+=num(r[' Today Print Receive Qty']);
-    m.embSend+=num(r['Today EMB Send Qty']);
-    m.embReceive+=num(r['Today EMB Receive Qty']);
+    const daily=Object.fromEntries(Object.entries(r).map(([key,value])=>[key.trim().replace(/\s+/g,' '),value]));
+    m.printSend+=num(daily['Today Print Send Qty']);
+    m.printReceive+=num(daily['Today Print Receive Qty']);
+    m.embSend+=num(daily['Today EMB Send Qty']);
+    m.embReceive+=num(daily['Today EMB Receive Qty']);
     m.print=m.printSend-m.printReceive;m.emb=m.embSend-m.embReceive;
   }
   return result;
 }
 function renderS12(changed=''){
   if(S12_EM_ROWS===null&&!S12_EM_ERROR)loadS12Embellishment();
-  document.getElementById('s12-em-msg').textContent=S12_EM_ERROR||(S12_EM_ROWS===null?'Loading Print / Embroidery WIP…':'');
+  document.getElementById('s12-em-msg').textContent=S12_EM_ERROR||(S12_EM_ROWS===null?'Loading Print / Embroidery WIP…':'Today Send / Receive summed across all active report dates · selected Plan EWO + Color');
   const all=FABRIC_CUTTING_DATA||[];
   const buyerEl=document.getElementById('s12-buyer'),prodEl=document.getElementById('s12-product'),
         statusEl=document.getElementById('s12-status'),diffEl=document.getElementById('s12-difficulty');
