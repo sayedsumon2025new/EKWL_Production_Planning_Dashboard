@@ -4482,8 +4482,8 @@ async function loadS12Embellishment(){
 }
 function s12CuttingWip(keys,cutByKey,sewingByKey,processKeys,embellishmentByKey){
   // A summary with Print/EMB uses its complete receive total minus input.
-  const hasProcess=[...keys].some(key=>processKeys.has(key));
-  if(hasProcess&&S12_EM_ROWS===null)return null;
+  const hasProcess=[...keys].some(key=>{const m=embellishmentByKey.get(key);return m&&(N(m.printSend)!==0||N(m.printReceive)!==0||N(m.embSend)!==0||N(m.embReceive)!==0);});
+  if(S12_EM_ROWS===null&&[...keys].some(key=>processKeys.has(key)))return null;
   let available=0,input=0;
   for(const key of keys){
     const movement=embellishmentByKey.get(key);
