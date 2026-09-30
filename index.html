@@ -4480,6 +4480,16 @@ async function loadS12Embellishment(){
   }catch(e){if(session===SITE_SESSION_GENERATION)S12_EM_ERROR='Embellishment data unavailable';}
   finally{S12_EM_LOADING=false;if(session===SITE_SESSION_GENERATION&&CURRENT_SLIDE===11)renderS12();}
 }
+function s12CuttingWip(keys,cutByKey,sewingByKey,processKeys,embellishmentByKey){
+  let total=0;
+  for(const key of keys){
+    if(processKeys.has(key)&&S12_EM_ROWS===null)return null;
+    const movement=embellishmentByKey.get(key);
+    const available=processKeys.has(key)?N(movement?.printReceive)+N(movement?.embReceive):N(cutByKey.get(key));
+    total+=available-N(sewingByKey.get(key)?.input);
+  }
+  return total;
+}
 function s12EmbellishmentTotals(rows){
   // Sum daily movements across all report dates by EWO and color.
   // Plan dates select the matching pairs, not the movement dates.
@@ -4585,6 +4595,15 @@ function renderS12(changed=''){
       plannedLinesByEwoColor.get(key).add(line);
     }
   });
+  const processKeys=new Set();
+  const hasProcess=value=>!['','no','n','0','false','n/a','na','none','-','—'].includes(String(value??'').trim().toLowerCase());
+  (DATA||[]).filter(r=>!r.is_summary_row).forEach(r=>{
+    const key=fabricEwoColorKey(r.ewo,r.color);
+    if(key&&(hasProcess(r.print)||hasProcess(r.emb)))processKeys.add(key);
+  });
+  const cutByKey=new Map();
+  rows.forEach(r=>{const key=fabricEwoColorKey(r.ewo,r.color_name);if(key)cutByKey.set(key,(cutByKey.get(key)||0)+N(r.total_cut_qty));});
+  const cuttingWipTotal=keys=>{const value=s12CuttingWip(keys,cutByKey,sewingByKey,processKeys,embellishmentByKey);return value===null?'—':fmt(value);};
   const sewingByKey=new Map();
   (SEWING_IO_DATA||[]).forEach(r=>{
     const key=fabricEwoColorKey(r.ewo,r.color);if(!key)return;
@@ -4607,11 +4626,11 @@ function renderS12(changed=''){
   document.getElementById('s12-product-summary').innerHTML=productTotals.map(([name,v])=>{
     const sewing=sewingTotals(v.keys);
     const planPcs=[...v.keys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
-    return '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'printSend'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'printReceive'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'embSend'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'embReceive'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'emb'))+'</td><td class="num">'+fmt(v.c-sewing.input)+'</td><td class="num">'+fmt(sewing.input)+'</td><td class="num">'+fmt(sewing.output)+'</td><td class="num">'+fmt(sewing.wip)+'</td><td class="num">'+fmt(planPcs)+'</td><td class="num">'+fmt(sewing.wip-planPcs)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>';
+    return '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'printSend'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'printReceive'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'embSend'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'embReceive'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'emb'))+'</td><td class="num">'+cuttingWipTotal(v.keys)+'</td><td class="num">'+fmt(sewing.input)+'</td><td class="num">'+fmt(sewing.output)+'</td><td class="num">'+fmt(sewing.wip)+'</td><td class="num">'+fmt(planPcs)+'</td><td class="num">'+fmt(sewing.wip-planPcs)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>';
   }).join('')||'<tr><td colspan="14">No data</td></tr>';
   const sewingTotal=sewingTotals(filteredKeys);
   const planPcsTotal=[...filteredKeys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
-  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'emb'))+'</td><td class="num">'+fmt(cut-sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.output)+'</td><td class="num">'+fmt(sewingTotal.wip)+'</td><td class="num">'+fmt(planPcsTotal)+'</td><td class="num">'+fmt(sewingTotal.wip-planPcsTotal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
+  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'emb'))+'</td><td class="num">'+cuttingWipTotal(filteredKeys)+'</td><td class="num">'+fmt(sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.output)+'</td><td class="num">'+fmt(sewingTotal.wip)+'</td><td class="num">'+fmt(planPcsTotal)+'</td><td class="num">'+fmt(sewingTotal.wip-planPcsTotal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
 
   const dm={},difficultyEwos=new Map(),difficultyLines=new Map();
   rows.forEach(r=>{
