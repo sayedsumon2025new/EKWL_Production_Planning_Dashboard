@@ -6773,7 +6773,15 @@ function openUploadModal(){
 function closeUploadModal(){document.getElementById('upload-modal').classList.remove('open')}
 function sbMsg(id,msg,ok=null){const e=document.getElementById(id);e.textContent=msg;e.style.color=ok===true?'#3aaa63':ok===false?'#ff8a80':'var(--text2)'}
 function csvNum(v){if(v===undefined||v===null||String(v).trim()==='')return null;const x=Number(String(v).replace(/,/g,''));return Number.isFinite(x)?x:null}
-function csvDate(v){if(!v||!String(v).trim())return null;const x=new Date(v);return Number.isNaN(x.getTime())?null:x.toISOString().slice(0,10)}
+function csvDate(v){
+  const raw=String(v??'').trim();if(!raw)return null;
+  let y,m,d,match;
+  if((match=/^(\d{4})-(\d{1,2})-(\d{1,2})(?:$|[T ])/.exec(raw))){[,y,m,d]=match;}
+  else if((match=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(raw))){[,m,d,y]=match;}
+  else return null;
+  const iso=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  return validDate(iso)?iso:null;
+}
 function csvChunks(a,size){const r=[];for(let i=0;i<a.length;i+=size)r.push(a.slice(i,i+size));return r}
 function rawDateHeader(h){return /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(String(h).trim())}
 function rawHeaderDate(h){const [m,d,y]=h.split('/').map(Number);return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}

@@ -55,16 +55,10 @@ function ganttActionAdd(events,raw,ewo,line,color,action,detail,source){
 }
 function ganttPsdKey(line,ewo,color){return [Number(line)||0,ganttKey(ewo),ganttColorKey(color)].join('|');}
 function ganttPsdGroups(){
-  const groups=new Map(),firstByRecord=new Map();
-  // Derive the first PSD from the full selected Plan/Day, before date filtering.
-  for(const daily of DAILY_PLAN){
-    if(!(Number(daily.value)>0))continue;
-    const date=ganttActionDate(daily.date);if(!date?.year)continue;
-    const id=String(daily.record_id),old=firstByRecord.get(id);
-    if(!old||ganttPsdDateKey(date)<ganttPsdDateKey(old))firstByRecord.set(id,date);
-  }
+  const groups=new Map();
+  // First PSD is the selected Plan Data PSD column, across POs.
   for(const row of DATA){
-    const date=firstByRecord.get(String(row.record_id)),key=ganttPsdKey(row.line,row.ewo,row.color);
+    const date=ganttActionDate(row.startdate),key=ganttPsdKey(row.line,row.ewo,row.color);
     if(!date?.year||!ganttKey(row.ewo)||!Number(row.line))continue;
     if(!groups.has(key))groups.set(key,{key,line:row.line,ewo:row.ewo,color:row.color,date,recordIds:new Set(),printFlags:new Set(),embFlags:new Set(),outsourceValues:new Set(),products:new Set(),styles:new Set()});
     const group=groups.get(key);
