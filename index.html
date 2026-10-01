@@ -1294,6 +1294,30 @@ box-shadow:0 10px 28px rgba(15,39,72,.28);font-size:10px;line-height:1.35}
 #s6 #s6-tbl th:nth-child(4),#s6 #s6-tbl td:nth-child(4),#s6 #s6-tbl th:nth-child(9),#s6 #s6-tbl td:nth-child(9){min-width:100px}
 #s6 .s6-filter-bar{flex-wrap:wrap;gap:10px}
 @media(max-width:700px){#s6 .s6-analysis-top{grid-template-columns:1fr}#s6 table th,#s6 table td{padding:6px}#s6 #s6-tbl{min-width:800px}}
+
+#s6{--s6-border:#d5e1ee}
+#s6 .card{border:1px solid var(--s6-border);border-radius:8px;padding:16px;margin-bottom:16px;box-shadow:0 2px 6px rgba(23,49,78,.04)}
+#s6 .card-title{font-size:14px;letter-spacing:.2px;margin-bottom:12px;line-height:1.4}
+#s6 .s6-controls{padding:10px 16px}
+#s6 .s6-controls .s6-filter-bar{margin:0;display:flex;align-items:center;gap:12px}
+#s6 .s6-controls label{font-size:14px;font-weight:600}
+#s6 .s6-controls select{min-height:36px;font-size:14px;border-radius:6px}
+#s6 .kpi-row{gap:12px;margin-bottom:16px}
+#s6 .two-col,#s6 .feeding-pie-grid,#s6 .s6-analysis-top{gap:16px;margin-bottom:0}
+#s6 .s6-analysis-top .card{margin-bottom:16px}
+#s6 .s6-feeding-distribution{width:100%}
+#s6 .dt,#s6 .qty-range-ref{font-size:13px;color:#17314e;border-collapse:collapse}
+#s6 .dt th,#s6 .qty-range-ref th{background:#e7eff8;color:#17314e;font-weight:700;padding:10px;text-transform:none}
+#s6 .dt td,#s6 .qty-range-ref td{padding:8px 10px;border-color:#d5e1ee}
+#s6 .dt tbody tr:nth-child(even) td,#s6 .qty-range-ref tbody tr:nth-child(even) td{background:#f4f8fc}
+#s6 .dt tbody tr:nth-child(odd) td,#s6 .qty-range-ref tbody tr:nth-child(odd) td{background:#fff}
+#s6 .dt tfoot td,#s6 .qty-range-ref .range-total td{background:#e7eff8!important;font-weight:700}
+#s6 #s6-tbl{min-width:920px}
+#s6 #s6-tbl thead{position:sticky;top:0;z-index:2}
+#s6 #s6-tbl tfoot{position:sticky;bottom:0;z-index:2}
+#s6 .tbl-wrap:has(#s6-tbl){max-height:560px;overflow:auto;border:1px solid var(--s6-border);border-radius:6px}
+#s6 .range-line-chip{margin:2px}
+@media(max-width:700px){#s6 .card{padding:12px}#s6 .s6-controls .s6-filter-bar{align-items:flex-start}#s6 .s6-controls select{max-width:100%}}
 </style>
 
 <style id="optical-white-professional-theme">
@@ -2480,9 +2504,11 @@ input,select,textarea{
       <button class="pg-btn" onclick="goSlide(7)">Next →</button>
     </div>
   </div>
+  <div class="card s6-controls">    <div class="s6-filter-bar"><label for="s6-feeding-filter">No. of Feeding</label>
+      <select id="s6-feeding-filter" onchange="renderS6(getFiltered())"><option value="">All</option></select><label for="s6-order-range-filter">Order Qty Range</label><select id="s6-order-range-filter" onchange="renderS6(getFiltered())"><option value="">All ranges</option></select></div></div>
   <div class="kpi-row" id="s6-kpi"></div>
   <div class="card"><div class="card-title">📊 Order QTY Range Analysis</div><div class="tbl-wrap" id="s6-range-summary"></div></div>
-  <div class="two-col">
+  <div class="s6-feeding-distribution">
     <div class="card">
       <div class="card-title">📊 EWO Feeding Distribution</div>
       <div class="bar-chart" id="s8-bar"></div>
@@ -2517,8 +2543,7 @@ input,select,textarea{
   <div class="two-col"><div class="card"><div class="card-title">📈 Order Range Distribution</div><div class="bar-chart" id="s6-range-bar"></div></div><div class="card"><div class="card-title">📌 Summary</div><div id="s6-range-kpis"></div></div></div>
   <div class="card">
     <div class="card-title">📝 EWO Detail — Line Run & Split QTY <span class="ct-right" id="s6-count"></span></div>
-    <div class="s6-filter-bar"><label for="s6-feeding-filter">No. of Feeding</label>
-      <select id="s6-feeding-filter" onchange="renderS6(getFiltered())"><option value="">All</option></select><label for="s6-order-range-filter">Order Qty Range</label><select id="s6-order-range-filter" onchange="renderS6(getFiltered())"><option value="">All ranges</option></select></div>
+
     <div class="tbl-wrap"><table class="dt" id="s6-tbl">
       <thead><tr>
         <th>Month</th><th>Buyer</th><th>EWO</th><th>Line Run Status</th>
