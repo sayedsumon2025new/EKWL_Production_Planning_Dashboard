@@ -131,6 +131,58 @@ class ThemeVisualTests(unittest.TestCase):
                          '#home-date-from', '#home-date-to']:
             self.assert_readable(selector)
 
+    def test_master_theme_switch_preserves_reports_and_survives_reload(self):
+        from playwright.sync_api import expect
+        before = self.page.evaluate('JSON.stringify({data:DATA,daily:DAILY_PLAN})')
+        totals = self.page.locator('#home-live-kpis .home-live-kpi-val').all_text_contents()
+        toggle = self.page.locator('#theme-toggle')
+        toggle.click()
+        self.assertEqual(toggle.get_attribute('aria-checked'), 'true')
+        self.assertEqual(self.page.evaluate('localStorage.getItem("ekwl-dashboard-theme")'), 'dark')
+        for selector in ['body', '#s0', '#s14', '#s15', '#s16', '#s17', '#s18', '#s19']:
+            self.assertEqual(self.page.locator(selector).evaluate('(e)=>getComputedStyle(e).backgroundColor'),
+                             'rgb(16, 21, 30)', selector)
+        for selector in ['.home-title', '.home-card-title', '.home-card-sub',
+                         '#home-live-kpis .home-live-kpi-val', '#home-live-kpis .home-quick-box > span',
+                         '#s0 .home-actions .top-btn', '.home-live-panel-title', '#theme-toggle']:
+            self.assert_readable(selector)
+        self.assertEqual(self.page.locator('#home-live-kpis .home-live-kpi-val').all_text_contents(), totals)
+        self.assertEqual(self.page.evaluate('JSON.stringify({data:DATA,daily:DAILY_PLAN})'), before)
+        for width in [390, 768, 1440]:
+            self.page.set_viewport_size({'width':width, 'height':1000})
+            self.assertTrue(self.page.locator('#s0').evaluate('(e)=>e.scrollWidth<=e.clientWidth'), width)
+        self.screenshot('master-dark-home')
+        self.page.evaluate('goSlide(6)')
+        self.page.locator('#s6 .range-line-chip').first.click()
+        self.assert_readable('#s2-line-dialog-title, #s2-line-dialog p, #s2-line-dialog span')
+        self.page.evaluate('goSlide(17)')
+        self.page.locator('#ss-tab-tna').click()
+        self.assert_readable('.ss-tna-bar-label, .ss-tna-bar-values, .ss-tna-legend span')
+        self.page.evaluate('goSlide(4)')
+        canvas = self.page.locator('#s4-chassis-canvas')
+        dark = canvas.evaluate('(e)=>e.toDataURL()')
+        toggle.click()
+        self.assertNotEqual(canvas.evaluate('(e)=>e.toDataURL()'), dark)
+        self.assertEqual(self.page.evaluate('JSON.stringify({data:DATA,daily:DAILY_PLAN})'), before)
+        toggle.click()
+        self.page.evaluate('goSlide(16)')
+        child = self.page.frame_locator('#order-execution-frame')
+        expect(child.locator('html')).to_have_attribute('data-theme', 'dark')
+        self.assertEqual(child.locator('body').evaluate('(e)=>getComputedStyle(e).backgroundColor'), 'rgb(16, 21, 30)')
+        # The existing embedded theme button now switches the whole system too.
+        child.locator('#dark-btn').dispatch_event('click')
+        expect(self.page.locator('html')).to_have_attribute('data-theme', 'light')
+        expect(child.locator('html')).to_have_attribute('data-theme', 'light')
+        toggle.click()
+        self.page.reload(wait_until='networkidle')
+        self.page.evaluate(FIXTURE)
+        expect(toggle).to_have_attribute('aria-checked', 'true')
+        self.page.emulate_media(media='print')
+        self.assertEqual(self.page.evaluate('getComputedStyle(document.documentElement).colorScheme'), 'light')
+        self.assert_readable('#home-live-kpis .home-quick-box > span', paper=True)
+        self.page.emulate_media(media='screen')
+        toggle.click()
+
     def test_range_categories_remain_distinct_in_normal_striped_and_hover_states(self):
         self.page.evaluate('goSlide(6)')
         for state in ['normal', 'hover-low', 'hover-high']:

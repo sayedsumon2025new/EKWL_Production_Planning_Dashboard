@@ -437,23 +437,92 @@ body.dark .guide-table td{border-color:#2a3040}
 #sql-note{background:#fff3e0;color:#a34800;padding:5px 10px;font-size:11px;font-weight:600;flex-shrink:0}
 </style>
 <style>
-/* Presentation only: match the parent dashboard's off-white palette. */
-:root{--bg:#f6f5f1;--card:#fffefa;--bdr:#d7dbdf;--sh:0 5px 18px #2332470d}
-body{color:#233247}
-#topbar,#sbar{background:#eeede8;color:#233247;border-bottom:1px solid var(--bdr)}
-.logo,.tab,#clk{color:#526174}.logo{border-color:var(--bdr)}
-.logo span,.tab.active{color:#246ca6}.tab.active{background:#e4e9ed}
-.tab:hover{background:#e4e9ed;color:#233247}
-.sb-l{opacity:1;color:#526174}.sb-v{color:#246ca6}
-.sb-v.red{color:#b42318}.sb-v.amb{color:#966400}.sb-v.grn{color:#096349}
-#tb-bar,#leg,select,input[type=text]{background:var(--card);color:#233247}
-#ld{background:var(--bg);color:#233247}#pb{background:#d7dbdf}#pm{color:#526174;opacity:1}
-#sidebar{background:#eeede8;color:#233247;border-right:1px solid var(--bdr)}
-.sb-group-title,.sb-item{color:#526174}.sb-item:hover,.sb-item.active{background:#e4e9ed;color:#233247}
-#sb-toggle,#page-title{color:#233247;border-color:#c5cdd6}
-#sb-toggle:hover{background:#e4e9ed}
-thead th,.batch-tbl th{background:#e9edf0;color:#233247}
+:root {
+  --tone-f6f5f1: #f6f5f1;
+  --tone-f0eee8: #f0eee8;
+  --tone-eeede8: #eeede8;
+  --tone-fffefa: #fffefa;
+  --tone-d7dbdf: #d7dbdf;
+  --tone-233247: #233247;
+  --tone-526174: #526174;
+  --tone-647184: #647184;
+  --tone-966400: #966400;
+  --tone-087c86: #087c86;
+  --tone-246ca6: #246ca6;
+  --tone-2332470d: #2332470d;
+  --tone-c5cdd6: #c5cdd6;
+  --tone-e4e9ed: #e4e9ed;
+  --tone-23324712: #23324712;
+  --tone-f3f2ed: #f3f2ed;
+  --tone-f1eee5: #f1eee5;
+  --tone-e8eff1: #e8eff1;
+  --tone-f1f4f4: #f1f4f4;
+  --tone-e8f2ed: #e8f2ed;
+  --tone-c2d8cc: #c2d8cc;
+  --tone-096349: #096349;
+  --tone-e9edf0: #e9edf0;
+  --tone-bcc8d3: #bcc8d3;
+  --tone-23324724: #23324724;
+  --tone-f6f5f1f5: #f6f5f1f5;
+  --tone-efeee9: #efeee9;
+  --tone-a3adb7: #a3adb7;
+  --tone-e8eef2: #e8eef2;
+  --tone-e2e9ed: #e2e9ed;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark !important;
+  --tone-f6f5f1: #10151e;
+  --tone-f0eee8: #191f2b;
+  --tone-eeede8: #242e3e;
+  --tone-fffefa: #1a2230;
+  --tone-d7dbdf: #354256;
+  --tone-233247: #edf2f8;
+  --tone-526174: #b4c1d4;
+  --tone-647184: #95a5bc;
+  --tone-966400: #f7c754;
+  --tone-087c86: #4fc4ce;
+  --tone-246ca6: #72b4ff;
+  --tone-2332470d: #0003;
+  --tone-c5cdd6: #485972;
+  --tone-e4e9ed: #303d51;
+  --tone-23324712: #0004;
+  --tone-f3f2ed: #202a39;
+  --tone-f1eee5: #1b293c;
+  --tone-e8eff1: #203d57;
+  --tone-f1f4f4: #243448;
+  --tone-e8f2ed: #142b2b;
+  --tone-c2d8cc: #365658;
+  --tone-096349: #6bd6b2;
+  --tone-e9edf0: #263449;
+  --tone-bcc8d3: #5c718e;
+  --tone-23324724: #0008;
+  --tone-f6f5f1f5: #10151ef2;
+  --tone-efeee9: #141e2c;
+  --tone-a3adb7: #52647c;
+  --tone-e8eef2: #2b3b51;
+  --tone-e2e9ed: #29384c;
+}
+:root{--text:var(--tone-233247);--text2:var(--tone-526174);--border:var(--tone-d7dbdf)}
+/* Presentation only: match the parent dashboard's active palette. */
+:root{--bg:var(--tone-f6f5f1);--card:var(--tone-fffefa);--bdr:var(--tone-d7dbdf);--sh:0 5px 18px var(--tone-2332470d)}
+body,body.dark{--bg:var(--tone-f6f5f1);--card:var(--tone-fffefa);--bdr:var(--tone-d7dbdf);background:var(--bg);color:var(--tone-233247)}
+#topbar,#sbar{background:var(--tone-eeede8);color:var(--tone-233247);border-bottom:1px solid var(--bdr)}
+.logo,.tab,#clk{color:var(--tone-526174)}.logo{border-color:var(--bdr)}
+.logo span,.tab.active{color:var(--tone-246ca6)}.tab.active{background:var(--tone-e4e9ed)}
+.tab:hover{background:var(--tone-e4e9ed);color:var(--tone-233247)}
+.sb-l{opacity:1;color:var(--tone-526174)}.sb-v{color:var(--tone-246ca6)}
+.sb-v.red{color:#b42318}.sb-v.amb{color:var(--tone-966400)}.sb-v.grn{color:var(--tone-096349)}
+#tb-bar,#leg,select,input[type=text]{background:var(--card);color:var(--tone-233247)}
+#ld{background:var(--bg);color:var(--tone-233247)}#pb{background:var(--tone-d7dbdf)}#pm{color:var(--tone-526174);opacity:1}
+#sidebar{background:var(--tone-eeede8);color:var(--tone-233247);border-right:1px solid var(--bdr)}
+.sb-group-title,.sb-item{color:var(--tone-526174)}.sb-item:hover,.sb-item.active{background:var(--tone-e4e9ed);color:var(--tone-233247)}
+#sb-toggle,#page-title{color:var(--tone-233247);border-color:var(--tone-c5cdd6)}
+#sb-toggle:hover{background:var(--tone-e4e9ed)}
+thead th,.batch-tbl th{background:var(--tone-e9edf0);color:var(--tone-233247)}
+
+@media print{ :root[data-theme="dark"]{color-scheme:light!important;--tone-f6f5f1:#fff;--tone-fffefa:#fff;--tone-eeede8:#fff;--tone-233247:#233247;--tone-526174:#526174;--tone-e9edf0:#e9edf0;--tone-d7dbdf:#d7dbdf;} }
 </style>
+<script src="dashboard-theme.js"></script>
 </head>
 <body>
 
@@ -527,7 +596,7 @@ thead th,.batch-tbl th{background:#e9edf0;color:#233247}
   <button class="btn br" id="tog-new" onclick="tn()">👁 New Only</button>
   <button class="btn bg" onclick="exportCSV()">⬇ CSV</button>
   <button class="btn bs" onclick="window.print()">🖨 Print</button>
-  <button class="btn bs" id="dark-btn" onclick="togDark()">🌙 Dark</button>
+  <button class="btn bs" id="dark-btn" onclick="window.EKWLTheme.toggle()">🌙 Dark</button>
 </div>
 
 <!-- STATUS BAR -->
