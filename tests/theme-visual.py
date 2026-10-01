@@ -126,8 +126,8 @@ class ThemeVisualTests(unittest.TestCase):
         for selector in ['body', '#slides-wrap', '#s0', '#s14', '#s15', '#s16', '#s17', '#s18', '#s19']:
             self.assertEqual(self.page.locator(selector).evaluate('(e)=>getComputedStyle(e).backgroundColor'),
                              'rgb(246, 245, 241)', selector)
-        for selector in ['.home-title', '.home-card-title', '.home-card-sub',
-                         '#home-live-kpis .home-live-kpi-val', '#s0 .home-actions .top-btn',
+        for selector in ['.home-quick-title', '.home-card-title', '.home-card-sub',
+                         '#home-live-kpis .home-live-kpi-val', '#topnav .right .top-btn',
                          '#home-date-from', '#home-date-to']:
             self.assert_readable(selector)
 
@@ -171,9 +171,9 @@ class ThemeVisualTests(unittest.TestCase):
         for selector in ['body', '#s0', '#s14', '#s15', '#s16', '#s17', '#s18', '#s19']:
             self.assertEqual(self.page.locator(selector).evaluate('(e)=>getComputedStyle(e).backgroundColor'),
                              'rgb(16, 21, 30)', selector)
-        for selector in ['.home-title', '.home-card-title', '.home-card-sub',
+        for selector in ['.home-quick-title', '.home-card-title', '.home-card-sub',
                          '#home-live-kpis .home-live-kpi-val', '#home-live-kpis .home-quick-box > span',
-                         '#s0 .home-actions .top-btn', '.home-live-panel-title', '#theme-toggle']:
+                         '#topnav .right .top-btn', '.home-live-panel-title', '#theme-toggle']:
             self.assert_readable(selector)
         self.assertEqual(self.page.locator('#home-live-kpis .home-live-kpi-val').all_text_contents(), totals)
         self.assertEqual(self.page.evaluate('JSON.stringify({data:DATA,daily:DAILY_PLAN})'), before)
@@ -362,14 +362,14 @@ class ThemeVisualTests(unittest.TestCase):
                          '.s9-hit-center b', '.s9-hit-legend b', '.kpi-lbl', '.kpi-val',
                          '.kpi-sub', '.ss-tna-chart h3', '.ss-tna-bar-label', '.ss-tna-bar-values',
                          '.ss-tna-legend span', '#ss-tna-pie-detail strong', '#ss-tna-pie-detail span',
-                         '.home-title', '.home-card-title', '.home-card-sub']:
+                         '.home-quick-title', '.home-card-title', '.home-card-sub']:
             self.assert_readable(selector, paper=True)
         # Include both neutral stripes and semantic rows when backgrounds print.
         self.page.evaluate('renderS6(DATA)')
         for selector in ['#s1-body td', '#s1-foot td', '#s6 .qty-range-ref td']:
             self.assert_readable(selector)
             self.assert_readable(selector, paper=True)
-        self.assert_readable('#s1-line-filter, #s1-ewo-search, #s1 .pg-btn, #s0 .home-actions .top-btn')
+        self.assert_readable('#s1-line-filter, #s1-ewo-search, #s1 .pg-btn, #topnav .right .top-btn')
         if OPTIONS.artifacts:
             for backgrounds in [False, True]:
                 self.page.pdf(path=str(OPTIONS.artifacts / f'print-backgrounds-{backgrounds}.pdf'),
