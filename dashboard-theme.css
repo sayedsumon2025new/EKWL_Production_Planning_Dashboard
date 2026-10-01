@@ -167,12 +167,18 @@ body #slides-wrap { background: var(--bg) !important; }
 #slides-wrap :is(.home-hit-legend, .s2-top-legend, .s3-qty-legend, .range-legend) { color: var(--text2) !important; font-size: 12px; line-height: 1.6; }
 #slides-wrap :is(.s2-top-hole, .range-pie-hole, .s3-qty-donut > div) { background: var(--card) !important; color: var(--text) !important; }
 #slides-wrap #s3 .s3-plan-pie svg { background: var(--card) !important; border-color: var(--border) !important; border-radius: 8px; }
-#slides-wrap :is(.plan-pie-key, .setting-panel, .setting-card, .ss-tna-chart) { background: var(--card) !important; color: var(--text) !important; border-color: var(--border) !important; }
-#slides-wrap .ss-tna-chart h3,
-#slides-wrap :is(.ss-tna-bar-label, .ss-tna-pie-detail) { color: var(--text) !important; }
-#slides-wrap :is(.ss-tna-bar-values, .ss-tna-legend) { color: var(--text2) !important; }
-#slides-wrap .ss-tna-bar-track { background: #101927 !important; }
-#slides-wrap .ss-tna-pie { border-color: var(--card) !important; }
+#slides-wrap :is(.plan-pie-key, .setting-panel, .setting-card) { background: var(--card) !important; color: var(--text) !important; border-color: var(--border) !important; }
+/* Size Set is outside #slides-wrap in the existing rendered DOM. */
+#s17 .ss-tna-chart { background: var(--card) !important; color: var(--text) !important; border-color: var(--border) !important; }
+#s17 :is(.ss-tna-chart h3, .ss-tna-bar-label) { color: var(--text) !important; }
+/* The adjacent source table retains its existing light surface. */
+#s17 #ss-tna-table > h3 { color: #172033 !important; }
+#s17 :is(.ss-tna-bar-values, .ss-tna-legend) { color: var(--text2) !important; }
+#s17 .ss-tna-pie-detail { color: var(--text) !important; }
+#s17 .ss-tna-bar-track { background: #101927 !important; }
+#s17 .ss-tna-pie { border-color: var(--card) !important; }
+#s17 #ss-tna-pie-detail span:first-of-type { color: #6bd6b2 !important; }
+#s17 #ss-tna-pie-detail span:last-of-type { color: var(--amber2) !important; }
 #slides-wrap :is(.plan-pie-total, .plan-pie-key > div, .plan-pie-key strong, .plan-pie-total small) { color: var(--text2) !important; border-color: var(--border); }
 #slides-wrap .plan-pie-total strong { color: var(--text) !important; }
 #slides-wrap .s3-plan-pie svg path { stroke: var(--card); }
@@ -183,21 +189,20 @@ body #slides-wrap { background: var(--bg) !important; }
 #slides-wrap table { background: var(--card) !important; color: var(--text) !important; }
 #slides-wrap table th { background: #263449 !important; color: #e7eef8 !important; border-color: #44546a !important; font-weight: 650 !important; }
 /* Only neutral table cells get new surfaces. Inline and class-based product,
-   priority, coverage and efficiency colors retain their original meaning. */
-#slides-wrap table.dt tbody td:not([style]):not([class]),
-#slides-wrap table.dt tbody td:is(.num, .cen, .hoverable),
-#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high) td:not([style]):not([class]),
-#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high) td:is(.num, .cen, .hoverable) {
-  background: var(--card) !important; color: var(--text) !important;
+   priority, coverage and efficiency colors retain their original meaning.
+   Keep dark striping out of print, where foreground tokens become dark. */
+@media screen {
+  #slides-wrap :is(table.dt, .qty-range-ref) tbody tr:not(.range-low):not(.range-high) td:not([style]):not([class]),
+  #slides-wrap :is(table.dt, .qty-range-ref) tbody tr:not(.range-low):not(.range-high) td:is(.num, .cen, .hoverable) {
+    background: var(--card) !important; color: var(--text) !important;
+  }
+  #slides-wrap :is(table.dt, .qty-range-ref) tbody tr:nth-child(even):not(.range-low):not(.range-high) td:not([style]):not([class]),
+  #slides-wrap :is(table.dt, .qty-range-ref) tbody tr:nth-child(even):not(.range-low):not(.range-high) td:is(.num, .cen, .hoverable) { background: #202a39 !important; }
+  #slides-wrap :is(table.dt, .qty-range-ref) tbody tr:hover:not(.range-low):not(.range-high) td:not([style]):not([class]),
+  #slides-wrap :is(table.dt, .qty-range-ref) tbody tr:hover:not(.range-low):not(.range-high) td:is(.num, .cen, .hoverable) { background: #2b3b51 !important; }
 }
-#slides-wrap table.dt tbody tr:nth-child(even) td:not([style]):not([class]),
-#slides-wrap table.dt tbody tr:nth-child(even) td:is(.num, .cen, .hoverable),
-#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high):nth-child(even) td:not([style]):not([class]),
-#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high):nth-child(even) td:is(.num, .cen, .hoverable) { background: #202a39 !important; }
-#slides-wrap table.dt tbody tr:hover td:not([style]):not([class]),
-#slides-wrap table.dt tbody tr:hover td:is(.num, .cen, .hoverable),
-#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high):hover td:not([style]):not([class]),
-#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high):hover td:is(.num, .cen, .hoverable) { background: #2b3b51 !important; }
+/* Keep the blue/green category meaning on normal, striped and hovered rows,
+   including the legacy row-spanning summary cells. */
 #slides-wrap .qty-range-ref tbody tr.range-low td { background: #2b6f88 !important; color: #f5f9ff !important; }
 #slides-wrap .qty-range-ref tbody tr.range-high td { background: #3f7a3b !important; color: #f5f9ff !important; }
 #slides-wrap table td { border-color: #354256 !important; font-weight: 400 !important; }
@@ -225,7 +230,7 @@ body .site-login-link { color: #8bc5ff; }
 body .site-login-input { min-height: 44px; }
 body .site-login-overlay { background: #10151ef2; }
 body #s2-line-dialog :is(h2, strong) { color: var(--text) !important; }
-body #s2-line-dialog :is(p, span) { color: var(--text2); }
+body #s2-line-dialog :is(p, span) { color: var(--text2) !important; }
 body #s2-line-dialog .s2-line-kpis > div { background: #24344a; border-color: var(--border); }
 body #s2-line-dialog :is(table, td) { background: var(--card) !important; color: var(--text) !important; border-color: var(--border) !important; }
 body #s2-line-dialog th { background: #263449 !important; color: var(--text) !important; }
@@ -263,19 +268,47 @@ body ::-webkit-scrollbar-thumb { background: #52647c; border-color: #141e2c; }
   #slides-wrap *, #slide-tabs * { animation: none !important; transition: none !important; }
 }
 @media print {
-  :root { color-scheme: light !important; }
-  html body,
-  body #slides-wrap,
-  #slides-wrap .slide {
-    background: #fff !important;
-    color: #172033 !important;
+  :root {
+    color-scheme: light !important;
+    --navy: #fff !important;
+    --navy2: #fff !important;
+    --navy3: #eef3f8 !important;
+    --bg: #fff !important;
+    --card: #fff !important;
+    --border: #b8c4d2 !important;
+    --text: #172033 !important;
+    --text2: #42516a !important;
+    --text3: #53657a !important;
+    --amber: #946000 !important;
+    --amber2: #946000 !important;
+    --panel-shadow: none !important;
   }
+  html, html body, body .slide { background: #fff !important; color: #172033 !important; }
   body #topnav { display: none !important; }
   body #slides-wrap { position: static; }
-  #slides-wrap :is(.slide-title, .slide-subtitle, .card-title, .home-live-heading, h1, h2, h3, h4, p, span, strong) {
-    color: #172033 !important;
+  /* These legacy fixed slides would otherwise cover the printed report. */
+  body :is(#s18, #s19) { position: static; inset: auto; }
+  body #supabase-live-badge { display: none; }
+  body :is(h1, h2, h3, h4, .slide-title, .slide-subtitle) { color: var(--text) !important; }
+  body :is(input, select, textarea),
+  body :is(.top-btn, .pg-btn, .report-actions button, .home-live-date-controls button) {
+    background: #fff !important; color: var(--text) !important; border-color: var(--border) !important;
+  }
+  #slides-wrap #s0 .home-head .home-actions .top-btn,
+  #slides-wrap #s0 .home-head .home-actions .top-btn.primary {
+    background: #fff !important; color: var(--text) !important; border-color: var(--border) !important;
   }
   #slides-wrap :is(.card, .kpi, .home-quick, .home-live-panel, .home-card, table, table th, table td) {
     background: #fff !important; color: #172033 !important; box-shadow: none !important;
   }
+  #slides-wrap :is(.kpi, #home-live-kpis .home-quick-box),
+  #slides-wrap #s0 .home-head, #slides-wrap #s0 .home-grid .home-card { background: #fff !important; box-shadow: none !important; }
+  #slides-wrap :is(.kpi-val, #home-live-kpis .home-live-kpi-val),
+  #slides-wrap :is(.kpi-lbl, #home-live-kpis .home-quick-box > span),
+  #slides-wrap #s0 .home-head .home-title,
+  #slides-wrap #s0 :is(.home-card-title, .home-card-sub, .home-hero-sub) { color: var(--text) !important; }
+  #slides-wrap .qty-range-ref tbody tr.range-low td { background: #83c7df !important; color: var(--text) !important; }
+  #slides-wrap .qty-range-ref tbody tr.range-high td { background: #57b63d !important; color: var(--text) !important; }
+  #s17 .ss-tna-bar-track { background: #eef3f8 !important; }
+  #s17 #ss-tna-pie-detail span:first-of-type { color: #096349 !important; }
 }
