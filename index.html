@@ -2376,7 +2376,7 @@ input,select,textarea{
       <thead><tr>
         <th>Month</th><th>Team (Line)</th><th>EWO</th><th>Buyer</th>
         <th>Style</th><th class="num">SMV</th>
-        <th class="num">Order Qty</th><th class="num">Plan Qty</th>
+        <th class="num">Unique EWO Count</th><th class="num">Total Feeding Qty</th><th class="num">Order Qty</th><th class="num">Plan Qty</th>
         <th>PCD</th><th>PSD</th><th>PFD</th><th>Delivery Date</th><th class="num">Count</th>
       </tr></thead>
       <tbody id="s1-body"></tbody>
@@ -2419,7 +2419,7 @@ input,select,textarea{
       <thead><tr>
         <th>Month</th><th>Buyer</th>
         <th class="num">Order Qty</th><th class="num">Plan Qty</th>
-        <th class="num">Plan Hours</th><th class="num">Total PO Qty</th><th class="num">Dummy PO Qty</th><th class="num">Dummy PO Plan Qty</th><th class="num">Dummy Plan %</th>
+        <th class="num">Plan Hours</th><th class="num">Clock Hour</th><th class="num">Total PO Qty</th><th class="num">Dummy PO Qty</th><th class="num">Dummy PO Plan Qty</th><th class="num">Dummy Plan %</th>
         <th class="num">ABP Target Efficiency</th><th class="num">Plan Efficiency</th><th class="num">Diff</th><th class="num">Plan In%</th>
       </tr></thead>
       <tbody id="s3-body"></tbody>
@@ -5128,11 +5128,13 @@ function renderS3(data){
   const byBuyer=groupBy(data,'buyer');
   const selectedMonth='';
   const activeBuyers=new Set(data.map(r=>String(r.buyer)));
-  const buyerPlanScope=BUYER_PLAN_DATA.filter(r=>
-    activeBuyers.has(String(r.buyer)) && (!selectedMonth || r.month===selectedMonth)
-  );
-  const sahScope=SAH_DATA.filter(r=>!selectedMonth || r.month===selectedMonth);
-  const clockScope=CLOCK_HOUR_DATA.filter(r=>!selectedMonth || r.month===selectedMonth);
+  const buyerPlanScope=data;
+  const scopeKeys=new Set(data.map(r=>JSON.stringify([String(r.line),String(r.ewo).trim(),String(r.color||'').trim().toUpperCase()])));
+  const inScope=r=>scopeKeys.has(JSON.stringify([String(r.line),String(r.ewo).trim(),String(r.color||'').trim().toUpperCase()]));
+  const poKey=r=>JSON.stringify([String(r.ewo).trim(),String(r.po||'').trim().toUpperCase()]);
+  const isDummy=r=>/^D\s*[-–]|^DUMMY\b/i.test(String(r.po||'').trim());
+  const sahScope=SAH_DATA.filter(inScope);
+  const clockScope=CLOCK_HOUR_DATA.filter(inScope);
   // Buyer Summary Order Qty: direct SUM of Order Qty from Plan/Day rows.
   // This intentionally matches the Planning Data / Excel Plan/Day cross-check.
   const totOrd=authoritativeOrderQty(buyerPlanScope);
@@ -5143,9 +5145,9 @@ function renderS3(data){
     const buyerPlanRows=buyerPlanScope.filter(x=>String(x.buyer)===String(buyer));
     const ordQty=authoritativeOrderQty(buyerPlanRows);
     const planQty=sum(buyerPlanRows,'planqty');
-    const totalPOQty=new Set(buyerPlanRows.map(x=>x.po).filter(Boolean)).size;
-    const dummyRows=buyerPlanRows.filter(x=>/^D-/i.test(x.po));
-    const dummyPOQty=new Set(dummyRows.map(x=>x.po).filter(Boolean)).size;
+    const totalPOQty=new Set(buyerPlanRows.filter(x=>String(x.po||'').trim()).map(poKey)).size;
+    const dummyRows=buyerPlanRows.filter(isDummy);
+    const dummyPOQty=new Set(dummyRows.map(poKey)).size;
     const dummyPOPlanQty=sum(dummyRows,'planqty');
     const dummyPlanPct=planQty>0 ? dummyPOPlanQty/planQty*100 : 0;
     const planHrs=sahScope
@@ -5159,7 +5161,7 @@ function renderS3(data){
     const effDiff=planEff-abpTargetEff;
     totHrs+=planHrs;
     const planPct=totPlan?Math.round(planQty/totPlan*100):0;
-      rows.push({buyer,ordQty,planQty,planHrs:planHrs,totalPOQty,dummyPOQty,dummyPOPlanQty,dummyPlanPct,clockHrs,abpTargetEff,planEff,effDiff,planPct,month:sortedMonths(rws).join(' & ')});
+      rows.push({uniqueEwo:new Set(buyerPlanRows.map(r=>String(r.ewo).trim()).filter(Boolean)).size,feeding:new Set(buyerPlanRows.filter(r=>r.ewo&&r.line).map(r=>JSON.stringify([String(r.line),String(r.ewo).trim()]))).size,buyer,ordQty,planQty,planHrs:planHrs,totalPOQty,dummyPOQty,dummyPOPlanQty,dummyPlanPct,clockHrs,abpTargetEff,planEff,effDiff,planPct,month:sortedMonths(rws).join(' & ')});
   });
 
   rows.sort((a,b)=>b.planQty-a.planQty);
@@ -5173,9 +5175,9 @@ function renderS3(data){
 
   document.getElementById('s3-body').innerHTML=rows.map(r=>`<tr>
     <td>${esc(r.month)}</td><td><b>${esc(r.buyer)}</b></td>
-    <td class="num">${fmt(r.ordQty)}</td>
+    <td class="num">${fmt(r.uniqueEwo)}</td><td class="num">${fmt(r.feeding)}</td><td class="num">${fmt(r.ordQty)}</td>
     <td class="num">${fmt(r.planQty)}</td>
-    <td class="num">${fmt(r.planHrs)}</td>
+    <td class="num">${fmt(r.planHrs)}</td><td class="num">${fmt(r.clockHrs)}</td>
     <td class="num">${fmt(r.totalPOQty)}</td>
     <td class="num">${fmt(r.dummyPOQty)}</td>
     <td class="num">${fmt(r.dummyPOPlanQty)}</td>
@@ -5188,18 +5190,18 @@ function renderS3(data){
 
   const totClock=rows.reduce((s,r)=>s+r.clockHrs,0);
   const totalPlanEff=totClock>0 ? totHrs/totClock*100 : 0;
-  const totalPOQty=new Set(buyerPlanScope.map(r=>r.po).filter(Boolean)).size;
-  const totalDummyRows=buyerPlanScope.filter(r=>/^D-/i.test(r.po));
-  const totalDummyPOQty=new Set(totalDummyRows.map(r=>r.po).filter(Boolean)).size;
+  const totalPOQty=new Set(buyerPlanScope.filter(r=>String(r.po||'').trim()).map(poKey)).size;
+  const totalDummyRows=buyerPlanScope.filter(isDummy);
+  const totalDummyPOQty=new Set(totalDummyRows.map(poKey)).size;
   const totalDummyPOPlanQty=sum(totalDummyRows,'planqty');
   const totalDummyPlanPct=totPlan>0 ? totalDummyPOPlanQty/totPlan*100 : 0;
   const totalABPTarget=LIVE_ABP_TARGET_EFF;
   const totalEffDiff=totalPlanEff-totalABPTarget;
   document.getElementById('s3-foot').innerHTML=`
     <td colspan="2">Total</td>
-    <td class="num">${fmt(totOrd)}</td>
+    <td class="num">${fmt(new Set(data.map(r=>String(r.ewo).trim()).filter(Boolean)).size)}</td><td class="num">${fmt(new Set(data.filter(r=>r.ewo&&r.line).map(r=>JSON.stringify([String(r.line),String(r.ewo).trim()]))).size)}</td><td class="num">${fmt(totOrd)}</td>
     <td class="num">${fmt(totPlan)}</td>
-    <td class="num">${fmt(Math.round(totHrs))}</td>
+    <td class="num">${fmt(Math.round(totHrs))}</td><td class="num">${fmt(totClock)}</td>
     <td class="num">${fmt(totalPOQty)}</td>
     <td class="num">${fmt(totalDummyPOQty)}</td>
     <td class="num">${fmt(totalDummyPOPlanQty)}</td>
