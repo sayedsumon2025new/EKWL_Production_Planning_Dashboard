@@ -1363,6 +1363,20 @@ box-shadow:0 10px 28px rgba(15,39,72,.28);font-size:10px;line-height:1.35}
 
 #s3 .s3-chart-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:20px;align-items:center}#s3 .s3-plan-pie{display:block;padding:0;min-width:0}#s3 .s3-plan-pie svg{display:block;width:100%;height:auto;background:#fff;border:1px solid #d5e1ee;box-shadow:0 2px 8px #0001}.report-actions{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-bottom:8px}.report-actions button{font-size:12px;padding:5px 8px}@media(max-width:850px){#s3 .s3-chart-pair{grid-template-columns:1fr}}
 #s4-chart-card>div{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)!important}#s4-chart-card>div>div{min-width:0}#s4-chart-card canvas{max-width:100%;display:block}@media(max-width:720px){#s4-chart-card>div{grid-template-columns:1fr!important}}
+
+#s3 .card,#s4-analysis .card{border:1px solid #dce5ef;border-radius:10px;box-shadow:0 3px 14px rgba(15,23,42,.04);background:#fff;padding:18px}
+#s3 .card-title{font:600 14px/1.5 "Segoe UI",Arial,sans-serif;letter-spacing:.2px;color:#17314e}
+#s3 .s3-chart-pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}
+#s3 .s3-plan-pie{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;font-family:"Segoe UI",Arial,sans-serif}
+#s3 .s3-plan-pie svg{border:0;box-shadow:none;background:transparent;max-height:250px;width:100%;margin:0 auto}
+.plan-pie-total{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#475569;font-size:13px}
+.plan-pie-total strong{font-size:19px;color:#17314e;letter-spacing:-.3px}.plan-pie-total small{font-size:12px;font-weight:500;color:#64748b}
+.plan-pie-key>div{display:grid;grid-template-columns:10px minmax(0,1fr) auto 52px;gap:9px;padding:6px 0;border-bottom:1px solid #e2e8f0;align-items:center;font-size:13px;line-height:1.35;color:#334155}
+.plan-pie-key>div:last-child{border-bottom:0}.plan-pie-key i{width:9px;height:9px;border-radius:3px}.plan-pie-key span{overflow-wrap:anywhere}.plan-pie-key b{font-weight:600;font-variant-numeric:tabular-nums}.plan-pie-key strong{text-align:right;color:#64748b;font-weight:500;font-variant-numeric:tabular-nums}
+#s3 .bar-row{margin-bottom:12px;gap:12px}#s3 .bar-lbl{font-size:13px;line-height:1.35;width:110px;color:#334155}#s3 .bar-wrap{height:22px;border-radius:4px;background:#edf2f7}#s3 .bar-fill{border-radius:4px;background:#10b981!important}#s3 .bar-val{font-size:12px;font-weight:600}
+.report-actions{margin-bottom:12px;gap:7px}.report-actions button{font:500 12px/1.4 "Segoe UI",Arial,sans-serif;border:1px solid #cbd5e1;background:#f8fafc;color:#334155;border-radius:6px;padding:6px 10px}.report-actions button:hover{background:#eaf1fa;border-color:#94a3b8}
+#s4-chart-card>div{border:1px solid #dce5ef!important;border-radius:8px;overflow:hidden}#s4-chart-card>div>div{padding:14px!important}#s4-chart-card table{font-family:"Segoe UI",Arial,sans-serif;font-size:12px!important}
+@media(max-width:850px){#s3 .s3-chart-pair{grid-template-columns:1fr}#s3 .s3-plan-pie svg{max-height:280px}}
 </style>
 
 <style id="optical-white-professional-theme">
@@ -5142,21 +5156,12 @@ function renderS2(data){
 
 /* ══ SLIDE 3: BUYER SUMMARY ═════════════════════ */
 function renderS3PlanPie(id,entries){
- const total=entries.reduce((s,e)=>s+N(e[1]),0),colors=['#4472c4','#ed7d31','#a5a5a5','#ffc000','#5b9bd5','#70ad47','#264478','#9e480e','#636363','#997300','#255e91','#43682b'];
- const cx=350,cy=245,rx=220,ry=125,depth=24;
- const point=a=>[cx+rx*Math.cos(a),cy+ry*Math.sin(a)];
- let angle=-Math.PI/2;const slices=entries.filter(e=>N(e[1])>0).map((e,i)=>{const start=angle;angle+=N(e[1])/total*Math.PI*2;return {name:e[0],qty:N(e[1]),pct:N(e[1])/total*100,start,end:angle,mid:(start+angle)/2,color:colors[i%colors.length]};});
- const wedge=r=>{const a=point(r.start),b=point(r.end);return slices.length===1?'':`M ${cx} ${cy} L ${a[0]} ${a[1]} A ${rx} ${ry} 0 ${r.end-r.start>Math.PI?1:0} 1 ${b[0]} ${b[1]} Z`;};
- const shape=(r,extra='')=>slices.length===1?`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${r.color}" ${extra}/>`:`<path d="${wedge(r)}" fill="${r.color}" ${extra}/>`;
- let svg=`<svg viewBox="0 0 700 460" role="img" aria-label="Plan quantity distribution"><title>Plan Qty: ${fmt(total)} pcs</title><g transform="translate(0 ${depth})" style="filter:brightness(.65)">${slices.map(r=>shape(r)).join('')}</g>${slices.map(r=>shape(r,'stroke="white" stroke-width="1.5"')).join('')}`;
- for(const side of [-1,1]){
-  const list=slices.filter(r=>Math.cos(r.mid)*side>=0).sort((a,b)=>Math.sin(a.mid)-Math.sin(b.mid));
-  list.forEach((r,i)=>{const anchor=point(r.mid),y=55+i*(340/Math.max(list.length-1,1)),x=side<0?65:635;
-   svg+=`<polyline points="${anchor[0]},${anchor[1]} ${side<0?110:590},${y} ${x},${y}" fill="none" stroke="#a5a5a5" stroke-width="1.5"/><rect x="${x-60}" y="${y-24}" width="120" height="48" fill="white" stroke="#b7b7b7"/><text x="${x}" y="${y-5}" text-anchor="middle" fill="#17314e" font-size="13" font-weight="700">${esc(r.name)}</text><text x="${x}" y="${y+15}" text-anchor="middle" fill="#17314e" font-size="14" font-weight="700">${r.pct.toFixed(1)}%</text>`;
-  });
- }
- svg+=`<text x="350" y="440" text-anchor="middle" fill="#17314e" font-size="14">Total Plan Qty: ${fmt(total)} pcs</text></svg>`;
- document.getElementById(id).innerHTML=total?svg:'<p>No Plan Qty in selected dates.</p>';
+ const total=entries.reduce((s,e)=>s+N(e[1]),0),colors=['#2563eb','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f43f5e','#64748b','#ea580c','#14b8a6','#6366f1','#a855f7','#84cc16'];
+ const cx=250,cy=145,rx=190,ry=108;let angle=-Math.PI/2;
+ const slices=entries.filter(e=>N(e[1])>0).map((e,i)=>{const start=angle;angle+=N(e[1])/total*Math.PI*2;return {name:e[0],qty:N(e[1]),pct:N(e[1])/total*100,start,end:angle,color:colors[i%colors.length]};});
+ const shape=r=>{if(slices.length===1)return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${r.color}"/>`;const a=[cx+rx*Math.cos(r.start),cy+ry*Math.sin(r.start)],b=[cx+rx*Math.cos(r.end),cy+ry*Math.sin(r.end)];return `<path d="M ${cx} ${cy} L ${a[0]} ${a[1]} A ${rx} ${ry} 0 ${r.end-r.start>Math.PI?1:0} 1 ${b[0]} ${b[1]} Z" fill="${r.color}" stroke="white" stroke-width="1.5"><title>${esc(r.name)}: ${fmt(r.qty)} pcs (${r.pct.toFixed(1)}%)</title></path>`;};
+ const svg=`<svg viewBox="0 0 500 290" role="img" aria-label="Plan quantity distribution"><title>Plan Qty ${fmt(total)} pcs</title><g transform="translate(0 12)" style="filter:brightness(.8)">${slices.map(shape).join('')}</g>${slices.map(shape).join('')}</svg>`;
+ document.getElementById(id).innerHTML=total?'<div class="plan-pie-total"><span>Total Plan Qty</span><strong>'+fmt(total)+' <small>pcs</small></strong></div>'+svg+'<div class="plan-pie-key">'+slices.map(r=>'<div><i style="background:'+r.color+'"></i><span>'+esc(r.name)+'</span><b>'+fmt(r.qty)+'</b><strong>'+r.pct.toFixed(1)+'%</strong></div>').join('')+'</div>':'<p class="plan-pie-empty">No Plan Qty in selected dates.</p>';
 }
 async function copyReportData(button){
  const card=button.closest('.card'),tables=[...card.querySelectorAll('table')];
