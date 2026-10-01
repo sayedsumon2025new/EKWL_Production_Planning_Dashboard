@@ -164,7 +164,6 @@ body #slides-wrap { background: var(--bg) !important; }
 #slides-wrap :is(.home-mini-val, .home-hit-hole b, .home-hit-legend b, .bar-lbl, .bar-val, .s9-prod-val) { color: var(--text) !important; }
 #slides-wrap .home-mini-row { font-size: 11px; margin: 9px 0; }
 #slides-wrap .home-hit-hole { background: var(--card) !important; }
-#slides-wrap :is(.s9-hit-center, .s9-hit-legend b) { color: var(--text) !important; }
 #slides-wrap :is(.home-hit-legend, .s2-top-legend, .s3-qty-legend, .range-legend) { color: var(--text2) !important; font-size: 12px; line-height: 1.6; }
 #slides-wrap :is(.s2-top-hole, .range-pie-hole, .s3-qty-donut > div) { background: var(--card) !important; color: var(--text) !important; }
 #slides-wrap #s3 .s3-plan-pie svg { background: var(--card) !important; border-color: var(--border) !important; border-radius: 8px; }
@@ -174,13 +173,17 @@ body #slides-wrap { background: var(--bg) !important; }
 #s17 :is(.ss-tna-chart h3, .ss-tna-bar-label) { color: var(--text) !important; }
 /* The adjacent source table retains its existing light surface. */
 #s17 #ss-tna-table > h3 { color: #172033 !important; }
-#s17 :is(.ss-tna-bar-values, .ss-tna-legend, .ss-tna-pie-detail) { color: var(--text2) !important; }
+#s17 :is(.ss-tna-bar-values, .ss-tna-legend) { color: var(--text2) !important; }
+#s17 .ss-tna-pie-detail { color: var(--text) !important; }
+#s17 .ss-tna-bar-track { background: #101927 !important; }
+#s17 .ss-tna-pie { border-color: var(--card) !important; }
 #s17 #ss-tna-pie-detail span:first-of-type { color: #6bd6b2 !important; }
 #s17 #ss-tna-pie-detail span:last-of-type { color: var(--amber2) !important; }
 #slides-wrap :is(.plan-pie-total, .plan-pie-key > div, .plan-pie-key strong, .plan-pie-total small) { color: var(--text2) !important; border-color: var(--border); }
 #slides-wrap .plan-pie-total strong { color: var(--text) !important; }
 #slides-wrap .s3-plan-pie svg path { stroke: var(--card); }
 #slides-wrap :is(.chart-total, .range-block, .s9-prod-bars, .s9-day-bars) { border-color: var(--border) !important; color: var(--text2) !important; }
+#slides-wrap :is(.s9-hit-center, .s9-hit-center b, .s9-hit-legend b) { color: var(--text) !important; }
 #slides-wrap .chart-total strong { color: var(--amber2) !important; }
 #slides-wrap :is(.tbl-wrap, .gantt-wrap) { border-color: var(--border) !important; border-radius: 6px; background: var(--card) !important; }
 #slides-wrap table { background: var(--card) !important; color: var(--text) !important; }
@@ -200,8 +203,8 @@ body #slides-wrap { background: var(--bg) !important; }
 }
 /* Keep the blue/green category meaning on normal, striped and hovered rows,
    including the legacy row-spanning summary cells. */
-#slides-wrap .qty-range-ref tbody tr.range-low td { background: #183f53 !important; color: #d8efff !important; }
-#slides-wrap .qty-range-ref tbody tr.range-high td { background: #1e4234 !important; color: #def8e7 !important; }
+#slides-wrap .qty-range-ref tbody tr.range-low td { background: #2b6f88 !important; color: #f5f9ff !important; }
+#slides-wrap .qty-range-ref tbody tr.range-high td { background: #3f7a3b !important; color: #f5f9ff !important; }
 #slides-wrap table td { border-color: #354256 !important; font-weight: 400 !important; }
 #slides-wrap table tfoot td,
 #slides-wrap table .range-total td { background: #29384c !important; color: var(--text) !important; font-weight: 650 !important; }
@@ -281,6 +284,7 @@ body ::-webkit-scrollbar-thumb { background: #52647c; border-color: #141e2c; }
     --panel-shadow: none !important;
   }
   html, html body, body .slide { background: #fff !important; color: #172033 !important; }
+  body #topnav { display: none !important; }
   body #slides-wrap { position: static; }
   /* These legacy fixed slides would otherwise cover the printed report. */
   body :is(#s18, #s19) { position: static; inset: auto; }
@@ -305,5 +309,6 @@ body ::-webkit-scrollbar-thumb { background: #52647c; border-color: #141e2c; }
   #slides-wrap #s0 :is(.home-card-title, .home-card-sub, .home-hero-sub) { color: var(--text) !important; }
   #slides-wrap .qty-range-ref tbody tr.range-low td { background: #83c7df !important; color: var(--text) !important; }
   #slides-wrap .qty-range-ref tbody tr.range-high td { background: #57b63d !important; color: var(--text) !important; }
+  #s17 .ss-tna-bar-track { background: #eef3f8 !important; }
   #s17 #ss-tna-pie-detail span:first-of-type { color: #096349 !important; }
 }
