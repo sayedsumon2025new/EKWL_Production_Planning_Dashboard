@@ -241,6 +241,11 @@ body #slides-wrap { background: var(--bg) !important; }
   #slides-wrap :is(table.dt, .qty-range-ref) tbody tr:hover:not(.range-low):not(.range-high) td:not([style]):not([class]),
   #slides-wrap :is(table.dt, .qty-range-ref) tbody tr:hover:not(.range-low):not(.range-high) td:is(.num, .cen, .hoverable) { background: var(--tone-e8eef2) !important; }
 }
+/* Legacy Slide 06 footer backgrounds outrank the generic total-row style.
+   Keep the total cells and their text on matching screen-theme tokens. */
+@media screen {
+  #slides-wrap #s6 table tfoot td { background: var(--tone-e2e9ed) !important; color: var(--text) !important; }
+}
 /* Keep the blue/green category meaning on normal, striped and hovered rows,
    including the legacy row-spanning summary cells. */
 #slides-wrap .qty-range-ref tbody tr.range-low td { background: #2b6f88 !important; color: #f5f9ff !important; }
