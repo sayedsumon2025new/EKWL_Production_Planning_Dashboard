@@ -4881,14 +4881,7 @@ let S2_LINE_DETAILS=[];
 let S2_RANGE_PLAN_ID=null,S2_RANGE_FROM='',S2_RANGE_TO='';
 function s2DateRangeRows(rows,daily,from,to){
   if(!from||!to)return rows;
-  const totals=new Map();
-  for(const day of daily){
-    if(day.date<from||day.date>to||N(day.value)<=0)continue;
-    const id=String(day.record_id);
-    totals.set(id,(totals.get(id)||0)+N(day.value));
-  }
-  return rows.filter(row=>totals.has(String(row.record_id)))
-    .map(row=>({...row,planqty:totals.get(String(row.record_id))}));
+  return rows.filter(row=>validDate(row.startdate)&&row.startdate>=from&&row.startdate<=to);
 }
 function s2DateRangeChanged(which){
   const from=document.getElementById('s2-date-from'),to=document.getElementById('s2-date-to');
@@ -4931,7 +4924,7 @@ function openS2LineDetails(index){
   dialog.setAttribute('aria-labelledby','s2-line-dialog-title');
   const list=values=>[...values].map(esc).join(', ')||'—';
   dialog.innerHTML='<header><div><h2 id="s2-line-dialog-title">Line '+esc(detail.line)+' · '+esc(detail.range)+'</h2><p>'+esc(S2_RANGE_FROM&&S2_RANGE_TO?S2_RANGE_FROM+' – '+S2_RANGE_TO:sortedMonths(detail.rows).join(' & '))+' · '+groups.length+' EWO(s)</p></div><button type="button" class="s2-dialog-close" aria-label="Close EWO details">✕</button></header>'+
-    '<p class="s2-detail-note">Range uses Order Qty for this Line + EWO across matching PO and colours with Plan/Day activity in the selected dates. Plan Qty is the sum within those dates; blank Colour and PO values are excluded from their unique counts.</p>'+
+    '<p class="s2-detail-note">Range uses Order Qty for this Line + EWO across matching PO and colours whose Plan Data PSD falls in the selected dates. Plan Qty is the source Plan Qty for those rows; blank Colour and PO values are excluded from their unique counts.</p>'+
     '<div class="s2-line-kpis">'+[
       ['Total EWO',fmt(totals.ewos)],['Unique Colours',fmt(totals.colors)],
       ['Total Order Qty',fmt(totals.orderqty)],['Total Plan Qty',fmt(totals.planqty)],
@@ -4950,7 +4943,7 @@ function openS2LineDetails(index){
 function renderS2(data){
   closeS2LineDetails();
   S2_LINE_DETAILS=[];
-  const dates=[...new Set(DAILY_PLAN.filter(d=>N(d.value)>0&&validDate(d.date)).map(d=>d.date))].sort();
+  const dates=[...new Set(DATA.filter(r=>validDate(r.startdate)).map(r=>r.startdate))].sort();
   const planId=String(ACTIVE_PLAN_UPLOAD?.id||'local');
   if(S2_RANGE_PLAN_ID!==planId){
     S2_RANGE_PLAN_ID=planId;S2_RANGE_FROM=dates[0]||'';S2_RANGE_TO=dates.at(-1)||'';
@@ -4975,7 +4968,7 @@ function renderS2(data){
   // Do not re-filter on r.criteria here: that field is not retained in this runtime view.
   const s2Source=dates.length?s2DateRangeRows(data,DAILY_PLAN,S2_RANGE_FROM,S2_RANGE_TO):data;
 
-  // Range basis: sum Order Qty across rows active in the selected dates by Line + EWO.
+  // Range basis: source PSD-filtered Order Qty by Line + EWO. Unique EWO buckets aggregate across lines.
   const ewoOrderMap=new Map();
   s2Source.forEach(r=>{
     const k=JSON.stringify([String(r.line),String(r.ewo??'').trim()]);
@@ -5000,12 +4993,14 @@ function renderS2(data){
     {lbl:'Above 8000',min:8001,max:Infinity}
   ];
 
+  const ewoTotals=new Map();
+  allUniqueEWOs.forEach(e=>{if(e.ewo)ewoTotals.set(e.ewo,(ewoTotals.get(e.ewo)||0)+e.orderqty);});
   const totalStyles=allUniqueEWOs.length;
   const stats=RANGES.map(r=>{
     const matched=allUniqueEWOs.filter(e=>e.orderqty>=r.min && e.orderqty<=r.max);
     const count=matched.length;
     const orderQty=matched.reduce((s,e)=>s+N(e.orderqty),0);
-    return {...r,count,ewoCount:new Set(matched.map(e=>e.ewo).filter(Boolean)).size,orderQty,pct:totalStyles ? count/totalStyles*100 : 0};
+    return {...r,count,ewoCount:[...ewoTotals.values()].filter(q=>q>=r.min&&q<=r.max).length,orderQty,pct:totalStyles ? count/totalStyles*100 : 0};
   });
   const lowCount=stats.slice(0,5).reduce((s,r)=>s+r.count,0);
   const highCount=stats.slice(5).reduce((s,r)=>s+r.count,0);
@@ -5031,7 +5026,7 @@ function renderS2(data){
     html+=`</tr>`;
   });
   html+=`<tr class="range-total">
-    <td>Total Line–EWO</td><td class="num">${fmt(totalStyles)}</td><td class="num">${fmt(new Set(allUniqueEWOs.map(e=>e.ewo).filter(Boolean)).size)}</td><td class="num">${fmt(totalOrderQty)}</td><td class="num">${totalStyles?'100%':'0%'}</td><td class="num">${totalStyles?'100%':'0%'}</td>
+    <td>Total Line–EWO</td><td class="num">${fmt(totalStyles)}</td><td class="num">${fmt(ewoTotals.size)}</td><td class="num">${fmt(totalOrderQty)}</td><td class="num">${totalStyles?'100%':'0%'}</td><td class="num">${totalStyles?'100%':'0%'}</td>
   </tr></tbody></table>`;
   document.getElementById('s2-tbl-wrap').innerHTML=`
     <div style="display:flex;justify-content:flex-end;align-items:center;margin:0 0 8px">
@@ -5039,7 +5034,7 @@ function renderS2(data){
         <span style="font-weight:700">Total Order Qty</span>
         <strong style="margin-left:8px;font-size:15px;color:#0d3157">${fmt(totalOrderQty)} pcs</strong>
       </div>
-    </div>`+html;
+    </div>`+html+'<p class="s2-detail-note">Date filter: Plan Data PSD. EWO Count: one range per EWO using its total Order Qty across lines. Line–EWO and Order Qty: line-level ranges.</p>';
   document.getElementById('s2-top-pie').innerHTML=`
     <div class="s2-top-pie-title">📊 LINE–EWO DISTRIBUTION</div>
     <div class="s2-top-pie-body">
