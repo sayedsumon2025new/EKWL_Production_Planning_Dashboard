@@ -168,24 +168,38 @@ body #slides-wrap { background: var(--bg) !important; }
 #slides-wrap :is(.s2-top-hole, .range-pie-hole, .s3-qty-donut > div) { background: var(--card) !important; color: var(--text) !important; }
 #slides-wrap #s3 .s3-plan-pie svg { background: var(--card) !important; border-color: var(--border) !important; border-radius: 8px; }
 #slides-wrap :is(.plan-pie-key, .setting-panel, .setting-card, .ss-tna-chart) { background: var(--card) !important; color: var(--text) !important; border-color: var(--border) !important; }
+#slides-wrap .ss-tna-chart h3,
+#slides-wrap :is(.ss-tna-bar-label, .ss-tna-pie-detail) { color: var(--text) !important; }
+#slides-wrap :is(.ss-tna-bar-values, .ss-tna-legend) { color: var(--text2) !important; }
+#slides-wrap .ss-tna-bar-track { background: #101927 !important; }
+#slides-wrap .ss-tna-pie { border-color: var(--card) !important; }
 #slides-wrap :is(.plan-pie-total, .plan-pie-key > div, .plan-pie-key strong, .plan-pie-total small) { color: var(--text2) !important; border-color: var(--border); }
 #slides-wrap .plan-pie-total strong { color: var(--text) !important; }
 #slides-wrap .s3-plan-pie svg path { stroke: var(--card); }
 #slides-wrap :is(.chart-total, .range-block, .s9-prod-bars, .s9-day-bars) { border-color: var(--border) !important; color: var(--text2) !important; }
+#slides-wrap :is(.s9-hit-center, .s9-hit-center b, .s9-hit-legend b) { color: var(--text) !important; }
 #slides-wrap .chart-total strong { color: var(--amber2) !important; }
 #slides-wrap :is(.tbl-wrap, .gantt-wrap) { border-color: var(--border) !important; border-radius: 6px; background: var(--card) !important; }
 #slides-wrap table { background: var(--card) !important; color: var(--text) !important; }
 #slides-wrap table th { background: #263449 !important; color: #e7eef8 !important; border-color: #44546a !important; font-weight: 650 !important; }
 /* Only neutral table cells get new surfaces. Inline and class-based product,
    priority, coverage and efficiency colors retain their original meaning. */
-#slides-wrap :is(table.dt, .qty-range-ref) tbody td:not([style]):not([class]),
-#slides-wrap :is(table.dt, .qty-range-ref) tbody td:is(.num, .cen, .hoverable) {
+#slides-wrap table.dt tbody td:not([style]):not([class]),
+#slides-wrap table.dt tbody td:is(.num, .cen, .hoverable),
+#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high) td:not([style]):not([class]),
+#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high) td:is(.num, .cen, .hoverable) {
   background: var(--card) !important; color: var(--text) !important;
 }
-#slides-wrap :is(table.dt, .qty-range-ref) tbody tr:nth-child(even) td:not([style]):not([class]),
-#slides-wrap :is(table.dt, .qty-range-ref) tbody tr:nth-child(even) td:is(.num, .cen, .hoverable) { background: #202a39 !important; }
-#slides-wrap :is(table.dt, .qty-range-ref) tbody tr:hover td:not([style]):not([class]),
-#slides-wrap :is(table.dt, .qty-range-ref) tbody tr:hover td:is(.num, .cen, .hoverable) { background: #2b3b51 !important; }
+#slides-wrap table.dt tbody tr:nth-child(even) td:not([style]):not([class]),
+#slides-wrap table.dt tbody tr:nth-child(even) td:is(.num, .cen, .hoverable),
+#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high):nth-child(even) td:not([style]):not([class]),
+#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high):nth-child(even) td:is(.num, .cen, .hoverable) { background: #202a39 !important; }
+#slides-wrap table.dt tbody tr:hover td:not([style]):not([class]),
+#slides-wrap table.dt tbody tr:hover td:is(.num, .cen, .hoverable),
+#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high):hover td:not([style]):not([class]),
+#slides-wrap .qty-range-ref tbody tr:not(.range-low):not(.range-high):hover td:is(.num, .cen, .hoverable) { background: #2b3b51 !important; }
+#slides-wrap .qty-range-ref tbody tr.range-low td { background: #2b6f88 !important; color: #f5f9ff !important; }
+#slides-wrap .qty-range-ref tbody tr.range-high td { background: #3f7a3b !important; color: #f5f9ff !important; }
 #slides-wrap table td { border-color: #354256 !important; font-weight: 400 !important; }
 #slides-wrap table tfoot td,
 #slides-wrap table .range-total td { background: #29384c !important; color: var(--text) !important; font-weight: 650 !important; }
@@ -210,7 +224,7 @@ body .site-login-btn { background: var(--amber2); color: #18202d; }
 body .site-login-link { color: #8bc5ff; }
 body .site-login-input { min-height: 44px; }
 body .site-login-overlay { background: #10151ef2; }
-body #s2-line-dialog :is(h2, strong) { color: var(--text); }
+body #s2-line-dialog :is(h2, strong) { color: var(--text) !important; }
 body #s2-line-dialog :is(p, span) { color: var(--text2); }
 body #s2-line-dialog .s2-line-kpis > div { background: #24344a; border-color: var(--border); }
 body #s2-line-dialog :is(table, td) { background: var(--card) !important; color: var(--text) !important; border-color: var(--border) !important; }
@@ -249,8 +263,18 @@ body ::-webkit-scrollbar-thumb { background: #52647c; border-color: #141e2c; }
   #slides-wrap *, #slide-tabs * { animation: none !important; transition: none !important; }
 }
 @media print {
-  :root { color-scheme: light; }
+  :root { color-scheme: light !important; }
+  html body,
+  body #slides-wrap,
+  #slides-wrap .slide {
+    background: #fff !important;
+    color: #172033 !important;
+  }
+  body #topnav { display: none !important; }
   body #slides-wrap { position: static; }
+  #slides-wrap :is(.slide-title, .slide-subtitle, .card-title, .home-live-heading, h1, h2, h3, h4, p, span, strong) {
+    color: #172033 !important;
+  }
   #slides-wrap :is(.card, .kpi, .home-quick, .home-live-panel, .home-card, table, table th, table td) {
     background: #fff !important; color: #172033 !important; box-shadow: none !important;
   }
