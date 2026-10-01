@@ -199,6 +199,13 @@ body #slides-wrap { background: var(--bg) !important; }
 #slides-wrap .home-hit-hole { background: var(--card) !important; }
 #slides-wrap :is(.home-hit-legend, .s2-top-legend, .s3-qty-legend, .range-legend) { color: var(--text2) !important; font-size: 12px; line-height: 1.6; }
 #slides-wrap :is(.s2-top-hole, .range-pie-hole, .s3-qty-donut > div) { background: var(--card) !important; color: var(--text) !important; }
+/* Order quantity distribution uses the active light/dark card surface.
+   Override legacy white center text and fixed amber legend ink. */
+#slides-wrap #s6-range-pie { background: var(--card) !important; border-color: var(--border) !important; box-shadow: var(--panel-shadow) !important; }
+#slides-wrap #s6-range-pie .s2-top-hole { background: var(--card) !important; }
+#slides-wrap #s6-range-pie :is(.s2-top-pie-title, .s2-top-hole b) { color: var(--text) !important; text-shadow: none !important; }
+#slides-wrap #s6-range-pie :is(.s2-top-hole span, .s2-top-legend) { color: var(--text2) !important; text-shadow: none !important; }
+#slides-wrap #s6-range-pie .s2-top-legend strong { color: var(--amber2) !important; }
 #slides-wrap #s3 .s3-plan-pie svg { background: var(--card) !important; border-color: var(--border) !important; border-radius: 8px; }
 #slides-wrap :is(.plan-pie-key, .setting-panel, .setting-card) { background: var(--card) !important; color: var(--text) !important; border-color: var(--border) !important; }
 /* Size Set is outside #slides-wrap in the existing rendered DOM. */

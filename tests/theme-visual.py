@@ -236,6 +236,32 @@ class ThemeVisualTests(unittest.TestCase):
                 '(els)=>els.map(e=>getComputedStyle(e).backgroundColor)')
             self.assertEqual(len(set(colors)), 1, f'Legacy {category} summary cells')
 
+    def test_order_distribution_panel_and_center_follow_both_themes(self):
+        self.page.evaluate('goSlide(6)')
+        panel = self.page.locator('#s6-range-pie')
+        donut = panel.locator('.s2-top-donut')
+        values = panel.inner_text()
+        series = donut.evaluate('(e)=>e.style.background')
+        for theme in ['light', 'dark']:
+            if self.page.evaluate('window.EKWLTheme.get()') != theme:
+                self.page.locator('#theme-toggle').click()
+            surface = self.page.evaluate('getComputedStyle(document.documentElement).getPropertyValue("--card").trim()')
+            for selector in ['#s6-range-pie', '#s6-range-pie .s2-top-hole']:
+                self.assertEqual(self.page.locator(selector).evaluate(
+                    '(e)=>getComputedStyle(e).backgroundColor'),
+                    self.page.evaluate('(color)=>{const e=document.createElement("div");e.style.color=color;document.body.append(e);const rgb=getComputedStyle(e).color;e.remove();return rgb}', surface))
+            self.assert_readable('#s6-range-pie .s2-top-pie-title, #s6-range-pie .s2-top-hole b, '
+                                 '#s6-range-pie .s2-top-hole span, #s6-range-pie .s2-top-legend strong')
+            for element in panel.locator('.s2-top-hole b, .s2-top-hole span').all():
+                self.assertEqual(element.evaluate('(e)=>getComputedStyle(e).textShadow'), 'none')
+            self.assertEqual(panel.inner_text(), values)
+            self.assertEqual(donut.evaluate('(e)=>e.style.background'), series)
+            if OPTIONS.artifacts:
+                panel.screenshot(path=str(OPTIONS.artifacts / ('order-distribution-' + theme + '.png')))
+        self.page.emulate_media(media='print')
+        self.assert_readable('#s6-range-pie .s2-top-hole b, #s6-range-pie .s2-top-hole span, '
+                             '#s6-range-pie .s2-top-legend strong', paper=True)
+
     def test_priority_hit_percentages_and_counts_have_contrast(self):
         self.page.evaluate('goSlide(10)')
         self.assert_readable('.s9-hit-center b, .s9-hit-center span, .s9-hit-legend b')
