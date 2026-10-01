@@ -2482,6 +2482,23 @@ input,select,textarea{
   </div>
   <div class="kpi-row" id="s6-kpi"></div>
   <div class="card"><div class="card-title">📊 Order QTY Range Analysis</div><div class="tbl-wrap" id="s6-range-summary"></div></div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">📊 EWO Feeding Distribution</div>
+      <div class="bar-chart" id="s8-bar"></div>
+      <div style="margin-top:16px" id="s8-summary"></div>
+    </div>
+  </div>
+  <div class="feeding-pie-grid">
+    <div class="card feeding-pie-card">
+      <div class="card-title">🥧 Buyer-wise Feeding % <span class="ct-right">Feeding share by buyer</span></div>
+      <div class="feeding-pie-wrap" id="s8-buyer-pie"></div>
+    </div>
+    <div class="card feeding-pie-card">
+      <div class="card-title">🥧 Product-wise Feeding % <span class="ct-right">Feeding share by product</span></div>
+      <div class="feeding-pie-wrap" id="s8-product-pie"></div>
+    </div>
+  </div>
   <div class="s6-analysis-top"><div class="card"><div class="s2-top-pie" id="s6-range-pie"></div></div><div class="card">
       <div class="card-title">🔄 EWO Feeding Frequency Analysis</div>
       <div class="tbl-wrap"><table class="dt" id="s6-feeding-tbl">
@@ -2614,24 +2631,8 @@ input,select,textarea{
       <button class="pg-btn" onclick="goSlide(9)">Next →</button>
     </div>
   </div>
-  <div class="two-col">
-    <div hidden><table><tbody id="s8-body"></tbody><tfoot><tr id="s8-foot"></tr></tfoot></table></div>
-    <div class="card">
-      <div class="card-title">📊 EWO Feeding Distribution</div>
-      <div class="bar-chart" id="s8-bar"></div>
-      <div style="margin-top:16px" id="s8-summary"></div>
-    </div>
-  </div>
-  <div class="feeding-pie-grid">
-    <div class="card feeding-pie-card">
-      <div class="card-title">🥧 Buyer-wise Feeding % <span class="ct-right">Feeding share by buyer</span></div>
-      <div class="feeding-pie-wrap" id="s8-buyer-pie"></div>
-    </div>
-    <div class="card feeding-pie-card">
-      <div class="card-title">🥧 Product-wise Feeding % <span class="ct-right">Feeding share by product</span></div>
-      <div class="feeding-pie-wrap" id="s8-product-pie"></div>
-    </div>
-  </div>
+  <div hidden><table><tbody id="s8-body"></tbody><tfoot><tr id="s8-foot"></tr></tfoot></table></div>
+  <div class="card"><p>Feeding analysis is now on Slide 06.</p><button class="pg-btn" onclick="goSlide(6)">Open EWO Detail Table</button></div>
 </div>
 
 <!-- ─── SLIDE 9: LINE CALENDAR ─────────────── -->
@@ -5556,6 +5557,7 @@ function renderS6RangeSummary(rows,sourceRows=[]){
   document.getElementById('s6-range-bar').onclick=e=>{const button=e.target.closest('button[data-s2-detail]');if(button)openS2LineDetails(Number(button.dataset.s2Detail));};
 
 }
+let S6_FEEDING_SOURCE=[];
 function renderS6(data){
   const month=uploadMonthKey(ACTIVE_PLAN_UPLOAD)||document.getElementById('month-filter').value;
   const monthText=planningMonthLabel(month);
@@ -5578,7 +5580,10 @@ function renderS6(data){
   rows.forEach(r=>frequencies.set(r.feeding,(frequencies.get(r.feeding)||0)+1));
   document.getElementById('s6-feeding-body').innerHTML=[...frequencies].sort((a,b)=>a[0]-b[0]).map(([times,count])=>'<tr><td class="cen">'+times+'</td><td class="num">'+fmt(count)+'</td><td class="num">'+fmt(times*count)+'</td><td class="num">'+(rows.length?count/rows.length*100:0).toFixed(1)+'%</td><td></td></tr>').join('');
   document.getElementById('s6-feeding-foot').innerHTML='<td>Total Run EWO</td><td class="num">'+fmt(rows.length)+'</td><td class="num">'+fmt(rows.reduce((s,r)=>s+r.feeding,0))+'</td><td class="num">'+(rows.length?'100.0%':'0.0%')+'</td><td></td>';
-  renderS6RangeSummary(rows,data.filter(r=>String(r.startdate||'').slice(0,7)===month&&rows.some(e=>e.ewo===String(r.ewo??'').trim())));
+  const selectedEwos=new Set(rows.map(r=>r.ewo));
+  S6_FEEDING_SOURCE=data.filter(r=>String(r.startdate||'').slice(0,7)===month&&selectedEwos.has(String(r.ewo??'').trim())).map(r=>({...r,month}));
+  renderS6RangeSummary(rows,S6_FEEDING_SOURCE);
+  renderS8(S6_FEEDING_SOURCE);
   document.getElementById('s6-month').textContent=monthText;
   const totOrd=rows.reduce((s,r)=>s+r.orderqty,0),totPlan=rows.reduce((s,r)=>s+r.planqty,0);
   const feeding=rows.reduce((s,r)=>s+r.feeding,0);
@@ -6011,6 +6016,7 @@ function renderFeedingPie(elId, entries, totalFeeding){
 }
 
 function renderS8(data){
+  data=S6_FEEDING_SOURCE;
   document.getElementById('s8-month').textContent=monthLabel(data);
 
   // Count lines per EWO (= feeding count)
