@@ -1267,7 +1267,7 @@ box-shadow:0 10px 28px rgba(15,39,72,.28);font-size:10px;line-height:1.35}
 .eff15-fr-cell.eff15-above > *{background:transparent!important}
 
 #s6 .s6-filter-bar{display:flex;align-items:center;gap:10px;margin:10px 0 14px;font-size:12px;font-weight:700}
-#s6-feeding-filter{padding:6px 12px;border:1px solid #9eafbc;border-radius:4px;background:#fff;color:#17314e}
+#s6-feeding-filter,#s6-order-range-filter{padding:6px 12px;border:1px solid #9eafbc;border-radius:4px;background:#fff;color:#17314e}
 #s6 #s6-tbl thead th{background:#c6efce;color:#176125;border:1px solid #8a9d95}
 #s6 #s6-tbl tbody tr:nth-child(odd) td{background:#c0e6f2;color:#17314e}
 #s6 #s6-tbl tbody tr:nth-child(even) td{background:#fff;color:#17314e}
@@ -2484,7 +2484,7 @@ input,select,textarea{
   <div class="card">
     <div class="card-title">📝 EWO Detail — Line Run & Split QTY <span class="ct-right" id="s6-count"></span></div>
     <div class="s6-filter-bar"><label for="s6-feeding-filter">No. of Feeding</label>
-      <select id="s6-feeding-filter" onchange="renderS6(getFiltered())"><option value="">All</option></select></div>
+      <select id="s6-feeding-filter" onchange="renderS6(getFiltered())"><option value="">All</option></select><label for="s6-order-range-filter">Order Qty Range</label><select id="s6-order-range-filter" onchange="renderS6(getFiltered())"><option value="">All ranges</option></select></div>
     <div class="tbl-wrap"><table class="dt" id="s6-tbl">
       <thead><tr>
         <th>Month</th><th>Buyer</th><th>EWO</th><th>Line Run Status</th>
@@ -5528,14 +5528,20 @@ function renderS6(data){
   const month=uploadMonthKey(ACTIVE_PLAN_UPLOAD)||document.getElementById('month-filter').value;
   const monthText=planningMonthLabel(month);
   const filter=document.getElementById('s6-feeding-filter');
+  const rangeFilter=document.getElementById('s6-order-range-filter');
   const scope=month+'|'+String(ACTIVE_PLAN_UPLOAD?.id||'');
   const previous=filter.dataset.scope===scope?filter.value:'';
-  filter.dataset.scope=scope;
+  const previousRange=rangeFilter.dataset.scope===scope?rangeFilter.value:'';
+  filter.dataset.scope=scope;rangeFilter.dataset.scope=scope;
   const allRows=buildS6Rows(data,month);
-  const counts=[...new Set(allRows.map(r=>r.feeding))].sort((a,b)=>a-b);
+  const ranges=[['Below 500',0,500],['501-1000',501,1000],['1001-2000',1001,2000],['2001-3000',2001,3000],['3001-5000',3001,5000],['5001-8000',5001,8000],['Above 8000',8001,Infinity]];
+  const inRange=(r,v)=>v===''||r.orderqty>=ranges[Number(v)][1]&&r.orderqty<=ranges[Number(v)][2];
+  rangeFilter.innerHTML='<option value="">All ranges</option>'+ranges.map((r,i)=>'<option value="'+i+'">'+r[0]+'</option>').join('');
+  rangeFilter.value=/^[0-6]$/.test(previousRange)?previousRange:'';
+  const counts=[...new Set(allRows.filter(r=>inRange(r,rangeFilter.value)).map(r=>r.feeding))].sort((a,b)=>a-b);
   filter.innerHTML='<option value="">All</option>'+counts.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
   filter.value=counts.some(n=>String(n)===previous)?previous:'';
-  const rows=filter.value?allRows.filter(r=>r.feeding===Number(filter.value)):allRows;
+  const rows=allRows.filter(r=>inRange(r,rangeFilter.value)&&(!filter.value||r.feeding===Number(filter.value)));
   document.getElementById('s6-month').textContent=monthText;
   const totOrd=rows.reduce((s,r)=>s+r.orderqty,0),totPlan=rows.reduce((s,r)=>s+r.planqty,0);
   const feeding=rows.reduce((s,r)=>s+r.feeding,0);
@@ -5549,7 +5555,7 @@ function renderS6(data){
     '<td>'+r.lines.map(esc).join(' | ')+'</td><td class="num">'+r.feeding+'</td>'+
     '<td>'+[...r.items].map(esc).join(', ')+'</td><td class="num">'+fmt(r.orderqty)+'</td>'+
     '<td class="num">'+fmt(r.planqty)+'</td><td>'+r.splits.map(fmt).join(' | ')+'</td></tr>').join('')||
-    '<tr><td colspan="9" class="cen">No EWOs match the planning month PSD and feeding filter.</td></tr>';
+    '<tr><td colspan="9" class="cen">No EWOs match the planning month PSD, feeding and Order Qty Range filters.</td></tr>';
   document.getElementById('s6-foot').innerHTML='<td><strong>Total</strong></td><td>—</td><td class="num">'+rows.length+'</td><td>—</td><td class="num">'+fmt(feeding)+'</td><td>—</td><td class="num">'+fmt(totOrd)+'</td><td class="num">'+fmt(totPlan)+'</td><td class="num">'+fmt(totPlan)+'</td>';
 }
 
