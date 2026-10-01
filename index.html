@@ -2082,6 +2082,7 @@ input,select,textarea{
 @media(max-width:680px){#s0 .home-head{min-height:190px;padding:22px}#s0 .home-head .home-title{font-size:24px!important}#s0 .home-head .home-actions .top-btn{font-size:11px;padding:7px 9px}}
 @media(prefers-reduced-motion:reduce){#s0 .home-grid .home-card,#s0 .home-grid .home-icon,#s0 .home-head .home-actions .top-btn,#s0 #home-live-kpis .home-quick-box,#slide-tabs .stab,#slide-tabs .stab::after{transition:none!important}#s0 .home-mini-fill,#s0 .home-hit-pie,.bar-chart .bar-fill,.slide.active:not(#s0)>.slide-header,.slide.active:not(#s0)>.kpi-row{animation:none!important}#s0 .load-fill.loading::after{animation:none!important}}
 </style>
+<link rel="stylesheet" href="dashboard-theme.css">
 </head>
 <body class="site-locked">
 <div id="supabase-live-badge">Supabase · waiting</div>
@@ -5594,15 +5595,15 @@ function drawS4ChassisChart(labels, hwVals, planVals, totalHW, totalPlan){
     const z=setup(id); if(!z) return; const {x,W,H}=z;
     const pad={l:22,r:12,t:18,b:42}, cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
     const max=Math.max(1,...a,...b)*1.22, gw=cw/Math.max(labs.length,1), bw=Math.min(22,gw*.24);
-    x.strokeStyle='#d9d9d9';x.lineWidth=1;x.beginPath();x.moveTo(pad.l,pad.t+ch);x.lineTo(W-pad.r,pad.t+ch);x.stroke();
+    x.strokeStyle='#46566c';x.lineWidth=1;x.beginPath();x.moveTo(pad.l,pad.t+ch);x.lineTo(W-pad.r,pad.t+ch);x.stroke();
     labs.forEach((lab,i)=>{
       const cx=pad.l+gw*(i+.5), h1=a[i]/max*ch, h2=b[i]/max*ch;
       x.fillStyle='#00b050';x.fillRect(cx-bw-2,pad.t+ch-h1,bw,h1);
       x.strokeStyle='#ff0000';x.lineWidth=2;x.strokeRect(cx+2,pad.t+ch-h2,bw,h2);
       x.font='bold 10px Segoe UI';x.textAlign='center';
-      x.fillStyle='#111';x.fillText(one(a[i]),cx-bw/2-2,pad.t+ch-h1-4);
-      x.fillStyle='#ff0000';x.fillText(one(b[i]),cx+bw/2+2,pad.t+ch-h2-4);
-      x.fillStyle='#111';x.font='10px Segoe UI';const words=String(lab).split(/(?<=\/) | /);if(words.length>1){x.fillText(words.slice(0,-1).join(' '),cx,H-23);x.fillText(words.at(-1),cx,H-9);}else x.fillText(lab,cx,H-14);
+      x.fillStyle='#edf2f8';x.fillText(one(a[i]),cx-bw/2-2,pad.t+ch-h1-4);
+      x.fillStyle='#ff8e8e';x.fillText(one(b[i]),cx+bw/2+2,pad.t+ch-h2-4);
+      x.fillStyle='#edf2f8';x.font='10px Segoe UI';const words=String(lab).split(/(?<=\/) | /);if(words.length>1){x.fillText(words.slice(0,-1).join(' '),cx,H-23);x.fillText(words.at(-1),cx,H-9);}else x.fillText(lab,cx,H-14);
     });
   }
   chart('s4-chassis-canvas',labels,hwVals,planVals);
@@ -6084,11 +6085,11 @@ function drawGroupedBar(canvasId,labels,datasets){
 
   // grid
   const gridLines=4;
-  ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(180,193,212,.2)';ctx.lineWidth=1;
   for(let i=0;i<=gridLines;i++){
     const y=pad.top+cH*(1-i/gridLines);
     ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+cW,y);ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,.35)';ctx.font='9px monospace';ctx.textAlign='right';
+    ctx.fillStyle='#b4c1d4';ctx.font='9px monospace';ctx.textAlign='right';
     ctx.fillText(Math.round(maxV*i/gridLines),pad.left-4,y+3);
   }
 
