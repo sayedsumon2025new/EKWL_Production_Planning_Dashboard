@@ -236,6 +236,33 @@ class ThemeVisualTests(unittest.TestCase):
                 '(els)=>els.map(e=>getComputedStyle(e).backgroundColor)')
             self.assertEqual(len(set(colors)), 1, f'Legacy {category} summary cells')
 
+    def test_feeding_totals_remain_visible_in_both_themes_and_filters(self):
+        self.page.evaluate("""() => {
+          const extra={...DATA[0],record_id:4,line:3,planqty:500};
+          DATA.push(extra);DAILY_PLAN.push({record_id:4,line:3,ewo:extra.ewo,style:extra.style,color:extra.color,date:extra.startdate,value:500});
+          goSlide(6);
+        }""")
+        foot = self.page.locator('#s6-feeding-foot td')
+        for theme in ['light', 'dark']:
+            if self.page.evaluate('EKWLTheme.get()') != theme:
+                self.page.locator('#theme-toggle').click()
+            self.page.locator('#s6-feeding-filter').select_option('')
+            self.assertEqual(foot.all_text_contents(), ['Total Run EWO', '2', '3', '100.0%', ''])
+            self.assert_readable('#s6-feeding-foot td, #s6-foot td')
+            self.page.locator('#s6-feeding-foot').hover()
+            self.assert_readable('#s6-feeding-foot td')
+            if OPTIONS.artifacts:
+                self.page.locator('#s6-feeding-tbl').screenshot(path=str(OPTIONS.artifacts / ('feeding-totals-' + theme + '.png')))
+            self.page.locator('#s6-feeding-filter').select_option('2')
+            self.assertEqual(foot.all_text_contents(), ['Total Run EWO', '1', '2', '100.0%', ''])
+            self.assert_readable('#s6-feeding-foot td')
+            self.page.locator('#s6-feeding-filter').select_option('')
+        self.page.locator('#s6-order-range-filter').select_option('0')
+        self.assertEqual(foot.all_text_contents(), ['Total Run EWO', '0', '0', '0.0%', ''])
+        self.assert_readable('#s6-feeding-foot td')
+        self.page.emulate_media(media='print')
+        self.assert_readable('#s6-feeding-foot td', paper=True)
+
     def test_order_distribution_panel_and_center_follow_both_themes(self):
         self.page.evaluate('goSlide(6)')
         panel = self.page.locator('#s6-range-pie')
