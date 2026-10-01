@@ -2340,7 +2340,7 @@ input,select,textarea{
   <div class="card">
     <div class="card-title">📊 Order QTY Range Analysis</div>
     <div class="s2-range-top">
-      <div class="tbl-wrap" id="s2-tbl-wrap"></div>
+      <div id="s2-legacy-range-wrap" hidden></div>
       <div class="s2-top-pie" id="s2-top-pie"></div>
     </div>
   </div>
@@ -2481,6 +2481,7 @@ input,select,textarea{
     </div>
   </div>
   <div class="kpi-row" id="s6-kpi"></div>
+  <div class="card"><div class="card-title">📊 Order QTY Range Analysis</div><div class="tbl-wrap" id="s6-range-summary"></div></div>
   <div class="card">
     <div class="card-title">📝 EWO Detail — Line Run & Split QTY <span class="ct-right" id="s6-count"></span></div>
     <div class="s6-filter-bar"><label for="s6-feeding-filter">No. of Feeding</label>
@@ -5028,7 +5029,7 @@ function renderS2(data){
   html+=`<tr class="range-total">
     <td>Total Line–EWO</td><td class="num">${fmt(totalStyles)}</td><td class="num">${fmt(ewoTotals.size)}</td><td class="num">${fmt(totalOrderQty)}</td><td class="num">${totalStyles?'100%':'0%'}</td><td class="num">${totalStyles?'100%':'0%'}</td>
   </tr></tbody></table>`;
-  document.getElementById('s2-tbl-wrap').innerHTML=`
+  document.getElementById('s2-legacy-range-wrap').innerHTML=`
     <div style="display:flex;justify-content:flex-end;align-items:center;margin:0 0 8px">
       <div style="border:1px solid #c9d8e8;border-radius:7px;background:#f5f9fd;padding:7px 12px;font-size:12px;color:#28445f">
         <span style="font-weight:700">Total Order Qty</span>
@@ -5524,6 +5525,17 @@ function buildS6Rows(data,month){
     return {...g,lines,splits:lines.map(l=>g.lineQty.get(l)),feeding:lines.length};
   }).sort((a,b)=>a.firstPSD.localeCompare(b.firstPSD)||a.ewo.localeCompare(b.ewo,undefined,{numeric:true}));
 }
+function buildS6RangeSummary(rows){
+  const ranges=[['Below 500',0,500],['501-1000',501,1000],['1001-2000',1001,2000],['2001-3000',2001,3000],['3001-5000',3001,5000],['5001-8000',5001,8000],['Above 8000',8001,Infinity]];
+  return ranges.map(([label,min,max])=>{
+    const matched=rows.filter(r=>r.orderqty>=min&&r.orderqty<=max);
+    return {label,ewos:matched.length,feeding:matched.reduce((s,r)=>s+r.feeding,0),orderqty:matched.reduce((s,r)=>s+r.orderqty,0),pct:rows.length?matched.length/rows.length*100:0};
+  });
+}
+function renderS6RangeSummary(rows){
+  const stats=buildS6RangeSummary(rows),total=rows.reduce((s,r)=>s+r.orderqty,0),feeding=rows.reduce((s,r)=>s+r.feeding,0);
+  document.getElementById('s6-range-summary').innerHTML='<p><strong>Total Order Qty '+fmt(total)+' pcs</strong></p><table class="qty-range-ref"><thead><tr><th>Order QTY Range</th><th>No Of Line–EWO</th><th>EWO Count</th><th>Order Qty</th><th>Percentage</th></tr></thead><tbody>'+stats.map((r,i)=>'<tr class="'+(i<5?'range-low':'range-high')+'"><td>'+esc(r.label)+'</td><td class="num">'+fmt(r.feeding)+'</td><td class="num">'+fmt(r.ewos)+'</td><td class="num">'+fmt(r.orderqty)+'</td><td class="num">'+r.pct.toFixed(1)+'%</td></tr>').join('')+'<tr class="range-total"><td>Total</td><td class="num">'+fmt(feeding)+'</td><td class="num">'+fmt(rows.length)+'</td><td class="num">'+fmt(total)+'</td><td class="num">'+(rows.length?'100.0%':'0.0%')+'</td></tr></tbody></table>';
+}
 function renderS6(data){
   const month=uploadMonthKey(ACTIVE_PLAN_UPLOAD)||document.getElementById('month-filter').value;
   const monthText=planningMonthLabel(month);
@@ -5542,6 +5554,7 @@ function renderS6(data){
   filter.innerHTML='<option value="">All</option>'+counts.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
   filter.value=counts.some(n=>String(n)===previous)?previous:'';
   const rows=allRows.filter(r=>inRange(r,rangeFilter.value)&&(!filter.value||r.feeding===Number(filter.value)));
+  renderS6RangeSummary(rows);
   document.getElementById('s6-month').textContent=monthText;
   const totOrd=rows.reduce((s,r)=>s+r.orderqty,0),totPlan=rows.reduce((s,r)=>s+r.planqty,0);
   const feeding=rows.reduce((s,r)=>s+r.feeding,0);
