@@ -2,7 +2,10 @@
 (() => {
   'use strict';
   const key = 'ekwl-dashboard-theme';
-  const embedded = window.parent !== window;
+  // The main dashboard can itself be framed by an in-app browser. Only our
+  // explicitly marked Order Execution view delegates to its parent.
+  const embedded = window.parent !== window &&
+    document.documentElement.dataset.themeContext === 'execution';
   const valid = value => value === 'dark' ? 'dark' : 'light';
   let theme = 'light';
   try { theme = valid(localStorage.getItem(key)); } catch (_) { /* Sandboxed view or blocked storage. */ }

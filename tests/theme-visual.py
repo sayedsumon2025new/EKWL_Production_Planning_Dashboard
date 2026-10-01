@@ -131,6 +131,35 @@ class ThemeVisualTests(unittest.TestCase):
                          '#home-date-from', '#home-date-to']:
             self.assert_readable(selector)
 
+    def test_master_theme_works_inside_an_outer_browser_frame(self):
+        from playwright.sync_api import expect
+        # In-app browsers can frame the main dashboard; this is not the
+        # dashboard's isolated Order Execution child and must switch locally.
+        self.page.route('**/theme-host.html', lambda r: r.fulfill(
+            body=f'<iframe id="browser-view" src="{self.url}" style="width:100%;height:950px"></iframe>',
+            content_type='text/html'))
+        self.page.goto(self.url + 'theme-host.html', wait_until='networkidle')
+        dashboard = self.page.frames[1]
+        dashboard.evaluate(FIXTURE)
+        totals = dashboard.locator('#home-live-kpis .home-live-kpi-val').all_text_contents()
+        toggle = dashboard.locator('#theme-toggle')
+        toggle.click()
+        expect(dashboard.locator('html')).to_have_attribute('data-theme', 'dark')
+        self.assertEqual(dashboard.locator('body').evaluate('(e)=>getComputedStyle(e).backgroundColor'),
+                         'rgb(16, 21, 30)')
+        self.assertEqual(dashboard.locator('#home-live-kpis .home-live-kpi-val').all_text_contents(), totals)
+        with dashboard.expect_navigation(wait_until='networkidle'):
+            dashboard.evaluate('location.reload()')
+        expect(dashboard.locator('html')).to_have_attribute('data-theme', 'dark')
+        dashboard.evaluate(FIXTURE)
+        # Its nested Order Execution view still follows the master.
+        dashboard.evaluate('goSlide(16)')
+        execution = dashboard.frame_locator('#order-execution-frame')
+        expect(execution.locator('html')).to_have_attribute('data-theme', 'dark')
+        execution.locator('#dark-btn').dispatch_event('click')
+        expect(dashboard.locator('html')).to_have_attribute('data-theme', 'light')
+        expect(execution.locator('html')).to_have_attribute('data-theme', 'light')
+
     def test_master_theme_switch_preserves_reports_and_survives_reload(self):
         from playwright.sync_api import expect
         before = self.page.evaluate('JSON.stringify({data:DATA,daily:DAILY_PLAN})')
