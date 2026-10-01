@@ -1279,6 +1279,7 @@ box-shadow:0 10px 28px rgba(15,39,72,.28);font-size:10px;line-height:1.35}
 #s12-tbl .s12-total-row td{background:#e5eef8;color:#14304d;font-weight:800;border:1px solid #c6d6e8;padding:8px;white-space:nowrap;}
 
 .qty-range-ref th:nth-child(1){width:28%!important}.qty-range-ref th:nth-child(2){width:20%!important}.qty-range-ref th:nth-child(3){width:16%!important}.qty-range-ref th:nth-child(4){width:20%!important}.qty-range-ref th:nth-child(5){width:16%!important}
+.s6-analysis-top{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}.s6-analysis-top .s2-top-pie-body{flex-direction:column}.s6-analysis-top .card{margin:0}.s6-analysis-top .tbl-wrap{overflow:auto}@media(max-width:1100px){.s6-analysis-top{grid-template-columns:1fr 1fr}.s6-analysis-top>#s6-range-summary{grid-column:1/-1}}@media(max-width:700px){.s6-analysis-top{grid-template-columns:1fr}.s6-analysis-top>#s6-range-summary{grid-column:auto}}
 </style>
 
 <style id="optical-white-professional-theme">
@@ -2466,7 +2467,21 @@ input,select,textarea{
     </div>
   </div>
   <div class="kpi-row" id="s6-kpi"></div>
-  <div class="card"><div class="card-title">📊 Order QTY Range Analysis</div><div class="s2-range-top"><div class="tbl-wrap" id="s6-range-summary"></div><div class="s2-top-pie" id="s6-range-pie"></div></div></div>
+  <div class="card"><div class="card-title">📊 Order QTY Range Analysis</div><div class="s6-analysis-top"><div class="tbl-wrap" id="s6-range-summary"></div><div class="s2-top-pie" id="s6-range-pie"></div>    <div class="card">
+      <div class="card-title">🔄 EWO Feeding Frequency Analysis</div>
+      <div class="tbl-wrap"><table class="dt" id="s6-feeding-tbl">
+        <thead><tr>
+          <th>No Of Time's</th>
+          <th class="num">No Of EWO</th>
+          <th class="num">Feeding</th>
+          <th class="num">Percentage</th>
+          <th>Remarks</th>
+        </tr></thead>
+        <tbody id="s6-feeding-body"></tbody>
+        <tfoot><tr id="s6-feeding-foot"></tr></tfoot>
+      </table></div>
+    </div>
+</div></div>
   <div class="two-col"><div class="card"><div class="card-title">📈 Order Range Distribution</div><div class="bar-chart" id="s6-range-bar"></div></div><div class="card"><div class="card-title">📌 Summary</div><div id="s6-range-kpis"></div></div></div>
   <div class="card">
     <div class="card-title">📝 EWO Detail — Line Run & Split QTY <span class="ct-right" id="s6-count"></span></div>
@@ -2585,20 +2600,7 @@ input,select,textarea{
     </div>
   </div>
   <div class="two-col">
-    <div class="card">
-      <div class="card-title">🔄 EWO Feeding Frequency Analysis</div>
-      <div class="tbl-wrap"><table class="dt" id="s8-tbl">
-        <thead><tr>
-          <th>No Of Time's</th>
-          <th class="num">No Of EWO</th>
-          <th class="num">Feeding</th>
-          <th class="num">Percentage</th>
-          <th>Remarks</th>
-        </tr></thead>
-        <tbody id="s8-body"></tbody>
-        <tfoot><tr id="s8-foot"></tr></tfoot>
-      </table></div>
-    </div>
+    <div hidden><table><tbody id="s8-body"></tbody><tfoot><tr id="s8-foot"></tr></tfoot></table></div>
     <div class="card">
       <div class="card-title">📊 EWO Feeding Distribution</div>
       <div class="bar-chart" id="s8-bar"></div>
@@ -5557,6 +5559,10 @@ function renderS6(data){
   filter.innerHTML='<option value="">All</option>'+counts.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
   filter.value=counts.some(n=>String(n)===previous)?previous:'';
   const rows=allRows.filter(r=>inRange(r,rangeFilter.value)&&(!filter.value||r.feeding===Number(filter.value)));
+  const frequencies=new Map();
+  rows.forEach(r=>frequencies.set(r.feeding,(frequencies.get(r.feeding)||0)+1));
+  document.getElementById('s6-feeding-body').innerHTML=[...frequencies].sort((a,b)=>a[0]-b[0]).map(([times,count])=>'<tr><td class="cen">'+times+'</td><td class="num">'+fmt(count)+'</td><td class="num">'+fmt(times*count)+'</td><td class="num">'+(rows.length?count/rows.length*100:0).toFixed(1)+'%</td><td></td></tr>').join('');
+  document.getElementById('s6-feeding-foot').innerHTML='<td>Total Run EWO</td><td class="num">'+fmt(rows.length)+'</td><td class="num">'+fmt(rows.reduce((s,r)=>s+r.feeding,0))+'</td><td class="num">'+(rows.length?'100.0%':'0.0%')+'</td><td></td>';
   renderS6RangeSummary(rows,data.filter(r=>String(r.startdate||'').slice(0,7)===month&&rows.some(e=>e.ewo===String(r.ewo??'').trim())));
   document.getElementById('s6-month').textContent=monthText;
   const totOrd=rows.reduce((s,r)=>s+r.orderqty,0),totPlan=rows.reduce((s,r)=>s+r.planqty,0);
