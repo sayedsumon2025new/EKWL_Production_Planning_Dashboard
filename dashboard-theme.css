@@ -385,6 +385,32 @@ body #s0 .home-head canvas { opacity: .35; }
 #slides-wrap #s0 .home-grid .home-card:nth-child(4n+2) { border-top-color: #437f2e !important; }
 #slides-wrap #s0 .home-grid .home-card:nth-child(4n+3) { border-top-color: #b94d00 !important; }
 #slides-wrap #s0 .home-grid .home-card:nth-child(4n+4) { border-top-color: #155bbb !important; }
+/* Fabrics & Cutting follows the reference's teal/green/orange header bands.
+   Only presentation changes; these accents do not encode report status. */
+@media screen {
+  #slides-wrap #s12 #s12-kpi .kpi { --report-accent: #007f87; }
+  #slides-wrap #s12 #s12-kpi .kpi:nth-child(3n+2) { --report-accent: #437f2e; }
+  #slides-wrap #s12 #s12-kpi .kpi:nth-child(3n+3) { --report-accent: #b94d00; }
+  #slides-wrap #s12 #s12-kpi .kpi-label {
+    order: -1; background: var(--report-accent); color: #fff !important;
+    padding: 12px 16px; margin: 0 0 14px; font: 600 12px 'Segoe UI', Arial, sans-serif;
+    text-transform: uppercase; letter-spacing: .25px;
+  }
+  #slides-wrap #s12 .card { --fabric-header: #007f87; }
+  #slides-wrap #s12 .card:has(#s12-diff-summary) { --fabric-header: #437f2e; }
+  #slides-wrap #s12 .card:has(#s12-tbl) { --fabric-header: #b94d00; }
+  #slides-wrap #s12 .card table thead th {
+    background: var(--fabric-header) !important; color: #fff !important;
+    border-color: #ffffff45 !important;
+  }
+  #slides-wrap #s12 .card table thead th .status-filter-link {
+    background: transparent !important; color: #fff !important;
+  }
+}
+@media screen and (max-width: 1000px) {
+  #slides-wrap #s12 .card > div:has(> #s12-search) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  #slides-wrap #s12 .card > div:has(> #s12-search) :is(input, select) { min-width: 0; width: 100%; }
+}
 /* Apply neutral surfaces in modules outside the wrapper and in calendar dialogs. */
 body :is(#s14, #s15, #s16, #s17, #s18, #s19) :is(table, .ss-tna-chart, .eff15-tabs) { background: var(--card) !important; color: var(--text) !important; border-color: var(--border) !important; }
 body :is(#s14, #s15, #s17, #s18, #s19) table th { background: var(--tone-e9edf0) !important; color: var(--text) !important; }

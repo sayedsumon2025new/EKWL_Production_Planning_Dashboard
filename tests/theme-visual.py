@@ -236,6 +236,40 @@ class ThemeVisualTests(unittest.TestCase):
                 '(els)=>els.map(e=>getComputedStyle(e).backgroundColor)')
             self.assertEqual(len(set(colors)), 1, f'Legacy {category} summary cells')
 
+    def test_fabric_reference_headers_preserve_values_and_filters(self):
+        self.page.evaluate("""() => {
+          S12_EM_ROWS=[];
+          FABRIC_CUTTING_DATA=[
+            {ewo:'A100',color_name:'Blue',buyer:'Buyer A',item_product_type:'T-Shirt',color_order_qty:3000,fabric_booking_qty:300,total_fabric_received:200,cutable_qty:1500,total_cut_qty:1200,cutting_balance:-1800,status:'Running',cutting_difficulties:'Shade'},
+            {ewo:'B200',color_name:'Black',buyer:'Buyer B',item_product_type:'Polo',color_order_qty:6000,fabric_booking_qty:600,total_fabric_received:500,cutable_qty:3500,total_cut_qty:2800,cutting_balance:-3200,status:'Running',cutting_difficulties:'None'}];
+          goSlide(11);
+        }""")
+        values = ['2', '9,000', '900', '700', '5,000', '4,000', '-5,000', '44.4%']
+        before = self.page.locator('#s12-body').inner_text()
+        for theme in ['light', 'dark']:
+            if self.page.evaluate('EKWLTheme.get()') != theme:
+                self.page.locator('#theme-toggle').click()
+            self.assertEqual(self.page.locator('#s12-kpi .kpi-val').all_text_contents(), values)
+            self.assertEqual(self.page.locator('#s12-body').inner_text(), before)
+            for card in self.page.locator('#s12-kpi .kpi').all():
+                label=card.locator('.kpi-label')
+                self.assertLess(label.bounding_box()['y'], card.locator('.kpi-val').bounding_box()['y'])
+            self.assert_readable('#s12-kpi .kpi-label, #s12-kpi .kpi-val, #s12 table thead th, #s12-tbl .status-filter-link')
+            if OPTIONS.artifacts:
+                self.page.locator('#s12-kpi').screenshot(path=str(OPTIONS.artifacts / ('fabric-kpis-' + theme + '.png')))
+                self.page.locator('#s12 .s12-product-fit table').screenshot(path=str(OPTIONS.artifacts / ('fabric-table-' + theme + '.png')))
+            self.page.locator('#s12-buyer').select_option('Buyer A')
+            self.assertEqual(self.page.locator('#s12-kpi .kpi-val').all_text_contents(),
+                             ['1', '3,000', '300', '200', '1,500', '1,200', '-1,800', '40.0%'])
+            self.page.locator('#s12-buyer').select_option('')
+        self.page.locator('#s12-tbl .status-filter-link').click()
+        self.assertEqual(self.page.evaluate('document.activeElement.id'), 's12-status')
+        for width in [390, 768, 1440]:
+            self.page.set_viewport_size({'width':width,'height':1000})
+            self.assertTrue(self.page.locator('#s12').evaluate('(e)=>e.scrollWidth<=e.clientWidth'), width)
+        self.page.emulate_media(media='print')
+        self.assert_readable('#s12-kpi .kpi-label, #s12 table thead th', paper=True)
+
     def test_feeding_totals_remain_visible_in_both_themes_and_filters(self):
         self.page.evaluate("""() => {
           const extra={...DATA[0],record_id:4,line:3,planqty:500};
