@@ -1,4 +1,4 @@
-"""Browser regressions for PR #9's five theme review findings.
+"""Browser regressions for the site theme and PR #9's five review findings.
 
 Run with Python Playwright and a Chromium executable (TLS verification stays on):
     python3 tests/theme-visual.py
@@ -120,6 +120,16 @@ class ThemeVisualTests(unittest.TestCase):
             background = 'rgb(255, 255, 255)' if paper else colors['bg']
             self.assertGreaterEqual(contrast(colors['fg'], background), 4.5,
                                     f'{selector}: {colors}, contrast against {background}')
+
+    def test_off_white_surfaces_and_home_actions_have_contrast(self):
+        self.assertEqual(self.page.evaluate('getComputedStyle(document.documentElement).colorScheme'), 'light')
+        for selector in ['body', '#slides-wrap', '#s0', '#s14', '#s15', '#s16', '#s17', '#s18', '#s19']:
+            self.assertEqual(self.page.locator(selector).evaluate('(e)=>getComputedStyle(e).backgroundColor'),
+                             'rgb(246, 245, 241)', selector)
+        for selector in ['.home-title', '.home-card-title', '.home-card-sub',
+                         '#home-live-kpis .home-live-kpi-val', '#s0 .home-actions .top-btn',
+                         '#home-date-from', '#home-date-to']:
+            self.assert_readable(selector)
 
     def test_range_categories_remain_distinct_in_normal_striped_and_hover_states(self):
         self.page.evaluate('goSlide(6)')
