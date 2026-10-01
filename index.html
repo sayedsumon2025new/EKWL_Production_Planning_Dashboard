@@ -5173,7 +5173,17 @@ async function captureReport(button,mode){
  try{
   if(typeof html2canvas!=='function')throw Error('Screenshot library unavailable');
   if(!card.id)card.id='report-'+Date.now();const id=card.id;
-  const canvas=await html2canvas(card,{backgroundColor:'#fff',scale:2,useCORS:true,logging:false,width:Math.max(card.scrollWidth,card.clientWidth),onclone:doc=>{const clone=doc.getElementById(id);clone.querySelectorAll('.report-actions').forEach(e=>e.remove());clone.querySelectorAll('.tbl-wrap').forEach(e=>{e.style.maxHeight='none';e.style.height='auto';e.style.overflow='visible';});}});
+  const tables=[...card.querySelectorAll('table')];
+  const captureWidth=Math.ceil(Math.max(card.clientWidth,card.scrollWidth,...tables.map(t=>Math.max(t.scrollWidth,t.getBoundingClientRect().width)+48)));
+  const canvas=await html2canvas(card,{backgroundColor:'#fff',scale:Math.min(2,window.devicePixelRatio||2),useCORS:true,logging:false,windowWidth:Math.max(window.innerWidth,captureWidth+64),scrollX:0,scrollY:0,onclone:doc=>{
+   const clone=doc.getElementById(id);clone.querySelectorAll('.report-actions').forEach(e=>e.remove());
+   clone.style.setProperty('width',captureWidth+'px','important');clone.style.setProperty('max-width','none','important');clone.style.setProperty('height','auto','important');clone.style.setProperty('max-height','none','important');clone.style.setProperty('overflow','visible','important');
+   for(let parent=clone.parentElement;parent;parent=parent.parentElement){parent.style.setProperty('overflow','visible','important');parent.style.setProperty('max-height','none','important');parent.style.setProperty('contain','none','important');}
+   clone.querySelectorAll('*').forEach(e=>{if(e.matches('.tbl-wrap,.cal-wrap')||['auto','scroll','hidden'].includes(getComputedStyle(e).overflowY)||['auto','scroll','hidden'].includes(getComputedStyle(e).overflowX)){e.style.setProperty('max-height','none','important');e.style.setProperty('height','auto','important');e.style.setProperty('max-width','none','important');e.style.setProperty('overflow','visible','important');e.scrollTop=0;e.scrollLeft=0;}
+    if(e.matches('thead,tfoot,th,td')&&['sticky','fixed'].includes(getComputedStyle(e).position)){e.style.setProperty('position','static','important');e.style.setProperty('top','auto','important');e.style.setProperty('bottom','auto','important');}
+   });
+   clone.querySelectorAll('table').forEach(t=>{t.style.setProperty('width','100%','important');});
+  }});
   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Image failed');
   if(mode==='copy'&&navigator.clipboard?.write&&typeof ClipboardItem!=='undefined'){try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);button.textContent='Copied';return;}catch(e){}}
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='EKWL-'+id+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
