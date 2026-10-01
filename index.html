@@ -2337,23 +2337,8 @@ input,select,textarea{
       <button class="pg-btn" onclick="goSlide(3)">Next →</button>
     </div>
   </div>
-  <div class="card">
-    <div class="card-title">📊 Order QTY Range Analysis</div>
-    <div class="s2-range-top">
-      <div id="s2-legacy-range-wrap" hidden></div>
-      <div class="s2-top-pie" id="s2-top-pie"></div>
-    </div>
-  </div>
-  <div class="two-col">
-    <div class="card">
-      <div class="card-title">📈 Order Range Distribution</div>
-      <div class="bar-chart" id="s2-bar"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">📌 Summary</div>
-      <div id="s2-summary"></div>
-    </div>
-  </div>
+  <div class="card"><div class="card-title">Order Quantity Analysis</div><p>Order range analysis and EWO details are now together on Slide 06.</p><button class="pg-btn" onclick="goSlide(6)">Open EWO Detail Table</button></div>
+  <div hidden><div id="s2-legacy-range-wrap"></div><div id="s2-top-pie"></div><div id="s2-bar"></div><div id="s2-summary"></div></div>
 </div>
 
 <!-- ─── SLIDE 3: BUYER SUMMARY ─────────────── -->
@@ -2481,7 +2466,8 @@ input,select,textarea{
     </div>
   </div>
   <div class="kpi-row" id="s6-kpi"></div>
-  <div class="card"><div class="card-title">📊 Order QTY Range Analysis</div><div class="tbl-wrap" id="s6-range-summary"></div></div>
+  <div class="card"><div class="card-title">📊 Order QTY Range Analysis</div><div class="s2-range-top"><div class="tbl-wrap" id="s6-range-summary"></div><div class="s2-top-pie" id="s6-range-pie"></div></div></div>
+  <div class="two-col"><div class="card"><div class="card-title">📈 Order Range Distribution</div><div class="bar-chart" id="s6-range-bar"></div></div><div class="card"><div class="card-title">📌 Summary</div><div id="s6-range-kpis"></div></div></div>
   <div class="card">
     <div class="card-title">📝 EWO Detail — Line Run & Split QTY <span class="ct-right" id="s6-count"></span></div>
     <div class="s6-filter-bar"><label for="s6-feeding-filter">No. of Feeding</label>
@@ -5532,9 +5518,24 @@ function buildS6RangeSummary(rows){
     return {label,ewos:matched.length,feeding:matched.reduce((s,r)=>s+r.feeding,0),orderqty:matched.reduce((s,r)=>s+r.orderqty,0),pct:rows.length?matched.length/rows.length*100:0};
   });
 }
-function renderS6RangeSummary(rows){
+function renderS6RangeSummary(rows,sourceRows=[]){
+  S2_LINE_DETAILS=[];
   const stats=buildS6RangeSummary(rows),total=rows.reduce((s,r)=>s+r.orderqty,0),feeding=rows.reduce((s,r)=>s+r.feeding,0);
   document.getElementById('s6-range-summary').innerHTML='<p><strong>Total Order Qty '+fmt(total)+' pcs</strong></p><table class="qty-range-ref"><thead><tr><th>Order QTY Range</th><th>No Of Line–EWO</th><th>EWO Count</th><th>Order Qty</th><th>Percentage</th></tr></thead><tbody>'+stats.map((r,i)=>'<tr class="'+(i<5?'range-low':'range-high')+'"><td>'+esc(r.label)+'</td><td class="num">'+fmt(r.feeding)+'</td><td class="num">'+fmt(r.ewos)+'</td><td class="num">'+fmt(r.orderqty)+'</td><td class="num">'+r.pct.toFixed(1)+'%</td></tr>').join('')+'<tr class="range-total"><td>Total</td><td class="num">'+fmt(feeding)+'</td><td class="num">'+fmt(rows.length)+'</td><td class="num">'+fmt(total)+'</td><td class="num">'+(rows.length?'100.0%':'0.0%')+'</td></tr></tbody></table>';
+  const low=stats.slice(0,5).reduce((s,r)=>s+r.feeding,0),high=feeding-low,lowPct=feeding?low/feeding*100:0;
+  document.getElementById('s6-range-pie').innerHTML='<div class="s2-top-pie-title">📊 LINE–EWO DISTRIBUTION</div><div class="s2-top-pie-body"><div class="s2-top-donut" style="background:conic-gradient(#79c7df 0 '+lowPct+'%,#58b63d '+lowPct+'% 100%)"><div class="s2-top-hole"><b>'+fmt(feeding)+'</b><span>Line–EWO</span></div></div><div class="s2-top-legend"><div class="lg"><i style="background:#79c7df"></i><div>5000 or fewer<strong>'+lowPct.toFixed(1)+'% ('+fmt(low)+')</strong></div></div><div class="lg"><i style="background:#58b63d"></i><div>Above 5000<strong>'+(feeding?100-lowPct:0).toFixed(1)+'% ('+fmt(high)+')</strong></div></div></div></div>';
+  document.getElementById('s6-range-kpis').innerHTML='<div class="range-summary">'+[['5000 or fewer',low,lowPct],['Above 5000',high,feeding?100-lowPct:0]].map(([label,n,p])=>'<div class="rsum-box"><div class="rsum-title">'+label+'</div><div class="rsum-val">'+p.toFixed(1)+'%</div><div class="rsum-sub">'+fmt(n)+' of '+fmt(feeding)+' Line–EWOs</div></div>').join('')+'</div>';
+  const max=Math.max(...stats.map(r=>r.feeding),1);
+  const limits=[[0,500],[501,1000],[1001,2000],[2001,3000],[3001,5000],[5001,8000],[8001,Infinity]];
+  document.getElementById('s6-range-bar').innerHTML=stats.map((r,i)=>{
+    const ewos=new Set(rows.filter(e=>e.orderqty>=limits[i][0]&&e.orderqty<=limits[i][1]).map(e=>e.ewo));
+    const matching=sourceRows.filter(e=>ewos.has(String(e.ewo??'').trim()));
+    const lines=[...new Set(matching.map(e=>String(e.line)))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    const chips=lines.map(line=>{const n=S2_LINE_DETAILS.push({line,range:r.label,rows:matching.filter(e=>String(e.line)===line)})-1;return '<button class="range-line-chip" data-s2-detail="'+n+'">'+esc(line)+'</button>';}).join('');
+    return '<div class="bar-row"><div class="bar-lbl">'+esc(r.label)+'</div><div style="flex:1"><div class="bar-wrap"><div class="bar-fill" style="width:'+r.feeding/max*100+'%"></div><div class="bar-val">'+fmt(r.feeding)+'</div></div><div class="range-lines">'+chips+'</div></div></div>';
+  }).join('');
+  document.getElementById('s6-range-bar').onclick=e=>{const button=e.target.closest('button[data-s2-detail]');if(button)openS2LineDetails(Number(button.dataset.s2Detail));};
+
 }
 function renderS6(data){
   const month=uploadMonthKey(ACTIVE_PLAN_UPLOAD)||document.getElementById('month-filter').value;
@@ -5554,7 +5555,7 @@ function renderS6(data){
   filter.innerHTML='<option value="">All</option>'+counts.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
   filter.value=counts.some(n=>String(n)===previous)?previous:'';
   const rows=allRows.filter(r=>inRange(r,rangeFilter.value)&&(!filter.value||r.feeding===Number(filter.value)));
-  renderS6RangeSummary(rows);
+  renderS6RangeSummary(rows,data.filter(r=>String(r.startdate||'').slice(0,7)===month&&rows.some(e=>e.ewo===String(r.ewo??'').trim())));
   document.getElementById('s6-month').textContent=monthText;
   const totOrd=rows.reduce((s,r)=>s+r.orderqty,0),totPlan=rows.reduce((s,r)=>s+r.planqty,0);
   const feeding=rows.reduce((s,r)=>s+r.feeding,0);
