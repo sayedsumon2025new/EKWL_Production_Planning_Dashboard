@@ -1277,6 +1277,8 @@ box-shadow:0 10px 28px rgba(15,39,72,.28);font-size:10px;line-height:1.35}
 #s12-tbl thead{position:sticky;top:0;z-index:12;}
 #s12-tbl thead th{position:static;}
 #s12-tbl .s12-total-row td{background:#e5eef8;color:#14304d;font-weight:800;border:1px solid #c6d6e8;padding:8px;white-space:nowrap;}
+
+.qty-range-ref th:nth-child(1){width:28%!important}.qty-range-ref th:nth-child(2){width:20%!important}.qty-range-ref th:nth-child(3){width:16%!important}.qty-range-ref th:nth-child(4){width:20%!important}.qty-range-ref th:nth-child(5){width:16%!important}
 </style>
 
 <style id="optical-white-professional-theme">
@@ -5003,7 +5005,7 @@ function renderS2(data){
     const matched=allUniqueEWOs.filter(e=>e.orderqty>=r.min && e.orderqty<=r.max);
     const count=matched.length;
     const orderQty=matched.reduce((s,e)=>s+N(e.orderqty),0);
-    return {...r,count,orderQty,pct:totalStyles ? count/totalStyles*100 : 0};
+    return {...r,count,ewoCount:new Set(matched.map(e=>e.ewo).filter(Boolean)).size,orderQty,pct:totalStyles ? count/totalStyles*100 : 0};
   });
   const lowCount=stats.slice(0,5).reduce((s,r)=>s+r.count,0);
   const highCount=stats.slice(5).reduce((s,r)=>s+r.count,0);
@@ -5013,7 +5015,7 @@ function renderS2(data){
 
   let html=`<table class="qty-range-ref">
     <thead><tr>
-      <th>Order QTY Range</th><th>No Of Line–EWO</th><th>Order Qty</th><th>Percentage</th><th>Summary</th>
+      <th>Order QTY Range</th><th>No Of Line–EWO</th><th>EWO Count</th><th>Order Qty</th><th>Percentage</th><th>Summary</th>
     </tr></thead><tbody>`;
 
   stats.forEach((r,i)=>{
@@ -5021,6 +5023,7 @@ function renderS2(data){
     html+=`<tr class="${low?'range-low':'range-high'}">
       <td>${esc(r.lbl)}</td>
       <td class="num">${fmt(r.count)}</td>
+      <td class="num">${fmt(r.ewoCount)}</td>
       <td class="num">${fmt(r.orderQty)}</td>
       <td class="num">${pct(r.pct)}</td>`;
     if(i===0) html+=`<td class="summary-low" rowspan="5">${pct(lowPct)}</td>`;
@@ -5028,7 +5031,7 @@ function renderS2(data){
     html+=`</tr>`;
   });
   html+=`<tr class="range-total">
-    <td>Total Line–EWO</td><td class="num">${fmt(totalStyles)}</td><td class="num">${fmt(totalOrderQty)}</td><td class="num">${totalStyles?'100%':'0%'}</td><td class="num">${totalStyles?'100%':'0%'}</td>
+    <td>Total Line–EWO</td><td class="num">${fmt(totalStyles)}</td><td class="num">${fmt(new Set(allUniqueEWOs.map(e=>e.ewo).filter(Boolean)).size)}</td><td class="num">${fmt(totalOrderQty)}</td><td class="num">${totalStyles?'100%':'0%'}</td><td class="num">${totalStyles?'100%':'0%'}</td>
   </tr></tbody></table>`;
   document.getElementById('s2-tbl-wrap').innerHTML=`
     <div style="display:flex;justify-content:flex-end;align-items:center;margin:0 0 8px">
