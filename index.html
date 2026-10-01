@@ -2408,6 +2408,7 @@ input,select,textarea{
 <div class="slide" id="s3" data-logical-slide="3">
   <div class="slide-header">
     <div class="slide-title"><span class="snum">03</span> Buyer Summary <span class="slide-subtitle" id="s3-month"></span></div>
+    <div class="s2-date-tools" role="group" aria-label="Buyer Summary PSD date range"><label>From <input type="date" id="s3-date-from" onchange="s3DateRangeChanged('from')"></label><label>To <input type="date" id="s3-date-to" onchange="s3DateRangeChanged('to')"></label><button class="pg-btn" onclick="S3_RANGE_PLAN=null;renderS3(getFiltered())">All dates</button></div>
     <div class="pager-btns">
       <button class="pg-btn" onclick="goSlide(2)">← Back</button>
       <button class="pg-btn" onclick="goSlide(4)">Next →</button>
@@ -5121,7 +5122,21 @@ function renderS2(data){
 }
 
 /* ══ SLIDE 3: BUYER SUMMARY ═════════════════════ */
+let S3_RANGE_PLAN=null,S3_RANGE_FROM='',S3_RANGE_TO='';
+function s3DateRangeChanged(which){
+ const f=document.getElementById('s3-date-from'),t=document.getElementById('s3-date-to');
+ if(f.value&&t.value&&f.value>t.value){if(which==='from')t.value=f.value;else f.value=t.value;}
+ S3_RANGE_FROM=f.value;S3_RANGE_TO=t.value;renderS3(getFiltered());
+}
 function renderS3(data){
+ const dates=[...new Set(DATA.map(r=>r.startdate).filter(validDate))].sort();
+ const plan=String(ACTIVE_PLAN_UPLOAD?.id||'local');
+ if(S3_RANGE_PLAN!==plan){S3_RANGE_PLAN=plan;S3_RANGE_FROM=dates[0]||'';S3_RANGE_TO=dates.at(-1)||'';}
+ const from=document.getElementById('s3-date-from'),to=document.getElementById('s3-date-to');
+ from.value=S3_RANGE_FROM;to.value=S3_RANGE_TO;
+ for(const input of [from,to]){input.min=dates[0]||'';input.max=dates.at(-1)||'';input.disabled=!dates.length;}
+ if(S3_RANGE_FROM&&S3_RANGE_TO)data=data.filter(r=>validDate(r.startdate)&&r.startdate>=S3_RANGE_FROM&&r.startdate<=S3_RANGE_TO);
+
   const ml=monthLabel(data);
   document.getElementById('s3-month').textContent=ml;
 
