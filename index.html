@@ -5133,7 +5133,7 @@ function renderS3(data){
   const scopeKeys=new Set(data.map(r=>JSON.stringify([String(r.line),String(r.ewo).trim(),String(r.color||'').trim().toUpperCase()])));
   const inScope=r=>scopeKeys.has(JSON.stringify([String(r.line),String(r.ewo).trim(),String(r.color||'').trim().toUpperCase()]));
   const poKey=r=>JSON.stringify([String(r.ewo).trim(),String(r.po||'').trim().toUpperCase()]);
-  const isDummy=r=>/^D\s*[-–]|^DUMMY\b/i.test(String(r.po||'').trim());
+  const isDummy=r=>/^D-/i.test(String(r.po||'').trim());
   const sahScope=SAH_DATA.filter(inScope);
   const clockScope=CLOCK_HOUR_DATA.filter(inScope);
   // Buyer Summary Order Qty: direct SUM of Order Qty from Plan/Day rows.
