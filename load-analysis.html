@@ -518,6 +518,23 @@
     transform: translateY(0);
   }
 
+
+  /* Fit the report to the available window; table values remain unchanged. */
+  body { padding: 12px 12px 24px; }
+  .page { max-width: none; width: 100%; }
+  .content { padding: 18px 14px; }
+  .report-header { flex-wrap: wrap; padding: 18px 20px; gap: 16px; }
+  .header-kpis { flex-wrap: wrap; }
+  .header-text .period { overflow-wrap: anywhere; }
+  .plan-table-scroll table th, .plan-table-scroll table td { padding: 7px 3px; letter-spacing: 0; }
+  .plan-table-scroll .label-col { min-width: 150px; }
+  @media (max-width: 650px) {
+    .header-left { flex-wrap: wrap; }
+    .kpi-chip { min-width: 0; flex: 1; padding: 8px; }
+    .header-kpis { width: 100%; gap: 6px; }
+    .kpi-chip .kpi-label { font-size: 9px; }
+    .report-footer, .chart-wrap { flex-wrap: wrap; gap: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -917,7 +934,7 @@
 </button>
 <div class="screenshot-toast" id="screenshotToast"></div>
 
-<script src="load-analysis-plan-row.js?v=2"></script>
+<script src="load-analysis-plan-row.js?v=3"></script>
 <script src="html2canvas.min.js"></script>
 <script>
 (function () {
@@ -979,7 +996,11 @@
         onclone: function (doc) {
           var report = doc.querySelector('.page');
           if (report) { report.style.maxWidth = 'none'; report.style.width = reportWidth + 'px'; }
-          doc.querySelectorAll('.plan-table-scroll').forEach(function (wrap) { wrap.style.overflow = 'visible'; });
+          doc.querySelectorAll('.plan-table-scroll').forEach(function (wrap) {
+            wrap.style.overflow = 'visible';
+            wrap.style.height = 'auto';
+            wrap.querySelector('table').style.transform = 'none';
+          });
           var b = doc.getElementById('screenshotBtn');
           var t = doc.getElementById('screenshotToast');
           if (b) b.style.display = 'none';
@@ -1010,3 +1031,4 @@
 </html>
 
 </html>
+

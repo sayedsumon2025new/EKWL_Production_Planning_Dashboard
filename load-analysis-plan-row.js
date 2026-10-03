@@ -32,14 +32,26 @@
     }));
     const wrapper=document.createElement('div');
     wrapper.className='plan-table-scroll';
-    wrapper.style.cssText='width:100%;overflow-x:auto;';
+    wrapper.style.cssText='width:100%;overflow:hidden;';
     table.before(wrapper);wrapper.appendChild(table);
-    return {table,prefix,head,leading:Array.from(head.cells).slice(0,prefix).map(c=>c.cloneNode(true)),
+    return {table,wrapper,prefix,head,leading:Array.from(head.cells).slice(0,prefix).map(c=>c.cloneNode(true)),
       trailing:Array.from(head.cells).slice(-2).map(c=>c.cloneNode(true)),rows};
   });
   function setCell(cell,text){
     const strong=cell.querySelector('strong');
     if(strong)strong.textContent=text;else cell.textContent=text;
+  }
+  function fitTables(){
+    for(const view of tables){
+      const available=view.wrapper.clientWidth;
+      if(!available)continue;
+      view.table.style.transform='none';
+      view.table.style.width=Math.max(available,view.nativeWidth||0)+'px';
+      const scale=Math.min(1,available/view.table.offsetWidth);
+      view.table.style.transformOrigin='top left';
+      view.table.style.transform='scale('+scale+')';
+      view.wrapper.style.height=Math.ceil(view.table.offsetHeight*scale)+'px';
+    }
   }
   function render(data){
     const ready=!!data.ready;
@@ -52,7 +64,8 @@
       }
       view.head.append(...view.trailing.map(c=>c.cloneNode(true)));
       if(view.prefix===2)view.table.tHead.rows[0].cells[0].colSpan=dates.length+4;
-      view.table.style.minWidth=Math.max(1100,view.prefix*180+dates.length*62+150)+'px';
+      view.nativeWidth=Math.max(800,view.prefix*160+dates.length*44+150);
+      view.table.style.minWidth=view.nativeWidth+'px';
       for(const template of view.rows){
         const row=template.row,isPlan=row.id==='selected-plan-sah-row';
         row.replaceChildren(...template.leading.map(c=>c.cloneNode(true)));
@@ -82,11 +95,16 @@
         if(isPlan)row.cells[0].title='SAH/Day · '+String(data.label||'Selected plan');
       }
     }
+    fitTables();
   }
   render({ready:false});
+  const fitObserver=new ResizeObserver(fitTables);
+  tables.forEach(view=>fitObserver.observe(view.wrapper));
+  if(document.fonts)document.fonts.ready.then(fitTables);
   window.addEventListener('message',event=>{
     if(event.source!==parent || event.origin!==location.origin || event.data?.type!=='ekwl-load-analysis-plan')return;
     render(event.data);
   });
   if(parent!==window)parent.postMessage({type:'ekwl-load-analysis-ready'},location.origin);
 })();
+
