@@ -612,3 +612,8 @@ body .top-btn.primary, #slides-wrap #s0 .home-head .home-actions .top-btn.primar
 body #topnav #slide-tabs { display: none !important; }
 #topnav .brand { flex-shrink: 0; }
 #topnav .right { margin-left: auto; min-width: 0; max-width: 100%; }
+
+/* Remove the requested header actions while retaining their existing handlers. */
+body #topnav .top-btn[onclick="downloadTemplate()"],
+body #topnav .top-btn[onclick="exportData()"],
+body #topnav .top-btn[data-upload-launch="1"] { display: none !important; }
