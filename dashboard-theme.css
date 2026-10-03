@@ -471,3 +471,138 @@ body .top-btn.primary, #slides-wrap #s0 .home-head .home-actions .top-btn.primar
   #theme-toggle { display: none !important; }
   #slides-wrap :is(.kpi-lbl, #home-live-kpis .home-quick-box > span) { background: #fff !important; color: #172033 !important; }
 }
+
+/* Dark Power BI-inspired report canvas. Presentation only: retain categorical
+   series, priority/coverage cells, chart dimensions and all report controls. */
+@media screen {
+  :root[data-theme="dark"] {
+    --panel-shadow: 0 2px 8px #00000030 !important;
+    --tone-f6f5f1: #10151e;
+    --tone-fffefa: #1a2230;
+    --tone-d7dbdf: #354256;
+  }
+  [data-theme="dark"] body { line-height: 1.45; }
+  [data-theme="dark"] #slides-wrap .slide { padding: 24px; }
+  [data-theme="dark"] #slides-wrap :is(.slide-header, .home-live-heading) { margin-bottom: 18px; }
+  [data-theme="dark"] #slides-wrap .slide-title { letter-spacing: -.4px; }
+  [data-theme="dark"] #slides-wrap :is(.card, .home-live-panel, .s2-top-pie, .feeding-pie-card, .s9-analysis-card) {
+    border-radius: 6px !important;
+    box-shadow: var(--panel-shadow) !important;
+  }
+  [data-theme="dark"] #slides-wrap :is(.card-title, .home-live-panel-title, .s2-top-pie-title, .s9-analysis-title) {
+    color: var(--text) !important;
+    font-size: 13px;
+    font-weight: 600 !important;
+    letter-spacing: .1px;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  [data-theme="dark"] #slides-wrap .home-live-panel:nth-child(n) .home-live-panel-title { color: var(--text) !important; }
+  [data-theme="dark"] #slides-wrap #s0 .home-head .home-title {
+    font-size: clamp(24px, 2.5vw, 34px) !important;
+    text-transform: none;
+    letter-spacing: -.6px;
+  }
+  [data-theme="dark"] #slides-wrap #s0 .home-hero-sub { font-size: 13px; }
+  /* A neutral card and small yellow accent keep the metric the focal point. */
+  [data-theme="dark"] #slides-wrap :is(.kpi, #home-live-kpis .home-quick-box) {
+    border: 1px solid var(--border) !important;
+    border-top: 2px solid var(--amber2) !important;
+    border-radius: 6px !important;
+    padding: 16px 18px !important;
+    gap: 6px;
+    min-width: 0;
+  }
+  [data-theme="dark"] #slides-wrap :is(.kpi-lbl, #home-live-kpis .home-quick-box > span),
+  [data-theme="dark"] #slides-wrap #s12 #s12-kpi .kpi-label {
+    background: transparent !important;
+    color: var(--text2) !important;
+    font: 600 11px 'Segoe UI', Arial, sans-serif !important;
+    text-transform: none;
+    letter-spacing: .2px;
+    padding: 0;
+    margin: 0;
+  }
+  [data-theme="dark"] #slides-wrap :is(.kpi-val, #home-live-kpis .home-live-kpi-val) {
+    color: var(--text) !important;
+    font-size: clamp(26px, 2.1vw, 34px) !important;
+    font-weight: 600 !important;
+    line-height: 1.25;
+    margin: 0;
+  }
+  [data-theme="dark"] #slides-wrap :is(.kpi-sub, .home-live-kpi-label) { margin: 0; }
+  [data-theme="dark"] #slides-wrap #s0 .home-grid .home-card:nth-child(n) {
+    border-top: 1px solid var(--border) !important;
+    border-radius: 6px !important;
+  }
+  [data-theme="dark"] #slides-wrap #s0 .home-grid .home-card:hover { border-color: var(--amber2) !important; }
+  /* Slicers remain native controls with existing values and event handlers. */
+  [data-theme="dark"] body :is(input, select, textarea) {
+    background: var(--navy2) !important;
+    border-color: var(--border) !important;
+    border-radius: 4px !important;
+    min-height: 36px;
+  }
+  [data-theme="dark"] body :is(input[type=checkbox], input[type=radio]) { min-height: 0; }
+  [data-theme="dark"] body :is(select, input, textarea):hover { border-color: var(--text3) !important; }
+  [data-theme="dark"] body select option { background: var(--card); color: var(--text); }
+  [data-theme="dark"] #slides-wrap :is(.order-filters, .s6-filter-bar, .ac-controls, .ss-controls) {
+    padding: 12px;
+    background: var(--navy2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 16px;
+    gap: 10px;
+  }
+  [data-theme="dark"] #slides-wrap .home-live-date-controls { gap: 8px; }
+  /* Custom canvas charts already read --border/--text2. Retain their data,
+     series colors and geometry; set only the surrounding report surface. */
+  [data-theme="dark"] #slides-wrap canvas { background: var(--card); border-radius: 4px; }
+  [data-theme="dark"] #slides-wrap :is(.home-mini-track, .bar-wrap, .ss-tna-bar-track) {
+    background: var(--navy3) !important;
+    border-radius: 3px;
+  }
+  [data-theme="dark"] #slides-wrap .home-mini-row { min-height: 26px; gap: 10px; }
+  [data-theme="dark"] #slides-wrap .home-mini-name { width: 100px; }
+  [data-theme="dark"] #slides-wrap .home-mini-val { width: 72px; font-variant-numeric: tabular-nums; }
+  [data-theme="dark"] #slides-wrap :is(.home-hit-hole, .s2-top-hole, .range-pie-hole) {
+    background: var(--card) !important;
+    color: var(--text) !important;
+  }
+  [data-theme="dark"] #slides-wrap :is(.feeding-pie-center b, .feeding-leg-count, .feeding-leg-name) { color: var(--text) !important; }
+  [data-theme="dark"] #slides-wrap :is(.feeding-pie-center span, .feeding-leg-pct, .feeding-pie-legend) { color: var(--text2) !important; }
+  [data-theme="dark"] #slides-wrap :is(.s2-top-legend, .s3-qty-legend, .home-hit-legend, .feeding-pie-legend) {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  [data-theme="dark"] body :is(.order-hover, .eff15-tip, .gantt-hover-tooltip) {
+    background: #242e3e !important;
+    border-color: #485972 !important;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px #00000066;
+    line-height: 1.5;
+  }
+  [data-theme="dark"] body #order-hover :is(table, td, th) { background: #242e3e !important; }
+  [data-theme="dark"] #topnav { box-shadow: 0 2px 10px #00000040; }
+  [data-theme="dark"] #topnav #slide-tabs .stab.active { background: #f7c75412 !important; }
+  [data-theme="dark"] body :is(.top-btn, .pg-btn, .report-actions button, .home-live-date-controls button) {
+    border-radius: 4px !important;
+    border-color: var(--border) !important;
+  }
+  [data-theme="dark"] body :is(.top-btn, .pg-btn):hover { border-color: var(--amber2) !important; }
+}
+@media screen and (max-width: 1000px) {
+  [data-theme="dark"] #slides-wrap .slide { padding: 18px; }
+  [data-theme="dark"] #slides-wrap #s0 .home-quick-grid { gap: 12px; }
+}
+@media screen and (max-width: 600px) {
+  [data-theme="dark"] #slides-wrap .slide { padding: 12px; }
+  [data-theme="dark"] #slides-wrap :is(.kpi, #home-live-kpis .home-quick-box) { padding: 14px !important; }
+  [data-theme="dark"] #slides-wrap .home-live-date-controls { width: 100%; }
+  [data-theme="dark"] #slides-wrap .home-live-date-controls input { flex: 1 1 120px; min-width: 0; }
+  [data-theme="dark"] #slides-wrap :is(.order-filters, .s6-filter-bar, .ac-controls, .ss-controls) :is(input, select) {
+    flex: 1 1 140px; min-width: 0; max-width: 100%;
+  }
+  [data-theme="dark"] #slides-wrap .home-mini-name { width: 80px; }
+}
