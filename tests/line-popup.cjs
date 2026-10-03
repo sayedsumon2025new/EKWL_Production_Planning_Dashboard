@@ -10,6 +10,7 @@ const rows=[
  {month:'Sep',ewo:'A',line:2,style:'Shirt',color:'Red',smv:5,orderqty:100,planqty:50},
  {month:'Sep',ewo:'B',line:1,style:'<script>',color:'Green',smv:7,orderqty:9000,planqty:80}
 ];
+ctx.DATA=rows;ctx.validDate=()=>false;ctx.ACTIVE_PLAN_UPLOAD=null;
 ctx.renderS2(rows);
 ctx.details=vm.runInContext('S2_LINE_DETAILS',ctx);
 assert.equal(ctx.details.length,3);
