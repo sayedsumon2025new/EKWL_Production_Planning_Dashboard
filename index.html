@@ -3120,7 +3120,7 @@ input,select,textarea{
     <div class="slide-title"><span class="snum">20</span> 📊 Load Analysis</div>
     <div class="pager-btns"><button class="pg-btn" type="button" onclick="goSlide(0)">🏠 Home</button></div>
   </div>
-  <iframe id="load-analysis-workspace" title="EKWL-HW Load Analysis report" src="load-analysis.html?v=1" loading="lazy" sandbox="allow-scripts allow-downloads allow-same-origin" style="display:block;width:100%;height:calc(100vh - 180px);min-height:680px;margin-top:14px;border:0;border-radius:12px;background:#e6ecf2"></iframe>
+  <iframe id="load-analysis-workspace" title="EKWL-HW Load Analysis report" src="load-analysis.html?v=3" loading="lazy" sandbox="allow-scripts allow-downloads allow-same-origin" style="display:block;width:100%;height:calc(100vh - 180px);min-height:680px;margin-top:14px;border:0;border-radius:12px;background:#e6ecf2"></iframe>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3708,6 +3708,7 @@ function applySitePermissions(){
     CURRENT_SLIDE=0;
     try{localStorage.setItem(ACTIVE_TAB_STORAGE_KEY,'0')}catch(_){}
   }
+  if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
 }
 function requireSitePerm(key,label='এই module'){
   if(siteHasPerm(key))return true;
@@ -3745,6 +3746,7 @@ function goSlide(n){
   if(n===17)setTimeout(()=>loadSizeSetModule(),0);
   if(n===18)setTimeout(()=>loadAccessoriesModule(),0);
   if(n===19)setTimeout(()=>loadEmbellishmentModule(),0);
+  if(n===20 && typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
   if(n===14 || n===15){
     try{renderSlide(n)}catch(e){
       console.error('Slide '+n+' render failed',e);
@@ -3990,6 +3992,7 @@ async function switchPlanningInstant(uploadId){
   ++SUPABASE_LOAD_TOKEN; // Invalidate any older load, including when this selection is cached.
   const upload=PLAN_UPLOAD_CATALOG.find(u=>String(u.id)===String(uploadId));
   if(upload)ACTIVE_PLAN_UPLOAD=upload;
+  if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
 
   // Previously opened versions are restored instantly with zero Supabase requests.
   if(PLAN_VERSION_CACHE.has(String(uploadId))){
@@ -4392,6 +4395,7 @@ function renderAll(){
  if(CURRENT_SLIDE>=1 && CURRENT_SLIDE<=11 && canAccessSlide(CURRENT_SLIDE)){
    try{renderSlide(CURRENT_SLIDE)}catch(e){console.error(e)}
  }
+ if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
 }
 
 let HOME_RANGE_PLAN_ID='';
@@ -6961,6 +6965,7 @@ async function siteLogout(){
   if(typeof resetAccessoriesModule==='function')resetAccessoriesModule();
   if(typeof resetEmbellishmentModule==='function')resetEmbellishmentModule();
   SITE_AUTH_USER=null;SITE_USER_PROFILE=null;SITE_BOOTED=false;
+  if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
   try{sessionStorage.removeItem(fastKey);sessionStorage.removeItem('EKWL_FAST_BOOT_v1');}catch(e){console.warn(e)}
   document.getElementById('site-login-password').value='';
   showSiteLogin('Signed out. Please sign in again.');
@@ -8267,6 +8272,7 @@ async function loadEfficiencyAnalysisSlide(){
 })();
 </script>
 <script src="order-execution-bridge.js"></script>
+<script src="load-analysis-bridge.js?v=2"></script>
 <script src="size-set-module.js"></script>
 <script src="accessories-module.js"></script>
 <script src="embellishment-module.js"></script>
