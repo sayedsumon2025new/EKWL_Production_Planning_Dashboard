@@ -96,6 +96,9 @@ class ThemeVisualTests(unittest.TestCase):
         self.page.goto(self.url, wait_until='networkidle')
         self.assertEqual(self.page.evaluate('typeof SB'), 'object')
         self.page.evaluate(FIXTURE)
+        # Existing light-theme regressions explicitly select their baseline.
+        if self.page.evaluate('EKWLTheme.get()') != 'light':
+            self.page.locator('#theme-toggle').click()
 
     def tearDown(self):
         try:
@@ -120,6 +123,26 @@ class ThemeVisualTests(unittest.TestCase):
             background = 'rgb(255, 255, 255)' if paper else colors['bg']
             self.assertGreaterEqual(contrast(colors['fg'], background), 4.5,
                                     f'{selector}: {colors}, contrast against {background}')
+
+    def test_fresh_report_defaults_to_dark_and_retains_light_preference(self):
+        self.page.evaluate("localStorage.removeItem('ekwl-dashboard-theme')")
+        self.page.reload(wait_until='networkidle')
+        self.page.evaluate(FIXTURE)
+        self.assertEqual(self.page.evaluate('EKWLTheme.get()'), 'dark')
+        self.assertEqual(self.page.locator('#theme-toggle').get_attribute('aria-checked'), 'true')
+        self.assertEqual(self.page.locator('body').evaluate('(e)=>getComputedStyle(e).backgroundColor'),
+                         'rgb(16, 21, 30)')
+        before = self.page.evaluate('JSON.stringify({data:DATA,daily:DAILY_PLAN})')
+        self.assert_readable('#home-live-kpis .home-quick-box > span, '
+                             '#home-live-kpis .home-live-kpi-val, .home-live-panel-title')
+        for card in self.page.locator('#home-live-kpis .home-quick-box').all():
+            self.assertEqual(card.locator(':scope > span').evaluate(
+                '(e)=>getComputedStyle(e).backgroundColor'), 'rgba(0, 0, 0, 0)')
+        self.screenshot('power-bi-dark-default')
+        self.page.locator('#theme-toggle').click()
+        self.assertEqual(self.page.evaluate('JSON.stringify({data:DATA,daily:DAILY_PLAN})'), before)
+        self.page.reload(wait_until='networkidle')
+        self.assertEqual(self.page.evaluate('EKWLTheme.get()'), 'light')
 
     def test_off_white_surfaces_and_home_actions_have_contrast(self):
         self.assertEqual(self.page.evaluate('getComputedStyle(document.documentElement).colorScheme'), 'light')

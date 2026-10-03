@@ -6,8 +6,9 @@
   // explicitly marked Order Execution view delegates to its parent.
   const embedded = window.parent !== window &&
     document.documentElement.dataset.themeContext === 'execution';
-  const valid = value => value === 'dark' ? 'dark' : 'light';
-  let theme = 'light';
+  // Dark is the report default; keep an explicit saved light preference.
+  const valid = value => value === 'light' ? 'light' : 'dark';
+  let theme = 'dark';
   try { theme = valid(localStorage.getItem(key)); } catch (_) { /* Sandboxed view or blocked storage. */ }
   const frame = () => document.getElementById('order-execution-frame');
   const send = () => frame()?.contentWindow?.postMessage({type: 'ekwl-theme', theme}, '*');

@@ -4,8 +4,8 @@ const source=html.slice(html.indexOf('function buildS6Rows('),html.indexOf('/* â
 const nodes=new Map();
 const document={getElementById(id){if(!nodes.has(id))nodes.set(id,{value:'',innerHTML:'',textContent:'',dataset:{}});return nodes.get(id);}};
 const upload={id:'P04',planning_month:'2026-09'};
-const api=new Function('N','document','ACTIVE_PLAN_UPLOAD','uploadMonthKey','planningMonthLabel','fmt','esc',source+';return {buildS6Rows,renderS6};')(
- x=>Number(x)||0,document,upload,u=>u.planning_month,m=>m,String,String);
+const api=new Function('N','document','ACTIVE_PLAN_UPLOAD','uploadMonthKey','planningMonthLabel','fmt','esc','renderS8',source+';return {buildS6Rows,renderS6};')(
+ x=>Number(x)||0,document,upload,u=>u.planning_month,m=>m,String,String,()=>{});
 const data=[
  {ewo:'A',line:2,startdate:'2026-09-05',buyer:'Buyer A',style:'Hoody',po:'P1',color:'Black',orderqty:3000,planqty:2000},
  {ewo:'A',line:2,startdate:'2026-09-05',buyer:'Buyer A',style:'Hoody',po:'P2',color:'Blue',orderqty:1000,planqty:500},
