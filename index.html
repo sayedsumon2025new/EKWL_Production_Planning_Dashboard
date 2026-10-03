@@ -2365,7 +2365,7 @@ input,select,textarea{
       <button class="home-card" data-slide-access="17" onclick="goSlide(17)"><span class="home-no">17</span><span class="home-icon">📐</span><span class="home-card-title">Size Set Module</span><span class="home-card-sub">SS.csv source rows, milestone plan/actual and next actions</span></button>
       <button class="home-card" data-slide-access="18" onclick="goSlide(18)"><span class="home-no">18</span><span class="home-icon">🧰</span><span class="home-card-title">Accessories</span><span class="home-card-sub">Date-wise SQL snapshots and the 15 CSV source columns</span></button>
       <button class="home-card" data-slide-access="19" onclick="goSlide(19)"><span class="home-no">19</span><span class="home-icon">🎨</span><span class="home-card-title">Embellishment Send Receive</span><span class="home-card-sub">Print and EMB send, receive and return quantities by report date</span></button>
-      <button class="home-card" data-slide-access="20" onclick="goSlide(20)"><span class="home-no">20</span><span class="home-icon">📊</span><span class="home-card-title">Load Analysis</span><span class="home-card-sub">Load analysis workspace</span></button>
+      <button class="home-card" data-slide-access="20" onclick="goSlide(20)"><span class="home-no">20</span><span class="home-icon">📊</span><span class="home-card-title">Load Analysis</span><span class="home-card-sub">Planned SAH vs Forecast SAH report</span></button>
     </div>
     <div class="home-status" data-admin-home-extra="1" style="flex-wrap:wrap">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
@@ -3120,7 +3120,7 @@ input,select,textarea{
     <div class="slide-title"><span class="snum">20</span> 📊 Load Analysis</div>
     <div class="pager-btns"><button class="pg-btn" type="button" onclick="goSlide(0)">🏠 Home</button></div>
   </div>
-  <div class="card" id="load-analysis-workspace" style="margin-top:14px;min-height:240px" aria-label="Load Analysis workspace"></div>
+  <iframe id="load-analysis-workspace" title="EKWL-HW Load Analysis report" src="load-analysis.html?v=1" loading="lazy" sandbox="allow-scripts allow-downloads allow-same-origin" style="display:block;width:100%;height:calc(100vh - 180px);min-height:680px;margin-top:14px;border:0;border-radius:12px;background:#e6ecf2"></iframe>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

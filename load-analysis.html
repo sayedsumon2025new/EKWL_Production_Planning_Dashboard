@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EKWL-HW Planned SAH vs Forecast SAH | Epyllion Knitwears</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, Calibri, Arial, sans-serif;
+    font-size: 12.5px;
+    background: #e6ecf2;
+    color: #1e293b;
+    padding: 32px 20px 48px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(15, 35, 60, 0.1), 0 1px 3px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  .report-header {
+    background: linear-gradient(135deg, #0a1929 0%, #0f2744 40%, #163a5f 100%);
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    position: relative;
+  }
+  .report-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #c9a227, #e8c547, #c9a227);
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    min-width: 0;
+  }
+  .logo {
+    flex-shrink: 0;
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  }
+  .logo img {
+    height: 30px;
+    width: auto;
+    display: block;
+  }
+  .header-text .brand {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 3px;
+  }
+  .header-text .title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.15px;
+    line-height: 1.25;
+  }
+  .header-text .period {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.6);
+    margin-top: 3px;
+  }
+  .header-kpis {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .kpi-chip {
+    text-align: center;
+    min-width: 102px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 8px;
+  }
+  .kpi-chip .kpi-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 5px;
+  }
+  .kpi-chip .kpi-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.3px;
+  }
+  .kpi-chip .kpi-value.negative {
+    color: #fecaca;
+    font-weight: 800;
+  }
+
+  /* ── Body content ── */
+  .content {
+    padding: 24px 28px 20px;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  th, td {
+    border: 1px solid #e2e8f0;
+    padding: 7px 8px;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 12.5px;
+  }
+  .header-row th {
+    background: #0f2744;
+    color: #fff;
+    font-weight: 600;
+    font-size: 11.5px;
+    letter-spacing: 0.25px;
+    border-color: #0f2744;
+    padding: 9px 7px;
+  }
+  .label-col {
+    text-align: left !important;
+    font-weight: 600;
+    background: #f8fafc;
+    min-width: 168px;
+    color: #1e293b;
+    padding-left: 12px !important;
+  }
+  .variation {
+    color: #b91c1c;
+    font-weight: 700;
+  }
+  .section-gap {
+    margin-top: 24px;
+  }
+  .section-header {
+    background: #0f2744;
+    color: #fff;
+    font-weight: 700;
+    text-align: left !important;
+    padding: 10px 14px !important;
+    font-size: 12.5px;
+    letter-spacing: 0.5px;
+    border: none !important;
+  }
+  .loss-header th {
+    background: #e8eef4;
+    font-weight: 700;
+    font-size: 11.5px;
+    color: #0f172a;
+    border-color: #d0d8e0;
+  }
+  .loss-row:nth-child(even) td {
+    background: #f8fafc;
+  }
+  .responsible {
+    text-align: left !important;
+    padding-left: 12px !important;
+    font-weight: 600;
+    color: #334155;
+  }
+  .grand-total-row td {
+    background: #e2e8f0;
+    font-weight: 700;
+    color: #0f172a;
+    border-color: #cbd5e1;
+  }
+  .green-dot {
+    color: #059669;
+    font-size: 12px;
+    margin-right: 2px;
+  }
+
+  /* ── Bottom cards ── */
+  .bottom-section {
+    display: flex;
+    gap: 20px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .card-panel {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card-panel-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .acc-table {
+    width: auto;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .acc-table th, .acc-table td {
+    padding: 9px 18px;
+    font-size: 13px;
+    border-color: #e2e8f0;
+  }
+  .acc-header th {
+    background: #0f2744;
+    color: #fff;
+    font-weight: 700;
+    border-color: #0f2744;
+  }
+  .acc-grand td {
+    background: #e2e8f0;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .chart-wrap {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .pie {
+    width: 170px;
+    height: 170px;
+    border-radius: 50%;
+    background: conic-gradient(
+      from -90deg,
+      #eab308 0deg 262.8deg,
+      #ec4899 262.8deg 349.2deg,
+      #1e293b 349.2deg 360deg
+    );
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12), inset 0 -6px 10px rgba(0,0,0,0.08);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .pie::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 56px; height: 56px;
+    background: #f8fafc;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .legend-list {
+    list-style: none;
+    font-size: 13px;
+  }
+  .legend-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+  .swatch {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .swatch-textile { background: #eab308; }
+  .swatch-washing { background: #ec4899; }
+  .swatch-merchant { background: #1e293b; }
+
+  /* ── Footer ── */
+  .report-footer {
+    margin-top: 24px;
+    padding: 14px 0 4px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-weight: 600;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid #fecaca;
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #ef4444;
+  }
+
+  /* ── Bar chart ── */
+  .chart-section {
+    margin-top: 24px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 20px 20px;
+  }
+  .chart-section-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+  .chart-legend-row {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+  }
+  .chart-legend-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .leg-bar {
+    width: 12px; height: 12px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #ef4444, #b91c1c);
+  }
+  .leg-line {
+    width: 16px; height: 3px;
+    border-radius: 2px;
+    background: #2563eb;
+    position: relative;
+  }
+  .leg-line::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #2563eb;
+    border: 1.5px solid #fff;
+    box-shadow: 0 0 0 1px #2563eb;
+  }
+  .bar-chart-wrap {
+    position: relative;
+  }
+  /* Top band reserved for % line — always above bars */
+  .pct-band {
+    display: flex;
+    align-items: flex-end;
+    height: 72px;
+    padding: 0 4px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .pct-band-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    position: relative;
+    height: 100%;
+  }
+  .pct-text {
+    font-size: 10px;
+    font-weight: 700;
+    color: #1d4ed8;
+    margin-bottom: 3px;
+    white-space: nowrap;
+  }
+  .pct-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #2563eb;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1.5px #2563eb;
+    z-index: 2;
+  }
+  .pct-line-svg {
+    position: absolute;
+    top: 0;
+    left: 4px;
+    right: 4px;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .pct-line-svg svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 130px;
+    padding: 0 4px;
+  }
+  .bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+  .bar-value {
+    font-size: 10px;
+    font-weight: 700;
+    color: #b91c1c;
+    font-variant-numeric: tabular-nums;
+  }
+  .bar {
+    width: 100%;
+    max-width: 40px;
+    border-radius: 4px 4px 0 0;
+    background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+    box-shadow: 0 2px 4px rgba(185, 28, 28, 0.2);
+    min-height: 4px;
+  }
+  .bar-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748b;
+    white-space: nowrap;
+  }
+
+  /* ── Screenshot button ── */
+  .screenshot-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #0f2744 0%, #1e3a5f 100%);
+    color: #ffffff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(15, 39, 68, 0.35), 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .screenshot-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(15, 39, 68, 0.4);
+  }
+  .screenshot-btn:active {
+    transform: translateY(0);
+  }
+  .screenshot-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+  }
+  .screenshot-btn.capturing {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .screenshot-toast {
+    position: fixed;
+    bottom: 80px;
+    right: 24px;
+    z-index: 10000;
+    background: #059669;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+  }
+  .screenshot-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="report-header">
+    <div class="header-left">
+      <div class="logo">
+        <img src="data:image/png;base64,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" alt="Epyllion Group">
+      </div>
+      <div class="header-text">
+        <div class="brand">Epyllion Knitwears Limited — Production Performance</div>
+        <div class="title">EKWL-HW Planned SAH vs Forecast SAH</div>
+        <div class="period">03 October – 16 October</div>
+      </div>
+    </div>
+    <div class="header-kpis">
+      <div class="kpi-chip">
+        <div class="kpi-label">Target Avg</div>
+        <div class="kpi-value">10,713</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-label">Forecast Avg</div>
+        <div class="kpi-value">8,768</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-label">Variance</div>
+        <div class="kpi-value negative">(1,731)</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-label">Total Loss</div>
+        <div class="kpi-value negative">20,770</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Summary Table -->
+    <table>
+      <thead>
+        <tr class="header-row">
+          <th class="label-col" style="background:#0f2744;color:#fff;border-color:#0f2744;">Date</th>
+          <th>3-Oct</th><th>4-Oct</th><th>5-Oct</th><th>6-Oct</th><th>7-Oct</th><th>8-Oct</th>
+          <th>9-Oct</th><th>10-Oct</th><th>11-Oct</th><th>12-Oct</th><th>13-Oct</th><th>14-Oct</th><th>15-Oct</th>
+          <th>Total</th><th>Average</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="label-col">CP Avg. SAH target/day:</td>
+          <td>10,713</td><td>10,713</td><td>10,713</td><td>10,713</td><td>10,713</td><td>10,713</td>
+          <td></td>
+          <td>10,713</td><td>10,713</td><td>10,713</td><td>10,713</td><td>10,713</td><td>10,713</td>
+          <td><strong>128,556</strong></td><td><strong>10,713</strong></td>
+        </tr>
+        <tr>
+          <td class="label-col">Day-wise plan SAH:</td>
+          <td>9,397</td><td>9,875</td><td>9,954</td><td>10,791</td><td>10,949</td><td>10,818</td>
+          <td></td>
+          <td>10,610</td><td>10,781</td><td>11,025</td><td>10,759</td><td>10,617</td><td>10,411</td>
+          <td><strong>125,987</strong></td><td><strong>10,499</strong></td>
+        </tr>
+        <tr>
+          <td class="label-col">Forecast achievable SAH:</td>
+          <td>8,071</td><td>8,865</td><td>8,356</td><td>9,841</td><td>9,395</td><td>8,535</td>
+          <td></td>
+          <td>8,215</td><td>8,246</td><td>9,064</td><td>8,972</td><td>9,295</td><td>8,362</td>
+          <td><strong>105,217</strong></td><td><strong>8,768</strong></td>
+        </tr>
+        <tr>
+          <td class="label-col">Variation :</td>
+          <td class="variation">(1,326)</td><td class="variation">(1,010)</td><td class="variation">(1,598)</td>
+          <td class="variation">(950)</td><td class="variation">(1,554)</td><td class="variation">(2,283)</td>
+          <td></td>
+          <td class="variation">(2,395)</td><td class="variation">(2,535)</td><td class="variation">(1,961)</td>
+          <td class="variation">(1,787)</td><td class="variation">(1,322)</td><td class="variation">(2,049)</td>
+          <td class="variation"><strong>(20,770)</strong></td>
+          <td class="variation"><strong>(1,731)</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Loss Details -->
+    <table class="section-gap">
+      <thead>
+        <tr>
+          <th colspan="17" class="section-header">SAH Loss Reason Details</th>
+        </tr>
+        <tr class="loss-header">
+          <th class="label-col" style="background:#e8eef4;">Loss reason</th>
+          <th>Responsible</th>
+          <th>3-Oct</th><th>4-Oct</th><th>5-Oct</th><th>6-Oct</th><th>7-Oct</th><th>8-Oct</th>
+          <th>9-Oct</th><th>10-Oct</th><th>11-Oct</th><th>12-Oct</th><th>13-Oct</th><th>14-Oct</th><th>15-Oct</th>
+          <th>Total</th><th>Average</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="loss-row">
+          <td class="label-col">Sample Pending</td>
+          <td class="responsible">Merchant</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          <td class="variation">143</td><td class="variation">132</td><td class="variation">123</td><td class="variation">152</td>
+          <td></td><td></td>
+          <td><strong>550</strong></td><td>138</td>
+        </tr>
+        <tr class="loss-row">
+          <td class="label-col">Fabric low GSM issue</td>
+          <td class="responsible">Textile</td>
+          <td></td><td></td><td></td>
+          <td class="variation">4</td><td class="variation">202</td><td class="variation">218</td>
+          <td></td>
+          <td class="variation">83</td>
+          <td></td><td></td><td></td><td></td><td></td>
+          <td><strong>507</strong></td><td>127</td>
+        </tr>
+        <tr class="loss-row">
+          <td class="label-col">Fabric balanced</td>
+          <td class="responsible">Textile</td>
+          <td class="variation">485</td><td class="variation">378</td><td class="variation">737</td>
+          <td class="variation">3</td><td class="variation">741</td><td class="variation">1,345</td>
+          <td></td>
+          <td class="variation">1,850</td><td class="variation">2,290</td><td class="variation">1,838</td>
+          <td class="variation">1,635</td><td class="variation">1,322</td><td class="variation">2,049</td>
+          <td><strong>14,673</strong></td><td>1,223</td>
+        </tr>
+        <tr class="loss-row">
+          <td class="label-col">Panel wash challenge</td>
+          <td class="responsible">Washing</td>
+          <td class="variation">841</td><td class="variation">632</td><td class="variation">861</td>
+          <td class="variation">943</td><td class="variation">611</td><td class="variation">720</td>
+          <td></td>
+          <td class="variation">319</td><td class="variation">113</td>
+          <td></td><td></td><td></td><td></td>
+          <td><strong>5,040</strong></td><td>630</td>
+        </tr>
+        <tr class="grand-total-row">
+          <td class="label-col" style="background:#e2e8f0;font-weight:700;">Grand Total</td>
+          <td style="background:#e2e8f0;"></td>
+          <td><span class="green-dot">●</span>1,326</td>
+          <td><span class="green-dot">●</span>1,010</td>
+          <td><span class="green-dot">●</span>1,598</td>
+          <td><span class="green-dot">●</span>950</td>
+          <td><span class="green-dot">●</span>1,554</td>
+          <td><span class="green-dot">●</span>2,283</td>
+          <td></td>
+          <td><span class="green-dot">●</span>2,395</td>
+          <td><span class="green-dot">●</span>2,535</td>
+          <td><span class="green-dot">●</span>1,961</td>
+          <td><span class="green-dot">●</span>1,787</td>
+          <td><span class="green-dot">●</span>1,322</td>
+          <td><span class="green-dot">●</span>2,049</td>
+          <td><strong>20,770</strong></td>
+          <td><strong>1,731</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+
+    
+    
+    
+    <div class="chart-section">
+      <div class="chart-section-title">Daily SAH Loss &amp; Achievement %</div>
+      <div class="chart-legend-row">
+        <span><span class="leg-bar"></span> SAH Loss (Variation)</span>
+        <span><span class="leg-line"></span> Achievement % (Forecast ÷ Target)</span>
+      </div>
+      <div class="bar-chart-wrap">
+        <div class="pct-band">
+          <div class="pct-line-svg">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+              <polyline
+                points="3.85,78.80 11.54,49.20 19.23,68.00 26.92,12.40 34.62,29.20 42.31,61.20 57.69,73.20 65.38,72.00 73.08,41.60 80.77,45.20 88.46,32.80 96.15,67.60"
+                fill="none"
+                stroke="#2563eb"
+                stroke-width="0.55"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+                vector-effect="non-scaling-stroke"
+              />
+            </svg>
+          </div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:21.2%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">75.3%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:50.8%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">82.7%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:32.0%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">78.0%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:87.6%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">91.9%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:70.8%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">87.7%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:38.8%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">79.7%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+      <div class="pct-band-col"></div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:26.8%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">76.7%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:28.0%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">77.0%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:58.4%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">84.6%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:54.8%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">83.7%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:67.2%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">86.8%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+      <div class="pct-band-col">
+        <div style="position:absolute;bottom:32.4%;display:flex;flex-direction:column;align-items:center;">
+          <div class="pct-text">78.1%</div>
+          <div class="pct-dot"></div>
+        </div>
+      </div>
+        </div>
+        <div class="bar-chart">
+      <div class="bar-col">
+        <div class="bar-value">1,326</div>
+        <div class="bar" style="height:58px;"></div>
+        <div class="bar-label">3-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value">1,010</div>
+        <div class="bar" style="height:44px;"></div>
+        <div class="bar-label">4-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value">1,598</div>
+        <div class="bar" style="height:69px;"></div>
+        <div class="bar-label">5-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value">950</div>
+        <div class="bar" style="height:41px;"></div>
+        <div class="bar-label">6-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value">1,554</div>
+        <div class="bar" style="height:67px;"></div>
+        <div class="bar-label">7-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value">2,283</div>
+        <div class="bar" style="height:99px;"></div>
+        <div class="bar-label">8-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value" style="color:#94a3b8;">—</div>
+        <div class="bar" style="height:4px;background:#cbd5e1;box-shadow:none;"></div>
+        <div class="bar-label">9-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value">2,395</div>
+        <div class="bar" style="height:104px;"></div>
+        <div class="bar-label">10-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value">2,535</div>
+        <div class="bar" style="height:110px;"></div>
+        <div class="bar-label">11-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value">1,961</div>
+        <div class="bar" style="height:85px;"></div>
+        <div class="bar-label">12-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value">1,787</div>
+        <div class="bar" style="height:78px;"></div>
+        <div class="bar-label">13-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value">1,322</div>
+        <div class="bar" style="height:57px;"></div>
+        <div class="bar-label">14-Oct</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-value">2,049</div>
+        <div class="bar" style="height:89px;"></div>
+        <div class="bar-label">15-Oct</div>
+      </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom -->
+    <div class="bottom-section">
+      <div class="card-panel">
+        <div class="card-panel-title">Accountability Summary</div>
+        <table class="acc-table">
+          <thead>
+            <tr class="acc-header">
+              <th style="text-align:left;">Department</th>
+              <th>Total SAH</th>
+              <th>Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align:left;font-weight:600;">Textile</td>
+              <td>15,180</td><td>73%</td>
+            </tr>
+            <tr>
+              <td style="text-align:left;font-weight:600;">Washing</td>
+              <td>5,040</td><td>24%</td>
+            </tr>
+            <tr>
+              <td style="text-align:left;font-weight:600;">Merchant</td>
+              <td>550</td><td>3%</td>
+            </tr>
+            <tr class="acc-grand">
+              <td style="text-align:left;">Grand Total</td>
+              <td>20,770</td><td>100%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card-panel" style="flex:1;">
+        <div class="card-panel-title">Loss Distribution</div>
+        <div class="chart-wrap">
+          <div class="pie"></div>
+          <ul class="legend-list">
+            <li><span class="swatch swatch-textile"></span> Textile — 15,180 SAH (73%)</li>
+            <li><span class="swatch swatch-washing"></span> Washing — 5,040 SAH (24%)</li>
+            <li><span class="swatch swatch-merchant"></span> Merchant — 550 SAH (3%)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-footer">
+      <span>Epyllion Knitwears Limited · Madanpur, Bandar, Narayanganj-1410</span>
+      <span class="status-badge"><span class="status-dot"></span> SAH Loss Alert — Action Required</span>
+      <span>Confidential · Internal Use Only</span>
+    </div>
+
+  </div>
+</div>
+
+<button class="screenshot-btn" id="screenshotBtn" type="button" title="Download HD Screenshot of full report">
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 5h-3.2l-1.8-2H9L7.2 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H4V7h4.05l1.83-2h4.24l1.83 2H20v12zM12 8c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/></svg>
+  <span id="btnLabel">HD Screenshot</span>
+</button>
+<div class="screenshot-toast" id="screenshotToast"></div>
+
+<script src="html2canvas.min.js"></script>
+<script>
+(function () {
+  var btn = document.getElementById('screenshotBtn');
+  var label = document.getElementById('btnLabel');
+  var toast = document.getElementById('screenshotToast');
+
+  function showToast(msg, isError) {
+    toast.textContent = msg;
+    toast.style.background = isError ? '#b91c1c' : '#059669';
+    toast.classList.add('show');
+    setTimeout(function () { toast.classList.remove('show'); }, 3000);
+  }
+
+  function downloadCanvas(canvas) {
+    try {
+      var dataUrl = canvas.toDataURL('image/png');
+      var a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'EKWL-HW_SAH_Report_HD.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  }
+
+  btn.addEventListener('click', function () {
+    if (typeof html2canvas !== 'function') {
+      showToast('Screenshot library not loaded. Keep html2canvas.min.js next to this HTML file.', true);
+      return;
+    }
+
+    var page = document.querySelector('.page');
+    if (!page) {
+      showToast('Report content not found', true);
+      return;
+    }
+
+    btn.classList.add('capturing');
+    label.textContent = 'Capturing…';
+    btn.style.opacity = '0';
+
+    // Small delay so button is hidden before capture
+    setTimeout(function () {
+      html2canvas(page, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        imageTimeout: 15000,
+        onclone: function (doc) {
+          var b = doc.getElementById('screenshotBtn');
+          var t = doc.getElementById('screenshotToast');
+          if (b) b.style.display = 'none';
+          if (t) t.style.display = 'none';
+        }
+      }).then(function (canvas) {
+        var ok = downloadCanvas(canvas);
+        btn.style.opacity = '1';
+        btn.classList.remove('capturing');
+        label.textContent = 'HD Screenshot';
+        if (ok) {
+          showToast('HD screenshot downloaded (' + canvas.width + '×' + canvas.height + 'px)');
+        } else {
+          showToast('Download blocked by browser. Try right-click → Save.', true);
+        }
+      }).catch(function (err) {
+        console.error(err);
+        btn.style.opacity = '1';
+        btn.classList.remove('capturing');
+        label.textContent = 'HD Screenshot';
+        showToast('Capture failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+      });
+    }, 150);
+  });
+})();
+</script>
+</body>
+</html>
+
+</html>
