@@ -606,3 +606,9 @@ body .top-btn.primary, #slides-wrap #s0 .home-head .home-actions .top-btn.primar
   }
   [data-theme="dark"] #slides-wrap .home-mini-name { width: 80px; }
 }
+
+/* Header slide tabs are intentionally hidden. Keep their route/permission
+   metadata for the existing module registry; use Home cards and page controls. */
+body #topnav #slide-tabs { display: none !important; }
+#topnav .brand { flex-shrink: 0; }
+#topnav .right { margin-left: auto; min-width: 0; max-width: 100%; }

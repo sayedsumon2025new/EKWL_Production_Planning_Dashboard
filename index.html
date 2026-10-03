@@ -2082,7 +2082,7 @@ input,select,textarea{
 @media(max-width:680px){#s0 .home-head{min-height:190px;padding:22px}#s0 .home-head .home-title{font-size:24px!important}#s0 .home-head .home-actions .top-btn{font-size:11px;padding:7px 9px}}
 @media(prefers-reduced-motion:reduce){#s0 .home-grid .home-card,#s0 .home-grid .home-icon,#s0 .home-head .home-actions .top-btn,#s0 #home-live-kpis .home-quick-box,#slide-tabs .stab,#slide-tabs .stab::after{transition:none!important}#s0 .home-mini-fill,#s0 .home-hit-pie,.bar-chart .bar-fill,.slide.active:not(#s0)>.slide-header,.slide.active:not(#s0)>.kpi-row{animation:none!important}#s0 .load-fill.loading::after{animation:none!important}}
 </style>
-<link rel="stylesheet" href="dashboard-theme.css?v=3">
+<link rel="stylesheet" href="dashboard-theme.css?v=4">
 <script src="dashboard-theme.js?v=3"></script>
 </head>
 <body class="site-locked">
@@ -2134,7 +2134,7 @@ input,select,textarea{
   <div class="brand">
     📊 <div><div>EKWL · HW Planning</div><span>Production Dashboard</span></div>
   </div>
-  <div id="slide-tabs">
+  <div id="slide-tabs" hidden aria-hidden="true">
     <div class="stab active" onclick="goSlide(0)" data-s="0"><span class="tnum">00</span> Home</div>
     <div class="stab" onclick="goSlide(1)" data-s="1" data-slide-access="1"><span class="tnum">01</span> Order Table</div>
     <div class="stab" onclick="goSlide(2)" data-s="2" data-slide-access="2"><span class="tnum">02</span> Plan Qty Analysis</div>
