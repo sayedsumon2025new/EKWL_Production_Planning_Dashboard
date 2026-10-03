@@ -575,12 +575,22 @@
           <td>10,713</td><td>10,713</td><td>10,713</td><td>10,713</td><td>10,713</td><td>10,713</td>
           <td><strong>128,556</strong></td><td><strong>10,713</strong></td>
         </tr>
-        <tr>
+        <tr id="selected-plan-sah-row">
           <td class="label-col">Day-wise plan SAH:</td>
-          <td>9,397</td><td>9,875</td><td>9,954</td><td>10,791</td><td>10,949</td><td>10,818</td>
-          <td></td>
-          <td>10,610</td><td>10,781</td><td>11,025</td><td>10,759</td><td>10,617</td><td>10,411</td>
-          <td><strong>125,987</strong></td><td><strong>10,499</strong></td>
+          <td data-plan-day="3">—</td>
+          <td data-plan-day="4">—</td>
+          <td data-plan-day="5">—</td>
+          <td data-plan-day="6">—</td>
+          <td data-plan-day="7">—</td>
+          <td data-plan-day="8">—</td>
+          <td data-plan-day="9">—</td>
+          <td data-plan-day="10">—</td>
+          <td data-plan-day="11">—</td>
+          <td data-plan-day="12">—</td>
+          <td data-plan-day="13">—</td>
+          <td data-plan-day="14">—</td>
+          <td data-plan-day="15">—</td>
+          <td data-plan-total><strong>—</strong></td><td data-plan-average><strong>—</strong></td>
         </tr>
         <tr>
           <td class="label-col">Forecast achievable SAH:</td>
@@ -907,6 +917,7 @@
 </button>
 <div class="screenshot-toast" id="screenshotToast"></div>
 
+<script src="load-analysis-plan-row.js?v=2"></script>
 <script src="html2canvas.min.js"></script>
 <script>
 (function () {
@@ -949,6 +960,7 @@
       return;
     }
 
+    var reportWidth = Math.max(page.offsetWidth, ...Array.from(page.querySelectorAll('.plan-table-scroll')).map(function (wrap) { return wrap.scrollWidth + 56; }));
     btn.classList.add('capturing');
     label.textContent = 'Capturing…';
     btn.style.opacity = '0';
@@ -956,6 +968,8 @@
     // Small delay so button is hidden before capture
     setTimeout(function () {
       html2canvas(page, {
+        width: reportWidth,
+        windowWidth: Math.max(window.innerWidth, reportWidth + 40),
         scale: 2,
         useCORS: true,
         allowTaint: true,
@@ -963,6 +977,9 @@
         logging: false,
         imageTimeout: 15000,
         onclone: function (doc) {
+          var report = doc.querySelector('.page');
+          if (report) { report.style.maxWidth = 'none'; report.style.width = reportWidth + 'px'; }
+          doc.querySelectorAll('.plan-table-scroll').forEach(function (wrap) { wrap.style.overflow = 'visible'; });
           var b = doc.getElementById('screenshotBtn');
           var t = doc.getElementById('screenshotToast');
           if (b) b.style.display = 'none';
