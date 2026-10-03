@@ -1,0 +1,116 @@
+/* Shared spreadsheet-style data grids. Presentation only; no data transforms. */
+:root {
+  --grid-header-top: #e5f2ff;
+  --grid-header-bottom: #b9daf8;
+  --grid-header-text: #16314c;
+  --grid-row: #ffffff;
+  --grid-stripe: #e8f2ff;
+  --grid-hover: #d5eaff;
+  --grid-border: #aec8df;
+  --grid-text: #172b40;
+  --grid-total: #d7e9f9;
+  --grid-input: #ffffff;
+  --grid-focus: #1689d5;
+}
+html[data-theme="dark"], body.dark {
+  --grid-header-top: #234765;
+  --grid-header-bottom: #19334d;
+  --grid-header-text: #e8f4ff;
+  --grid-row: #172334;
+  --grid-stripe: #1d3046;
+  --grid-hover: #294761;
+  --grid-border: #39516c;
+  --grid-text: #e0ecf7;
+  --grid-total: #25425e;
+  --grid-input: #142338;
+  --grid-focus: #64bbf7;
+}
+/* Calendars, heat maps and planning boards retain their spatial cell sizes
+   and status fills. Ordinary data grids share the compact row treatment. */
+html body table:not(.gantt):not(.cal):not(.lboard):not(.htbl) {
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  background: var(--grid-row);
+  color: var(--grid-text);
+}
+html body :is(#slides-wrap, #order-hover, #s2-line-dialog, #wrap, #app, .modal, .panel) table:not(.gantt):not(.cal):not(.lboard):not(.htbl) :is(th, td),
+html body table:is(.gtbl, .batch-tbl, .sch-tbl, .guide-table) :is(th, td) {
+  padding: 3px 6px !important;
+  line-height: 1.3 !important;
+  border: 1px solid var(--grid-border) !important;
+  font-size: 11px !important;
+}
+html body #slides-wrap#slides-wrap table thead th,
+html body table:not(.lboard) thead th,
+html body :is(#order-hover, #s2-line-dialog) table th {
+  background: linear-gradient(var(--grid-header-top), var(--grid-header-bottom)) !important;
+  color: var(--grid-header-text) !important;
+  border-color: var(--grid-border) !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  box-shadow: inset 0 1px 0 #ffffff22;
+}
+/* Only neutral cells receive stripes: retain product/status/range/heat fills,
+   inline backgrounds, selected rows, calendar cells and existing totals. */
+html body #slides-wrap table:not(.gantt):not(.cal):not(.htbl) tbody tr:not(.range-low):not(.range-high):not(.range-total):not(.oh-total):not(.selected):not(.total-row),
+html body table:is(.gtbl, .batch-tbl, .sch-tbl, .guide-table, #tbl) tbody tr {
+  --grid-current-row: var(--grid-row);
+}
+html body #slides-wrap table:not(.gantt):not(.cal):not(.htbl) tbody tr:nth-child(even),
+html body table:is(.gtbl, .batch-tbl, .sch-tbl, .guide-table, #tbl) tbody tr:nth-child(even) {
+  --grid-current-row: var(--grid-stripe) !important;
+}
+html body #slides-wrap table:not(.gantt):not(.cal):not(.htbl) tbody tr:hover,
+html body table:is(.gtbl, .batch-tbl, .sch-tbl, .guide-table, #tbl) tbody tr:hover {
+  --grid-current-row: var(--grid-hover) !important;
+}
+html body #slides-wrap table:not(.gantt):not(.cal):not(.htbl) tbody tr:not(.range-low):not(.range-high):not(.range-total):not(.oh-total):not(.selected):not(.total-row) td:is(:not([class]), [class=""], .num, .cen, .hoverable, .ac-ok, .ac-attention):not([style*="background"]),
+html body table:is(.gtbl, .batch-tbl, .sch-tbl, .guide-table, #tbl) tbody td:is(:not([class]), [class=""], .r, .st):not([style*="background"]) {
+  background: var(--grid-current-row, var(--grid-row)) !important;
+}
+html body #slides-wrap table:not(.gantt):not(.cal):not(.htbl) tbody tr:not(.range-low):not(.range-high):not(.range-total):not(.oh-total):not(.selected):not(.total-row) td:is(:not([class]), [class=""], .num, .cen, .hoverable):not([style*="color"]),
+html body table:is(.gtbl, .batch-tbl, .sch-tbl, .guide-table, #tbl) tbody td:is(:not([class]), [class=""], .r, .st):not([style*="color"]) {
+  color: var(--grid-text) !important;
+}
+/* The execution grid's width classes do not encode status. New-order sticky
+   fills and Plan/SAH/Efficiency/Clock or risk colors still take precedence. */
+html body #tbl tbody tr:not(.row-ov):not(.row-cr):not(.row-ur) td:not(.rp):not(.rs):not(.re):not(.rc):not([style*="background"]) {
+  background: var(--grid-current-row, var(--grid-row)) !important;
+  color: var(--grid-text) !important;
+}
+html body #slides-wrap table tfoot td,
+html body #slides-wrap table :is(.range-total, .oh-total, .total-row) td {
+  background: var(--grid-total) !important;
+  color: var(--grid-header-text) !important;
+  font-weight: 700 !important;
+  border-top: 2px solid var(--grid-border) !important;
+}
+html body table :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select) {
+  min-height: 23px;
+  padding: 2px 5px !important;
+  font: inherit !important;
+  border: 1px solid var(--grid-border) !important;
+  border-radius: 2px !important;
+  background: var(--grid-input) !important;
+  color: var(--grid-text) !important;
+}
+html body table :is(input, select, button, a):focus-visible {
+  outline: 2px solid var(--grid-focus) !important;
+  outline-offset: 1px;
+}
+@media (max-width: 700px) {
+  html body table { font-size: 11px; }
+  /* Scroll containers and sticky offsets remain owned by each module. */
+}
+@media print {
+  :root, html[data-theme="dark"], body.dark {
+    --grid-header-top: #e5f2ff; --grid-header-bottom: #b9daf8;
+    --grid-header-text: #16314c; --grid-row: #fff;
+    --grid-stripe: #eef5fc; --grid-border: #aec8df;
+    --grid-text: #172b40; --grid-total: #d7e9f9;
+  }
+}
