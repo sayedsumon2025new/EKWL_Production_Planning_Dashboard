@@ -2156,6 +2156,7 @@ input,select,textarea{
     <div class="stab" onclick="goSlide(17)" data-s="17" data-slide-access="17"><span class="tnum">17</span> Size Set Module</div>
     <div class="stab" onclick="goSlide(18)" data-s="18" data-slide-access="18"><span class="tnum">18</span> Accessories</div>
     <div class="stab" onclick="goSlide(19)" data-s="19" data-slide-access="19"><span class="tnum">19</span> Embellishment Send Receive</div>
+    <div class="stab" onclick="goSlide(20)" data-s="20" data-slide-access="20"><span class="tnum">20</span> Load Analysis</div>
   </div>
   <div class="right">
     <button class="top-btn" id="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Dark theme for entire dashboard">🌙 Dark</button>
@@ -2364,6 +2365,7 @@ input,select,textarea{
       <button class="home-card" data-slide-access="17" onclick="goSlide(17)"><span class="home-no">17</span><span class="home-icon">📐</span><span class="home-card-title">Size Set Module</span><span class="home-card-sub">SS.csv source rows, milestone plan/actual and next actions</span></button>
       <button class="home-card" data-slide-access="18" onclick="goSlide(18)"><span class="home-no">18</span><span class="home-icon">🧰</span><span class="home-card-title">Accessories</span><span class="home-card-sub">Date-wise SQL snapshots and the 15 CSV source columns</span></button>
       <button class="home-card" data-slide-access="19" onclick="goSlide(19)"><span class="home-no">19</span><span class="home-icon">🎨</span><span class="home-card-title">Embellishment Send Receive</span><span class="home-card-sub">Print and EMB send, receive and return quantities by report date</span></button>
+      <button class="home-card" data-slide-access="20" onclick="goSlide(20)"><span class="home-no">20</span><span class="home-icon">📊</span><span class="home-card-title">Load Analysis</span><span class="home-card-sub">Load analysis workspace</span></button>
     </div>
     <div class="home-status" data-admin-home-extra="1" style="flex-wrap:wrap">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
@@ -3109,6 +3111,16 @@ input,select,textarea{
     <div id="em-table" class="tbl-wrap" style="max-height:610px;overflow:auto"></div>
     <div id="em-pagination" class="ss-pager"></div>
   </div>
+</div>
+
+
+<!-- ─── SLIDE 20: LOAD ANALYSIS ──────────────── -->
+<div class="slide" id="s20" data-logical-slide="20">
+  <div class="slide-header">
+    <div class="slide-title"><span class="snum">20</span> 📊 Load Analysis</div>
+    <div class="pager-btns"><button class="pg-btn" type="button" onclick="goSlide(0)">🏠 Home</button></div>
+  </div>
+  <div class="card" id="load-analysis-workspace" style="margin-top:14px;min-height:240px" aria-label="Load Analysis workspace"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
