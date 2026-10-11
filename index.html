@@ -3127,8 +3127,41 @@ input,select,textarea{
 <script>
 const SUPABASE_URL = "https://rdslpcazdzqjlenbezaf.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Vp8l2awmxvWpiqXOVabT_w_iZYX-faF";
+// Auth writes must not fail login when Firefox/browser storage is full or blocked.
+function createResilientAuthStorage(root){
+  const memory=new Map();
+  const fallbackKeys=new Set();
+  const read=(name,key)=>{try{return root[name].getItem(key)}catch(_){return null}};
+  const write=(name,key,value)=>{try{root[name].setItem(key,value);return true}catch(_){return false}};
+  const remove=(name,key)=>{try{root[name].removeItem(key)}catch(_){}};
+  return {
+    getItem(key){
+      if(fallbackKeys.has(key))return memory.get(key)??null;
+      // A session fallback from a prior refresh takes priority over stale local data.
+      const session=read('sessionStorage',key);
+      if(session!==null){fallbackKeys.add(key);memory.set(key,session);return session}
+      return read('localStorage',key);
+    },
+    setItem(key,value){
+      memory.set(key,value);
+      if(write('localStorage',key,value)){
+        remove('sessionStorage',key);fallbackKeys.delete(key);return;
+      }
+      fallbackKeys.add(key);
+      remove('localStorage',key);
+      if(!write('sessionStorage',key,value)){
+        console.warn('Auth storage unavailable; session lasts until this page closes or reloads.');
+      }
+    },
+    removeItem(key){
+      memory.delete(key);fallbackKeys.add(key);
+      remove('localStorage',key);remove('sessionStorage',key);
+    }
+  };
+}
 const SB = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,{
-  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,
+    storage:createResilientAuthStorage(window)}
 });
 
 const esc = v => String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
