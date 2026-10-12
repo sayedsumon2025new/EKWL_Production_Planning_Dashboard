@@ -2281,12 +2281,13 @@ input,select,textarea{
       <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
       <div style="font-size:13px;font-weight:900;color:var(--amber2);margin-bottom:7px">📦 Order Bank CSV</div>
       <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">
-        Daily Order Bank.csv upload করুন। 40 source columns validate হবে, staging → SQL raw snapshot → row-count audit হবে।
-        Historical successful snapshots delete হবে না।
+        Order Bank.csv upload করুন। Row ও column সংখ্যা কম-বেশি হতে পারে। সব source column ও তাদের ক্রম সংরক্ষিত থাকবে।
+        নতুন upload যাচাই করে activate হবে; পুরোনো সফল snapshot সংরক্ষিত থাকবে।
       </div>
       <input id="ob-file" type="file" accept=".csv,text/csv">
-      <button class="top-btn primary" style="width:100%;padding:9px;margin-top:9px" onclick="uploadOrderBank()">Upload &amp; Validate Order Bank</button>
-      <div id="ob-msg" class="modal-msg">Order Bank.csv select করুন। Missing Rows = 0 হলে upload valid.</div>
+      <button id="ob-upload-btn" class="top-btn primary" style="width:100%;padding:9px;margin-top:9px" onclick="uploadOrderBank()">Upload &amp; Validate Order Bank</button>
+      <progress id="ob-progress" class="modal-progress" value="0" max="100"></progress>
+      <div id="ob-msg" class="modal-msg">CSV select করুন। প্রথম row-তে unique column name থাকতে হবে।</div>
       <div id="ob-audit" class="tbl-wrap" style="margin-top:10px"></div>
     </div>
     <div id="upload-panel-sizeset" class="upload-report-panel" style="display:none">
@@ -2948,7 +2949,7 @@ input,select,textarea{
   <div class="slide-header">
     <div>
       <div class="slide-title"><span class="snum">14</span> 📦 Order Bank</div>
-      <div class="slide-subtitle">LIVE SUPABASE · RAW LATEST SNAPSHOT · SAME 40 COLUMNS AS ORDER BANK.CSV</div>
+      <div class="slide-subtitle">LIVE SUPABASE · LATEST SNAPSHOT · ALL SOURCE CSV COLUMNS</div>
     </div>
     <div class="pager-btns"><button class="pg-btn" onclick="loadOrderBankSlide()">↻ Refresh</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
   </div>
@@ -3169,9 +3170,9 @@ const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','N
 function monthTime(m){const [name,y]=m.split('-');return Date.UTC(2000+Number(y),monthNames.indexOf(name),1)}
 function sortedMonths(data){return unique(data,'month').sort((a,b)=>monthTime(a)-monthTime(b))}
 function validDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;const d=new Date(s+'T00:00:00Z');return Number.isFinite(+d)&&d.toISOString().slice(0,10)===s}
-function parseRecords(text,preserveBlankRows=false){
+function parseRecords(text,preserveBlankRows=false,preserveCellWhitespace=false){
   text=text.replace(/^\uFEFF/,'');const rows=[];let row=[],field='',quoted=false,closed=false;
-  const pushField=()=>{row.push(field.trim());field='';closed=false};
+  const pushField=()=>{row.push(preserveCellWhitespace?field:field.trim());field='';closed=false};
   const pushRow=()=>{pushField();if(row.some(v=>v!=='')||(preserveBlankRows&&row.length>1))rows.push(row);row=[]};
   for(let i=0;i<text.length;i++){
     const c=text[i];
@@ -7587,44 +7588,70 @@ document.addEventListener('input',e=>{
 
 const ORDER_BANK_HEADERS=["Code-EWO","Code","Buyer","Dept","EWO","PO","GmtColor","EWO&Color","Stroke","Description","Destination","TechPackDate","FOB","RevisedFOB","EFD","FRDate","CostingSMV","UpdatedSMV","TotalHour","FRHour","OrderQty","OrderRate","Ordervalue","Season","ContractNo","ContractUnit","ExecutionUnit","Gender","ConsumptionQtyInHouse","ConsumptionQtyOutSource","FabrickgInHouse","FabrickgOutSource","TotalFabricinKG","Ordertype","OrderStatus","TNADays","MMTeam","CancelReason","Remarks","Month"];
 
-async function uploadOrderBank(){
- const f=document.getElementById('ob-file')?.files?.[0],msg=document.getElementById('ob-msg'),audit=document.getElementById('ob-audit');
- if(!f){msg.textContent='Please select Order Bank.csv';return;}
- try{
-  msg.textContent='Reading and validating CSV…'; audit.innerHTML='';
-  const records=parseRecords(await f.text());
+let ORDER_BANK_UPLOADING=false;
+function parseOrderBankCSV(text){
+  const records=parseRecords(text,true,true);
   if(!records.length)throw Error('CSV is empty');
   const headers=records.shift().map(x=>String(x??'').trim().replace(/^\uFEFF/,''));
-  const missing=ORDER_BANK_HEADERS.filter(x=>!headers.includes(x));
-  if(missing.length)throw Error('Missing columns: '+missing.join(', '));
-  if(headers.length!==ORDER_BANK_HEADERS.length)throw Error(`Expected 40 columns; found ${headers.length}.`);
+  if(headers.some(x=>!x))throw Error('Every column needs a name in the first row.');
+  if(new Set(headers.map(x=>x.toLowerCase())).size!==headers.length)throw Error('Duplicate column names are not allowed.');
+  if(!records.length||!records.some(r=>r.some(v=>v.trim()!=='')))throw Error('CSV has no nonblank data rows.');
   const rows=records.map((cols,i)=>{
-    if(cols.length!==headers.length)throw Error(`Record ${i+2}: column count does not match header.`);
-    const o={}; ORDER_BANK_HEADERS.forEach(k=>o[k]=String(cols[headers.indexOf(k)]??'')); return o;
+    if(cols.length!==headers.length)throw Error(`Record ${i+2}: expected ${headers.length} columns; found ${cols.length}.`);
+    return Object.fromEntries(headers.map((k,j)=>[k,cols[j]]));
   });
-  msg.textContent=`Validated ${rows.length.toLocaleString()} source rows. Clearing staging…`;
-  const {error:de}=await SB.from('order_bank_staging').delete().gt('staging_id',0); if(de)throw de;
+  return {headers,rows};
+}
+async function uploadOrderBank(){
+ const f=document.getElementById('ob-file')?.files?.[0],msg=document.getElementById('ob-msg'),audit=document.getElementById('ob-audit');
+ const btn=document.getElementById('ob-upload-btn'),progress=document.getElementById('ob-progress');
+ if(ORDER_BANK_UPLOADING)return;
+ if(!f){msg.textContent='Please select Order Bank.csv';return;}
+ if(!siteIsAdmin()){msg.textContent='Active admin required to upload Order Bank.';return;}
+ const sessionGeneration=SITE_SESSION_GENERATION;
+ let token=null,activated=false;
+ const checkSession=()=>{if(sessionGeneration!==SITE_SESSION_GENERATION)throw Error('Your session changed. Sign in and upload again.');};
+ ORDER_BANK_UPLOADING=true;if(btn)btn.disabled=true;if(progress)progress.value=0;
+ try{
+  msg.textContent='Reading and validating CSV…';audit.innerHTML='';
+  const {headers,rows}=parseOrderBankCSV(await f.text());checkSession();
+  token=crypto.randomUUID();
+  msg.textContent=`Validated ${rows.length.toLocaleString()} rows · ${headers.length} columns`;
   for(let i=0;i<rows.length;i+=500){
-    const {error}=await SB.from('order_bank_staging').insert(rows.slice(i,i+500));
-    if(error)throw Error(`Staging upload failed near source row ${i+2}: ${error.message}`);
-    msg.textContent=`Uploading… ${Math.min(i+500,rows.length).toLocaleString()} / ${rows.length.toLocaleString()} rows`;
+    checkSession();
+    const chunk=rows.slice(i,i+500).map((source_data,j)=>({upload_token:token,source_row_no:i+j+1,source_data}));
+    const {error}=await SB.from('order_bank_import_rows').insert(chunk);
+    if(error)throw Error(`Upload failed near CSV record ${i+2}: ${error.message}`);
+    checkSession();
+    const completed=Math.min(i+500,rows.length);
+    if(progress)progress.value=completed/rows.length*90;
+    msg.textContent=`Uploading… ${completed.toLocaleString()} / ${rows.length.toLocaleString()} rows · ${headers.length} columns`;
   }
-  const {data,error}=await SB.rpc('finalize_order_bank_upload',{p_file_name:f.name}); if(error)throw error;
-  const a=Array.isArray(data)?data[0]:data;
-  if(!a||a.status!=='SUCCESS'||Number(a.staging_rows)!==Number(a.raw_rows))throw Error('SQL row-count validation failed.');
-  msg.textContent='✓ Order Bank Upload Successful';
+  msg.textContent='Validating SQL row count and activating snapshot…';checkSession();
+  const {data:a,error}=await SB.rpc('finalize_order_bank_import',{p_upload_token:token,p_file_name:f.name,p_expected_rows:rows.length,p_source_columns:headers});
+  if(error)throw error;
+  activated=true;checkSession();
+  if(!a||a.status!=='SUCCESS'||Number(a.staging_rows)!==rows.length||Number(a.raw_rows)!==rows.length||Number(a.source_column_count)!==headers.length)throw Error('SQL upload audit does not match this CSV.');
+  if(progress)progress.value=100;
   audit.innerHTML=`<table class="dt"><tbody>
-   <tr><td>CSV / Staging Rows</td><td class="num">${Number(a.staging_rows).toLocaleString()}</td></tr>
+   <tr><td>CSV Rows</td><td class="num">${rows.length.toLocaleString()}</td></tr>
    <tr><td>SQL Raw Rows</td><td class="num">${Number(a.raw_rows).toLocaleString()}</td></tr>
+   <tr><td>Source Columns</td><td class="num">${headers.length}</td></tr>
    <tr><td>Nonblank Rows</td><td class="num">${Number(a.nonblank_rows).toLocaleString()}</td></tr>
-   <tr><td>Missing Rows</td><td class="num">${(Number(a.staging_rows)-Number(a.raw_rows)).toLocaleString()}</td></tr>
-   <tr><td>Upload Batch</td><td class="num">#${a.batch_id}</td></tr>
-   <tr><td>Status</td><td class="num">${a.status}</td></tr>
+   <tr><td>Missing Rows</td><td class="num">0</td></tr>
+   <tr><td>Upload Batch</td><td class="num">#${esc(a.batch_id)}</td></tr>
+   <tr><td>Status</td><td class="num">SUCCESS</td></tr>
   </tbody></table>`;
- msg.textContent='✓ Order Bank Upload Successful · refreshing live dashboard…';
-   await refreshDashboardAfterSuccessfulUpload('orderbank');
-   msg.textContent='✓ Order Bank Upload Successful · Live Supabase data refreshed';
-  }catch(e){msg.textContent='Upload failed: '+(e?.message||e);}
+  msg.textContent='✓ Order Bank saved · refreshing dashboard…';
+  await refreshDashboardAfterSuccessfulUpload('orderbank');checkSession();
+  msg.textContent=`✓ Order Bank uploaded · ${rows.length.toLocaleString()} rows · ${headers.length} columns · dashboard refreshed`;
+ }catch(e){
+  if(sessionGeneration===SITE_SESSION_GENERATION)msg.textContent=(activated?'Snapshot saved, but verification/refresh failed: ':'Upload failed: ')+(e?.message||e);
+  if(token&&!activated&&sessionGeneration===SITE_SESSION_GENERATION){
+    const {error}=await SB.from('order_bank_import_rows').delete().eq('upload_token',token);
+    if(error)msg.textContent+=' · Incomplete upload cleanup failed; the previous snapshot remains active.';
+  }
+ }finally{ORDER_BANK_UPLOADING=false;if(btn)btn.disabled=false;}
 }
 
 
@@ -7784,6 +7811,7 @@ const ORDER_BANK_FILTER_COLUMNS=['Buyer','Dept','EWO','PO','GmtColor','Descripti
 const ORDER_BANK_PAGE_SIZE=100;
 let ORDER_BANK_RAW_ROWS=[];
 let ORDER_BANK_KEYMAP=new Map();
+let ORDER_BANK_DISPLAY_COLUMNS=[...ORDER_BANK_SOURCE_COLUMNS];
 let ORDER_BANK_FILTERS={};
 let ORDER_BANK_FILTER_INDEX={};
 let ORDER_BANK_FILTERED_INDEXES=[];
@@ -7848,7 +7876,7 @@ function obCascadeOptions(column){
 function renderOrderBankFilters(){
   const box=document.getElementById('order-bank-filters');
   if(!box)return;
-  box.innerHTML=ORDER_BANK_FILTER_COLUMNS.map(c=>{
+  box.innerHTML=ORDER_BANK_FILTER_COLUMNS.filter(c=>ORDER_BANK_KEYMAP.has(c.toLowerCase())).map(c=>{
     const opts=obCascadeOptions(c),cur=ORDER_BANK_FILTERS[c]||'';
     return `<label><span>${esc(c)}</span><select data-ob-filter="${esc(c)}"><option value="">All</option>${
       opts.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join('')
@@ -7885,20 +7913,24 @@ function renderOrderBankTotals(indexes){
     oq+=obNum(r,'OrderQty'); ov+=obNum(r,'Ordervalue'); fkg+=obNum(r,'TotalFabricinKG');
     const e=obVal(r,'EWO'); if(e)ewos.add(e);
   }
-  const cells=[['Filtered Rows',indexes.length],['Unique EWO',ewos.size],['Order Qty',oq],['Order Value',ov],['Fabric KG',fkg]];
+  const cells=[['Filtered Rows',indexes.length]];
+  if(ORDER_BANK_KEYMAP.has('ewo'))cells.push(['Unique EWO',ewos.size]);
+  if(ORDER_BANK_KEYMAP.has('orderqty'))cells.push(['Order Qty',oq]);
+  if(ORDER_BANK_KEYMAP.has('ordervalue'))cells.push(['Order Value',ov]);
+  if(ORDER_BANK_KEYMAP.has('totalfabricinkg'))cells.push(['Fabric KG',fkg]);
   box.innerHTML=cells.map(([a,b])=>`<div class="ob-total-cell"><span>${esc(a)}</span><b>${fmt(b)}</b></div>`).join('');
 }
 function renderOrderBankPage(){
   const box=document.getElementById('order-bank-table'),pg=document.getElementById('order-bank-pagination'),msg=document.getElementById('order-bank-msg');
   if(!box)return;
-  const cols=ORDER_BANK_SOURCE_COLUMNS.map(label=>({label,key:ORDER_BANK_KEYMAP.get(label.toLowerCase())}));
+  const cols=ORDER_BANK_DISPLAY_COLUMNS.map(label=>({label,key:ORDER_BANK_KEYMAP.get(label.toLowerCase())}));
   const total=ORDER_BANK_FILTERED_INDEXES.length;
   const pages=Math.max(1,Math.ceil(total/ORDER_BANK_PAGE_SIZE));
   ORDER_BANK_PAGE=Math.min(Math.max(1,ORDER_BANK_PAGE),pages);
   const from=(ORDER_BANK_PAGE-1)*ORDER_BANK_PAGE_SIZE;
   const indexes=ORDER_BANK_FILTERED_INDEXES.slice(from,from+ORDER_BANK_PAGE_SIZE);
   box.innerHTML=`<table class="dt order-bank-raw-table"><thead><tr>${cols.map(c=>`<th>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>${
-    indexes.map(i=>{const r=ORDER_BANK_RAW_ROWS[i];return `<tr>${cols.map(c=>`<td>${esc(r[c.key]??'')}</td>`).join('')}</tr>`}).join('')
+    indexes.length ? indexes.map(i=>{const r=ORDER_BANK_RAW_ROWS[i];return `<tr>${cols.map(c=>`<td>${esc(r[c.key]??'')}</td>`).join('')}</tr>`}).join('') : `<tr><td colspan="${cols.length}" class="cen">${ORDER_BANK_RAW_ROWS.length ? 'No orders match the current filters.' : 'No Order Bank rows are available for your account. Check the latest upload and your access permissions, then refresh.'}</td></tr>`
   }</tbody></table>`;
   if(pg){
     const lo=Math.max(1,ORDER_BANK_PAGE-2),hi=Math.min(pages,ORDER_BANK_PAGE+2);
@@ -7927,23 +7959,38 @@ async function loadOrderBankSlide(){
   if(!box)return;
   if(msg)msg.textContent='Loading complete raw SQL snapshot…';
   try{
-    const pageSize=1000,all=[];
+    const pageSize=1000,all=[];let snapshotId=null;
     for(let from=0;;from+=pageSize){
-      const {data,error}=await SB.from('order_bank_latest_all').select('*').range(from,from+pageSize-1);
+      // Pin subsequent pages to the first batch, even if another upload becomes latest.
+      let query=SB.from(snapshotId===null?'order_bank_latest_all':'order_bank_raw').select('*');
+      if(snapshotId!==null)query=query.eq('upload_batch_id',snapshotId);
+      const {data,error}=await query.order('source_row_no',{ascending:true}).range(from,from+pageSize-1);
       if(error)throw error;
       if(sessionGeneration!==SITE_SESSION_GENERATION)return;
       const page=data||[];all.push(...page);
+      if(snapshotId===null&&page.length)snapshotId=page[0].upload_batch_id;
       if(msg)msg.textContent=`Loading raw SQL… ${fmt(all.length)} rows`;
       if(page.length<pageSize)break;
     }
-    ORDER_BANK_RAW_ROWS=all;
-    ORDER_BANK_KEYMAP=new Map((all[0]?Object.keys(all[0]):[]).map(x=>[x.toLowerCase(),x]));
-    const missing=ORDER_BANK_SOURCE_COLUMNS.filter(c=>!ORDER_BANK_KEYMAP.has(c.toLowerCase()));
+    // New imports carry the exact source headers and cells; legacy snapshots use 40 columns.
+    const columns=all[0]?.source_columns||ORDER_BANK_SOURCE_COLUMNS;
+    const flexible=Array.isArray(all[0]?.source_columns)&&columns.length>0;
+    if(all.some(r=>r.upload_batch_id!==all[0].upload_batch_id))throw Error('Order Bank changed during loading. Refresh to load the complete latest snapshot.');
+    const rows=flexible?all.map(r=>{
+      if(!r.source_data||columns.some(c=>!Object.hasOwn(r.source_data,c)))throw Error('SQL source cells do not match the uploaded columns.');
+      return r.source_data;
+    }):all;
+    // Empty results have no row keys and cannot establish the SQL view's schema.
+    const keymap=new Map((rows[0]?Object.keys(rows[0]):columns).map(x=>[x.toLowerCase(),x]));
+    const missing=columns.filter(c=>!keymap.has(c.toLowerCase()));
     if(missing.length)throw Error('SQL raw view missing source column(s): '+missing.join(', '));
+    ORDER_BANK_RAW_ROWS=rows;
+    ORDER_BANK_KEYMAP=keymap;
+    ORDER_BANK_DISPLAY_COLUMNS=[...columns];
     ORDER_BANK_FILTERS={};ORDER_BANK_EWO_SEARCH='';ORDER_BANK_PAGE=1;
     buildOrderBankFilterIndex();
     k.innerHTML=`<div class="kpi"><div class="kpi-lbl">SQL RAW ROWS</div><div class="kpi-val">${fmt(all.length)}</div><div class="kpi-sub">Complete latest snapshot</div></div>
-      <div class="kpi"><div class="kpi-lbl">SOURCE COLUMNS</div><div class="kpi-val">40</div><div class="kpi-sub">Exact CSV order</div></div>
+      <div class="kpi"><div class="kpi-lbl">SOURCE COLUMNS</div><div class="kpi-val">${columns.length}</div><div class="kpi-sub">Exact CSV order</div></div>
       <div class="kpi"><div class="kpi-lbl">FILTER MODE</div><div class="kpi-val" style="font-size:16px">FAST CASCADE</div><div class="kpi-sub">Pre-indexed filtering</div></div>
       <div class="kpi"><div class="kpi-lbl">TABLE PAGE</div><div class="kpi-val">${ORDER_BANK_PAGE_SIZE}</div><div class="kpi-sub">Rows rendered at once</div></div>`;
     renderOrderBankView(true);
