@@ -88,6 +88,25 @@ function ganttHoverPlan(w){
   return {pos,meta:rows[0]||null,total:pos.length?pos.reduce((sum,row)=>sum+ganttQty(row.orderqty),0):null};
 }
 
+function ganttHoverPlanSah(w){
+  // These arrays belong to the selected SQL planning snapshot. Daily SAH keeps
+  // record_id; join to the SAH/Day source record for its garment color.
+  const records=new Map(SAH_DATA.map(row=>[String(row.record_id),row]));
+  const allowed=new Set(w.selectedColors.map(ganttColorKey));
+  const seen=new Set();let total=0,matched=false;
+  for(const daily of SAH_DAILY){
+    const record=records.get(String(daily.record_id));
+    if(!record||Number(record.line)!==Number(w.line)||ganttKey(record.ewo)!==ganttKey(w.ewo)||
+      String(daily.date).slice(0,10)!==String(w.date).slice(0,10)||!allowed.has(ganttColorKey(record.color)))continue;
+    const key=String(daily.record_id)+'|'+String(daily.date).slice(0,10);
+    if(seen.has(key))continue;
+    seen.add(key);
+    if(daily.value==null||String(daily.value).trim()===''||!Number.isFinite(Number(daily.value)))continue;
+    matched=true;total+=Number(daily.value);
+  }
+  return matched?total:null;
+}
+
 function ganttPopupColors(w){
   const listed=Array.isArray(w.planColors)&&w.planColors.length?w.planColors:[{color:w.color||'',qty:w.qty}];
   const unique=new Map();
@@ -135,7 +154,8 @@ function ganttHoverHtml(w,source){
       row('1','Buyer',plan.meta?.buyer||w.buyer||null)+
       row('2','Product',plan.meta?.style||w.style||null)+
       row('3','Plan / Day',fmt(w.qty))+
-      row('4','Total Order Qty',source?.order_bank_rows>0?fmt(source.order_qty):null))+
+      row('4','Plan SAH',fmt(ganttHoverPlanSah(w)))+
+      row('5','Total Order Qty',source?.order_bank_rows>0?fmt(source.order_qty):null))+
     '<div class="gt-card-pair">'+
       card('Size Set','size',row('','Next Action',actions))+
       card('Accessories','accessories',row('','Sewing Trims',accessories))+
