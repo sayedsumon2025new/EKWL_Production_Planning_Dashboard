@@ -1,0 +1,286 @@
+Baseline commit: 25a32494c97c2f57df59fe3102a5342bef82873b
+Includes definitions, navigation targets, SQL keys, tests and historical comments.
+README.md:21: requires an active admin or the `slide_14` permission. SQL setup is in
+dashboard-theme.css:244: /* Legacy Slide 06 footer backgrounds outrank the generic total-row style.
+gantt-action-calendars.js:1: /* Slide 07 calendars. Every event is derived from the current Planning snapshot or active SQL reports. */
+gantt-hover.js:1: /* Slide 07 popup: use the selected Gantt cell, current Plan snapshot, and active SQL reports. */
+index.html:8: <!-- Slide15 permanent source: exact selected-plan Plan/Day, SAH/Day, Effi/Day, Clock Hour/Day by Line+Product+Date; calc=SAH/Clock*100 -->
+index.html:12: <!-- Slide 15 dynamic hover: viewport-aware tooltip with efficiency variance and ladder status -->
+index.html:15: <!-- Slide 15 selected-plan fix: uses planning-sequence-filter upload id; local date formatter -->
+index.html:16: <!-- FR LOAD SEQUENCE FIX: hydrate DAILY_PLAN before rendering Slide 15 FR table -->
+index.html:18: <!-- Slide 15 rebuilt: Fixed Ladder + Planning-only Line/Date FR comparison table; no Order Bank source -->
+index.html:20: <!-- USER MODULE AUTO-SLIDES: permission columns derive automatically from data-slide-access; dynamic max navigation -->
+index.html:30: <!-- Added Slide 14 Order Bank + Slide 15 Efficiency Ladder Analysis; both live Supabase SQL -->
+index.html:33: <!-- CROSS-CHECKED: Slide03 ABP Target Efficiency comes from abp_target/ABP_MATRIX_2026_27/config.metrics[Efficiency] -->
+index.html:34: <!-- SLIDE03 ABP TARGET EFFICIENCY: live SQL dashboard_master_settings/buyer_efficiency_target -->
+index.html:36: <!-- SLIDE 01 FINAL: Order Qty = direct SUM(order_qty) after Plan/Day + hard valid-line filter 1-45,47,48 -->
+index.html:42: <!-- FLOOR ALLOCATION MOVED TO SLIDE 12 ADMIN/PARAMETER SETTING -->
+index.html:45: <!-- ORDER BANK UPLOAD FINAL: Slide 14, 40-column validation, staging, RPC finalize, row-count audit -->
+index.html:46: <!-- SLIDE 03 BUYER ORDER QTY FIX:
+index.html:49: <!-- SLIDE 02 DONUT VISIBILITY: center Total EWO rendered high-contrast white. -->
+index.html:50: <!-- SLIDE 02 CROSS-CHECK: Order Qty column added by range; total row includes Total Order Qty. -->
+index.html:51: <!-- SLIDE 02 DATA VISIBLE FIX:
+index.html:54: <!-- SLIDE 02 ORDER QTY FIX:
+index.html:421: /* ══ SLIDE 9 CALENDAR ════════════════════════════ */
+index.html:901: /* === Slide 09 Priority Hit Analysis === */
+index.html:947: /* === FINAL Slide 09 Priority Cell Colors === */
+index.html:1251: /* Slide 15 dynamic efficiency hover */
+index.html:2139: <div class="stab active" onclick="goSlide(0)" data-s="0"><span class="tnum">00</span> Home</div>
+index.html:2140: <div class="stab" onclick="goSlide(1)" data-s="1" data-slide-access="1"><span class="tnum">01</span> Order Table</div>
+index.html:2141: <div class="stab" onclick="goSlide(2)" data-s="2" data-slide-access="2"><span class="tnum">02</span> Plan Qty Analysis</div>
+index.html:2142: <div class="stab" onclick="goSlide(3)" data-s="3" data-slide-access="3"><span class="tnum">03</span> Buyer Summary</div>
+index.html:2143: <div class="stab" onclick="goSlide(4)" data-s="4" data-slide-access="4"><span class="tnum">04</span> Line Plan & Loading</div>
+index.html:2144: <div class="stab" onclick="goSlide(5)" data-s="5" data-slide-access="5"><span class="tnum">05</span> Item Status</div>
+index.html:2145: <div class="stab" onclick="goSlide(6)" data-s="6" data-slide-access="6"><span class="tnum">06</span> EWO Details</div>
+index.html:2146: <div class="stab" onclick="goSlide(7)" data-s="7" data-slide-access="7"><span class="tnum">07</span> EWO Gantt Chart</div>
+index.html:2147: <div class="stab" onclick="goSlide(8)" data-s="8" data-slide-access="8"><span class="tnum">08</span> Charts</div>
+index.html:2148: <div class="stab" onclick="goSlide(9)" data-s="9" data-slide-access="9"><span class="tnum">09</span> Feeding Analysis</div>
+index.html:2149: <div class="stab" onclick="goSlide(10)" data-s="10" data-slide-access="10"><span class="tnum">10</span> Line Calendar</div>
+index.html:2150: <div class="stab" onclick="goSlide(11)" data-s="11" data-slide-access="11"><span class="tnum">11</span> Fabrics &amp; Cutting</div>
+index.html:2151: <div class="stab" onclick="goSlide(12)" data-s="12" data-slide-access="12"><span class="tnum">12</span> Admin / Parameter Setting</div>
+index.html:2152: <div class="stab" onclick="goSlide(13)" data-s="13" data-slide-access="13"><span class="tnum">13</span> User Module</div>
+index.html:2153: <div class="stab" onclick="goSlide(14)" data-s="14" data-slide-access="14"><span class="tnum">14</span> Order Bank</div>
+index.html:2154: <div class="stab" onclick="goSlide(15)" data-s="15" data-slide-access="15"><span class="tnum">15</span> Efficiency Ladder Analysis</div>
+index.html:2155: <div class="stab" onclick="goSlide(16)" data-s="16" data-slide-access="16"><span class="tnum">16</span> Order Execution Plan</div>
+index.html:2156: <div class="stab" onclick="goSlide(17)" data-s="17" data-slide-access="17"><span class="tnum">17</span> Size Set Module</div>
+index.html:2157: <div class="stab" onclick="goSlide(18)" data-s="18" data-slide-access="18"><span class="tnum">18</span> Accessories</div>
+index.html:2158: <div class="stab" onclick="goSlide(19)" data-s="19" data-slide-access="19"><span class="tnum">19</span> Embellishment Send Receive</div>
+index.html:2159: <div class="stab" onclick="goSlide(20)" data-s="20" data-slide-access="20"><span class="tnum">20</span> Load Analysis</div>
+index.html:2163: <button class="top-btn nav-home-btn" type="button" onclick="goSlide(0)" title="Go to Home">🏠 Home</button>
+index.html:2332: <!-- ─── SLIDE 0: UPLOAD ──────────────────── -->
+index.html:2333: <div class="slide active" id="s0" data-logical-slide="0">
+index.html:2350: <button class="home-card" data-slide-access="1" onclick="goSlide(1)"><span class="home-no">01</span><span class="home-icon">📋</span><span class="home-card-title">Order Table</span><span class="home-card-sub">Order, EWO, buyer, product, quantity and planning details</span></button>
+index.html:2352: <button class="home-card" data-slide-access="3" onclick="goSlide(3)"><span class="home-no">03</span><span class="home-icon">🧑‍💼</span><span class="home-card-title">Buyer Summary</span><span class="home-card-sub">Buyer-wise order, plan, PO, efficiency and contribution summary</span></button>
+index.html:2353: <button class="home-card" data-slide-access="4" onclick="goSlide(4)"><span class="home-no">04</span><span class="home-icon">🏭</span><span class="home-card-title">Line Plan & Loading</span><span class="home-card-sub">Chassis strength, line plan, loading and utilization view</span></button>
+index.html:2355: <button class="home-card" data-slide-access="6" onclick="goSlide(6)"><span class="home-no">06</span><span class="home-icon">🔎</span><span class="home-card-title">Feeding Analysis</span><span class="home-card-sub">Unique EWO, line split, feeding and quantity detail analysis</span></button>
+index.html:2356: <button class="home-card" data-slide-access="7" onclick="goSlide(7)"><span class="home-no">07</span><span class="home-icon">📅</span><span class="home-card-title">Andon Board</span><span class="home-card-sub">EWO-wise day-by-day production running timeline and line activity</span></button>
+index.html:2359: <button class="home-card" data-slide-access="10" onclick="goSlide(10)"><span class="home-no">10</span><span class="home-icon">🗓️</span><span class="home-card-title">Chassis Analysis</span><span class="home-card-sub">Day-wise line plan, priority Hit/Not Hit and product running calendar</span></button>
+index.html:2360: <button class="home-card" data-slide-access="11" onclick="goSlide(11)"><span class="home-no">11</span><span class="home-icon">✂️</span><span class="home-card-title">Fabrics &amp; Cutting Analysis</span><span class="home-card-sub">Fabric receipt, stock, cutable qty, cutting progress, balance and difficulties</span></button>
+index.html:2361: <button class="home-card" data-slide-access="12" onclick="goSlide(12)"><span class="home-no">12</span><span class="home-icon">⚙️</span><span class="home-card-title">Admin / Parameter Setting</span><span class="home-card-sub">Efficiency ladder, chassis priority, ABP target and master parameters</span></button>
+index.html:2362: <button class="home-card" data-slide-access="13" onclick="goSlide(13)"><span class="home-no">13</span><span class="home-icon">👥</span><span class="home-card-title">User Module</span><span class="home-card-sub">Admin/User role, account status and module-wise permission control</span></button>
+index.html:2363: <button class="home-card" data-slide-access="14" onclick="goSlide(14)"><span class="home-no">14</span><span class="home-icon">📦</span><span class="home-card-title">Order Bank</span><span class="home-card-sub">Latest successful Order Bank snapshot from live Supabase SQL</span></button>
+index.html:2364: <button class="home-card" data-slide-access="15" onclick="goSlide(15)"><span class="home-no">15</span><span class="home-icon">📈</span><span class="home-card-title">Efficiency Ladder Analysis</span><span class="home-card-sub">Item-wise Day-1 to Day-6+ efficiency ladder analysis from live SQL</span></button>
+index.html:2365: <button class="home-card" data-slide-access="16" onclick="goSlide(16)"><span class="home-no">16</span><span class="home-icon">📋</span><span class="home-card-title">Order Execution Plan</span><span class="home-card-sub">SQL Order Bank and matched daily planning, with v3 analysis views</span></button>
+index.html:2366: <button class="home-card" data-slide-access="17" onclick="goSlide(17)"><span class="home-no">17</span><span class="home-icon">📐</span><span class="home-card-title">Size Set Module</span><span class="home-card-sub">SS.csv source rows, milestone plan/actual and next actions</span></button>
+index.html:2367: <button class="home-card" data-slide-access="18" onclick="goSlide(18)"><span class="home-no">18</span><span class="home-icon">🧰</span><span class="home-card-title">Accessories</span><span class="home-card-sub">Date-wise SQL snapshots and the 15 CSV source columns</span></button>
+index.html:2368: <button class="home-card" data-slide-access="19" onclick="goSlide(19)"><span class="home-no">19</span><span class="home-icon">🎨</span><span class="home-card-title">Embellishment Send Receive</span><span class="home-card-sub">Print and EMB send, receive and return quantities by report date</span></button>
+index.html:2369: <button class="home-card" data-slide-access="20" onclick="goSlide(20)"><span class="home-no">20</span><span class="home-icon">📊</span><span class="home-card-title">Load Analysis</span><span class="home-card-sub">Planned SAH vs Forecast SAH report</span></button>
+index.html:2387: <!-- ─── SLIDE 1: ORDER TABLE ──────────────── -->
+index.html:2388: <div class="slide" id="s1" data-logical-slide="1">
+index.html:2392: <button class="pg-btn" onclick="goSlide(0)">← Back</button>
+index.html:2393: <button class="pg-btn" onclick="goSlide(2)">Next →</button>
+index.html:2421: <!-- ─── SLIDE 2: PLAN QTY ANALYSIS ────────── -->
+index.html:2422: <div class="slide" id="s2" data-logical-slide="2">
+index.html:2431: <button class="pg-btn" onclick="goSlide(1)">← Back</button>
+index.html:2432: <button class="pg-btn" onclick="goSlide(3)">Next →</button>
+index.html:2435: <div class="card"><div class="card-title">Order Quantity Analysis</div><p>Order range analysis and EWO details are now together on Slide 06.</p><button class="pg-btn" onclick="goSlide(6)">Open EWO Detail Table</button></div>
+index.html:2439: <!-- ─── SLIDE 3: BUYER SUMMARY ─────────────── -->
+index.html:2440: <div class="slide" id="s3" data-logical-slide="3">
+index.html:2445: <button class="pg-btn" onclick="goSlide(2)">← Back</button>
+index.html:2446: <button class="pg-btn" onclick="goSlide(4)">Next →</button>
+index.html:2475: <!-- ─── SLIDE 4: LINE PLAN & LOADING ─────── -->
+index.html:2476: <div class="slide" id="s4" data-logical-slide="4"><div class="card"><p>Chassis Loading reports are now in Chassis Analysis.</p><button class="pg-btn" onclick="goSlide(10)">Open Chassis Analysis</button></div></div>
+index.html:2478: <!-- ─── SLIDE 5: ITEM STATUS ───────────────── -->
+index.html:2479: <div class="slide" id="s5" data-logical-slide="5">
+index.html:2483: <button class="pg-btn" onclick="goSlide(4)">← Back</button>
+index.html:2484: <button class="pg-btn" onclick="goSlide(6)">Next →</button>
+index.html:2503: <!-- ─── SLIDE 6: EWO DETAILS ──────────────── -->
+index.html:2504: <div class="slide" id="s6" data-logical-slide="6">
+index.html:2508: <button class="pg-btn" onclick="goSlide(5)">← Back</button>
+index.html:2509: <button class="pg-btn" onclick="goSlide(7)">Next →</button>
+index.html:2552: <!-- ─── SLIDE 07: EWO GANTT CHART ─────────── -->
+index.html:2553: <div class="slide" id="s11" data-logical-slide="7">
+index.html:2562: <button class="pg-btn" onclick="goSlide(6)">← Back</button>
+index.html:2563: <button class="pg-btn" onclick="goSlide(8)">Next →</button>
+index.html:2618: <!-- ─── SLIDE 8: CHARTS ───────────────────── -->
+index.html:2619: <div class="slide" id="s7" data-logical-slide="8">
+index.html:2623: <button class="pg-btn" onclick="goSlide(6)">← Back</button>
+index.html:2624: <button class="pg-btn" onclick="goSlide(8)">Next →</button>
+index.html:2643: <!-- ─── SLIDE 8: FEEDING ANALYSIS ─────────── -->
+index.html:2644: <div class="slide" id="s8" data-logical-slide="9">
+index.html:2648: <button class="pg-btn" onclick="goSlide(7)">← Back</button>
+index.html:2649: <button class="pg-btn" onclick="goSlide(9)">Next →</button>
+index.html:2653: <div class="card"><p>Feeding analysis is now on Slide 06.</p><button class="pg-btn" onclick="goSlide(6)">Open EWO Detail Table</button></div>
+index.html:2656: <!-- ─── SLIDE 9: LINE CALENDAR ─────────────── -->
+index.html:2657: <div class="slide" id="s9" data-logical-slide="10">
+index.html:2661: <button class="pg-btn" onclick="goSlide(8)">← Back</button>
+index.html:2662: <button class="pg-btn" onclick="goSlide(10)">Next →</button>
+index.html:2738: <!-- ─── SLIDE 11: FABRICS & CUTTING ANALYSIS ─────────────── -->
+index.html:2739: <div class="slide" id="s12" data-logical-slide="11">
+index.html:2743: <button class="pg-btn" onclick="goSlide(10)">← Back</button>
+index.html:2744: <button class="pg-btn" onclick="goSlide(12)">Next →</button>
+index.html:2809: <!-- ─── SLIDE 10: ADMIN / PARAMETER SETTING ─────────────── -->
+index.html:2810: <div class="slide" id="s10" data-logical-slide="12">
+index.html:2814: <button class="pg-btn" onclick="goSlide(11)">← Back</button>
+index.html:2815: <button class="pg-btn" onclick="goSlide(0)">🏠 Home</button>
+index.html:2851: <span class="admin-setting-title">Slide 04 · HW Line Strength</span>
+index.html:2852: <span class="admin-setting-sub">Chassis item strengths · Slide 04 only</span>
+index.html:2859: উপরের ৪টি setting-এর যেকোনো একটি select করুন।
+index.html:2891: <!-- ─── SLIDE 13: USER MODULE ───────────────────────────── -->
+index.html:2892: <div class="slide" id="s13" data-logical-slide="13">
+index.html:2900: <button class="pg-btn" onclick="goSlide(0)">🏠 Home</button>
+index.html:2947: <!-- ─── SLIDE 14: ORDER BANK ───────────────────────────── -->
+index.html:2948: <div class="slide" id="s14" data-logical-slide="14">
+index.html:2954: <div class="pager-btns"><button class="pg-btn" onclick="loadOrderBankSlide()">↻ Refresh</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+index.html:2972: <!-- ─── SLIDE 15: EFFICIENCY LADDER ANALYSIS ───────────── -->
+index.html:2973: <div class="slide" id="s15" data-logical-slide="15">
+index.html:2979: <div class="pager-btns"><button class="pg-btn" onclick="refreshEfficiencySlide15()">↻ Refresh</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+index.html:3005: <!-- ─── SLIDE 16: ORDER EXECUTION PLAN ───────────── -->
+index.html:3006: <div class="slide" id="s16" data-logical-slide="16">
+index.html:3012: <div class="pager-btns"><button class="pg-btn" onclick="loadOrderExecutionSlide(true)">↻ Refresh SQL</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+index.html:3019: <!-- ─── SLIDE 17: SIZE SET MODULE ───────────── -->
+index.html:3020: <div class="slide" id="s17" data-logical-slide="17">
+index.html:3026: <div class="pager-btns"><button class="pg-btn" onclick="loadSizeSetModule(true)">↻ Refresh SQL</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+index.html:3068: <!-- ─── SLIDE 18: ACCESSORIES ──────────────── -->
+index.html:3069: <div class="slide" id="s18" data-logical-slide="18">
+index.html:3073: <div class="pager-btns"><button class="pg-btn" onclick="loadAccessoriesModule(true)">↻ Refresh SQL</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+index.html:3094: <!-- ─── SLIDE 19: EMBELLISHMENT SEND RECEIVE ──────── -->
+index.html:3095: <div class="slide" id="s19" data-logical-slide="19">
+index.html:3099: <div class="pager-btns"><button class="pg-btn" onclick="loadEmbellishmentModule(true)">↻ Refresh SQL</button><button class="pg-btn" onclick="goSlide(0)">🏠 Home</button></div>
+index.html:3118: <!-- ─── SLIDE 20: LOAD ANALYSIS ──────────────── -->
+index.html:3119: <div class="slide" id="s20" data-logical-slide="20">
+index.html:3122: <div class="pager-btns"><button class="pg-btn" type="button" onclick="goSlide(0)">🏠 Home</button></div>
+index.html:3245: const ADMIN_SETTING_NAMES={
+index.html:3250: slide4strength:'Slide 04 · HW Line Strength'
+index.html:3653: const title=ADMIN_SETTING_NAMES[key]||'Parameter Setting';
+index.html:3683: function slidePermissionKey(n){
+index.html:3691: const key=slidePermissionKey(n);
+index.html:3723: document.querySelectorAll('[data-slide-access]').forEach(el=>{
+index.html:3724: const n=Number(el.getAttribute('data-slide-access'));
+index.html:3734: document.querySelectorAll('[data-slide-access="12"],[data-slide-access="13"]').forEach(el=>{
+index.html:3735: const n=Number(el.getAttribute('data-slide-access'));
+index.html:3753: function goSlide(n){
+index.html:3803: goSlide(n);
+index.html:4224: goSlide(CURRENT_SLIDE);
+index.html:4259: // Keep Slide 15 FR Comparison synchronized with the selected Planning upload.
+index.html:4330: if(CURRENT_SLIDE>11)goSlide(CURRENT_SLIDE);
+index.html:4386: renderAll();goSlide(CURRENT_SLIDE);setStatus(true,DATA.length+' rows loaded successfully',DATA.length+' rows · '+MONTHS.length+' data months');return true;
+index.html:4884: /* ══ SLIDE 1: ORDER TABLE ═══════════════════════ */
+index.html:4998: /* ══ SLIDE 2: PLAN QTY ANALYSIS ════════════════ */
+index.html:5085: // Slide 02 authoritative source = Planning Data rows where Criteria = Plan/Day.
+index.html:5201: /* ══ SLIDE 3: BUYER SUMMARY ═════════════════════ */
+index.html:5381: /* ══ SLIDE 4: LINE PLAN & LOADING ══════════════ */
+index.html:5400: if(!data?.length)throw Error('Slide 04 strength table has no rows');
+index.html:5409: console.error('Slide 04 HW Line Strength SQL load failed',error);
+index.html:5424: if(msg)msg.textContent=autoSave?'Saving change to SQL…':'Unsaved changes · click Save Changes to update Slide 04';
+index.html:5430: document.getElementById('admin-setting-panel-title').textContent='🏭 Slide 04 · HW Line Strength';
+index.html:5434: <div class="eff-note2">Changes to an item are saved when you leave the field. Use Save Changes after adding or deleting a row. These values affect Slide 04 only.</div>
+index.html:5449: if(!requireSitePerm('admin_settings','Slide 04 HW Line Strength'))return;
+index.html:5482: const saved=document.getElementById('s4-strength-msg');if(saved)saved.textContent='✓ Saved in SQL · Slide 04 updated';
+index.html:5528: }catch(error){console.warn('Slide 04 screenshot unavailable',error);status.textContent='Screenshot failed';}
+index.html:5659: /* ══ SLIDE 5: ITEM STATUS ═══════════════════════ */
+index.html:5690: /* ══ SLIDE 6: EWO DETAILS ═══════════════════════ */
+index.html:5781: /* ══ SLIDE 7: CHARTS (Canvas) ═══════════════════ */
+index.html:6177: /* ══ SLIDE 8: FEEDING ANALYSIS ══════════════════ */
+index.html:6265: /* ══ SLIDE 9: LINE CALENDAR ═════════════════════ */
+index.html:6635: document.querySelectorAll('[data-slide-access]').forEach(el=>{
+index.html:6636: const n=Number(el.getAttribute('data-slide-access'));
+index.html:6639: const home=document.querySelector(`.home-card[data-slide-access="${n}"]`);
+index.html:6640: const tab=document.querySelector(`.stab[data-slide-access="${n}"]`);
+index.html:6641: const slide=document.querySelector(`.slide[data-logical-slide="${n}"]`)||null;
+index.html:6654: const nums=[...document.querySelectorAll('.slide[data-logical-slide]')]
+index.html:7446: if(e.key==='ArrowRight')goSlide(Math.min(CURRENT_SLIDE+1,getMaxDashboardSlide()));
+index.html:7447: if(e.key==='ArrowLeft')goSlide(Math.max(CURRENT_SLIDE-1,0));
+index.html:8018: function refreshEfficiencySlide15(){
+index.html:8365: <div class="gt-modal-toolbar"><span>SLIDE 07 · ORDER STATUS</span><span class="gt-toolbar-actions"><button id="ewo-gantt-copy" type="button" onclick="copyGanttPopupImage()" title="Copy entire popup as image">Copy snapshot</button><button type="button" class="gt-modal-close" onclick="closeGanttPopup()" aria-label="Close EWO status">×</button></span></div>
+order-execution-plan.html:796: // Authenticated data arrives from the Slide 16 parent.
+slides-config.js:4: {id:'s1', number:1, title:'Order Table', icon:'📋', permissionKey:'slide_1'},
+slides-config.js:5: {id:'s3', number:3, title:'Buyer Summary', icon:'🧑‍💼', permissionKey:'slide_3'},
+slides-config.js:6: {id:'s5', number:5, title:'Item / Style Status', icon:'🧵', permissionKey:'slide_5'},
+slides-config.js:7: {id:'s6', number:6, title:'EWO Detail & Feeding Analysis', icon:'🔎', permissionKey:'slide_6'},
+slides-config.js:8: {id:'s11', number:7, title:'EWO Gantt Chart', icon:'📅', permissionKey:'slide_7'},
+slides-config.js:9: {id:'s7', number:8, title:'Plan vs HW Charts', icon:'📈', permissionKey:'slide_8'},
+slides-config.js:10: {id:'s9', number:10, title:'Chassis Analysis', icon:'🏭', permissionKey:'slide_10'},
+slides-config.js:11: {id:'s12', number:11, title:'Fabrics & Cutting Analysis', icon:'✂️', permissionKey:'slide_11'},
+slides-config.js:14: {id:'s14', number:14, title:'Order Bank', icon:'📦', permissionKey:'slide_14'},
+slides-config.js:15: {id:'s15', number:15, title:'Efficiency Ladder Analysis', icon:'📈', permissionKey:'slide_15'},
+slides-config.js:16: {id:'s16', number:16, title:'Order Execution Plan', icon:'📋', permissionKey:'slide_16'},
+slides-config.js:17: {id:'s17', number:17, title:'Size Set Module', icon:'📐', permissionKey:'slide_17'},
+slides-config.js:18: {id:'s18', number:18, title:'Accessories', icon:'🧰', permissionKey:'slide_18'},
+slides-config.js:19: {id:'s19', number:19, title:'Embellishment Send Receive', icon:'🎨', permissionKey:'slide_19'},
+slides-config.js:20: {id:'s20', number:20, title:'Load Analysis', icon:'📊', permissionKey:'slide_20'}
+slides-config.js:50: const descriptions=new Map([...grid.querySelectorAll('[data-slide-access]')]
+slides-config.js:53: grid.querySelectorAll('[data-slide-access]').forEach(card=>card.remove());
+slides-config.js:61: tab.onclick=()=>goSlide(slide.number);tabs.append(tab);
+slides-config.js:64: card.dataset.slideAccess=slide.number;card.onclick=()=>goSlide(slide.number);
+slides-config.js:76: if(button.textContent.includes('Next'))button.onclick=()=>goSlide(adjacentDashboardSlide(1));
+slides-config.js:77: else if(button.textContent.includes('Back'))button.onclick=()=>goSlide(adjacentDashboardSlide(-1));
+slides-config.js:80: document.querySelectorAll('[data-slide-label]').forEach(el=>{
+slides-config.js:84: if(count)count.textContent=`উপরের ${Object.keys(ADMIN_SETTING_NAMES).length}টি setting-এর যেকোনো একটি select করুন।`;
+supabase/migrations/20260926_accessories_daily.sql:40: or coalesce(u.permissions ->> 'slide_18', 'false') = 'true')
+supabase/migrations/20260926_accessories_daily.sql:66: or coalesce(u.permissions ->> 'slide_18', 'false') = 'true')
+supabase/migrations/20260926_size_set_module.sql:35: or coalesce(u.permissions ->> 'slide_17', 'false') = 'true'
+supabase/migrations/20260927_embellishment_send_receive.sql:53: and (lower(u.role::text)='admin' or coalesce(u.permissions ->> 'slide_19','false')='true'))
+supabase/migrations/20260929_slide4_chassis_strength.sql:1: -- Slide 04 only: editable chassis HW Line Strength master.
+supabase/migrations/20260929_slide4_chassis_strength.sql:35: or coalesce(u.permissions ->> 'slide_4','false')='true'
+supabase/order-bank-read-access.sql:2: -- Only authenticated, active admins or users with slide_14 permission may read.
+supabase/order-bank-read-access.sql:8: using ((select public.current_site_can('slide_14')));
+supabase/order-bank-read-access.sql:12: using ((select public.current_site_can('slide_14')));
+tests/admin-user.cjs:16: const c=setup();let r=await c.call({action:'create',email:'NEW@example.test',password:'test-password',role:'user',status:'active',permissions:{slide_1:false}});
+tests/admin-user.cjs:18: assert.equal(c.writes[0].payload.permissions.slide_1,false);assert.equal(c.authCalls[0][1].email_confirm,true);
+tests/admin-user.cjs:22: const update=setup();r=await update.call({action:'update',site_user_id:2,role:'user',status:'disabled',permissions:{slide_1:true}});
+tests/audit.cjs:10: console.log('PASS stale Slide 15 request discarded; current snapshot avoids repeat download');
+tests/ewo-feeding.cjs:3: const source=html.slice(html.indexOf('function buildS6Rows('),html.indexOf('/* ══ SLIDE 7:',html.indexOf('function buildS6Rows(')));
+tests/line-popup.cjs:3: const source=html.slice(html.indexOf('let S2_LINE_DETAILS=[];'),html.indexOf('/* ══ SLIDE 3:'));
+tests/loading.cjs:37: const c={console:{error(){},warn(){}},setTimeout,SB:{from:query},document:{getElementById(){return el;}},DATA:[],DAILY_PLAN:[],SAH_DATA:[],SAH_DAILY:[],CLOCK_HOUR_DATA:[],CLOCK_HOUR_DAILY:[],BUYER_PLAN_DATA:[],MONTHS:[],FABRIC_CUTTING_DATA:[],SEWING_IO_DATA:[],DATE_WISE_PRODUCTION_DATA:[],PLAN_UPLOAD_CATALOG:[],ACTIVE_PLAN_UPLOAD:null,PLAN_VERSION_CACHE:new Map(),CURRENT_SLIDE:0,SUPABASE_LOAD_TOKEN:0,PLAN_FILTER_TOKEN:0,N:v=>Number.isFinite(Number(v))?Number(v):0,isChassisMasterLine:v=>Number(v)>=1&&Number(v)<=48&&Number(v)!==46,monthFromISO:v=>v?'Sep-26':'',monthTime:()=>1,lineNumber:v=>Number(String(v??'').match(/\d+/)?.[0]||0),dashboardStyle:v=>v||'Other',rebuildPlanningFilters(){},refreshPermittedSlides(){},canAccessSlide:()=>true,goSlide(){},renderAll(){},saveFastBootCache(){},saveDashboardCache:async()=>{},setStatus:(...a)=>events.push(a),setLoadProgress(){},setLoadChip(){},setSupabaseLiveBadge:(...a)=>events.push(a),activePlanningLabel:()=>'',renderSlide(){}};
+tests/order-bank-import.sql:10: if not public.current_site_can('slide_14') then raise exception 'An active admin fixture is required'; end if;
+tests/theme-visual.py:179: dashboard.evaluate('goSlide(16)')
+tests/theme-visual.py:207: self.page.evaluate('goSlide(6)')
+tests/theme-visual.py:210: self.page.evaluate('goSlide(17)')
+tests/theme-visual.py:213: self.page.evaluate('goSlide(4)')
+tests/theme-visual.py:220: self.page.evaluate('goSlide(16)')
+tests/theme-visual.py:239: self.page.evaluate('goSlide(6)')
+tests/theme-visual.py:256: self.page.evaluate('goSlide(2)')
+tests/theme-visual.py:268: goSlide(11);
+tests/theme-visual.py:300: goSlide(6);
+tests/theme-visual.py:324: self.page.evaluate('goSlide(6)')
+tests/theme-visual.py:350: self.page.evaluate('goSlide(10)')
+tests/theme-visual.py:355: self.page.evaluate('goSlide(17)')
+tests/theme-visual.py:366: self.page.evaluate('goSlide(6)')
+tests/theme-visual.py:376: self.page.evaluate('goSlide(10); renderS1(DATA); renderSizeSetModule();showSizeSetSub("tna")')
+tests/theme-visual.py:408: self.page.evaluate('goSlide(1)')
+tests/theme-visual.py:428: self.page.evaluate('goSlide(17)')
+tests/theme-visual.py:438: self.page.evaluate(f'goSlide({slide})')
+tests/theme-visual.py:442: self.page.evaluate("SITE_USER_PROFILE={role:'user',permissions:{slide_1:true}};applySitePermissions();goSlide(3)")
+
+Additional CSS icon and runtime routing references:
+index.html:1527: #s1 .slide-title::before{content:"📋"}
+index.html:1528: #s2 .slide-title::before{content:"📊"}
+index.html:1529: #s3 .slide-title::before{content:"👔"}
+index.html:1530: #s4-analysis .slide-title::before{content:"🏭"}
+index.html:1531: #s5 .slide-title::before{content:"🧵"}
+index.html:1532: #s6 .slide-title::before{content:"🔎"}
+index.html:1533: #s7 .slide-title::before{content:"📈"}
+index.html:1534: #s8 .slide-title::before{content:"🍽️"}
+index.html:1535: #s9 .slide-title::before{content:"🗓️"}
+index.html:1536: #s10 .slide-title::before{content:"⚙️"}
+index.html:1537: #s11 .slide-title::before{content:"📅"}
+index.html:3217: let CURRENT_SLIDE = 0;
+index.html:3741: if(typeof CURRENT_SLIDE!=='undefined' && !canAccessSlide(CURRENT_SLIDE)){
+index.html:3742: CURRENT_SLIDE=0;
+index.html:3773: CURRENT_SLIDE=n;
+index.html:3796: function restoreActiveTab(){
+index.html:3797: let n=CURRENT_SLIDE;
+index.html:4035: if(CURRENT_SLIDE>9){try{renderSlide(CURRENT_SLIDE)}catch(e){console.error(e)}}
+index.html:4260: if(CURRENT_SLIDE===15 && typeof EFF15_SUB!=='undefined' && EFF15_SUB==='fr'){
+index.html:4419: if(CURRENT_SLIDE>0){
+index.html:4420: try{renderSlide(CURRENT_SLIDE)}catch(e){console.error('Filtered slide render failed',e)}
+index.html:4429: if(CURRENT_SLIDE>=1 && CURRENT_SLIDE<=11 && canAccessSlide(CURRENT_SLIDE)){
+index.html:4430: try{renderSlide(CURRENT_SLIDE)}catch(e){console.error(e)}
+index.html:4613: finally{S12_EM_LOADING=false;if(session===SITE_SESSION_GENERATION&&CURRENT_SLIDE===11)renderS12();}
+index.html:4820: function renderSlide(n){
+index.html:4835: if(!canAccessSlide(CURRENT_SLIDE))return;
+index.html:4836: const planning=CURRENT_SLIDE>=1&&CURRENT_SLIDE<=10;
+index.html:4837: const fabric=CURRENT_SLIDE===11;
+index.html:4839: try{renderSlide(CURRENT_SLIDE)}catch(e){console.error('Progressive render failed',e)}
+index.html:5244: let s4ResizeTimer;window.addEventListener('resize',()=>{clearTimeout(s4ResizeTimer);s4ResizeTimer=setTimeout(()=>{if(CURRENT_SLIDE===10)renderS4(getFiltered());},120);});
+index.html:5404: if(CURRENT_SLIDE===4)renderS4(getFiltered());
+index.html:6633: function getDashboardSlideRegistry(){
+index.html:6649: function getUserPermissionKeys(){
+index.html:6653: function getMaxDashboardSlide(){
+index.html:7159: if(CURRENT_SLIDE===14)await loadOrderBankSlide();
+index.html:7160: if(CURRENT_SLIDE===16)await loadOrderExecutionSlide(true);
+index.html:7163: if(CURRENT_SLIDE!==14 && canAccessSlide(CURRENT_SLIDE))renderSlide(CURRENT_SLIDE);
+index.html:7451: window.addEventListener('resize',()=>{if(DATA.length&&CURRENT_SLIDE===8)renderS7(getFiltered())});
+index.html:8032: const current=()=>token===EFF15_FR_TOKEN&&session===SITE_SESSION_GENERATION&&CURRENT_SLIDE===15&&EFF15_SUB==='fr';
+index.html:8384: <script>window.addEventListener('ekwl-theme-changed',()=>{ if([4,8].includes(CURRENT_SLIDE)) renderSlide(CURRENT_SLIDE); });</script>
