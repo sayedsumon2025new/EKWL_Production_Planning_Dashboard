@@ -7897,6 +7897,9 @@ function renderOrderBankFilters(){
     const si=document.getElementById('order-bank-ewo-search');if(si)si.value='';
   };
   const si=document.getElementById('order-bank-ewo-search'),sb=document.getElementById('order-bank-ewo-search-btn');
+  const hasEWO=ORDER_BANK_KEYMAP.has('ewo');
+  if(si)si.disabled=!hasEWO;
+  if(sb)sb.disabled=!hasEWO;
   if(si){
     si.value=ORDER_BANK_EWO_SEARCH;
     const run=()=>{ORDER_BANK_EWO_SEARCH=String(si.value||'').trim();ORDER_BANK_PAGE=1;renderOrderBankView(true);};
