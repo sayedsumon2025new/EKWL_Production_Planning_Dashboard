@@ -2087,6 +2087,7 @@ input,select,textarea{
 <link rel="stylesheet" href="dashboard-theme.css?v=5">
 <script src="dashboard-theme.js?v=3"></script>
 <link rel="stylesheet" href="table-visuals.css?v=1">
+<link rel="stylesheet" href="ewo-readiness.css?v=1">
 </head>
 <body class="site-locked">
 <div id="supabase-live-badge">Supabase · waiting</div>
@@ -2347,6 +2348,7 @@ input,select,textarea{
       <span hidden data-slide-description="18">Date-wise SQL snapshots and the 15 CSV source columns</span>
       <span hidden data-slide-description="19">Print and EMB send, receive and return quantities by report date</span>
       <span hidden data-slide-description="20">Planned SAH vs Forecast SAH report</span>
+      <span hidden data-slide-description="21">First-day feeding readiness, source evidence and PCD / PSD / PFD milestone risk</span>
     </div>
     <div class="home-status" data-admin-home-extra="1" style="flex-wrap:wrap">
       <div class="status-dot" id="sdot"></div><div id="status-msg">Dashboard data loading...</div><div id="row-count"></div>
@@ -2874,6 +2876,30 @@ input,select,textarea{
 
 
 
+<!-- ─── SLIDE 21: EWO READINESS BOARD ──────────────── -->
+<div class="slide" id="s21" data-logical-slide="21">
+  <div class="slide-header">
+    <div class="slide-title"></div>
+    <div class="pager-btns"><button class="pg-btn" type="button" onclick="goSlide(0)">🏠 Home</button></div>
+  </div>
+  <div class="kpi-row" id="rd-kpis"></div>
+  <div class="card">
+    <div class="rd-filters">
+      <input id="rd-search" type="search" placeholder="Search EWO…" aria-label="Search EWO" oninput="renderEWOReadinessBoard()">
+      <select id="rd-buyer" aria-label="Buyer" onchange="renderEWOReadinessBoard()"><option value="">All buyers</option></select>
+      <select id="rd-readiness" aria-label="Sewing readiness" onchange="renderEWOReadinessBoard()"><option value="">All readiness</option><option value="green">Ready</option><option value="amber">Partial</option><option value="red">Blocked</option><option value="unknown">Unknown</option></select>
+      <select id="rd-risk" aria-label="Milestone risk" onchange="renderEWOReadinessBoard()"><option value="">All risks</option><option value="high">High</option><option value="watch">Watch</option><option value="low">Low</option><option value="unknown">Unknown</option></select>
+      <button type="button" class="pg-btn" onclick="loadEWOReadinessBoard()">↻ Refresh evidence</button>
+    </div>
+    <p class="rd-note">Sewing-start target: 80% of each color’s first-day Plan pcs. Accessories must be OK / All Acc. Balanced; Size Set must be Closed. Unknown is not ready. Risk reflects milestone evidence, not a delivery forecast.</p>
+    <div class="tbl-wrap"><table class="dt" id="rd-tbl"><thead><tr>
+      <th>EWO</th><th>Buyer</th><th>Lines</th><th>First Plan Day</th><th>Day-1 Plan pcs</th><th>80% Starter pcs</th>
+      <th>Fabric</th><th>Cutting</th><th>Print</th><th>Embroidery</th><th>Accessories</th><th>Size Set</th><th>Sewing</th>
+      <th>Readiness Score</th><th>Milestone Risk</th><th>PCD</th><th>PSD</th><th>PFD</th><th>Delivery</th><th>Sewing Input</th><th>Evidence</th>
+    </tr></thead><tbody id="rd-body"></tbody></table></div>
+    <p id="rd-msg" role="status"></p>
+  </div>
+</div>
 </div><!-- /slides-wrap -->
 <!-- Compatibility parameters used by the original audited calculation engine.
      Hidden because the Unified Home replaces the old Upload/settings panel UI. -->
@@ -3069,6 +3095,11 @@ input,select,textarea{
   </div>
   <iframe id="load-analysis-workspace" title="EKWL-HW Load Analysis report" src="load-analysis.html?v=4" loading="lazy" sandbox="allow-scripts allow-downloads allow-same-origin" style="display:block;width:100%;height:calc(100vh - 130px);min-height:0;margin-top:14px;border:0;border-radius:12px;background:#e6ecf2"></iframe>
 </div>
+
+<dialog id="rd-detail-dialog" aria-labelledby="rd-detail-title">
+  <header><h2 id="rd-detail-title">Readiness Evidence</h2><button type="button" class="pg-btn" onclick="document.getElementById('rd-detail-dialog').close()" aria-label="Close readiness evidence">×</button></header>
+  <div id="rd-detail-body"></div>
+</dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="slides-config.js"></script>
@@ -3725,7 +3756,7 @@ function goSlide(n){
   if(n===18)setTimeout(()=>loadAccessoriesModule(),0);
   if(n===19)setTimeout(()=>loadEmbellishmentModule(),0);
   if(n===20 && typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
-  if(n===14 || n===15){
+  if(n===14 || n===15 || n===21){
     try{renderSlide(n)}catch(e){
       console.error('Slide '+n+' render failed',e);
       setStatus(false,'Slide '+n+' render error: '+(e?.message||e));
@@ -4771,6 +4802,7 @@ function renderSlide(n){
   if(n===14)loadOrderBankSlide();
   if(n===15)showEff15Sub(EFF15_SUB||'fixed');
   if(n===16)loadOrderExecutionSlide();
+  if(n===21)loadEWOReadinessBoard();
 }
 
 // Permission-aware progressive rendering.
@@ -4781,6 +4813,7 @@ function refreshPermittedSlides(stage='all'){
   if(!canAccessSlide(CURRENT_SLIDE))return;
   const planning=CURRENT_SLIDE>=1&&CURRENT_SLIDE<=10;
   const fabric=CURRENT_SLIDE===11;
+  if(CURRENT_SLIDE===21){loadEWOReadinessBoard();return;}
   if((planning&&(stage==='planning'||stage==='all'))||(fabric&&(stage==='fabric'||stage==='all'))){
     try{renderSlide(CURRENT_SLIDE)}catch(e){console.error('Progressive render failed',e)}
   }
@@ -6930,6 +6963,7 @@ async function siteLogout(){
   if(typeof resetSizeSetModule==='function')resetSizeSetModule();
   if(typeof resetAccessoriesModule==='function')resetAccessoriesModule();
   if(typeof resetEmbellishmentModule==='function')resetEmbellishmentModule();
+  if(typeof resetEWOReadinessBoard==='function')resetEWOReadinessBoard();
   SITE_AUTH_USER=null;SITE_USER_PROFILE=null;SITE_BOOTED=false;
   if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
   try{sessionStorage.removeItem(fastKey);sessionStorage.removeItem('EKWL_FAST_BOOT_v1');}catch(e){console.warn(e)}
@@ -8297,6 +8331,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <script src="size-set-module.js"></script>
 <script src="accessories-module.js"></script>
 <script src="embellishment-module.js"></script>
+<script src="ewo-readiness.js"></script>
 <script src="gantt-hover.js"></script>
 <script src="gantt-action-calendars.js"></script>
 <dialog id="ewo-gantt-dialog" aria-label="EWO Gantt status">

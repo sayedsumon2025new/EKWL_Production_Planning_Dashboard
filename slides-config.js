@@ -17,7 +17,8 @@ const SLIDES = Object.freeze([
   {id:'s17', number:17, title:'Size Set Module', icon:'📐', permissionKey:'slide_17'},
   {id:'s18', number:18, title:'Accessories', icon:'🧰', permissionKey:'slide_18'},
   {id:'s19', number:19, title:'Embellishment Send Receive', icon:'🎨', permissionKey:'slide_19'},
-  {id:'s20', number:20, title:'Load Analysis', icon:'📊', permissionKey:'slide_20'}
+  {id:'s20', number:20, title:'Load Analysis', icon:'📊', permissionKey:'slide_20'},
+  {id:'s21', number:21, title:'EWO Readiness Board', icon:'🚦', permissionKey:'slide_21'}
 ].map(Object.freeze));
 
 const SLIDE_REDIRECTS = Object.freeze({2:6, 4:10, 9:6});

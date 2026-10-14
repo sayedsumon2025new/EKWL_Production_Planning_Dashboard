@@ -13,14 +13,16 @@ function setup(role='admin',insertFails=false){
   return {writes,authCalls,call:body=>c.edge.fetch({json:async()=>body},{userClaims:{id:'admin-id',email:admin.email},supabaseAdmin:db})};
 }
 (async()=>{
-  const c=setup();let r=await c.call({action:'create',email:'NEW@example.test',password:'test-password',role:'user',status:'active',permissions:{slide_1:false}});
+  const c=setup();let r=await c.call({action:'create',email:'NEW@example.test',password:'test-password',role:'user',status:'active',permissions:{slide_1:false,slide_21:true}});
   assert.equal(r.status,200);assert.equal((await r.json()).auth_user_id,'new-id');
   assert.equal(c.writes[0].payload.permissions.slide_1,false);assert.equal(c.authCalls[0][1].email_confirm,true);
+  assert.equal(c.writes[0].payload.permissions.slide_21,true);
   console.log('PASS SDK userClaims.id authorizes active admin and saves linked permissions on server');
   const denied=setup('user');r=await denied.call({action:'create'});assert.equal(r.status,403);assert.equal(denied.authCalls.length,0);
   console.log('PASS non-admin denied before any Auth mutation');
-  const update=setup();r=await update.call({action:'update',site_user_id:2,role:'user',status:'disabled',permissions:{slide_1:true}});
+  const update=setup();r=await update.call({action:'update',site_user_id:2,role:'user',status:'disabled',permissions:{slide_1:true,slide_21:false}});
   assert.equal(r.status,200);assert.equal(update.writes[0].payload.status,'disabled');assert.equal(update.authCalls.length,0);
+  assert.equal(update.writes[0].payload.permissions.slide_21,false);
   console.log('PASS update changes profile permissions without resetting password or creating Auth account');
   const failed=setup('admin',true);r=await failed.call({action:'create',email:'new@example.test',password:'test-password'});
   assert.equal(r.status,500);assert.deepEqual(failed.authCalls.map(x=>x[0]),['create','delete']);
