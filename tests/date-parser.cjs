@@ -30,6 +30,11 @@ fs.writeFileSync('/tmp/date-parser-cases.sql',"set datestyle='SQL,DMY';\ndo $$ b
  assert.equal(c.planningCsvDate('10/11/2026'),'2026-10-11');
  assert.equal(c.planningCsvDate('03/04/2026'),'2026-03-04');
  assert.equal(c.planningCsvDate('10/14/2026'),'2026-10-14');
+ assert.equal(c.planningCsvDate('10/05/26'),'2026-10-05');
+ assert.equal(c.planningCsvDate('10/04/26'),'2026-10-04');
+ assert.equal(c.planningCsvDate('09/30/26'),'2026-09-30');
+ assert.equal(c.planningCsvDate('02/30/26'),null);
+ assert.equal(c.rawHeaderDate('10/05/26'),'2026-10-05');
  assert.equal(c.planningCsvDate('02/30/2026'),null);
  const mdy=await c.parseRawPlanFile({text:async()=>'Buyer,Line #,Criteria,PCD,PSD,PFD,Delivery,10/11/2026\nBuyer,Line 01,Plan/Day,10/10/2026,10/11/2026,10/12/2026,10/14/2026,80'});
  assert.equal(c.planningCsvDate(mdy.rows[0].PSD),'2026-10-11');
@@ -38,7 +43,7 @@ fs.writeFileSync('/tmp/date-parser-cases.sql',"set datestyle='SQL,DMY';\ndo $$ b
  if(process.argv[2]){
    const text=fs.readFileSync(process.argv[2],'utf8'),parsed=await c.parseRawPlanFile({text:async()=>text});
    assert.equal(parsed.rows.length,5500);
-   for(const row of parsed.rows)for(const key of ['PCD','PSD','PFD','Delivery'])assert.ok(c.csvDate(row[key]));
+   for(const row of parsed.rows)for(const key of ['PCD','PSD','PFD','Delivery'])assert.ok(c.planningCsvDate(row[key]));
    console.log('PASS actual CSV: 5500 rows, 22000 milestone dates, 18 daily columns');
  }
  console.log('PASS',cases.length,'JS date cases; matching PostgreSQL assertions written; daily header compatibility and duplicates');

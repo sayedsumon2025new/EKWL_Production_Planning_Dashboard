@@ -25,3 +25,9 @@ Verification: tests/date-parser.cjs passes 52 JS cases and generates identical P
 ## Planning upload convention chosen by the user
 
 The user explicitly chose MM/DD/YYYY for all dates on re-upload. planningCsvDate (index.html:7052) uses explicit mdy mode for four-digit-year slash dates, including 10/11/2026 = 11 October 2026. parseRawPlanFile validates through this helper, and uploadNewPlan serializes the same normalized values into SQL DATE columns. Generic csvDate and dashboard_parse_date still reject ambiguity in auto mode. Tests verify 03/04/2026 = 4 March in Planning upload, 10/14/2026, invalid days and a complete sample upload.
+
+## Two-digit slash years
+
+CONFIRMED / Medium: the newly supplied CSV contains PSD 10/05/26 on record 2. planningCsvDate (index.html:7052) originally selected explicit mdy mode only for four-digit slash years; the two-digit date fell through to generic auto mode and was rejected as ambiguous. Minimal fix: recognize two- or four-digit slash years in both planningCsvDate and rawHeaderDate (index.html:7051), keeping validation and serialization aligned. Both MM/DD/YY and MM/DD/YYYY now use the user-selected mdy convention. Two-digit years retain the documented 2000–2099 mapping. No SQL helper change is necessary: dashboard_parse_date already accepts explicit mdy with two-digit years.
+
+Actual new CSV validation passed all 5,500 rows, 22,000 milestone dates and 18 daily columns. All 22,000 dates equal the original named-month CSV dates after normalization; 10/05/26 means 5 October 2026. Regression tests cover ambiguous two-digit dates and invalid calendar days. Minimal patch: planning-mdy-short-year.patch. No production records were inserted as part of this fix; user will re-upload the CSV.

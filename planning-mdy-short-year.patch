@@ -1,0 +1,24 @@
+diff --git a/index.html b/index.html
+index 0e5817e..0dad607 100644
+--- a/index.html
++++ b/index.html
+@@ -7048,8 +7048,8 @@ function csvDate(v,order='auto'){
+ }
+ function csvChunks(a,size){const r=[];for(let i=0;i<a.length;i+=size)r.push(a.slice(i,i+size));return r}
+ function rawDateHeader(h){return (/[-/. ]/.test(String(h))||/^\d{8}$/.test(String(h)))&&rawHeaderDate(h)!==null}
+-function rawHeaderDate(h){return csvDate(h,/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(String(h).trim())?'mdy':'auto')}
+-function planningCsvDate(v){return csvDate(v,/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(String(v??'').trim())?'mdy':'auto')}
++function rawHeaderDate(h){return csvDate(h,/^\d{1,2}\/\d{1,2}\/(?:\d{2}|\d{4})$/.test(String(h).trim())?'mdy':'auto')}
++function planningCsvDate(v){return csvDate(v,/^\d{1,2}\/\d{1,2}\/(?:\d{2}|\d{4})$/.test(String(v??'').trim())?'mdy':'auto')}
+ async function refreshSbAuth(){
+  const {data:{user}}=await SB.auth.getUser();
+  sbMsg('sb-auth-msg',user?'Signed in: '+user.email:'Not signed in',!!user);
+@@ -7084,7 +7084,7 @@ async function parseRawPlanFile(file){
+  });
+  rows.forEach((r,i)=>{
+    for(const column of ['PCD','PSD','PFD','Delivery']){
+-     if(String(r[column]??'').trim()&&!planningCsvDate(r[column]))throw Error('Record '+(i+2)+': invalid or ambiguous '+column+' date. Use MM/DD/YYYY, YYYY-MM-DD or DD-MMM-YYYY.');
++     if(String(r[column]??'').trim()&&!planningCsvDate(r[column]))throw Error('Record '+(i+2)+': invalid or ambiguous '+column+' date. Use MM/DD/YY, MM/DD/YYYY, YYYY-MM-DD or DD-MMM-YYYY.');
+    }
+  });
+  return {rows,dateFields};
