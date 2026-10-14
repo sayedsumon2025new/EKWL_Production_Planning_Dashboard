@@ -61,6 +61,7 @@ function populateAccessoriesFilters(){
 }
 
 function renderAccessoriesModule(){
+  if(typeof recordDashboardRender==='function')recordDashboardRender('accessories');
   const table=document.getElementById('ac-table');if(!table)return;
   const buyer=document.getElementById('ac-buyer')?.value||'';
   const line=document.getElementById('ac-line')?.value||'';
@@ -109,7 +110,7 @@ function renderAccessoriesModule(){
     ' · All 15 CSV columns shown. PSD / PCD text is displayed as supplied; a missing year is not inferred.');
 }
 function accessoriesPage(page){AC_PAGE=page;renderAccessoriesModule();document.getElementById('ac-table')?.scrollTo({top:0,left:0});}
-function accessoriesSearchChanged(){clearTimeout(AC_SEARCH_TIMER);AC_SEARCH_TIMER=setTimeout(()=>{AC_PAGE=1;renderAccessoriesModule()},160);}
+function accessoriesSearchChanged(){clearTimeout(AC_SEARCH_TIMER);AC_SEARCH_TIMER=setTimeout(()=>{AC_PAGE=1;renderAccessoriesModule()},275);}
 function clearAccessoriesFilters(){
   for(const id of ['ac-date','ac-buyer','ac-line','ac-sewing','ac-status','ac-owner','ac-search']){
     const node=document.getElementById(id);if(node)node.value='';

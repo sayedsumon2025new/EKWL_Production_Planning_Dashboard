@@ -210,7 +210,7 @@ async function copyGanttPopupImage(){
   const label=button.textContent;
   button.disabled=true;button.textContent='Capturing…';
   try{
-    if(typeof html2canvas!=='function')throw Error('Screenshot library unavailable');
+    const html2canvas=await ensureHtml2Canvas();
     // Capture the entire scrollable popup, including content below the viewport.
     const canvas=await html2canvas(dialog,{backgroundColor:'#ffffff',scale:Math.min(2,window.devicePixelRatio||2),useCORS:true,logging:false,
       windowWidth:Math.max(document.documentElement.clientWidth,dialog.scrollWidth),

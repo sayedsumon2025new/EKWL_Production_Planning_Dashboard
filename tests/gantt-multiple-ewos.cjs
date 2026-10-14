@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const html=fs.readFileSync(__dirname+'/../index.html','utf8');
+const html=require('./dashboard-source.js').readDashboardHTML();
 const script=html.slice(html.indexOf("let GANTT_EWO_SEARCH='';"),html.indexOf('\nfunction renderS7(data){'));
 const elements=new Map();
 const c={prepareSharedReportView:()=>true,document:{getElementById(id){if(!elements.has(id))elements.set(id,{innerHTML:'',value:'',checked:id==='gantt-color-condition'});return elements.get(id);},querySelectorAll:()=>[]},getChassisMasterLines:()=>new Set([11,12]),ACTIVE_PLAN_UPLOAD:{id:'P04'},activePlanningLabel:()=> 'P04',monthFromISO:()=> 'Oct-26',N:v=>Number(v)||0,esc:v=>String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;'),CLOCK_HOUR_DATA:[],SAH_DATA:[],FABRIC_CUTTING_DATA:[{ewo:'271709',total_cut_qty:100,cutable_qty:50}],SEWING_IO_DATA:[{line_no:11,ewo:'271709',input:0,wip:150},{line_no:11,ewo:'271738',input:0,wip:800}],DATE_WISE_PRODUCTION_DATA:[{line_no:11,ewo:'271709',output_date:'2026-10-04',total_qty:0}]};

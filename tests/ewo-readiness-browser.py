@@ -73,8 +73,9 @@ try:
         assert page.locator('#rc-body .rc-red').first.evaluate('e=>getComputedStyle(e).backgroundColor')=='rgb(127, 29, 29)'
         assert page.locator('#rc-body .rc-unknown').first.evaluate('e=>getComputedStyle(e).backgroundColor')=='rgb(71, 85, 105)'
         assert page.locator('#rc-body .rc-green').first.evaluate('e=>getComputedStyle(e).color')=='rgb(255, 255, 255)'
-        page.locator('#rc-search').fill('900001');assert page.locator('#rc-body > tr').count()==1
+        page.locator('#rc-search').fill('900001');page.wait_for_function("document.querySelectorAll('#rc-body > tr').length===1");assert page.locator('#rc-body > tr').count()==1
         page.locator('#rc-search').fill('')
+        page.wait_for_function("document.querySelectorAll('#rc-body > tr').length===2")
         page.locator('#rc-body button').first.click()
         assert 'Ready Input Evidence' in page.locator('#rd-detail-title').inner_text()
         assert '250' in page.locator('#rd-detail-body').inner_text()
@@ -94,8 +95,10 @@ try:
         assert '900003' in page.locator('#rd-body').inner_text()
         page.locator('#rd-risk').select_option('')
         page.locator('#rd-search').fill('900002')
+        page.wait_for_function("document.querySelectorAll('#rd-body > tr').length===1")
         assert page.locator('#rd-body > tr').count()==1
         page.locator('#rd-search').fill('')
+        page.wait_for_function("document.querySelectorAll('#rd-body > tr').length===4")
         page.locator('#rd-body button').first.click()
         assert page.locator('#rd-detail-dialog').is_visible()
         assert '80% × its first-day' in page.locator('#rd-detail-body').inner_text()

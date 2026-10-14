@@ -258,10 +258,10 @@ class ThemeVisualTests(unittest.TestCase):
             self.assertGreater(high_rgb[1], high_rgb[2], 'High category remains green')
             self.assert_readable('#s6 tr.range-low td, #s6 tr.range-high td')
         self.screenshot('range-categories')
-        # Legacy Plan Qty table also contains row-spanning summary cells.
+        # Legacy Slide 02 redirects to the same retained EWO range table.
         self.page.evaluate('goSlide(2)')
         for category in ['low', 'high']:
-            colors = self.page.locator(f'#s2 tr.range-{category} td').evaluate_all(
+            colors = self.page.locator(f'#s6 tr.range-{category} td').evaluate_all(
                 '(els)=>els.map(e=>getComputedStyle(e).backgroundColor)')
             self.assertEqual(len(set(colors)), 1, f'Legacy {category} summary cells')
 
@@ -418,6 +418,7 @@ class ThemeVisualTests(unittest.TestCase):
         self.assertEqual(self.page.locator('#s1-body tr').count(), 2)
         self.assertEqual(self.page.locator('#s1-kpi .kpi-val').nth(2).inner_text(), '5,000')
         self.page.locator('#s1-ewo-search').fill('B200')
+        self.page.wait_for_function("document.querySelectorAll('#s1-body > tr').length===0")
         self.assertEqual(self.page.locator('#s1-body tr').count(), 0)
         self.page.evaluate('clearOrderFilters()')
         self.assertEqual(self.page.locator('#s1-body tr').count(), 3)

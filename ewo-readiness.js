@@ -32,6 +32,7 @@ function resetEWOReadinessBoard(){
   renderEWOReadinessBoard();
 }
 function renderEWOReadinessBoard(){
+  if(typeof recordDashboardRender==='function')recordDashboardRender('readiness');
   const body=document.getElementById('rd-body'),kpis=document.getElementById('rd-kpis'),msg=document.getElementById('rd-msg');
   if(!body||!kpis||!msg)return;
   if(!SITE_AUTH_USER||!canAccessSlide(21)){
