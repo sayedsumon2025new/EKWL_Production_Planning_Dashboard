@@ -1807,13 +1807,16 @@ input,select,textarea{
 #s11 .gantt .sticky-team{position:sticky;left:0;z-index:4;min-width:62px;font-weight:900}
 #s11 .gantt tbody .sticky-team{background:#08baf2!important;color:#fff!important}
 #s11 .gantt thead .sticky-team{z-index:7;background:#07506d!important}
-#s11 .gantt td.g-ewo{background:#fff!important;color:#073b7a!important;font-weight:900!important;min-width:96px}
+#s11 .gantt .g-ewo{background:#fff!important;color:#073b7a!important;font-weight:900!important;min-width:96px}
 #s11 .gantt td.g-empty{background:#fff!important;color:#fff!important;min-width:96px}
-#s11 .gantt td.g-ewo.g-wip-covered{background:#b7e4c7!important;color:#17351f!important;font-weight:900!important}
-#s11 .gantt td.g-ewo.g-cutting-covered{background:#bae6fd!important;color:#0c4a6e!important;font-weight:900!important}
-#s11 .gantt td.g-ewo.g-cutable-covered{background:#312e81!important;color:#ffffff!important;font-weight:900!important}
-#s11 .gantt td.g-ewo.g-material-short{background:#fecaca!important;color:#7f1d1d!important;font-weight:900!important}
-#s11 .gantt td.g-ewo.g-wip-short{background:#ffe66d!important;color:#5b4300!important;font-weight:900!important}
+#s11 .gantt .g-ewo.g-wip-covered{background:#b7e4c7!important;color:#17351f!important;font-weight:900!important}
+#s11 .gantt .g-ewo.g-cutting-covered{background:#bae6fd!important;color:#0c4a6e!important;font-weight:900!important}
+#s11 .gantt .g-ewo.g-cutable-covered{background:#312e81!important;color:#ffffff!important;font-weight:900!important}
+#s11 .gantt .g-ewo.g-material-short{background:#fecaca!important;color:#7f1d1d!important;font-weight:900!important}
+#s11 .gantt .g-ewo.g-wip-short{background:#ffe66d!important;color:#5b4300!important;font-weight:900!important}
+#s11 .gantt td.g-ewo-cell{background:#fff!important;min-width:96px;padding:3px;vertical-align:top}
+#s11 .gantt .g-ewo-stack{display:flex;flex-direction:column;gap:3px}
+#s11 .gantt button.g-ewo{display:block;width:100%;min-height:24px;border:1px solid #b9cbdc;border-radius:4px;padding:3px 6px;font:inherit;cursor:pointer}
 #s11 .gantt .g-date{min-width:96px;font-size:10px}
 #s11 .gantt-legend{font-size:10px;margin:0 0 9px 2px;color:#526176;font-weight:700}
 #s11 .gantt-coverage-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;padding-bottom:7px;border-bottom:1px solid #dbe4ee}
@@ -1920,25 +1923,31 @@ input,select,textarea{
 #ewo-gantt-dialog .gt-row strong{color:#173c5b;text-align:right;font-size:12px;font-weight:850;overflow-wrap:anywhere}
 #ewo-gantt-dialog .gt-row strong.gt-negative{color:#c24143}
 #ewo-gantt-dialog .gt-row strong.gt-no-data{color:#a6bac7;font-weight:600}
+#ewo-gantt-dialog .gt-cell-summary{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;padding:10px 12px;margin-bottom:10px;border:1px solid #dae7ef;border-radius:8px;background:#f5f9fc;font-size:12px;color:#235679}
+#ewo-gantt-dialog .gt-ewo-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:12px}
+#ewo-gantt-dialog .gt-ewo-option{display:flex;flex-direction:column;gap:5px;padding:10px 12px;text-align:left;border:1px solid #cadbe9;border-radius:8px;background:#fff;color:#173c5b;font:inherit;cursor:pointer}
+#ewo-gantt-dialog .gt-ewo-option[aria-pressed="true"]{border-color:#2582cf;background:#edf6ff;box-shadow:0 0 0 1px #2582cf}
+#ewo-gantt-dialog .gt-ewo-option small{color:#527692}
+#ewo-gantt-dialog .gt-ewo-option:focus-visible{outline:3px solid #e6b664;outline-offset:2px}
 #ewo-gantt-dialog .gt-card-pair,.gt-emb-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 #ewo-gantt-dialog .gt-emb-pair{gap:0}
 #ewo-gantt-dialog .gt-emb-pair>div{min-width:0;padding:1px 8px 3px}
 #ewo-gantt-dialog .gt-emb-pair>div+div{border-left:1px solid #e4edf2}
 #ewo-gantt-dialog .gt-emb-pair h4{margin:0;padding:7px 1px 3px;color:#a3537a;font-size:11px;text-transform:uppercase;letter-spacing:.09em}
-#s11 .gantt td.g-ewo{cursor:pointer}
-#s11 .gantt td.g-ewo:focus-visible{outline:3px solid #e6b664;outline-offset:-3px}
+#s11 .gantt .g-ewo{cursor:pointer}
+#s11 .gantt .g-ewo:focus-visible{outline:3px solid #e6b664;outline-offset:-3px}
 @media(max-width:600px){#ewo-gantt-dialog .gt-modal-content{padding:7px}#ewo-gantt-dialog .gt-table{font-size:11px}#ewo-gantt-dialog .gt-table th,#ewo-gantt-dialog .gt-table td{padding:6px 5px}#ewo-gantt-dialog .gt-table thead th:last-child{width:100px}}
 @media(max-width:480px){#ewo-gantt-dialog .gt-card-pair{grid-template-columns:1fr}#ewo-gantt-dialog .gt-row{font-size:11px}#ewo-gantt-dialog .gt-row strong{font-size:11px}}
 </style>
 
 
 <style id="ewo-gantt-color-zoom-fix">
-#s11 .gantt td.g-ewo{
+#s11 .gantt .g-ewo{
   position:relative;
   transition:transform .14s ease,box-shadow .14s ease,background .14s ease;
   transform-origin:center;
 }
-#s11 .gantt td.g-ewo:hover{
+#s11 .gantt .g-ewo:hover{
   transform:scale(1.16);
   z-index:20!important;
   background:#fff3bf!important;
@@ -2546,7 +2555,7 @@ input,select,textarea{
       </div>
       <span class="ct-right" id="s11-count"></span>
     </div>
-    <div class="gantt-legend">Team/Line × Date · <span class="gantt-note">একই Line/Date-এ একাধিক EWO থাকলে সর্বোচ্চ Plan Qty-এর EWO দেখানো হবে।</span></div>
+    <div class="gantt-legend">Team/Line × Date · <span class="gantt-note">একই Line/Date-এ সব planned EWO আলাদা entry-তে দেখানো হবে।</span></div>
     <div class="gantt-coverage-legend" style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0 10px;padding:9px 12px;background:#f8fafc;border:1px solid #dbe4ee;border-radius:8px;font-size:12px;font-weight:700;color:#243447">
 <div class="gantt-coverage-controls">
   <label class="gantt-coverage-switch"><input id="gantt-color-condition" type="checkbox" checked onchange="renderS11(getFiltered())"><span class="gantt-coverage-track" aria-hidden="true"></span>Color condition</label>
@@ -5845,7 +5854,7 @@ function renderS11(data){
   const ewoQty=new Map(), metaMap=new Map(), planColorQty=new Map();
   const seenPlanDailyRecordDate=new Set();
   scope.forEach(d=>{
-    const line=Number(d.line),date=d.date,ewo=String(d.ewo||'').trim();
+    const line=Number(d.line),date=d.date,ewo=normEwo(d.ewo);
     if(!line||!date||!ewo)return;
     const rdKey=String(d.record_id??'')+'|'+date;
     if(d.record_id!=null && seenPlanDailyRecordDate.has(rdKey))return;
@@ -5861,10 +5870,10 @@ function renderS11(data){
     .filter(x=>Number(x.line)===Number(line)&&String(x.ewo)===String(ewo)&&(!month||x.month===month))
     .reduce((s,x)=>s+N(x.total),0);
 
-  const winner=new Map();
+  const cellEntries=new Map();
   ewoQty.forEach((qty,k)=>{
     const p=k.split('|'),line=Number(p[0]),date=p[1],ewo=p.slice(2).join('|');
-    const cellKey=line+'|'+date,old=winner.get(cellKey),m=metaMap.get(k)||{};
+    const cellKey=line+'|'+date,m=metaMap.get(k)||{};
     const month=monthFromISO(date);
     // Exact hovered Line + Date Plan SAH:
     // Plan SAH = this Gantt cell's Plan Qty × SMV / 60.
@@ -5962,8 +5971,11 @@ function renderS11(data){
       productionQty,productionRows:productionMatches.length,
       cutableQty,cutQty,cutRows:fcMatches.length,cuttingTotalSewingInput,cuttingWip,
       cuttingComment};
-    if(!old||qty>old.qty||(qty===old.qty&&ewo.localeCompare(old.ewo,undefined,{numeric:true})<0))winner.set(cellKey,item);
+    if(!cellEntries.has(cellKey))cellEntries.set(cellKey,[]);
+    cellEntries.get(cellKey).push(item);
   });
+
+  cellEntries.forEach(items=>items.sort((a,b)=>b.qty-a.qty||a.ewo.localeCompare(b.ewo,undefined,{numeric:true})));
 
   const allLines=[...master].map(Number).filter(n=>n>0&&n!==46).sort((a,b)=>a-b);
   const searchEwo=String(GANTT_EWO_SEARCH||'').trim().toUpperCase();
@@ -5972,12 +5984,11 @@ function renderS11(data){
     if(selectedLine && line!==selectedLine)return false;
     if(!searchEwo)return true;
     return dates.some(date=>{
-      const w=winner.get(line+'|'+date);
-      return w && normEwo(w.ewo)===searchEwo;
+      return (cellEntries.get(line+'|'+date)||[]).some(w=>normEwo(w.ewo)===searchEwo);
     });
   });
   const displayDates=searchEwo
-    ? dates.filter(date=>lines.some(line=>{const w=winner.get(line+'|'+date);return w&&normEwo(w.ewo)===searchEwo;}))
+    ? dates.filter(date=>lines.some(line=>(cellEntries.get(line+'|'+date)||[]).some(w=>normEwo(w.ewo)===searchEwo)))
     : dates;
 
   // Pre-index latest production date once per Line+EWO.
@@ -5997,17 +6008,17 @@ function renderS11(data){
     if(!latestProdByLineEwo.has(k)||dt>latestProdByLineEwo.get(k))latestProdByLineEwo.set(k,dt);
   }
 
-  // Precompute cumulative Plan Qty from approved Gantt winner cells, grouped by Line+EWO.
-  const winnerCoverage=new Map();
-  winner.forEach((cw,ck)=>{
+  // Precompute cumulative Plan Qty from all planned EWO entries, grouped by Line+EWO.
+  const ewoCoverage=new Map();
+  cellEntries.forEach((items,ck)=>items.forEach(cw=>{
     const p=String(ck).split('|');
     const ln=Number(p[0]),dt=String(p[1]||'').slice(0,10),ew=normEwo(cw.ewo);
     if(!ln||!dt||!ew)return;
     const k=ln+'|'+ew;
-    if(!winnerCoverage.has(k))winnerCoverage.set(k,[]);
-    winnerCoverage.get(k).push({date:dt,qty:N(cw.qty)});
-  });
-  winnerCoverage.forEach(arr=>arr.sort((a,b)=>a.date.localeCompare(b.date)));
+    if(!ewoCoverage.has(k))ewoCoverage.set(k,[]);
+    ewoCoverage.get(k).push({date:dt,qty:N(cw.qty)});
+  }));
+  ewoCoverage.forEach(arr=>arr.sort((a,b)=>a.date.localeCompare(b.date)));
 
   const dateLabel=d=>{const dt=new Date(d+'T00:00:00');return String(dt.getDate()).padStart(2,'0')+'-'+dt.toLocaleString('en-US',{month:'short'})+'-'+String(dt.getFullYear()).slice(-2)};
   const s11Count=document.getElementById('s11-count'); if(s11Count)s11Count.textContent=lines.length+' Teams · '+displayDates.length+' active days'+(actualProductionDate?' · Actual Production Report updated through: '+dateLabel(actualProductionDate):'');
@@ -6041,62 +6052,64 @@ function renderS11(data){
   };
 
   const s11Body=document.getElementById('s11-body'); if(!s11Body)return; s11Body.innerHTML=lines.map(line=>'<tr><td class="sticky-team">'+line+'</td>'+displayDates.map(date=>{
-    const w=winner.get(line+'|'+date);
-    if(!w || (searchEwo && normEwo(w.ewo)!==searchEwo))return '<td class="g-empty">&nbsp;</td>';
-    const payload=encodeURIComponent(JSON.stringify({line,date,...w}));
-    // WIP coverage starts AFTER this exact Line + EWO's latest production date.
-    // Gantt winner cells remain the approved source for cumulative future Plan Qty.
-    const coverageKey=Number(line)+'|'+normEwo(w.ewo);
-    const lineEwoLatestProductionDate=latestProdByLineEwo.get(coverageKey)||'';
-    const thisDate=String(date||'').slice(0,10);
-    // Material coverage colors are allowed only AFTER the latest date physically present
-    // in the uploaded Date Wise Actual Production Report. Dates through that report date
-    // keep the normal Gantt color; coverage begins strictly on the next plan date.
-    const latestProductionDate=actualProductionDate;
-    const afterProductionCutoff=!!actualProductionDate && thisDate>actualProductionDate;
+    const items=cellEntries.get(line+'|'+date)||[];
+    const entries=items.filter(w=>!searchEwo||normEwo(w.ewo)===searchEwo).map(w=>{
+      // WIP coverage starts AFTER this exact Line + EWO's latest production date.
+      // All planned EWO entries remain the source for cumulative future Plan Qty.
+      const coverageKey=Number(line)+'|'+normEwo(w.ewo);
+      const lineEwoLatestProductionDate=latestProdByLineEwo.get(coverageKey)||'';
+      const thisDate=String(date||'').slice(0,10);
+      // Material coverage colors are allowed only AFTER the latest date physically present
+      // in the uploaded Date Wise Actual Production Report. Dates through that report date
+      // keep the normal Gantt color; coverage begins strictly on the next plan date.
+      const latestProductionDate=actualProductionDate;
+      const afterProductionCutoff=!!actualProductionDate && thisDate>actualProductionDate;
 
-    let wipCovered=false,cuttingCovered=false,cutableCovered=false,materialShort=false;
-    if(afterProductionCutoff){
-      const sameLineEwoFuture=(winnerCoverage.get(coverageKey)||[]);
-      let cumulativePlan=0;
-      for(const fp of sameLineEwoFuture){
-        if(latestProductionDate && fp.date<=latestProductionDate)continue;
-        if(fp.date>thisDate)break;
-        cumulativePlan+=N(fp.qty);
+      let wipCovered=false,cuttingCovered=false,cutableCovered=false,materialShort=false;
+      if(afterProductionCutoff){
+        const sameLineEwoFuture=(ewoCoverage.get(coverageKey)||[]);
+        let cumulativePlan=0;
+        for(const fp of sameLineEwoFuture){
+          if(latestProductionDate && fp.date<=latestProductionDate)continue;
+          if(fp.date>thisDate)break;
+          cumulativePlan+=N(fp.qty);
+        }
+        // Sequential/additive stock consumption:
+        // 1) cumulative Plan consumes Sewing WIP first;
+        // 2) only the uncovered balance consumes Cutting WIP;
+        // 3) only the still-uncovered balance consumes Cutable Qty.
+        const sewingStock=N(w.sewingWip);
+        const cuttingStock=N(w.cuttingWip);
+        const cutableStock=N(w.cutableQty);
+        const planRequiringCutting=Math.max(0,cumulativePlan-sewingStock);
+        const planRequiringCutable=Math.max(0,cumulativePlan-sewingStock-cuttingStock);
+
+        w.consumableWip=Math.max(0,sewingStock-cumulativePlan);
+        w.consumableCuttingWip=Math.max(0,cuttingStock-planRequiringCutting);
+        w.consumableCutableQty=Math.max(0,cutableStock-planRequiringCutable);
+
+        wipCovered=cumulativePlan<=sewingStock;
+        cuttingCovered=!wipCovered && cumulativePlan<=sewingStock+cuttingStock;
+        cutableCovered=!wipCovered && !cuttingCovered && cumulativePlan<=sewingStock+cuttingStock+cutableStock;
+        materialShort=!wipCovered && !cuttingCovered && !cutableCovered;
       }
-      // Sequential/additive stock consumption:
-      // 1) cumulative Plan consumes Sewing WIP first;
-      // 2) only the uncovered balance consumes Cutting WIP;
-      // 3) only the still-uncovered balance consumes Cutable Qty.
-      const sewingStock=N(w.sewingWip);
-      const cuttingStock=N(w.cuttingWip);
-      const cutableStock=N(w.cutableQty);
-      const planRequiringCutting=Math.max(0,cumulativePlan-sewingStock);
-      const planRequiringCutable=Math.max(0,cumulativePlan-sewingStock-cuttingStock);
+      if(!afterProductionCutoff){
+        w.consumableWip=null;
+        w.consumableCuttingWip=null;
+        w.consumableCutableQty=null;
+      }
 
-      w.consumableWip=Math.max(0,sewingStock-cumulativePlan);
-      w.consumableCuttingWip=Math.max(0,cuttingStock-planRequiringCutting);
-      w.consumableCutableQty=Math.max(0,cutableStock-planRequiringCutable);
-
-      wipCovered=cumulativePlan<=sewingStock;
-      cuttingCovered=!wipCovered && cumulativePlan<=sewingStock+cuttingStock;
-      cutableCovered=!wipCovered && !cuttingCovered && cumulativePlan<=sewingStock+cuttingStock+cutableStock;
-      materialShort=!wipCovered && !cuttingCovered && !cutableCovered;
-    }
-    if(!afterProductionCutoff){
-      w.consumableWip=null;
-      w.consumableCuttingWip=null;
-      w.consumableCutableQty=null;
-    }
-
-    const condition=ganttCoverageCondition(wipCovered,cuttingCovered,cutableCovered,materialShort);
-    if(!ganttConditionVisible(condition,colorEnabled,conditionFilter))return '<td class="g-empty">&nbsp;</td>';
-    const payloadWithWip=encodeURIComponent(JSON.stringify({line,date,...w}));
-    const coverageClass=!colorEnabled?'':condition==='wip'?' g-wip-covered':condition==='cutting'?' g-cutting-covered':condition==='cutable'?' g-cutable-covered':condition==='short'?' g-material-short':'';
-    return '<td class="g-ewo'+coverageClass+'" data-gantt="'+payloadWithWip+'">'+esc(w.ewo)+'</td>';
+      const condition=ganttCoverageCondition(wipCovered,cuttingCovered,cutableCovered,materialShort);
+      if(!ganttConditionVisible(condition,colorEnabled,conditionFilter))return '';
+      const cellEwos=items.map(item=>({line,date,ewo:item.ewo,qty:item.qty,color:item.color,planColors:item.planColors,buyer:item.buyer,style:item.style}));
+      const payloadWithWip=encodeURIComponent(JSON.stringify({line,date,...w,cellEwos}));
+      const coverageClass=!colorEnabled?'':condition==='wip'?' g-wip-covered':condition==='cutting'?' g-cutting-covered':condition==='cutable'?' g-cutable-covered':condition==='short'?' g-material-short':'';
+      return '<button type="button" class="g-ewo'+coverageClass+'" data-gantt="'+payloadWithWip+'" aria-label="Open EWO '+esc(w.ewo)+' status">'+esc(w.ewo)+'</button>';
+    }).filter(Boolean);
+    return entries.length?'<td class="g-ewo-cell"><div class="g-ewo-stack">'+entries.join('\n')+'</div></td>':'<td class="g-empty">&nbsp;</td>';
   }).join('')+'</tr>').join('');
 
-  document.querySelectorAll('#s11 td.g-ewo').forEach(td=>{
+  document.querySelectorAll('#s11 [data-gantt]').forEach(td=>{
     td.tabIndex=0;
     td.setAttribute('role','button');
     td.setAttribute('aria-label','Open EWO '+td.textContent+' status');
