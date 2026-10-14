@@ -461,6 +461,7 @@ function ganttActionMoveMonth(delta){
 async function renderGanttActionCalendar(){
   const tab=GANTT_ACTION_TAB,token=++GANTT_ACTION_REQUEST,body=document.getElementById('gantt-action-body');
   if(!body||tab==='gantt')return;
+  if(!prepareSharedReportView(7)){body.innerHTML='<p class="action-note">Loading Gantt reports…</p>';return;}
   body.innerHTML='<p class="action-note">Loading '+esc(GANTT_ACTION_NAMES[tab])+' dates…</p>';
   try{
     let events=await ganttActionEvents(tab);if(token!==GANTT_ACTION_REQUEST)return;
