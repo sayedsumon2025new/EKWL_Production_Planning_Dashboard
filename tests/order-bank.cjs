@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const html=fs.readFileSync(__dirname+'/../index.html','utf8');
+const html=require('./dashboard-source.js').readDashboardHTML();
 const source=html.slice(html.indexOf('const ORDER_BANK_SOURCE_COLUMNS='),html.indexOf('\nlet EFF15_SUB='));
 function setup(rows=[],error=null){
   const elements=new Map(),calls=[];

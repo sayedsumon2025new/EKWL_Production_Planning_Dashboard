@@ -14,8 +14,16 @@ function resetOrderExecutionSlide(){
 window.addEventListener('message',event=>{
   const frame=document.getElementById('order-execution-frame');
   if(!frame || event.source!==frame.contentWindow || !event.data || document.body.classList.contains('site-locked'))return;
+  if(event.data.type==='ekwl-frontend-timing'&&(window.EKWL_PERF_ENABLED===true||new URLSearchParams(location.search).get('ekwlPerf')==='1')){
+    const t=event.data.timing;
+    if(t&&['library.three','filter.render'].includes(t.name)&&Number.isFinite(t.durationMs)){
+      (window.EKWL_TIMINGS||(window.EKWL_TIMINGS=[])).push({name:t.name,durationMs:t.durationMs,status:t.status,requests:t.requests,renders:t.renders,frame:'execution'});
+      if(Number.isInteger(t.renders))window.EKWL_FILTER_RENDER_COUNT=(window.EKWL_FILTER_RENDER_COUNT||0)+t.renders;
+    }
+  }
   if(event.data.type==='ekwl-execution-ready'){
     frame.dataset.ready='1';
+    frame.contentWindow.postMessage({type:'ekwl-execution-visible',visible:CURRENT_SLIDE===16},'*');
     if(CURRENT_SLIDE===16)loadOrderExecutionSlide();
   }
   if(event.data.type==='ekwl-execution-rendered'){

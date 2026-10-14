@@ -164,6 +164,6 @@ function prepareSharedReportView(n){
 }
 
 function fetchABPTargetFromSQL(){
-  return Promise.resolve(SB.from('abp_target').select('parameter_name,config')
+  return readTinySetting('abp',()=>SB.from('abp_target').select('parameter_name,config')
     .eq('parameter_name','ABP_MATRIX_2026_27').maybeSingle());
 }

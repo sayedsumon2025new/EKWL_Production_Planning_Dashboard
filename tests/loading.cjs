@@ -1,7 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 // Optional pre-change HTML enables a full result-parity comparison.
 const old=process.env.DASHBOARD_BASELINE?fs.readFileSync(process.env.DASHBOARD_BASELINE,'utf8'):null;
-const html=fs.readFileSync(__dirname+'/../index.html','utf8');
+const html=require('./dashboard-source.js').readDashboardHTML();
 function fn(s,name){const start=s.search(new RegExp('^(?:async )?function '+name+'\\(','m'));assert.ok(start>=0,name);return s.slice(start,s.indexOf('\n}',start)+2);}
 function fixture(){
   const tables={abp_target:[{parameter_name:'ABP_MATRIX_2026_27',config:{metrics:[['Efficiency','65%']]}}],plan_uploads:[{id:1,status:'complete',uploaded_at:'2026-09-23',planning_month:'2026-09-01'}],plan_records:[],plan_daily:[],fabric_cutting_info:[],sewing_input_output:[],date_wise_production:[]};
@@ -41,6 +41,7 @@ function setup(source,options={}){
   vm.createContext(c);
   const names=['capturePlanningState','restorePlanningState','fetchPlanningSnapshot','loadFromSupabase'];
   if(source.includes('async function sbPaged('))names.unshift('sbPaged');else names.unshift('sbAll');
+  vm.runInContext(fs.readFileSync(__dirname+'/../frontend-runtime.js','utf8'),c);
   vm.runInContext(fs.readFileSync(__dirname+'/../shared-report-loader.js','utf8'),c);
   for(const name of names)vm.runInContext(fn(source,name),c);
   return {c,calls,events,tables,maxActive:()=>maxActive};
@@ -49,7 +50,7 @@ function state(c){return JSON.parse(JSON.stringify({planning:c.capturePlanningSt
 (async()=>{
   let scripts=0;
   for(const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)){if(m[1].trim()){new vm.Script(m[1]);scripts++;}}
-  console.log('PASS JavaScript syntax:',scripts,'inline scripts');
+  console.log('PASS JavaScript syntax:',scripts,'application scripts');
   const next=setup(html);
   assert.equal(await next.c.loadFromSupabase(1,false),true);
   const expectedRecords=next.tables.plan_records.filter(r=>!r.is_summary_row&&next.c.isChassisMasterLine(r.line_no));

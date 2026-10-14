@@ -214,7 +214,7 @@ async function copyGanttPsdTableImage(){
   const label=button.textContent;
   button.disabled=true;button.textContent='Capturing…';
   try{
-    if(typeof html2canvas!=='function')throw Error('Screenshot library unavailable');
+    const html2canvas=await ensureHtml2Canvas();
     const table=section.querySelector('.psd-table');
     const fullWidth=Math.ceil(Math.max(section.scrollWidth,table?.scrollWidth||0));
     const canvas=await html2canvas(section,{backgroundColor:'#ffffff',scale:Math.min(2,window.devicePixelRatio||2),useCORS:true,logging:false,
@@ -244,7 +244,7 @@ async function copyGanttPsdSummaryImage(){
   const label=button.textContent;
   button.disabled=true;button.textContent='Capturing…';
   try{
-    if(typeof html2canvas!=='function')throw Error('Screenshot library unavailable');
+    const html2canvas=await ensureHtml2Canvas();
     const table=section.querySelector('.psd-summary-table');
     const fullWidth=Math.ceil(Math.max(section.scrollWidth,table?.scrollWidth||0)+24);
     const canvas=await html2canvas(section,{backgroundColor:'#ffffff',scale:Math.min(2,window.devicePixelRatio||2),useCORS:true,logging:false,

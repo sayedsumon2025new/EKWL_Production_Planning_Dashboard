@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[1]
-html=(ROOT/'index.html').read_text()
+html=(ROOT/'index.html').read_text()+'\n'+(ROOT/'dashboard-main.js').read_text()
 script=html[html.index("let GANTT_EWO_SEARCH='';"):html.index('\nfunction renderS7(data){')]
 styles='\n'.join(re.findall(r'<style\b[^>]*>(.*?)</style>',html,re.S))
 fixture="""

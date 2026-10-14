@@ -90,6 +90,7 @@ function embellishmentSetRows(rows,fileName,uploadedAt='',mode='sql'){
   renderEmbellishmentModule();
 }
 function renderEmbellishmentModule(){
+  if(typeof recordDashboardRender==='function')recordDashboardRender('embellishment');
   const table=document.getElementById('em-table');if(!table)return;
   const date=document.getElementById('em-date')?.value||'';
   const buyer=document.getElementById('em-buyer')?.value||'';
@@ -124,7 +125,7 @@ function renderEmbellishmentModule(){
 }
 function embellishmentPage(n){EM_PAGE=n;renderEmbellishmentModule();document.getElementById('em-table')?.scrollTo({top:0,left:0});}
 function embellishmentFiltersChanged(){EM_PAGE=1;renderEmbellishmentModule();}
-function embellishmentSearchChanged(){clearTimeout(EM_SEARCH_TIMER);EM_SEARCH_TIMER=setTimeout(embellishmentFiltersChanged,150);}
+function embellishmentSearchChanged(){clearTimeout(EM_SEARCH_TIMER);EM_SEARCH_TIMER=setTimeout(embellishmentFiltersChanged,275);}
 function clearEmbellishmentFilters(){for(const id of ['em-date','em-buyer','em-team','em-search']){
   const node=document.getElementById(id);if(node)node.value='';
 }embellishmentFiltersChanged();}

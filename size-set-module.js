@@ -183,6 +183,7 @@ function populateSizeSetFilters(){
 }
 
 function renderSizeSetModule(){
+  if(typeof recordDashboardRender==='function')recordDashboardRender('size-set');
   const table=document.getElementById('ss-table');if(!table)return;
   const columns=[['year','__efd_year','All EFD Years'],['line','Line','All Lines'],['buyer','Buyer','All Buyers'],['product','Product Type','All Products'],['action','Next Action to Do\n(What)','All Actions']];
   const values=Object.fromEntries(columns.map(([name])=>[name,document.getElementById('ss-'+name)?.value||'']));
@@ -233,7 +234,7 @@ function renderSizeSetModule(){
 }
 
 function sizeSetPage(page){SS_PAGE=page;renderSizeSetModule();document.getElementById('ss-table')?.scrollTo({top:0,left:0});}
-function sizeSetSearchChanged(){clearTimeout(SS_SEARCH_TIMER);SS_SEARCH_TIMER=setTimeout(()=>{SS_PAGE=1;renderSizeSetModule()},160);}
+function sizeSetSearchChanged(){clearTimeout(SS_SEARCH_TIMER);SS_SEARCH_TIMER=setTimeout(()=>{SS_PAGE=1;renderSizeSetModule()},275);}
 function clearSizeSetFilters(){
   for(const id of ['ss-year','ss-line','ss-buyer','ss-product','ss-action','ss-search']){
     const el=document.getElementById(id);if(el)el.value='';
