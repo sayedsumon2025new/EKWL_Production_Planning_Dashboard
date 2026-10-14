@@ -21,6 +21,7 @@ function rdRisk(status){
   return `<span class="rd-risk rd-${state}">${RD_RISKS[state]}</span>`;
 }
 function resetEWOReadinessBoard(){
+  if(typeof resetReadyInputCoverage==='function')resetReadyInputCoverage();
   ++RD_LOAD_TOKEN;RD_ROWS=[];RD_UPLOAD_ID='';RD_BUSY=false;RD_ERROR='';
   document.getElementById('rd-detail-dialog')?.close();
   document.getElementById('rd-detail-body')?.replaceChildren();
@@ -70,6 +71,7 @@ function rdPopulateBuyers(){
   select.value=[...select.options].some(o=>o.value===previous)?previous:'';
 }
 async function loadEWOReadinessBoard(){
+  if(typeof loadReadyInputCoverage==='function')loadReadyInputCoverage();
   const token=++RD_LOAD_TOKEN,session=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   const selectedId=String(ACTIVE_PLAN_UPLOAD?.id||'');
   const current=()=>token===RD_LOAD_TOKEN&&session===SITE_SESSION_GENERATION&&userId===SITE_AUTH_USER?.id&&

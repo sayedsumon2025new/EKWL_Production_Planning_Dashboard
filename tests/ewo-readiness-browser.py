@@ -50,12 +50,35 @@ try:
           window.fixtureRows=[first,{...first,ewo:'900002',sewing_status:'amber',cutting_status:'amber',readiness_score:91.7,delivery_risk:'watch'},
             {...first,ewo:'900003',sewing_status:'red',cutting_status:'red',readiness_score:83.3,delivery_risk:'high'},
             {...first,ewo:'900004',buyer:'<img src=x onerror=alert(1)>',sewing_status:'unknown',size_set_status:'unknown',readiness_score:null,known_stages:5,delivery_risk:'unknown'}];
-          SB.from=()=>{const q={select:()=>q,eq:()=>q,order:()=>q,range:async()=>({data:window.fixtureRows,error:null})};return q;};
+          window.coverageRows=[{upload_id:'fixture-plan',ewo:'900001',buyer:'Demo Buyer',lines:[1],cutoff_date:'2026-10-11',ready_input_qty:250,
+            day1_date:'2026-10-12',day2_date:'2026-10-13',day3_date:'2026-10-14',day1_plan:100,day2_plan:100,day3_plan:100,
+            day1_status:'green',day2_status:'green',day3_status:'red',required_qty:300,shortage_qty:50,first_short_date:'2026-10-14',
+            color_details:[{color:'Blue',cut_qty:300,input_qty:50,ready_qty:250}],
+            day_details:[{date:'2026-10-12',cumulative_qty:100,shortage_qty:0,status:'green'},{date:'2026-10-13',cumulative_qty:200,shortage_qty:0,status:'green'},{date:'2026-10-14',cumulative_qty:300,shortage_qty:50,status:'red'}]},
+            {ewo:'900002',buyer:'<img src=x onerror=alert(1)>',lines:[2],cutoff_date:'2026-10-11',day1_plan:null,day2_plan:null,day3_plan:100,day1_status:'unknown',day2_status:'unknown',day3_status:'unknown'}];
+          SB.from=(table)=>{const q={select:()=>q,eq:()=>q,order:()=>q,
+            limit:async()=>({data:[{output_date:'2026-10-11'}],error:null}),
+            range:async()=>({data:table==='ready_input_coverage'?window.coverageRows:window.fixtureRows,error:null})};return q;};
+          SB.rpc=()=>SB.from('ready_input_coverage');
           applySitePermissions();goSlide(21);await loadEWOReadinessBoard();
         }""")
         assert page.locator('#s21 .slide-title').text_content().strip()=='21 EWO Readiness Board'
         assert page.locator('#s21 .slide-title').is_visible()
         assert page.locator('#s21').evaluate("e=>e.parentElement.id==='slides-wrap'")
+        page.wait_for_function("document.querySelectorAll('#rc-body > tr').length===2")
+        assert page.locator('#rc-body .rc-day').count()==6
+        assert page.locator('#rc-body img').count()==0
+        assert '2026-10-12' in page.locator('#rc-day1-head').inner_text()
+        assert page.locator('#rc-body .rc-green').first.evaluate('e=>getComputedStyle(e).backgroundColor')=='rgb(20, 83, 45)'
+        assert page.locator('#rc-body .rc-red').first.evaluate('e=>getComputedStyle(e).backgroundColor')=='rgb(127, 29, 29)'
+        assert page.locator('#rc-body .rc-unknown').first.evaluate('e=>getComputedStyle(e).backgroundColor')=='rgb(71, 85, 105)'
+        assert page.locator('#rc-body .rc-green').first.evaluate('e=>getComputedStyle(e).color')=='rgb(255, 255, 255)'
+        page.locator('#rc-search').fill('900001');assert page.locator('#rc-body > tr').count()==1
+        page.locator('#rc-search').fill('')
+        page.locator('#rc-body button').first.click()
+        assert 'Ready Input Evidence' in page.locator('#rd-detail-title').inner_text()
+        assert '250' in page.locator('#rd-detail-body').inner_text()
+        page.locator('#rd-detail-dialog button').click()
         assert page.locator('#rd-body > tr').count()==4
         assert page.locator('#rd-body .rd-light').count()==28
         assert page.locator('#rd-body img').count()==0
@@ -81,13 +104,15 @@ try:
         assert not page.locator('#rd-detail-dialog').is_visible()
         # The board is scrollable on mobile and keeps a single report row per EWO.
         page.set_viewport_size({'width':390,'height':844})
-        assert page.locator('#s21 .tbl-wrap').evaluate('(e)=>e.scrollWidth>e.clientWidth')
+        assert page.locator('#s21 .tbl-wrap').first.evaluate('(e)=>e.scrollWidth>e.clientWidth')
+        assert page.locator('#rc-card .tbl-wrap').evaluate('(e)=>e.scrollWidth>e.clientWidth')
         page.set_viewport_size({'width':1440,'height':1000})
-        page.locator('#s21 .tbl-wrap').evaluate('e=>e.scrollLeft=0')
+        page.locator('#s21 .tbl-wrap').first.evaluate('e=>e.scrollLeft=0')
         page.screenshot(path='/tmp/ewo-readiness-demo.png',full_page=True)
         page.evaluate("SITE_AUTH_USER=null;resetEWOReadinessBoard()")
         assert '900001' not in page.locator('#rd-body').inner_text()
         assert page.locator('#rd-kpis').inner_text()==''
+        assert '900001' not in page.locator('#rc-body').inner_text()
         assert page.locator('#rd-detail-body').inner_text()==''
         assert not errors,errors
         print('PASS readiness navigation, central permission, seven lights, score/unknown display, filtering, evidence dialog, escaping, mobile scroll and logout cleanup')

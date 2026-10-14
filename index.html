@@ -2087,7 +2087,7 @@ input,select,textarea{
 <link rel="stylesheet" href="dashboard-theme.css?v=5">
 <script src="dashboard-theme.js?v=3"></script>
 <link rel="stylesheet" href="table-visuals.css?v=1">
-<link rel="stylesheet" href="ewo-readiness.css?v=1">
+<link rel="stylesheet" href="ewo-readiness.css?v=2">
 </head>
 <body class="site-locked">
 <div id="supabase-live-badge">Supabase · waiting</div>
@@ -2899,6 +2899,22 @@ input,select,textarea{
       <th>Readiness Score</th><th>Milestone Risk</th><th>PCD</th><th>PSD</th><th>PFD</th><th>Delivery</th><th>Sewing Input</th><th>Evidence</th>
     </tr></thead><tbody id="rd-body"></tbody></table></div>
     <p id="rd-msg" role="status"></p>
+  </div>
+  <div class="card" id="rc-card">
+    <div class="card-title">Ready Input Coverage · Next 3 Calendar Days</div>
+    <div class="rd-filters">
+      <input id="rc-search" type="search" placeholder="Search running EWO…" aria-label="Search running EWO" oninput="renderReadyInputCoverage()">
+      <select id="rc-buyer" aria-label="Running buyer" onchange="renderReadyInputCoverage()"><option value="">All buyers</option></select>
+      <button type="button" class="pg-btn" onclick="loadReadyInputCoverage()">↻ Refresh coverage</button>
+    </div>
+    <p id="rc-window" role="status"></p>
+    <p class="rd-note">100% cumulative plan coverage: Dark Green = covered; Dark Red = short; Grey = incomplete evidence. Stock is pooled once per EWO + color across all its planning lines. Balances use the latest reports; dates start after the latest actual production date.</p>
+    <div class="tbl-wrap"><table class="dt" id="rc-tbl"><thead><tr>
+      <th>EWO</th><th>Buyer</th><th>Lines</th><th>Ready Input Balance</th>
+      <th id="rc-day1-head">Day 1</th><th id="rc-day2-head">Day 2</th><th id="rc-day3-head">Day 3</th>
+      <th>3-day Required</th><th>Shortage pcs</th><th>First Short Date</th><th>Evidence</th>
+    </tr></thead><tbody id="rc-body"></tbody></table></div>
+    <p id="rc-msg" role="status"></p>
   </div>
 </div>
 </div><!-- /slides-wrap -->
@@ -8361,7 +8377,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 <script src="size-set-module.js"></script>
 <script src="accessories-module.js"></script>
 <script src="embellishment-module.js"></script>
-<script src="ewo-readiness.js"></script>
+<script src="ewo-readiness.js?v=2"></script>
+<script src="ready-input-coverage.js?v=1"></script>
 <script src="gantt-hover.js"></script>
 <script src="gantt-action-calendars.js"></script>
 <dialog id="ewo-gantt-dialog" aria-label="EWO Gantt status">
