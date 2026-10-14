@@ -121,7 +121,15 @@ function ganttPopupColors(w){
 
 function ganttPopupHeader(w){
   const options=ganttPopupColors(w);
-  return `<div class="gt-title">EWO ${esc(w.ewo)}<small>Line ${esc(w.line)} · ${esc(w.date)}</small></div>`+
+  const peers=Array.isArray(w.cellEwos)?w.cellEwos:[];
+  const amounts=peers.map(item=>({...item,selectedColors:ganttPopupColors(item).map(x=>x.color)}));
+  const totalSah=amounts.map(item=>ganttHoverPlanSah(item));
+  const context=peers.length>1?`<div class="gt-cell-summary"><span>Line ${esc(w.line)} · ${esc(w.date)} · ${peers.length} planned EWOs</span><strong>Total Plan Qty ${esc(peers.reduce((sum,item)=>sum+ganttQty(item.qty),0).toLocaleString('en-US'))} · Plan SAH ${totalSah.every(x=>x!==null)?esc(totalSah.reduce((sum,x)=>sum+x,0).toLocaleString('en-US')):'—'}</strong></div>`+
+    '<div class="gt-ewo-options" aria-label="Select planned EWO">'+amounts.map(item=>{
+      const sah=ganttHoverPlanSah(item),selected=ganttKey(item.ewo)===ganttKey(w.ewo);
+      return `<button type="button" class="gt-ewo-option" data-popup-ewo="${esc(item.ewo)}" aria-pressed="${selected}"><strong>EWO ${esc(item.ewo)}</strong><span>${esc(item.selectedColors.join(' / '))}</span><small>Plan ${esc(ganttQty(item.qty).toLocaleString('en-US'))} pcs · SAH ${sah===null?'—':esc(sah.toLocaleString('en-US'))}</small></button>`;
+    }).join('')+'</div>':'';
+  return context+`<div class="gt-title">EWO ${esc(w.ewo)}<small>Line ${esc(w.line)} · ${esc(w.date)}</small></div>`+
     '<div class="gt-color-filter"><label for="gt-plan-color">Plan Color</label>'+
     `<select id="gt-plan-color" class="gt-color-select" aria-label="Filter popup by planned color" ${options.length<2?'disabled':''}>`+
     `<option value="__all__" ${w.allColors?'selected':''}>All Colors · ${options.reduce((n,x)=>n+ganttQty(x.qty),0).toLocaleString('en-US')} pcs</option>`+
@@ -224,24 +232,29 @@ async function copyGanttPopupImage(){
   }catch(error){console.warn('Gantt screenshot unavailable',error);button.textContent='Capture failed';}
   finally{button.disabled=false;setTimeout(()=>button.textContent=label,2200);}
 }
-async function showGanttPopup(cell,selectedColor){
+async function showGanttPopup(cell,selectedColor,selectedEwo){
   const dialog=document.getElementById('ewo-gantt-dialog');
   const content=document.getElementById('ewo-gantt-content');
   if(!dialog||!content)return;
   const token=++GANTT_HOVER_REQUEST;
   const original=JSON.parse(decodeURIComponent(cell.dataset.gantt));
-  const options=ganttPopupColors(original);
+  const chosen=selectedEwo?(original.cellEwos||[]).find(x=>ganttKey(x.ewo)===ganttKey(selectedEwo)):null;
+  const current=chosen?{...original,...chosen}:original;
+  const options=ganttPopupColors(current);
   const allColors=selectedColor==='__all__';
   const selected=options.find(x=>ganttColorKey(x.color)===ganttColorKey(selectedColor))||
-    options.find(x=>ganttColorKey(x.color)===ganttColorKey(original.color))||options[0];
+    options.find(x=>ganttColorKey(x.color)===ganttColorKey(current.color))||options[0];
   if(!selected)return;
-  const w={...original,color:selected.color,allColors,selectedColors:allColors?options.map(x=>x.color):[selected.color],qty:allColors?options.reduce((n,x)=>n+ganttQty(x.qty),0):selected.qty};
+  const w={...current,color:selected.color,allColors,selectedColors:allColors?options.map(x=>x.color):[selected.color],qty:allColors?options.reduce((n,x)=>n+ganttQty(x.qty),0):selected.qty};
   const bindColor=()=>{
     const select=content.querySelector('.gt-color-select');
     if(select){
-      select.onchange=()=>showGanttPopup(cell,select.value);
+      select.onchange=()=>showGanttPopup(cell,select.value,w.ewo);
       if(selectedColor)select.focus();
     }
+    content.querySelectorAll('[data-popup-ewo]').forEach(button=>{
+      button.onclick=()=>showGanttPopup(cell,undefined,button.dataset.popupEwo);
+    });
   };
   GANTT_POPUP_TRIGGER=cell;
   content.innerHTML=ganttPopupHeader(w)+'<div class="gt-loading">Loading order status…</div>';
