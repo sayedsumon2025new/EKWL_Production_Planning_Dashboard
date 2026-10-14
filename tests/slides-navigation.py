@@ -70,7 +70,7 @@ try:
           assert(csvDate('2026-10-14')==='2026-10-14'&&csvDate('10/14/2026')==='2026-10-14','existing date formats');
           const csv='Buyer,Line #,Criteria,PSD,10/14/2026\\nBuyer A,Line 01,Plan/Day,14-Oct-26,80';
           const parsed=await parseRawPlanFile({text:async()=>csv});assert(parsed.rows.length===1,'valid named-month import');
-          let rejected=false;try{await parseRawPlanFile({text:async()=>csv.replace('14-Oct-26','31-Feb-26')})}catch(e){rejected=e.message.includes('Record 2: invalid PSD')}
+          let rejected=false;try{await parseRawPlanFile({text:async()=>csv.replace('14-Oct-26','31-Feb-26')})}catch(e){rejected=e.message.includes('Record 2: invalid or ambiguous PSD')}
           assert(rejected,'invalid source dates fail before upload');
 
           for(const [old,destination] of [[2,6],[9,6],[4,10]]){
