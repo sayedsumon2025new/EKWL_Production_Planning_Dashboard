@@ -3129,6 +3129,7 @@ input,select,textarea{
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="slides-config.js"></script>
+<script src="shared-report-loader.js?v=1"></script>
 <script>
 const SUPABASE_URL = "https://rdslpcazdzqjlenbezaf.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Vp8l2awmxvWpiqXOVabT_w_iZYX-faF";
@@ -3570,12 +3571,9 @@ function getABPTarget(){
   return JSON.parse(JSON.stringify(DEFAULT_ABP_TARGET));
 }
 
-async function loadABPTargetFromSQL(render=true){
+async function loadABPTargetFromSQL(render=true,sharedRead=null){
   try{
-    const {data,error}=await SB.from('abp_target')
-      .select('parameter_name,config')
-      .eq('parameter_name','ABP_MATRIX_2026_27')
-      .maybeSingle();
+    const {data,error}=await (sharedRead||fetchABPTargetFromSQL());
     if(error)throw error;
     if(data?.config && typeof data.config==='object'){
       ABP_TARGET_CACHE=JSON.parse(JSON.stringify(data.config));
@@ -4043,7 +4041,7 @@ async function switchPlanningInstant(uploadId){
   }
 
   setLoadProgress(18,'Selected Planning version load হচ্ছে...');
-  const loaded=await loadFromSupabase(uploadId,true,true);
+  const loaded=await loadFromSupabase(uploadId,true);
   if(!loaded||token!==PLAN_FILTER_TOKEN)return;
   PLAN_VERSION_CACHE.set(String(uploadId),capturePlanningState());
 }
@@ -4078,40 +4076,53 @@ function setSupabaseLiveBadge(state,text){
   el.className=state==='ok'?'ok':state==='err'?'err':'';
   el.textContent=text;
 }
-async function loadCentralAdminSettingsBeforeData(){
+async function loadCentralAdminSettingsBeforeData(abpRead=null){
   // Master-line configuration must be known BEFORE plan_records are filtered.
   await Promise.allSettled([
     loadChassisPriorityFromSQL(false),
     loadEfficiencyLadderFromSQL(false),
-    loadABPTargetFromSQL(false)
+    loadABPTargetFromSQL(false,abpRead)
   ]);
 }
 async function bootLiveSupabaseData(){
-  const generation=SITE_SESSION_GENERATION;
-  setSupabaseLiveBadge('','Supabase · checking live data…');
-  await Promise.all([
-    loadCentralAdminSettingsBeforeData(),
-    loadS4StrengthsFromSQL(false),
-    loadDashboardMasterSettingsFromSQL(),
-    loadABPTargetEfficiencyLive()
-  ]);
-
-  if(generation!==SITE_SESSION_GENERATION||!SITE_AUTH_USER)return false;
-  // Cache is only an instant visual bootstrap; it is never treated as the live authority.
-  let cached=restoreFastBootCache();
-  if(!cached) cached=await restoreDashboardFromCache();
-
-  if(generation!==SITE_SESSION_GENERATION||!SITE_AUTH_USER)return false;
+  const finish=startDashboardTiming('boot');
+  const homeTiming=startDashboardTiming('home.first-data');
+  HOME_FIRST_DATA_TIMING=homeTiming;
+  let timingStatus='failed';
   try{
-    const keepId=ACTIVE_PLAN_UPLOAD?.id||null;
-    if(!await loadFromSupabase(keepId,true))throw Error('Live report load did not complete');
-    setSupabaseLiveBadge('ok','Supabase Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
-    return true;
-  }catch(e){
-    console.error('Live Supabase verification failed',e);
-    setSupabaseLiveBadge('err',cached?'Supabase check failed · cached data':'Supabase sync failed');
-    if(!cached)throw e;
-    return false;
+    const generation=SITE_SESSION_GENERATION;
+    invalidateSharedReports();
+    const abpRead=fetchABPTargetFromSQL();
+    setSupabaseLiveBadge('','Supabase · checking live data…');
+    await Promise.all([
+      loadCentralAdminSettingsBeforeData(abpRead),
+      loadS4StrengthsFromSQL(false),
+      loadDashboardMasterSettingsFromSQL(),
+      loadABPTargetEfficiencyLive(abpRead)
+    ]);
+
+    if(generation!==SITE_SESSION_GENERATION||!SITE_AUTH_USER)return false;
+    // Cache is only an instant visual bootstrap; it is never treated as the live authority.
+    let cached=restoreFastBootCache();
+    if(!cached) cached=await restoreDashboardFromCache();
+
+    if(generation!==SITE_SESSION_GENERATION||!SITE_AUTH_USER)return false;
+    try{
+      const keepId=ACTIVE_PLAN_UPLOAD?.id||null;
+      if(!await loadFromSupabase(keepId,true))throw Error('Live report load did not complete');
+      timingStatus='loaded';
+      setSupabaseLiveBadge('ok','Supabase Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+      return true;
+    }catch(e){
+      console.error('Live Supabase verification failed',e);
+      timingStatus=cached?'cached':'failed';
+      setSupabaseLiveBadge('err',cached?'Supabase check failed · cached data':'Supabase sync failed');
+      if(!cached)throw e;
+      return false;
+    }
+  }finally{
+    finish({status:timingStatus});
+    if(HOME_FIRST_DATA_TIMING===homeTiming){homeTiming({status:'no-data'});HOME_FIRST_DATA_TIMING=null;}
   }
 }
 
@@ -4131,7 +4142,8 @@ function saveFastBootCache(){
       planning:capturePlanningState(),
       fabric:FABRIC_CUTTING_DATA,
       sewing:SEWING_IO_DATA,
-      production:DATE_WISE_PRODUCTION_DATA
+      production:DATE_WISE_PRODUCTION_DATA,
+      sharedReportsLoaded:sharedReportCacheAvailability()
     };
     sessionStorage.setItem(fastBootCacheKey(),JSON.stringify(payload));
     return true;
@@ -4149,6 +4161,7 @@ function restoreFastBootCache(){
     FABRIC_CUTTING_DATA=c.fabric||[];
     SEWING_IO_DATA=c.sewing||[];
     DATE_WISE_PRODUCTION_DATA=c.production||[];
+    registerSharedReportCache(c.sharedReportsLoaded,{fabric:c.fabric,sewing:c.sewing,production:c.production});
     rebuildPlanningFilters(uploadMonthKey(ACTIVE_PLAN_UPLOAD),ACTIVE_PLAN_UPLOAD?.id);
     if(ACTIVE_PLAN_UPLOAD?.id)PLAN_VERSION_CACHE.set(String(ACTIVE_PLAN_UPLOAD.id),c.planning);
     applySitePermissions();
@@ -4177,7 +4190,8 @@ async function saveDashboardCache(){
       savedAt:Date.now(),PLAN_UPLOAD_CATALOG,ACTIVE_PLAN_UPLOAD,
       activeSnapshot:capturePlanningState(),
       // Only the active planning snapshot is persisted. Historical sequences load on demand.
-      FABRIC_CUTTING_DATA,SEWING_IO_DATA,DATE_WISE_PRODUCTION_DATA
+      FABRIC_CUTTING_DATA,SEWING_IO_DATA,DATE_WISE_PRODUCTION_DATA,
+      sharedReportsLoaded:sharedReportCacheAvailability()
     };
     await new Promise((resolve,reject)=>{
       const tx=db.transaction(DASH_CACHE_STORE,'readwrite');
@@ -4221,6 +4235,7 @@ async function restoreDashboardFromCache(){
   FABRIC_CUTTING_DATA=c.FABRIC_CUTTING_DATA||[];
   SEWING_IO_DATA=c.SEWING_IO_DATA||[];
   DATE_WISE_PRODUCTION_DATA=c.DATE_WISE_PRODUCTION_DATA||[];
+  registerSharedReportCache(c.sharedReportsLoaded,{fabric:c.FABRIC_CUTTING_DATA,sewing:c.SEWING_IO_DATA,production:c.DATE_WISE_PRODUCTION_DATA});
   rebuildPlanningFilters(uploadMonthKey(ACTIVE_PLAN_UPLOAD),ACTIVE_PLAN_UPLOAD?.id);
   applySitePermissions();
   renderAll();
@@ -4235,7 +4250,7 @@ async function restoreDashboardFromCache(){
   return true;
 }
 let SUPABASE_LOAD_TOKEN=0;
-async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reuseSharedReports=false){
+async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
   const loadToken=++SUPABASE_LOAD_TOKEN;
   try{
     setStatus(true,'Supabase থেকে reports load হচ্ছে...','3%');
@@ -4271,62 +4286,17 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
 
     setLoadChip('load-plan','ok','Planning ('+DATA.length.toLocaleString()+')');
 
-    const sewingColorReady=!SEWING_IO_DATA.length || SEWING_IO_DATA.every(r=>Object.prototype.hasOwnProperty.call(r,'color'));
-    const reuseShared = reuseSharedReports && sewingColorReady && (FABRIC_CUTTING_DATA.length || SEWING_IO_DATA.length || DATE_WISE_PRODUCTION_DATA.length);
-    if(reuseShared){
-      setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
-      setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
-      setLoadChip('load-production','ok','Date Wise Production ('+DATE_WISE_PRODUCTION_DATA.length.toLocaleString()+')');
-      setLoadProgress(92,'Planning version loaded · cached reports reused');
-    }else{
-      setLoadProgress(58,'Planning loaded · shared reports load হচ্ছে...');
-      setLoadChip('load-fabric','loading','Fabrics & Cutting');
-      setLoadChip('load-sewing','loading','Sewing I/O');
-      setLoadChip('load-production','loading','Date Wise Production');
-
-      // Independent reports download together. Publish only complete results so a
-      // failed page never replaces the previous report with a partial dataset.
-      const [fabric,sewing,production]=await Promise.all([
-        sbPaged(()=>SB.from('fabric_cutting_info')
-          .select('id,buyer,ewo,color_name,item_product_type,style_embellishment_type,pattern_update,color_order_qty,fabric_booking_qty,total_fabric_received,fabric_balance,fabric_stock_after_cut,cutable_qty,total_cut_qty,cutting_balance,cutting_percent,status,cutting_difficulties,pattern_received_date,replacement_receive_commitment_date')
-          .order('id',{ascending:true})),
-        sbPaged(()=>SB.from('sewing_input_output')
-          .select('id,ewo,color,line,line_no,total_input_qty,total_output_qty,total_wip_qty,total_reject_qty')
-          .order('id',{ascending:true})),
-        sbPaged(()=>SB.from('date_wise_production')
-          .select('id,code,buyer,ewo,po_no,color,line,line_no,output_date,total_qty')
-          .order('output_date',{ascending:true}).order('id',{ascending:true}))
-      ]);
-      if(loadToken!==SUPABASE_LOAD_TOKEN)return false;
-      FABRIC_CUTTING_DATA=fabric;
-      SEWING_IO_DATA=sewing.map(r=>({
-        ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
-        color:r.color||'',
-        line_no:Number(r.line_no)||lineNumber(r.line),
-        input:N(r.total_input_qty),output:N(r.total_output_qty),
-        wip:N(r.total_wip_qty),reject:N(r.total_reject_qty)
-      }));
-      DATE_WISE_PRODUCTION_DATA=production.map(r=>({
-        id:r.id,code:r.code||'',buyer:r.buyer||'',
-        ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
-        po_no:r.po_no||'',color:r.color||'',line:r.line||'',
-        line_no:Number(r.line_no)||lineNumber(r.line),
-        output_date:r.output_date,total_qty:N(r.total_qty)
-      }));
-      setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
-      setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
-      setLoadChip('load-production','ok','Date Wise Production ('+DATE_WISE_PRODUCTION_DATA.length.toLocaleString()+')');
-      setLoadProgress(96,'সব report loaded · Dashboard render হচ্ছে...');
-    }
+    // Shared reports are fetched by the opened feature, never by planning boot.
+    setLoadProgress(96,'Planning ready · shared reports load on demand');
 
     renderAll();
     PLAN_VERSION_CACHE.set(String(upload.id),capturePlanningState());
     saveFastBootCache();
     await saveDashboardCache();
     if(loadToken!==SUPABASE_LOAD_TOKEN)return false;
-    setLoadProgress(100,'সব Supabase report successfully loaded');
+    setLoadProgress(100,'Planning loaded · shared reports load on demand');
     setStatus(true,
-      'সব Supabase report successfully loaded',
+      'Planning successfully loaded',
       activePlanningLabel()+' · '+DATA.length+' Plan/Day · '+FABRIC_CUTTING_DATA.length+' Fabric/Cutting · '+SEWING_IO_DATA.length+' Sewing I/O · '+DATE_WISE_PRODUCTION_DATA.length+' Production'
     );
     // Keep whichever tab the user is currently working on.
@@ -4428,7 +4398,7 @@ function renderAll(){
  const factory=(cfgName?cfgName.value.trim():'')||'EKWL · HW';
  document.title=factory+' Production Planning Dashboard';
  const brand=document.querySelector('#topnav .brand');if(brand)brand.textContent=factory+' · Production Planning';
- try{renderHome()}catch(e){console.error('Home render failed',e)}
+ try{renderHome();if(ACTIVE_PLAN_UPLOAD)finishHomeFirstDataTiming()}catch(e){console.error('Home render failed',e)}
  if(CURRENT_SLIDE>=1 && CURRENT_SLIDE<=11 && canAccessSlide(CURRENT_SLIDE)){
    try{renderSlide(CURRENT_SLIDE)}catch(e){console.error(e)}
  }
@@ -4645,6 +4615,7 @@ function s12EmbellishmentTotals(rows){
   return result;
 }
 function renderS12(changed=''){
+  if(!prepareSharedReportView(11))return;
   if(S12_EM_ROWS===null&&!S12_EM_ERROR)loadS12Embellishment();
   document.getElementById('s12-em-msg').textContent=S12_EM_ERROR||(S12_EM_ROWS===null?'Loading Print / Embroidery WIP…':'Today Send / Receive summed across all active report dates · selected Plan EWO + Color');
   const all=FABRIC_CUTTING_DATA||[];
@@ -4822,6 +4793,7 @@ function renderS12(changed=''){
 
 function renderSlide(n){
   if(!canAccessSlide(n))return;
+  if(!prepareSharedReportView(n))return;
   const fns={1:renderS1,3:renderS3,5:renderS5,6:renderS6,7:renderS11,8:renderS7,10:renderS9,11:renderS12};
   if(fns[n])fns[n](getFiltered());
 
@@ -5815,6 +5787,7 @@ function ganttConditionVisible(condition,enabled,filter){
 }
 
 function renderS11(data){
+  if(!prepareSharedReportView(7))return;
   const selected='';
   const master=getChassisMasterLines();
   const allDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(Boolean))].sort();
@@ -6978,6 +6951,8 @@ async function siteLogout(){
   closeS2LineDetails();S2_LINE_DETAILS=[];
   const cacheKey=dashboardCacheKey(),fastKey=fastBootCacheKey();
   ++SITE_SESSION_GENERATION;++SUPABASE_LOAD_TOKEN;++PLAN_FILTER_TOKEN;++EFF15_FR_TOKEN;
+  SITE_AUTH_USER=null; // Prevent reset callbacks from starting new report reads during logout.
+  invalidateSharedReports();
   DATA=[];DAILY_PLAN=[];SAH_DATA=[];SAH_DAILY=[];CLOCK_HOUR_DATA=[];CLOCK_HOUR_DAILY=[];BUYER_PLAN_DATA=[];MONTHS=[];
   FABRIC_CUTTING_DATA=[];SEWING_IO_DATA=[];DATE_WISE_PRODUCTION_DATA=[];S12_EM_ROWS=null;S12_EM_ERROR='';
   resetGanttHoverCache();
@@ -7182,6 +7157,7 @@ async function uploadNewPlan(){
 async function refreshDashboardAfterSuccessfulUpload(source,options={}){
   setSupabaseLiveBadge('','Supabase · refreshing after upload…');
   await clearDashboardCache();
+  invalidateSharedReports();
   resetGanttHoverCache();
   PLAN_VERSION_CACHE.clear();
   if(!await loadFromSupabase(options.planUploadId||null,true))throw Error('Dashboard refresh failed after upload');
@@ -7191,6 +7167,7 @@ async function refreshDashboardAfterSuccessfulUpload(source,options={}){
     if(CURRENT_SLIDE===16)await loadOrderExecutionSlide(true);
   }
   if(source==='floor' && typeof loadFloorAllocationAdmin==='function')await loadFloorAllocationAdmin();
+  if(canAccessSlide(CURRENT_SLIDE))await ensureSharedReports(sharedReportsForSlide(CURRENT_SLIDE));
   if(CURRENT_SLIDE!==14 && canAccessSlide(CURRENT_SLIDE))renderSlide(CURRENT_SLIDE);
   setSupabaseLiveBadge('ok','Supabase Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
 }
@@ -7487,11 +7464,8 @@ function parsePercentNumber(v,fallback=55){
   const n=Number(String(v??'').replace(/[^0-9.+-]/g,''));
   return Number.isFinite(n)?Math.min(100,Math.max(0,n)):fallback;
 }
-async function loadABPTargetEfficiencyLive(){
-  const {data,error}=await SB.from('abp_target')
-    .select('config')
-    .eq('parameter_name','ABP_MATRIX_2026_27')
-    .maybeSingle();
+async function loadABPTargetEfficiencyLive(sharedRead=null){
+  const {data,error}=await (sharedRead||fetchABPTargetFromSQL());
   if(error)throw error;
 
   const metrics=Array.isArray(data?.config?.metrics)?data.config.metrics:[];
@@ -8066,7 +8040,7 @@ async function loadEff15FRComparison(){
     box.innerHTML='<div class="empty">Loading Line × Date planning table…</div>';
     if(!(DAILY_PLAN||[]).length){
       const selected=document.getElementById('planning-sequence-filter')?.value||null;
-      if(!await loadFromSupabase(selected,true,true))return;
+      if(!await loadFromSupabase(selected,true))return;
     }
     if(!current())return;
     const loaded=await loadEff15ExactMetricSource();

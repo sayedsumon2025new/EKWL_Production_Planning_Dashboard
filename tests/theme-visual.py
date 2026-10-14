@@ -93,6 +93,12 @@ class ThemeVisualTests(unittest.TestCase):
         if OPTIONS.baseline_css:
             self.page.route('**/dashboard-theme.css', lambda r: r.fulfill(
                 body=OPTIONS.baseline_css.read_text(), content_type='text/css'))
+        # Keep this fixture independent of CDN availability; production requests stay mocked.
+        self.page.route('**/npm/@supabase/supabase-js@2', lambda r: r.fulfill(
+            body="window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:null}}),signOut:async()=>({error:null}),onAuthStateChange:()=>({})},from:()=>{const q=new Proxy({}, {get:(_,k)=>k==='then'?(a,b)=>Promise.resolve({data:[],error:null}).then(a,b):()=>q});return q;}})};",
+            content_type='application/javascript'))
+        self.page.route('**/html2canvas@1.4.1/dist/html2canvas.min.js', lambda r: r.fulfill(
+            body=(ROOT/'html2canvas.min.js').read_text(), content_type='application/javascript'))
         self.page.goto(self.url, wait_until='networkidle')
         self.assertEqual(self.page.evaluate('typeof SB'), 'object')
         self.page.evaluate(FIXTURE)
@@ -261,6 +267,8 @@ class ThemeVisualTests(unittest.TestCase):
 
     def test_fabric_reference_headers_preserve_values_and_filters(self):
         self.page.evaluate("""() => {
+          SITE_AUTH_USER={id:'fixture-admin'};
+          for(const name of ['fabric','sewing'])SHARED_REPORT_LOADS.set(name,{loaded:true,generation:SITE_SESSION_GENERATION,userId:SITE_AUTH_USER.id,promise:Promise.resolve([])});
           S12_EM_ROWS=[];
           FABRIC_CUTTING_DATA=[
             {ewo:'A100',color_name:'Blue',buyer:'Buyer A',item_product_type:'T-Shirt',color_order_qty:3000,fabric_booking_qty:300,total_fabric_received:200,cutable_qty:1500,total_cut_qty:1200,cutting_balance:-1800,status:'Running',cutting_difficulties:'Shade'},
