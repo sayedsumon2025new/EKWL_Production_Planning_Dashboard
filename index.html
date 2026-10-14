@@ -2472,6 +2472,7 @@ input,select,textarea{
   </div>
   <div class="card s6-controls">    <div class="s6-filter-bar"><label for="s6-feeding-filter">No. of Feeding</label>
       <select id="s6-feeding-filter" onchange="renderS6(getFiltered())"><option value="">All</option></select><label for="s6-order-range-filter">Order Qty Range</label><select id="s6-order-range-filter" onchange="renderS6(getFiltered())"><option value="">All ranges</option></select></div></div>
+  <div class="card" id="s6-data-warning" role="status" hidden></div>
   <div class="kpi-row" id="s6-kpi"></div>
 <div class="s6-reference-row"><div class="card"><div class="card-title">📊 Order QTY Range Analysis</div><div class="tbl-wrap" id="s6-range-summary"></div></div><div class="card"><div class="s2-top-pie" id="s6-range-pie"></div></div></div><div class="card"><div class="card-title">📈 Order Range Distribution</div><div class="bar-chart" id="s6-range-bar"></div></div><div class="card"><div class="card-title">📌 Summary</div><div id="s6-range-kpis"></div></div><div class="s6-reference-row"><div class="card">
       <div class="card-title">🔄 EWO Feeding Frequency Analysis</div>
@@ -5725,6 +5726,10 @@ function renderS6(data){
   const previousRange=rangeFilter.dataset.scope===scope?rangeFilter.value:'';
   filter.dataset.scope=scope;rangeFilter.dataset.scope=scope;
   const allRows=buildS6Rows(data,month);
+  const missingPSD=data.filter(r=>!/^\d{4}-\d{2}-\d{2}$/.test(String(r.startdate||''))).length;
+  const warning=document.getElementById('s6-data-warning');
+  warning.hidden=!missingPSD;
+  warning.textContent=missingPSD+' of '+data.length+' Plan/Day rows have missing PSD and are excluded. '+(missingPSD===data.length?'Analysis unavailable — this is not a zero-order plan. ':'Totals cover only rows with PSD in the selected month. ')+'Check the source CSV dates and re-upload the corrected plan.';
   const ranges=[['Below 500',0,500],['501-1000',501,1000],['1001-2000',1001,2000],['2001-3000',2001,3000],['3001-5000',3001,5000],['5001-8000',5001,8000],['Above 8000',8001,Infinity]];
   const inRange=(r,v)=>v===''||r.orderqty>=ranges[Number(v)][1]&&r.orderqty<=ranges[Number(v)][2];
   rangeFilter.innerHTML='<option value="">All ranges</option>'+ranges.map((r,i)=>'<option value="'+i+'">'+r[0]+'</option>').join('');
@@ -5741,6 +5746,9 @@ function renderS6(data){
   S6_FEEDING_SOURCE=data.filter(r=>String(r.startdate||'').slice(0,7)===month&&selectedEwos.has(String(r.ewo??'').trim())).map(r=>({...r,month}));
   renderS6RangeSummary(rows,S6_FEEDING_SOURCE);
   renderS8(S6_FEEDING_SOURCE);
+  if(data.length&&missingPSD===data.length){
+    for(const id of ['s6-range-summary','s6-range-pie','s6-range-bar','s6-range-kpis','s6-feeding-body','s6-feeding-foot','s8-bar','s8-summary','s8-buyer-pie','s8-product-pie'])document.getElementById(id).innerHTML='<p>Unavailable: source PSD is missing.</p>';
+  }
   document.getElementById('s6-month').textContent=monthText;
   const totOrd=rows.reduce((s,r)=>s+r.orderqty,0),totPlan=rows.reduce((s,r)=>s+r.planqty,0);
   const feeding=rows.reduce((s,r)=>s+r.feeding,0);
@@ -5748,7 +5756,7 @@ function renderS6(data){
   document.getElementById('s6-kpi').innerHTML=[
     ['Unique EWOs',rows.length],['Total Order Qty',fmt(totOrd)],['Total Plan Qty',fmt(totPlan)],
     ['Avg Lines/EWO',rows.length?(rows.reduce((s,r)=>s+r.lines.length,0)/rows.length).toFixed(1):'0']
-  ].map(([label,value])=>'<div class="kpi"><div class="kpi-lbl">'+label+'</div><div class="kpi-val">'+value+'</div></div>').join('');
+  ].map(([label,value])=>'<div class="kpi"><div class="kpi-lbl">'+label+'</div><div class="kpi-val">'+(data.length&&missingPSD===data.length?'Unavailable':value)+'</div></div>').join('');
   document.getElementById('s6-body').innerHTML=rows.map(r=>'<tr>'+
     '<td>'+esc(monthText)+'</td><td>'+[...r.buyers].map(esc).join(', ')+'</td><td class="num">'+esc(r.ewo)+'</td>'+
     '<td>'+r.lines.map(esc).join(' | ')+'</td><td class="num">'+r.feeding+'</td>'+
@@ -5756,6 +5764,10 @@ function renderS6(data){
     '<td class="num">'+fmt(r.planqty)+'</td><td>'+r.splits.map(fmt).join(' | ')+'</td></tr>').join('')||
     '<tr><td colspan="9" class="cen">No EWOs match the planning month PSD, feeding and Order Qty Range filters.</td></tr>';
   document.getElementById('s6-foot').innerHTML='<td><strong>Total</strong></td><td>—</td><td class="num">'+rows.length+'</td><td>—</td><td class="num">'+fmt(feeding)+'</td><td>—</td><td class="num">'+fmt(totOrd)+'</td><td class="num">'+fmt(totPlan)+'</td><td class="num">'+fmt(totPlan)+'</td>';
+  if(data.length&&missingPSD===data.length){
+    document.getElementById('s6-body').innerHTML='<tr><td colspan="9" class="cen">Analysis unavailable: all source PSD dates are missing.</td></tr>';
+    document.getElementById('s6-foot').innerHTML='<td colspan="9">Totals unavailable until source PSD dates are supplied.</td>';
+  }
 }
 
 /* ══ SLIDE 7: CHARTS (Canvas) ═══════════════════ */
@@ -6173,9 +6185,7 @@ function renderFeedingPie(elId, entries, totalFeeding){
 }
 
 function renderS8(data){
-  if(!document.getElementById('s8'))return;
   data=S6_FEEDING_SOURCE;
-  document.getElementById('s8-month').textContent=monthLabel(data);
 
   // Count lines per EWO (= feeding count)
   const ewoMap={};
@@ -6207,19 +6217,6 @@ function renderS8(data){
   });
   const buyerFeed={}, productFeed={};
   feedingUnits.forEach(x=>{buyerFeed[x.buyer]=(buyerFeed[x.buyer]||0)+1;productFeed[x.product]=(productFeed[x.product]||0)+1});
-
-  document.getElementById('s8-body').innerHTML=rows.map(r=>`<tr>
-    <td class="cen">${r.times}</td>
-    <td class="num">${r.cnt}</td>
-    <td class="num">${r.feeding}</td>
-    <td class="num">${Math.round(r.cnt/totEWO*100)}%</td>
-    <td></td>
-  </tr>`).join('');
-  document.getElementById('s8-foot').innerHTML=`
-    <td>Total Run EWO</td>
-    <td class="num">${totEWO}</td>
-    <td class="num">${totFeeding}</td>
-    <td class="num">${totEWO?100:0}%</td><td></td>`;
 
   const maxCnt=Math.max(...rows.map(r=>r.cnt),1);
   document.getElementById('s8-bar').innerHTML=rows.map(r=>`
@@ -7022,6 +7019,10 @@ function csvDate(v){
   let y,m,d,match;
   if((match=/^(\d{4})-(\d{1,2})-(\d{1,2})(?:$|[T ])/.exec(raw))){[,y,m,d]=match;}
   else if((match=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(raw))){[,m,d,y]=match;}
+  else if((match=/^(\d{1,2})-([A-Za-z]{3})-(\d{2}|\d{4})$/.exec(raw))){
+    d=match[1];m=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(match[2].toLowerCase())+1;
+    y=match[3].length===2?'20'+match[3]:match[3];
+  }
   else return null;
   const iso=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   return validDate(iso)?iso:null;
@@ -7056,6 +7057,11 @@ async function parseRawPlanFile(file){
  const rows=records.map((cols,i)=>{
    if(cols.length!==fields.length)throw Error('Record '+(i+2)+': column count does not match header.');
    return Object.fromEntries(fields.map((h,j)=>[h,cols[j]??'']));
+ });
+ rows.forEach((r,i)=>{
+   for(const column of ['PCD','PSD','PFD','Delivery']){
+     if(String(r[column]??'').trim()&&!csvDate(r[column]))throw Error('Record '+(i+2)+': invalid '+column+' date. Use YYYY-MM-DD, MM/DD/YYYY or DD-MMM-YY.');
+   }
  });
  return {rows,dateFields};
 }

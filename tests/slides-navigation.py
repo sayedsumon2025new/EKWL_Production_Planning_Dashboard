@@ -54,6 +54,25 @@ try:
             }
           }
           assert(!document.querySelector('#s2,#s4,#s8'),'dead panels removed');
+          ACTIVE_PLAN_UPLOAD={id:'test',planning_month:'2026-10-01'};
+          const fixture=[{ewo:'A',line:1,startdate:'2026-10-15',buyer:'Buyer A',style:'Hoody',orderqty:6000,planqty:5000},
+            {ewo:'A',line:2,startdate:'2026-10-16',buyer:'Buyer A',style:'Hoody',orderqty:1000,planqty:900}];
+          renderS6(fixture);
+          assert(document.getElementById('s8-buyer-pie').textContent.includes('Buyer A'),'moved buyer pie renders');
+          assert(document.getElementById('s8-product-pie').textContent.includes('Hoody'),'moved product pie renders');
+          assert(document.getElementById('s8-bar').textContent.includes('2 Lines'),'moved feeding bar renders');
+          renderS6(fixture.map(r=>({...r,startdate:''})));
+          assert(!document.getElementById('s6-data-warning').hidden,'missing PSD warning');
+          assert(document.getElementById('s6-range-summary').textContent.includes('Unavailable'),'no misleading zero totals');
+          renderS6(fixture);assert(document.getElementById('s6-data-warning').hidden,'warning resets');
+          assert(csvDate('14-Oct-26')==='2026-10-14'&&csvDate('14-oCt-2026')==='2026-10-14','named month dates');
+          assert(csvDate('31-Feb-26')===null&&csvDate('14-Bad-26')===null,'invalid dates rejected');
+          assert(csvDate('2026-10-14')==='2026-10-14'&&csvDate('10/14/2026')==='2026-10-14','existing date formats');
+          const csv='Buyer,Line #,Criteria,PSD,10/14/2026\\nBuyer A,Line 01,Plan/Day,14-Oct-26,80';
+          const parsed=await parseRawPlanFile({text:async()=>csv});assert(parsed.rows.length===1,'valid named-month import');
+          let rejected=false;try{await parseRawPlanFile({text:async()=>csv.replace('14-Oct-26','31-Feb-26')})}catch(e){rejected=e.message.includes('Record 2: invalid PSD')}
+          assert(rejected,'invalid source dates fail before upload');
+
           for(const [old,destination] of [[2,6],[9,6],[4,10]]){
             goSlide(old);assert(CURRENT_SLIDE===destination,'redirect');
             assert(document.querySelectorAll('.slide.active').length===1,'single active panel');

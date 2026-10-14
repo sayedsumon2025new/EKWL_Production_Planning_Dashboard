@@ -36,3 +36,13 @@ assert.equal(api.buildS6Rows(data,'2026-10').length,2);
 const split=api.buildS6Rows([{ewo:'X',line:12,startdate:'2026-09-02',planqty:40},{ewo:'X',line:2,startdate:'2026-09-03',planqty:60}],'2026-09')[0];
 assert.equal(split.feeding,2);assert.equal(split.lines.join('|'),'2|12');assert.equal(split.splits.join('|'),'60|40');
 console.log('PASS PSD month exclusion, EWO aggregation, unique-line feeding despite repeated PSD/PO/colour, aligned splits, filter KPIs and planning switch reset');
+
+api.renderS6([{ewo:'Missing',line:1,startdate:'',orderqty:7000,planqty:6000}]);
+assert.equal(document.getElementById('s6-data-warning').hidden,false);
+assert.match(document.getElementById('s6-data-warning').textContent,/1 of 1/);
+assert.match(document.getElementById('s6-range-summary').innerHTML,/Unavailable/);
+assert.match(document.getElementById('s6-kpi').innerHTML,/Unavailable/);
+assert.doesNotMatch(document.getElementById('s6-foot').innerHTML,/>0<\/td>/);
+api.renderS6(data);assert.equal(document.getElementById('s6-data-warning').hidden,false);
+api.renderS6(data.filter(r=>r.startdate));assert.equal(document.getElementById('s6-data-warning').hidden,true);
+console.log('PASS missing PSD never presented as zero orders; warning resets on valid plan');
