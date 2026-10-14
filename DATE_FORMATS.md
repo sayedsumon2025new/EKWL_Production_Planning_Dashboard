@@ -18,6 +18,10 @@ select public.dashboard_parse_date('03/04/2026','dmy');
 select public.dashboard_parse_date('46309','excel');
 ```
 
-Typed SQL DATE columns receive normalized ISO dates from Planning uploadNewPlan. The generic SQL helper is available to authenticated callers; its existing readiness wrapper retains prior privileges. No table, RLS policy or stored source date is changed by this parser migration. Existing NULL dates require a separate verified source repair or re-upload; the 5,500-row Seq 6 repair still awaits explicit approval after automatic-review rejection.
+Typed SQL DATE columns receive normalized ISO dates from Planning uploadNewPlan. The generic SQL helper is available to authenticated callers; its existing readiness wrapper retains prior privileges. No table, RLS policy or stored source date is changed by this parser migration. On the user's explicit request, the broken Seq 6/P06 SQL upload and its cascading plan_records/plan_daily data were permanently deleted. All three remaining counts were verified as zero. The source repair is superseded; re-upload is now the chosen recovery path.
 
 Verification: tests/date-parser.cjs passes 52 JS cases and generates identical PostgreSQL assertions; all cases pass under SQL/DMY and ISO/MDY DateStyle in isolated PostgreSQL 17.6. Actual uploaded CSV passes 5,500 rows / 22,000 milestones / 18 daily columns. Loading, feeding and Chromium navigation/upload regressions pass; production helper queries verify all main formats. Minimal frontend diff: flexible-date-parser.patch; SQL change is the small new migration above.
+
+## Planning upload convention chosen by the user
+
+The user explicitly chose MM/DD/YYYY for all dates on re-upload. planningCsvDate (index.html:7052) uses explicit mdy mode for four-digit-year slash dates, including 10/11/2026 = 11 October 2026. parseRawPlanFile validates through this helper, and uploadNewPlan serializes the same normalized values into SQL DATE columns. Generic csvDate and dashboard_parse_date still reject ambiguity in auto mode. Tests verify 03/04/2026 = 4 March in Planning upload, 10/14/2026, invalid days and a complete sample upload.

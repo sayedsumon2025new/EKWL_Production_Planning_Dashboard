@@ -27,6 +27,12 @@ fs.writeFileSync('/tmp/date-parser-cases.sql',"set datestyle='SQL,DMY';\ndo $$ b
 (async()=>{
  assert.equal(c.rawHeaderDate('10/11/2026'),'2026-10-11'); // Explicit legacy header convention.
  assert.equal(c.rawHeaderDate('14-Oct-26'),'2026-10-14');
+ assert.equal(c.planningCsvDate('10/11/2026'),'2026-10-11');
+ assert.equal(c.planningCsvDate('03/04/2026'),'2026-03-04');
+ assert.equal(c.planningCsvDate('10/14/2026'),'2026-10-14');
+ assert.equal(c.planningCsvDate('02/30/2026'),null);
+ const mdy=await c.parseRawPlanFile({text:async()=>'Buyer,Line #,Criteria,PCD,PSD,PFD,Delivery,10/11/2026\nBuyer,Line 01,Plan/Day,10/10/2026,10/11/2026,10/12/2026,10/14/2026,80'});
+ assert.equal(c.planningCsvDate(mdy.rows[0].PSD),'2026-10-11');
  const csv='Buyer,Line #,Criteria,PSD,2026-10-14,14-Oct-26\nBuyer,Line 01,Plan/Day,14-Oct-26,10,20';
  await assert.rejects(()=>c.parseRawPlanFile({text:async()=>csv}),/Duplicate daily dates/);
  if(process.argv[2]){
