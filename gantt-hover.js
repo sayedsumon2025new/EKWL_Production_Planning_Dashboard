@@ -1,35 +1,19 @@
 /* Slide 07 popup: use the selected Gantt cell, current Plan snapshot, and active SQL reports. */
-const GANTT_HOVER_SOURCE_CACHE=new Map();
 let GANTT_HOVER_REQUEST=0;
 let GANTT_POPUP_TRIGGER=null;
 const ganttKey=v=>String(v??'').trim().toUpperCase().replace(/\.0+$/,'');
 const ganttColorKey=v=>String(v??'').trim().toUpperCase().replace(/\s+/g,' ');
 const ganttQty=v=>Number(v)||0;
-function resetGanttHoverCache(){GANTT_HOVER_SOURCE_CACHE.clear();++GANTT_HOVER_REQUEST;closeGanttPopup();if(typeof resetGanttActionCache==='function')resetGanttActionCache();}
+function resetGanttHoverCache(types){invalidateDataCache([...VERSIONED_DATA_CACHE.keys()].filter(key=>key.startsWith('hover:')));invalidateEwoSources(types);++GANTT_HOVER_REQUEST;closeGanttPopup();if(typeof resetGanttActionCache==='function')resetGanttActionCache();}
 
 async function ganttHoverSources(ewo,color,colors){
   const allowed=new Set((colors||[color]).map(ganttColorKey));
   const key=ganttKey(ewo)+'|'+[...allowed].sort().join('|');
-  if(GANTT_HOVER_SOURCE_CACHE.has(key))return GANTT_HOVER_SOURCE_CACHE.get(key);
-  const rows=async build=>{
-    const all=[],size=500;
-    for(let from=0;;from+=size){
-      const {data,error}=await build().range(from,from+size-1);
-      if(error)throw error;
-      all.push(...(data||[]));
-      if((data||[]).length<size)break;
-    }
-    return all;
-  };
-  const query=Promise.allSettled([
-    rows(()=>SB.from('size_set_rows').select('row_data').eq('is_active',true)
-      .filter('row_data->>EWO','eq',String(ewo)).order('source_row_no',{ascending:true})),
-    rows(()=>SB.from('accessories_rows').select('row_data').eq('is_active',true)
-      .filter('row_data->>EWO','eq',String(ewo)).order('source_row_no',{ascending:true})),
-    rows(()=>SB.from('embellishment_send_receive_rows').select('*').eq('is_active',true)
-      .eq('EWO No',String(ewo)).order('source_row_no',{ascending:true})),
-    rows(()=>SB.from('order_bank_latest_all').select('GmtColor,OrderQty')
-      .eq('EWO',String(ewo)))
+  return loadVersionedData('hover:'+key,()=>Promise.allSettled([
+    loadEwoSource('size',[String(ewo)]),
+    loadEwoSource('accessories',[String(ewo)]),
+    loadEwoSource('embellishment',[String(ewo)]),
+    loadEwoSource('orderbank',[String(ewo)])
   ]).then(results=>{
     const available=i=>results[i].status==='fulfilled';
     const matching=(i,getColor)=>available(i)?results[i].value.filter(row=>allowed.has(ganttColorKey(getColor(row)))):[];
@@ -57,9 +41,7 @@ async function ganttHoverSources(ewo,color,colors){
       embroidery_receive:sum('Today EMB Receive Qty'),
       errors
     };
-  });
-  GANTT_HOVER_SOURCE_CACHE.set(key,query);
-  try{return await query;}catch(error){GANTT_HOVER_SOURCE_CACHE.delete(key);throw error;}
+  }),{ttl:EWO_SOURCE_TTL});
 }
 
 function ganttHoverSewing(line,ewo,colors){

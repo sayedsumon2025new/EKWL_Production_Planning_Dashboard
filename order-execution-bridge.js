@@ -4,6 +4,8 @@ let OE_PENDING_KEY='';
 let OE_RENDERED_KEY='';
 let OE_LOAD_TOKEN=0;
 
+function invalidateOrderExecutionData(){++OE_LOAD_TOKEN;OE_PENDING_KEY='';OE_RENDERED_KEY='';}
+
 function resetOrderExecutionSlide(){
   ++OE_LOAD_TOKEN;
   OE_LOAD_PROMISE=null;OE_PENDING_KEY='';OE_RENDERED_KEY='';
@@ -61,20 +63,9 @@ async function loadOrderExecutionSlide(force=false){
   send({type:'ekwl-execution-loading'});
   OE_LOAD_PROMISE=(async()=>{
     try{
-      let orders=(!force && ORDER_BANK_RAW_ROWS.length)?ORDER_BANK_RAW_ROWS:null;
-      if(!orders){
-        orders=[];
-        for(let from=0;;from+=1000){
-          const {data,error}=await SB.from('order_bank_latest_all').select('*')
-            .order('source_row_no',{ascending:true}).order('id',{ascending:true})
-            .range(from,from+999);
-          if(error)throw error;
-          if(!current())return;
-          orders.push(...(data||[]));
-          if((data||[]).length<1000)break;
-        }
-        ORDER_BANK_RAW_ROWS=orders;
-      }
+      const all=await loadOrderBankSnapshot(force);
+      if(!current())return;
+      const orders=(!force&&ORDER_BANK_RAW_ROWS.length)?ORDER_BANK_RAW_ROWS:all;
       let records=[],daily=[],dateRange=[],planningError='';
       if(planningReady){
         try{

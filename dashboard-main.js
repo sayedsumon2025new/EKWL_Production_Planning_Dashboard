@@ -34,6 +34,7 @@ function createResilientAuthStorage(root){
   };
 }
 const SB = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,{
+  global:{fetch:dashboardTrackedFetch},
   auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,
     storage:createResilientAuthStorage(window)}
 });
@@ -645,6 +646,7 @@ function goSlide(n){
   }
   if(n===10)requestAnimationFrame(()=>renderS4(getFiltered()));
   CURRENT_SLIDE=n;
+  beginDashboardSlideOpen(n);
   document.getElementById('order-execution-frame')?.contentWindow?.postMessage({type:'ekwl-execution-visible',visible:n===16},'*');
   try{localStorage.setItem(ACTIVE_TAB_STORAGE_KEY,String(n))}catch(e){}
   if(n===16){
@@ -1455,16 +1457,17 @@ function fabricCuttingCascade(all,planKeySet,planMatch,search,selected,changed='
   const rows=base.filter(r=>matches(r,''));
   return {rows,available,values};
 }
-let S12_EM_ROWS=null,S12_EM_LOADING=false,S12_EM_ERROR='';
+let S12_EM_ROWS=null,S12_EM_LOADING=false,S12_EM_ERROR='',S12_EM_LOAD_TOKEN=0;
 async function loadS12Embellishment(){
   if(S12_EM_LOADING||S12_EM_ROWS!==null||!SB||!SITE_AUTH_USER)return;
-  S12_EM_LOADING=true;const session=SITE_SESSION_GENERATION;
+  S12_EM_LOADING=true;const session=SITE_SESSION_GENERATION,token=++S12_EM_LOAD_TOKEN,userId=SITE_AUTH_USER.id;
+  const current=()=>session===SITE_SESSION_GENERATION&&token===S12_EM_LOAD_TOKEN&&userId===SITE_AUTH_USER?.id;
   try{
-    const rows=await sbPaged(()=>SB.from('embellishment_send_receive_rows').select('*').eq('is_active',true).order('source_row_no',{ascending:true}));
-    if(session!==SITE_SESSION_GENERATION)return;
+    const rows=await loadActiveModuleRows('embellishment');
+    if(!current())return;
     S12_EM_ROWS=rows;S12_EM_ERROR='';
-  }catch(e){if(session===SITE_SESSION_GENERATION)S12_EM_ERROR='Embellishment data unavailable';}
-  finally{S12_EM_LOADING=false;if(session===SITE_SESSION_GENERATION&&CURRENT_SLIDE===11)renderS12();}
+  }catch(e){if(current())S12_EM_ERROR='Embellishment data unavailable';}
+  finally{if(current()){S12_EM_LOADING=false;if(CURRENT_SLIDE===11)renderS12();}}
 }
 function s12CuttingWip(keys,cutByKey,sewingByKey,processKeys,embellishmentByKey){
   // A summary with Print/EMB uses its complete receive total minus input.
@@ -2674,33 +2677,21 @@ function ganttConditionVisible(condition,enabled,filter){
   return !enabled||!filter||condition===filter;
 }
 
-function renderS11(data){
-  if(!prepareSharedReportView(7))return;
-  if(typeof recordDashboardRender==='function')recordDashboardRender('7');
-  const selected='';
-  const master=getChassisMasterLines();
+let GANTT_INDEX_CACHE=null;
+function invalidateGanttIndex(){GANTT_INDEX_CACHE=null;}
+function getGanttIndex(master){
+  const sources=[DAILY_PLAN,CLOCK_HOUR_DATA,SAH_DATA,SEWING_IO_DATA,DATE_WISE_PRODUCTION_DATA,FABRIC_CUTTING_DATA];
+  const owner=typeof SITE_AUTH_USER==='undefined'?'':SITE_AUTH_USER?.id;
+  const generation=typeof SITE_SESSION_GENERATION==='undefined'?0:SITE_SESSION_GENERATION;
+  const key=[...master].join('|')+':'+String(ACTIVE_PLAN_UPLOAD?.id||'local');
+  if(GANTT_INDEX_CACHE&&GANTT_INDEX_CACHE.owner===owner&&GANTT_INDEX_CACHE.generation===generation&&GANTT_INDEX_CACHE.key===key&&sources.every((rows,i)=>rows===GANTT_INDEX_CACHE.sources[i]&&rows.length===GANTT_INDEX_CACHE.lengths[i])){
+    if(typeof recordDataCacheHit==='function')recordDataCacheHit('gantt.index');return GANTT_INDEX_CACHE.value;
+  }
+  const finish=typeof startDashboardTiming==='function'?startDashboardTiming('gantt.build'):()=>{};
   const allDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(Boolean))].sort();
-  const candidateDates=selected ? allDates.filter(d=>monthFromISO(d)===selected) : allDates;
-  const activeDateSet=new Set(DAILY_PLAN.filter(d=>candidateDates.includes(d.date)&&d.value>0&&master.has(Number(d.line))).map(d=>d.date));
-  const planDates=candidateDates.filter(d=>activeDateSet.has(d));
-  const planId=String(ACTIVE_PLAN_UPLOAD?.id||'local');
-  if(S11_RANGE_PLAN_ID!==planId){
-    S11_RANGE_PLAN_ID=planId;S11_RANGE_FROM=planDates[0]||'';S11_RANGE_TO=planDates.at(-1)||'';
-  }
-  const from=document.getElementById('s11-date-from'),to=document.getElementById('s11-date-to'),all=document.getElementById('s11-date-all');
-  for(const input of [from,to]){input.disabled=!planDates.length;input.min=planDates[0]||'';input.max=planDates.at(-1)||'';}
-  if(planDates.length){
-    const clamp=value=>!value||value<planDates[0]?planDates[0]:value>planDates.at(-1)?planDates.at(-1):value;
-    S11_RANGE_FROM=clamp(S11_RANGE_FROM);S11_RANGE_TO=clamp(S11_RANGE_TO);
-    if(S11_RANGE_FROM>S11_RANGE_TO)S11_RANGE_TO=S11_RANGE_FROM;
-  }
-  from.value=S11_RANGE_FROM;to.value=S11_RANGE_TO;all.disabled=!planDates.length;
-  S11_RANGE_NARROWED=!!planDates.length&&(S11_RANGE_FROM!==planDates[0]||S11_RANGE_TO!==planDates.at(-1));
-  const dates=planDates.filter(d=>d>=S11_RANGE_FROM&&d<=S11_RANGE_TO);
-  // Retain the complete plan for cumulative coverage, even when showing a short date range.
+  const activeDateSet=new Set(DAILY_PLAN.filter(d=>d.date&&d.value>0&&master.has(Number(d.line))).map(d=>d.date));
+  const planDates=allDates.filter(d=>activeDateSet.has(d));
   const scope=DAILY_PLAN.filter(d=>activeDateSet.has(d.date)&&d.value>0&&master.has(Number(d.line)));
-  document.getElementById('s11-month').textContent=activePlanningLabel();
-
   // Shared Gantt normalizers: function scope, available to aggregation, indexing and rendering.
   const normEwo=v=>{
     let z=String(v??'').trim().toUpperCase();
@@ -2728,10 +2719,28 @@ function renderS11(data){
     planColorQty.set(ck,(planColorQty.get(ck)||0)+N(d.value));
   });
 
-  const metricSum=(arr,line,ewo,month)=>arr
-    .filter(x=>Number(x.line)===Number(line)&&String(x.ewo)===String(ewo)&&(!month||x.month===month))
-    .reduce((s,x)=>s+N(x.total),0);
+  const clockByKey=new Map(),sahByKey=new Map(),smvByKey=new Map();
+  const sewingByLineEwo=new Map(),sewingByEwo=new Map(),fabricByEwo=new Map(),fabricByColor=new Map(),productionByCell=new Map(),colorsByEwo=new Map();
+  const add=(map,key,row)=>{if(!map.has(key))map.set(key,[]);map.get(key).push(row);};
+  const addColor=(ewo,color)=>{if(!colorsByEwo.has(ewo))colorsByEwo.set(ewo,new Set());const c=String(color||'').trim();if(c)colorsByEwo.get(ewo).add(c);};
+  for(const x of scope){const ewo=normEwo(x.ewo);addColor(ewo,x.color);const k=Number(x.line)+'|'+x.date+'|'+String(x.ewo||'').trim();if(N(x.smv)>0&&!smvByKey.has(k))smvByKey.set(k,x);}
+  for(const x of CLOCK_HOUR_DATA){for(const month of [x.month,'*']){const key=Number(x.line)+'|'+String(x.ewo)+'|'+month;clockByKey.set(key,(clockByKey.get(key)??0)+N(x.total));}}
+  for(const x of SAH_DATA){for(const month of [x.month,'*']){const key=Number(x.line)+'|'+String(x.ewo)+'|'+month;if(!sahByKey.has(key))sahByKey.set(key,x);}}
+  for(const x of FABRIC_CUTTING_DATA||[]){const ew=normEwo(x.ewo);add(fabricByEwo,ew,x);add(fabricByColor,JSON.stringify([ew,normColor(x.color_name)]),x);addColor(ew,x.color_name);}
+  for(const x of SEWING_IO_DATA){const ew=normEwo(x.ewo);add(sewingByLineEwo,Number(x.line_no)+'|'+ew,x);add(sewingByEwo,ew,x);addColor(ew,x.color);}
+  for(const x of DATE_WISE_PRODUCTION_DATA||[]){const ew=normEwo(x.ewo);add(productionByCell,Number(x.line_no)+'|'+String(x.output_date||'').slice(0,10)+'|'+ew,x);addColor(ew,x.color);}
+  const colorsByCell=new Map();
+  // Match the existing prefix lookup, including literal pipes in source color/EWO text.
+  for(const k of ewoQty.keys())colorsByCell.set(k,[]);
+  for(const [ck,cq] of planColorQty){let pos=ck.lastIndexOf('|');while(pos>=0){const key=ck.slice(0,pos);if(colorsByCell.has(key))colorsByCell.get(key).push({color:ck.slice(pos+1),qty:N(cq)});pos=ck.lastIndexOf('|',pos-1);}}
 
+  const sumRows=(map,fields)=>new Map([...map].map(([key,rows])=>[key,Object.fromEntries(fields.map(field=>[field,rows.reduce((a,x)=>a+N(x[field]),0)]))]));
+  const sewingTotals=sumRows(sewingByLineEwo,['input','output','wip','reject']),inputTotals=sumRows(sewingByEwo,['input']),fabricTotals=sumRows(fabricByEwo,['cutable_qty','total_cut_qty']),productionTotals=sumRows(productionByCell,['total_qty']);
+  const sortedColors=new Map([...colorsByEwo].map(([key,colors])=>[key,[...colors].sort((a,b)=>a.localeCompare(b))]));
+  const cuttingComments=new Map([...fabricByColor].map(([key,rows])=>{
+    const text=field=>[...new Set(rows.map(x=>String(x[field]??'').trim()).filter(Boolean))].join(' | ')||'—';
+    return [key,{styleEmb:text('style_embellishment_type'),status:text('status'),difficulties:text('cutting_difficulties')}];
+  }));
   const cellEntries=new Map();
   ewoQty.forEach((qty,k)=>{
     const p=k.split('|'),line=Number(p[0]),date=p[1],ewo=p.slice(2).join('|');
@@ -2742,91 +2751,55 @@ function renderS11(data){
     // Do NOT use monthly SAH/Day total here.
     let smv=N(m.smv);
     if(smv<=0){
-      const dp=scope.find(x=>Number(x.line)===line&&x.date===date&&String(x.ewo||'').trim()===ewo&&N(x.smv)>0);
+      const dp=smvByKey.get(line+'|'+date+'|'+ewo);
       if(dp)smv=N(dp.smv);
     }
     const sah=qty*smv/60;
-    const clock=metricSum(CLOCK_HOUR_DATA,line,ewo,month);
+    const clock=(clockByKey.get(line+'|'+ewo+'|'+(month||'*'))??0);
     const eff=clock>0?sah/clock*100:0;
     // Resolve Color from THIS exact Plan Line + Date + EWO cell.
     // If the same EWO has multiple colors on the same line/date, use the color
     // carrying the highest Plan Qty for that cell (stable alphabetical tie-break).
-    const colorPrefix=k+'|';
-    const colorCandidates=[];
-    planColorQty.forEach((cq,ck)=>{
-      if(ck.startsWith(colorPrefix))colorCandidates.push({color:ck.slice(colorPrefix.length),qty:N(cq)});
-    });
+    const colorCandidates=colorsByCell.get(k)||[];
     colorCandidates.sort((a,b)=>b.qty-a.qty || String(a.color).localeCompare(String(b.color)));
     let color=colorCandidates.length?colorCandidates[0].color:(m.color||'');
     if(!color){
-      const sr=SAH_DATA.find(x=>Number(x.line)===line&&String(x.ewo)===String(ewo)&&(!month||x.month===month));
+      const sr=sahByKey.get(line+'|'+ewo+'|'+(month||'*'));
       if(sr)color=sr.color||'';
     }
     const ganttColor=normColor(color);
 
     // EWO-wise reconciliation: Color is informational only, never a calculation key.
     // Sewing metrics = exact Line + EWO, summed across every Color.
-    const sio=SEWING_IO_DATA.filter(x=>
-      Number(x.line_no)===line &&
-      normEwo(x.ewo)===normEwo(ewo)
-    );
-    const sewingInput=sio.reduce((a,x)=>a+N(x.input),0);
-    const sewingOutput=sio.reduce((a,x)=>a+N(x.output),0);
-    const sewingWip=sio.reduce((a,x)=>a+N(x.wip),0);
-    const sewingReject=sio.reduce((a,x)=>a+N(x.reject),0);
+    const sio=sewingByLineEwo.get(line+'|'+normEwo(ewo))||[];
+    const sewingInput=(sewingTotals.get(line+'|'+normEwo(ewo))?.input??0);
+    const sewingOutput=(sewingTotals.get(line+'|'+normEwo(ewo))?.output??0);
+    const sewingWip=(sewingTotals.get(line+'|'+normEwo(ewo))?.wip??0);
+    const sewingReject=(sewingTotals.get(line+'|'+normEwo(ewo))?.reject??0);
 
     // Exact Date Wise Production match:
     // SAME Line + SAME Output Date + SAME EWO, across all Colors.
     // The production report may contain multiple PO / Color rows for that key,
     // therefore Total Qty is summed once across every exact matching source row.
-    const normProdEwo=v=>{
-      let z=String(v??'').trim().toUpperCase();
-      if(/^\d+\.0+$/.test(z))z=z.replace(/\.0+$/,'');
-      return z;
-    };
-    const productionMatches=(DATE_WISE_PRODUCTION_DATA||[]).filter(x=>
-      Number(x.line_no)===Number(line) &&
-      String(x.output_date||'').slice(0,10)===String(date||'').slice(0,10) &&
-      normProdEwo(x.ewo)===normProdEwo(ewo)
-    );
-    const productionQty=productionMatches.reduce((a,x)=>a+N(x.total_qty),0);
+    const productionMatches=productionByCell.get(Number(line)+'|'+String(date||'').slice(0,10)+'|'+normEwo(ewo))||[];
+    const productionQty=(productionTotals.get(Number(line)+'|'+String(date||'').slice(0,10)+'|'+normEwo(ewo))?.total_qty??0);
 
     // Cut Qty = EWO total across every Color (not line/date scoped).
-    const fcMatches=(FABRIC_CUTTING_DATA||[]).filter(x=>
-      normEwo(x.ewo)===normEwo(ewo)
-    );
-    const cutableQty=fcMatches.reduce((a,x)=>a+N(x.cutable_qty),0);
-    const cutQty=fcMatches.reduce((a,x)=>a+N(x.total_cut_qty),0);
+    const fcMatches=fabricByEwo.get(normEwo(ewo))||[];
+    const cutableQty=(fabricTotals.get(normEwo(ewo))?.cutable_qty??0);
+    const cutQty=(fabricTotals.get(normEwo(ewo))?.total_cut_qty??0);
 
     // Cutting WIP = EWO Total Cut Qty - EWO Total Sewing Input.
     // All lines and all colors are combined; no Line/Date/Color filter here.
-    const cuttingInputMatches=(SEWING_IO_DATA||[]).filter(x=>
-      normEwo(x.ewo)===normEwo(ewo)
-    );
-    const cuttingTotalSewingInput=cuttingInputMatches.reduce((sum,x)=>sum+N(x.input),0);
+    const cuttingTotalSewingInput=(inputTotals.get(normEwo(ewo))?.input??0);
     const cuttingWip=Math.max(0,cutQty-cuttingTotalSewingInput);
 
     // Informational only: show every known color for this EWO.
-    const ewoColors=[...new Set([
-      ...scope.filter(x=>normEwo(x.ewo)===normEwo(ewo)).map(x=>String(x.color||'').trim()),
-      ...(FABRIC_CUTTING_DATA||[]).filter(x=>normEwo(x.ewo)===normEwo(ewo)).map(x=>String(x.color_name||'').trim()),
-      ...(SEWING_IO_DATA||[]).filter(x=>normEwo(x.ewo)===normEwo(ewo)).map(x=>String(x.color||'').trim()),
-      ...(DATE_WISE_PRODUCTION_DATA||[]).filter(x=>normEwo(x.ewo)===normEwo(ewo)).map(x=>String(x.color||'').trim())
-    ].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    const ewoColors=sortedColors.get(normEwo(ewo))||[];
 
     // Informational Cutting comments ONLY: exact EWO + exact Gantt Color.
     // These fields do not participate in any quantity, WIP, coverage, winner or color calculation.
-    const exactColorCuttingMatches=(FABRIC_CUTTING_DATA||[]).filter(x=>
-      normEwo(x.ewo)===normEwo(ewo) &&
-      normColor(x.color_name)===ganttColor
-    );
-    const uniqueCutText=field=>[...new Set(exactColorCuttingMatches
-      .map(x=>String(x[field]??'').trim()).filter(Boolean))].join(' | ')||'—';
-    const cuttingComment={
-      styleEmb:uniqueCutText('style_embellishment_type'),
-      status:uniqueCutText('status'),
-      difficulties:uniqueCutText('cutting_difficulties')
-    };
+    const cuttingComment=cuttingComments.get(JSON.stringify([normEwo(ewo),ganttColor]))||{styleEmb:'—',status:'—',difficulties:'—'};
 
     const item={ewo,qty,buyer:m.buyer||'',style:m.style||'',color,planColors:colorCandidates,ewoColors,sah,clock,eff,
       sewingInput,sewingOutput,sewingWip,sewingReject,sewingRows:sio.length,
@@ -2838,20 +2811,6 @@ function renderS11(data){
   });
 
   cellEntries.forEach(items=>items.sort((a,b)=>b.qty-a.qty||a.ewo.localeCompare(b.ewo,undefined,{numeric:true})));
-
-  const allLines=[...master].map(Number).filter(n=>n>0&&n!==46).sort((a,b)=>a-b);
-  const searchEwo=String(GANTT_EWO_SEARCH||'').trim().toUpperCase();
-  const selectedLine=Number(GANTT_LINE_FILTER)||0;
-  const lines=allLines.filter(line=>{
-    if(selectedLine && line!==selectedLine)return false;
-    if(!searchEwo)return true;
-    return dates.some(date=>{
-      return (cellEntries.get(line+'|'+date)||[]).some(w=>normEwo(w.ewo)===searchEwo);
-    });
-  });
-  const displayDates=searchEwo
-    ? dates.filter(date=>lines.some(line=>(cellEntries.get(line+'|'+date)||[]).some(w=>normEwo(w.ewo)===searchEwo)))
-    : dates;
 
   // Pre-index latest production date once per Line+EWO.
   // This avoids rescanning thousands of production rows for every Gantt cell.
@@ -2881,6 +2840,50 @@ function renderS11(data){
     ewoCoverage.get(k).push({date:dt,qty:N(cw.qty)});
   }));
   ewoCoverage.forEach(arr=>arr.sort((a,b)=>a.date.localeCompare(b.date)));
+
+  const cumulativeDemand=new Map();
+  for(const [key,rows] of ewoCoverage){let total=0;const byDate=new Map();for(const row of rows){if(actualProductionDate&&row.date<=actualProductionDate)continue;total+=N(row.qty);byDate.set(row.date,total);}cumulativeDemand.set(key,byDate);}
+  const value={planDates,activeDateSet,cellEntries,latestProdByLineEwo,actualProductionDate,cumulativeDemand,normEwo};
+  GANTT_INDEX_CACHE={sources,lengths:sources.map(rows=>rows.length),key,owner,generation,value};
+  finish({cells:cellEntries.size,rows:scope.length});return value;
+}
+
+function renderS11(data){
+  if(!prepareSharedReportView(7))return;
+  if(typeof recordDashboardRender==='function')recordDashboardRender('7');
+  const finishRender=typeof startDashboardTiming==='function'?startDashboardTiming('gantt.render'):()=>{};
+  const master=getChassisMasterLines();
+  const {planDates,cellEntries,latestProdByLineEwo,actualProductionDate,cumulativeDemand,normEwo}=getGanttIndex(master);
+  const planId=String(ACTIVE_PLAN_UPLOAD?.id||'local');
+  if(S11_RANGE_PLAN_ID!==planId){
+    S11_RANGE_PLAN_ID=planId;S11_RANGE_FROM=planDates[0]||'';S11_RANGE_TO=planDates.at(-1)||'';
+  }
+  const from=document.getElementById('s11-date-from'),to=document.getElementById('s11-date-to'),all=document.getElementById('s11-date-all');
+  for(const input of [from,to]){input.disabled=!planDates.length;input.min=planDates[0]||'';input.max=planDates.at(-1)||'';}
+  if(planDates.length){
+    const clamp=value=>!value||value<planDates[0]?planDates[0]:value>planDates.at(-1)?planDates.at(-1):value;
+    S11_RANGE_FROM=clamp(S11_RANGE_FROM);S11_RANGE_TO=clamp(S11_RANGE_TO);
+    if(S11_RANGE_FROM>S11_RANGE_TO)S11_RANGE_TO=S11_RANGE_FROM;
+  }
+  from.value=S11_RANGE_FROM;to.value=S11_RANGE_TO;all.disabled=!planDates.length;
+  S11_RANGE_NARROWED=!!planDates.length&&(S11_RANGE_FROM!==planDates[0]||S11_RANGE_TO!==planDates.at(-1));
+  const dates=planDates.filter(d=>d>=S11_RANGE_FROM&&d<=S11_RANGE_TO);
+  // Retain the complete plan for cumulative coverage, even when showing a short date range.
+  document.getElementById('s11-month').textContent=activePlanningLabel();
+
+  const allLines=[...master].map(Number).filter(n=>n>0&&n!==46).sort((a,b)=>a-b);
+  const searchEwo=String(GANTT_EWO_SEARCH||'').trim().toUpperCase();
+  const selectedLine=Number(GANTT_LINE_FILTER)||0;
+  const lines=allLines.filter(line=>{
+    if(selectedLine && line!==selectedLine)return false;
+    if(!searchEwo)return true;
+    return dates.some(date=>{
+      return (cellEntries.get(line+'|'+date)||[]).some(w=>normEwo(w.ewo)===searchEwo);
+    });
+  });
+  const displayDates=searchEwo
+    ? dates.filter(date=>lines.some(line=>(cellEntries.get(line+'|'+date)||[]).some(w=>normEwo(w.ewo)===searchEwo)))
+    : dates;
 
   const dateLabel=d=>{const dt=new Date(d+'T00:00:00');return String(dt.getDate()).padStart(2,'0')+'-'+dt.toLocaleString('en-US',{month:'short'})+'-'+String(dt.getFullYear()).slice(-2)};
   const s11Count=document.getElementById('s11-count'); if(s11Count)s11Count.textContent=lines.length+' Teams · '+displayDates.length+' active days'+(actualProductionDate?' · Actual Production Report updated through: '+dateLabel(actualProductionDate):'');
@@ -2929,13 +2932,7 @@ function renderS11(data){
 
       let wipCovered=false,cuttingCovered=false,cutableCovered=false,materialShort=false;
       if(afterProductionCutoff){
-        const sameLineEwoFuture=(ewoCoverage.get(coverageKey)||[]);
-        let cumulativePlan=0;
-        for(const fp of sameLineEwoFuture){
-          if(latestProductionDate && fp.date<=latestProductionDate)continue;
-          if(fp.date>thisDate)break;
-          cumulativePlan+=N(fp.qty);
-        }
+        const cumulativePlan=cumulativeDemand.get(coverageKey)?.get(thisDate)||0;
         // Sequential/additive stock consumption:
         // 1) cumulative Plan consumes Sewing WIP first;
         // 2) only the uncovered balance consumes Cutting WIP;
@@ -2985,6 +2982,7 @@ function renderS11(data){
     });
   }
   if(typeof GANTT_ACTION_TAB!=='undefined'&&GANTT_ACTION_TAB!=='gantt')renderGanttActionCalendar();
+  finishRender({lines:lines.length,dates:displayDates.length});
 }
 
 function renderS7(data){
@@ -3851,6 +3849,7 @@ async function siteLogout(){
   SITE_AUTH_USER=null; // Prevent reset callbacks from starting new report reads during logout.
   invalidateSharedReports();
   invalidateTinySettings();
+  invalidateDataCache();DATA_CACHE_VERSIONS.clear();EWO_SOURCE_SNAPSHOT_FENCES.clear();invalidateGanttIndex();
   cancelDashboardDebounces();
   DATA=[];DAILY_PLAN=[];SAH_DATA=[];SAH_DAILY=[];CLOCK_HOUR_DATA=[];CLOCK_HOUR_DAILY=[];BUYER_PLAN_DATA=[];MONTHS=[];
   FABRIC_CUTTING_DATA=[];SEWING_IO_DATA=[];DATE_WISE_PRODUCTION_DATA=[];S12_EM_ROWS=null;S12_EM_ERROR='';
@@ -4055,19 +4054,31 @@ async function uploadNewPlan(){
 
 async function refreshDashboardAfterSuccessfulUpload(source,options={}){
   setSupabaseLiveBadge('','Supabase · refreshing after upload…');
-  await clearDashboardCache();
-  invalidateSharedReports();
-  resetGanttHoverCache();
-  PLAN_VERSION_CACHE.clear();
-  if(!await loadFromSupabase(options.planUploadId||null,true))throw Error('Dashboard refresh failed after upload');
+  const session=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
+  const current=()=>session===SITE_SESSION_GENERATION&&userId===SITE_AUTH_USER?.id;
+  const dep=invalidateUploadDependencies(source);
+  if(dep.planning){
+    await clearDashboardCache();if(!current())return;
+    if(!await loadFromSupabase(options.planUploadId||null,true))throw Error('Dashboard refresh failed after upload');
+  }
+  if(!current())return;
   if(source==='orderbank'){
     ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];ORDER_BANK_FILTERS={};ORDER_BANK_EWO_SEARCH='';ORDER_BANK_PAGE=1;
     if(CURRENT_SLIDE===14)await loadOrderBankSlide();
-    if(CURRENT_SLIDE===16)await loadOrderExecutionSlide(true);
+    if(CURRENT_SLIDE===16)await loadOrderExecutionSlide();
   }
-  if(source==='floor' && typeof loadFloorAllocationAdmin==='function'){invalidateTinySettings(['floor']);await loadFloorAllocationAdmin();}
-  if(canAccessSlide(CURRENT_SLIDE))await ensureSharedReports(sharedReportsForSlide(CURRENT_SLIDE));
-  if(CURRENT_SLIDE!==14 && canAccessSlide(CURRENT_SLIDE))renderSlide(CURRENT_SLIDE);
+  if(source==='floor'&&typeof loadFloorAllocationAdmin==='function')await loadFloorAllocationAdmin();
+  if(!current())return;
+  if(dep.reports){
+    // Revalidate only report dependencies of the currently visible feature.
+    if(canAccessSlide(CURRENT_SLIDE))await ensureSharedReports(sharedReportsForSlide(CURRENT_SLIDE));
+    saveFastBootCache();await saveDashboardCache();
+  }
+  if(!current())return;
+  if(CURRENT_SLIDE===21&&canAccessSlide(21)){
+    if(dep.readiness)await loadEWOReadinessBoard(dep.coverage===true);
+    else if(dep.coverage)await loadReadyInputCoverage();
+  }else if((dep.reports||source==='embellishment')&&[7,11].includes(CURRENT_SLIDE)&&canAccessSlide(CURRENT_SLIDE))renderSlide(CURRENT_SLIDE);
   setSupabaseLiveBadge('ok','Supabase Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
 }
 
@@ -4717,7 +4728,7 @@ const ORDER_BANK_SOURCE_COLUMNS=[
 ];
 const ORDER_BANK_FILTER_COLUMNS=['Buyer','Dept','EWO','PO','GmtColor','Description','Destination','Season','ExecutionUnit','Ordertype','OrderStatus','MMTeam','Month'];
 const ORDER_BANK_PAGE_SIZE=100;
-let ORDER_BANK_RAW_ROWS=[];
+let ORDER_BANK_RAW_ROWS=[],ORDER_BANK_LOAD_TOKEN=0;
 let ORDER_BANK_KEYMAP=new Map();
 let ORDER_BANK_DISPLAY_COLUMNS=[...ORDER_BANK_SOURCE_COLUMNS];
 let ORDER_BANK_FILTERS={};
@@ -4871,24 +4882,14 @@ function renderOrderBankView(rebuildFilters=false){
   renderOrderBankPage();
 }
 async function loadOrderBankSlide(){
-  const sessionGeneration=SITE_SESSION_GENERATION;
+  const sessionGeneration=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id,token=++ORDER_BANK_LOAD_TOKEN;
+  const current=()=>sessionGeneration===SITE_SESSION_GENERATION&&userId===SITE_AUTH_USER?.id&&token===ORDER_BANK_LOAD_TOKEN;
   const msg=document.getElementById('order-bank-msg'),box=document.getElementById('order-bank-table'),k=document.getElementById('order-bank-kpis');
   if(!box)return;
   if(msg)msg.textContent='Loading complete raw SQL snapshot…';
   try{
-    const pageSize=1000,all=[];let snapshotId=null;
-    for(let from=0;;from+=pageSize){
-      // Pin subsequent pages to the first batch, even if another upload becomes latest.
-      let query=SB.from(snapshotId===null?'order_bank_latest_all':'order_bank_raw').select('*');
-      if(snapshotId!==null)query=query.eq('upload_batch_id',snapshotId);
-      const {data,error}=await query.order('source_row_no',{ascending:true}).range(from,from+pageSize-1);
-      if(error)throw error;
-      if(sessionGeneration!==SITE_SESSION_GENERATION)return;
-      const page=data||[];all.push(...page);
-      if(snapshotId===null&&page.length)snapshotId=page[0].upload_batch_id;
-      if(msg)msg.textContent=`Loading raw SQL… ${fmt(all.length)} rows`;
-      if(page.length<pageSize)break;
-    }
+    const all=await loadOrderBankSnapshot();
+    if(!current())return;
     // New imports carry the exact source headers and cells; legacy snapshots use 40 columns.
     const columns=all[0]?.source_columns||ORDER_BANK_SOURCE_COLUMNS;
     const flexible=Array.isArray(all[0]?.source_columns)&&columns.length>0;
@@ -4912,8 +4913,8 @@ async function loadOrderBankSlide(){
       <div class="kpi"><div class="kpi-lbl">TABLE PAGE</div><div class="kpi-val">${ORDER_BANK_PAGE_SIZE}</div><div class="kpi-sub">Rows rendered at once</div></div>`;
     renderOrderBankView(true);
   }catch(e){
+    if(!current())return;
     if(msg)msg.textContent='Load failed';
-    if(sessionGeneration!==SITE_SESSION_GENERATION)return;
     box.innerHTML=`<div class="modal-msg">Order Bank raw SQL load failed: ${esc(e?.message||e)}</div>`;
   }
 }

@@ -9,8 +9,9 @@ function context(c,names){vm.createContext(c);for(const n of names)vm.runInConte
   c.EFF15_METRIC_UPLOAD_ID='B';c.fetchPlanningSnapshot=()=>{throw Error('Unexpected duplicate SQL fetch');};assert.equal(await c.loadEff15ExactMetricSource(),true);
   console.log('PASS stale Slide 15 request discarded; current snapshot avoids repeat download');
   let cleared,removed=[];const l=context({dashboardCacheKey:()=> 'user-A',fastBootCacheKey:()=> 'fast-A',SITE_SESSION_GENERATION:0,SUPABASE_LOAD_TOKEN:0,PLAN_FILTER_TOKEN:0,EFF15_FR_TOKEN:0,DATA:[1],PLAN_VERSION_CACHE:new Map([['A',1]]),SITE_AUTH_USER:{id:'A'},SITE_USER_PROFILE:{},SITE_BOOTED:true,SB:{auth:{signOut:async()=>{}}},clearDashboardCache:async key=>cleared=key,sessionStorage:{removeItem:k=>removed.push(k)},indexedDB:{deleteDatabase:k=>removed.push(k)},document:{getElementById:()=>({value:''})},showSiteLogin(){},console},['siteLogout']);
-  l.closeS2LineDetails=()=>{};l.resetOrderExecutionSlide=()=>{};l.resetGanttHoverCache=()=>{};
+  l.closeS2LineDetails=()=>{};l.resetOrderExecutionSlide=()=>{};l.resetGanttHoverCache=()=>{};l.invalidateGanttIndex=()=>{};
   l.setTimeout=setTimeout;l.clearTimeout=clearTimeout;
+  vm.runInContext(fs.readFileSync(__dirname+'/../data-cache.js','utf8'),l);
   vm.runInContext(fs.readFileSync(__dirname+'/../frontend-runtime.js','utf8'),l);
   vm.runInContext(fs.readFileSync(__dirname+'/../shared-report-loader.js','utf8'),l);
   vm.runInContext("SHARED_REPORT_LOADS.set('fabric',{loaded:true,generation:0,userId:'A'})",l);
