@@ -20,6 +20,7 @@ function resetReadyInputCoverage(){
   renderReadyInputCoverage();
 }
 function renderReadyInputCoverage(){
+  if(typeof recordDashboardRender==='function')recordDashboardRender('coverage');
   const body=document.getElementById('rc-body'),msg=document.getElementById('rc-msg'),windowLabel=document.getElementById('rc-window');
   if(!body||!msg||!windowLabel)return;
   const authorized=SITE_AUTH_USER&&canAccessSlide(21);

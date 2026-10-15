@@ -1,5 +1,5 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const html=require('./dashboard-source.js').readDashboardHTML();
 const source=html.slice(html.indexOf('function buildS6Rows('),html.indexOf('/* ══ SLIDE 7:',html.indexOf('function buildS6Rows(')));
 const nodes=new Map();
 const document={getElementById(id){if(!nodes.has(id))nodes.set(id,{value:'',innerHTML:'',textContent:'',dataset:{}});return nodes.get(id);}};

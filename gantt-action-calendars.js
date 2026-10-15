@@ -2,11 +2,10 @@
 const GANTT_ACTION_NAMES={pcd:'PCD',psd:'PSD',size:'Size Set',accessories:'Accessories',print:'Print',embroidery:'Embroidery',cutting:'Cutting'};
 const GANTT_ACTION_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const GANTT_ACTION_CACHE=new Map();
-const GANTT_PSD_SOURCE_CACHE=new Map();
 let GANTT_ACTION_TAB='gantt',GANTT_ACTION_MONTH='',GANTT_ACTION_DAY=0,GANTT_ACTION_REQUEST=0;
 let GANTT_ACTION_VISIBLE=[],GANTT_ACTION_NOTICE='';
-function resetGanttActionCache(){GANTT_ACTION_CACHE.clear();GANTT_PSD_SOURCE_CACHE.clear();++GANTT_ACTION_REQUEST;if(GANTT_ACTION_TAB!=='gantt')renderGanttActionCalendar();}
-function ganttActionRefresh(){GANTT_ACTION_CACHE.delete(GANTT_ACTION_TAB);GANTT_PSD_SOURCE_CACHE.clear();GANTT_ACTION_NOTICE='Reloaded active SQL report.';renderGanttActionCalendar();}
+function resetGanttActionCache(){GANTT_ACTION_CACHE.clear();++GANTT_ACTION_REQUEST;if(GANTT_ACTION_TAB!=='gantt')renderGanttActionCalendar();}
+function ganttActionRefresh(){invalidateEwoSources();invalidateDataCache([...VERSIONED_DATA_CACHE.keys()].filter(key=>key.startsWith('hover:')));GANTT_ACTION_CACHE.clear();GANTT_ACTION_NOTICE='Reloaded active SQL report.';renderGanttActionCalendar();}
 function ganttActionToday(){
   const now=new Date(),key=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   const select=document.getElementById('action-month-select');
@@ -41,14 +40,9 @@ function ganttActionDate(raw){
   return {year:y,month:m,day:d,key:(y||'undated')+'-'+String(m).padStart(2,'0'),label:d+' '+GANTT_ACTION_MONTHS[m-1]+(y?' '+y:' (year not supplied)')};
 }
 async function ganttActionSqlRows(table,select){
-  const result=[],size=500;
-  for(let from=0;;from+=size){
-    const {data,error}=await SB.from(table).select(select).eq('is_active',true).order('source_row_no',{ascending:true}).range(from,from+size-1);
-    if(error)throw error;
-    result.push(...(data||[]));if(!data||data.length<size)break;
-  }
-  return result;
+  return loadEwoSource({size_set_rows:'size',accessories_rows:'accessories',embellishment_send_receive_rows:'embellishment'}[table]);
 }
+
 function ganttActionAdd(events,raw,ewo,line,color,action,detail,source){
   const date=ganttActionDate(raw);if(!date||!String(ewo??'').trim())return;
   events.push({date,ewo:String(ewo).trim(),line:String(line??'').trim(),color:String(color??'').trim(),action:String(action??'').trim(),detail:String(detail??'').trim(),source});
@@ -88,16 +82,10 @@ async function ganttPsdPaged(build){
     all.push(...(data||[]));if(!data||data.length<500)break;}return all;
 }
 async function ganttPsdSources(ewos){
-  const ids=[...new Set(ewos.map(ganttKey))].filter(Boolean).sort(),key=ids.join('|');
-  const saved=GANTT_PSD_SOURCE_CACHE.get(key);if(saved&&Date.now()-saved.at<60000)return saved.promise;
-  const promise=Promise.allSettled([
-    ganttPsdPaged(()=>SB.from('order_bank_latest_all').select('EWO,GmtColor,OrderQty').in('EWO',ids)),
-    ganttActionSqlRows('size_set_rows','row_data'),
-    ganttPsdPaged(()=>SB.from('embellishment_send_receive_rows').select('"Date","EWO No","Color","Today Print Send Qty\n"," Today Print Receive Qty","Today EMB Send Qty","Today EMB Receive Qty"').eq('is_active',true).in('EWO No',ids).order('source_row_no',{ascending:true}))
-  ]);
-  GANTT_PSD_SOURCE_CACHE.set(key,{at:Date.now(),promise});
-  return promise;
+  const ids=[...new Set(ewos.map(ganttKey))].filter(Boolean).sort();
+  return Promise.allSettled([loadEwoSource('orderbank',ids),loadEwoSource('size'),loadEwoSource('embellishment',ids)]);
 }
+
 function ganttPsdDateKey(date){return date?.year?`${date.year}-${String(date.month).padStart(2,'0')}-${String(date.day).padStart(2,'0')}`:'';}
 function ganttPsdStatus(rows,field){return [...new Set(rows.map(r=>String(r.row_data?.[field]||'').trim()).filter(Boolean))].join(' · ')||'—';}
 function ganttPsdFlag(flags){return flags?.has('yes')?'Yes':flags?.has('no')?'No':'—';}
@@ -214,7 +202,7 @@ async function copyGanttPsdTableImage(){
   const label=button.textContent;
   button.disabled=true;button.textContent='Capturing…';
   try{
-    if(typeof html2canvas!=='function')throw Error('Screenshot library unavailable');
+    const html2canvas=await ensureHtml2Canvas();
     const table=section.querySelector('.psd-table');
     const fullWidth=Math.ceil(Math.max(section.scrollWidth,table?.scrollWidth||0));
     const canvas=await html2canvas(section,{backgroundColor:'#ffffff',scale:Math.min(2,window.devicePixelRatio||2),useCORS:true,logging:false,
@@ -244,7 +232,7 @@ async function copyGanttPsdSummaryImage(){
   const label=button.textContent;
   button.disabled=true;button.textContent='Capturing…';
   try{
-    if(typeof html2canvas!=='function')throw Error('Screenshot library unavailable');
+    const html2canvas=await ensureHtml2Canvas();
     const table=section.querySelector('.psd-summary-table');
     const fullWidth=Math.ceil(Math.max(section.scrollWidth,table?.scrollWidth||0)+24);
     const canvas=await html2canvas(section,{backgroundColor:'#ffffff',scale:Math.min(2,window.devicePixelRatio||2),useCORS:true,logging:false,
@@ -405,7 +393,7 @@ async function ganttActionEvents(tab){
     return events;
   }
   const saved=GANTT_ACTION_CACHE.get(tab);
-  if(saved&&Date.now()-saved.at<60000)return saved.promise;
+  if(saved&&saved.userId===SITE_AUTH_USER?.id&&saved.generation===SITE_SESSION_GENERATION&&Date.now()-saved.at<60000){recordDataCacheHit('calendar:'+tab);return saved.promise;}
   const promise=(async()=>{
     const events=[];
     if(tab==='size'){
@@ -433,8 +421,8 @@ async function ganttActionEvents(tab){
     }
     return events;
   })();
-  GANTT_ACTION_CACHE.set(tab,{promise,at:Date.now()});
-  try{return await promise;}catch(error){GANTT_ACTION_CACHE.delete(tab);throw error;}
+  const entry={promise,at:Date.now(),userId:SITE_AUTH_USER?.id,generation:SITE_SESSION_GENERATION};GANTT_ACTION_CACHE.set(tab,entry);
+  try{return await promise;}catch(error){if(GANTT_ACTION_CACHE.get(tab)===entry)GANTT_ACTION_CACHE.delete(tab);throw error;}
 }
 function showGanttActionTab(tab){
   if(tab!=='gantt'&&!GANTT_ACTION_NAMES[tab])return;
@@ -461,6 +449,7 @@ function ganttActionMoveMonth(delta){
 async function renderGanttActionCalendar(){
   const tab=GANTT_ACTION_TAB,token=++GANTT_ACTION_REQUEST,body=document.getElementById('gantt-action-body');
   if(!body||tab==='gantt')return;
+  if(!prepareSharedReportView(7)){body.innerHTML='<p class="action-note">Loading Gantt reports…</p>';return;}
   body.innerHTML='<p class="action-note">Loading '+esc(GANTT_ACTION_NAMES[tab])+' dates…</p>';
   try{
     let events=await ganttActionEvents(tab);if(token!==GANTT_ACTION_REQUEST)return;

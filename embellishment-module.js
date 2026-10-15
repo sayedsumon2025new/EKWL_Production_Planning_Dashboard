@@ -90,6 +90,7 @@ function embellishmentSetRows(rows,fileName,uploadedAt='',mode='sql'){
   renderEmbellishmentModule();
 }
 function renderEmbellishmentModule(){
+  if(typeof recordDashboardRender==='function')recordDashboardRender('embellishment');
   const table=document.getElementById('em-table');if(!table)return;
   const date=document.getElementById('em-date')?.value||'';
   const buyer=document.getElementById('em-buyer')?.value||'';
@@ -124,7 +125,7 @@ function renderEmbellishmentModule(){
 }
 function embellishmentPage(n){EM_PAGE=n;renderEmbellishmentModule();document.getElementById('em-table')?.scrollTo({top:0,left:0});}
 function embellishmentFiltersChanged(){EM_PAGE=1;renderEmbellishmentModule();}
-function embellishmentSearchChanged(){clearTimeout(EM_SEARCH_TIMER);EM_SEARCH_TIMER=setTimeout(embellishmentFiltersChanged,150);}
+function embellishmentSearchChanged(){clearTimeout(EM_SEARCH_TIMER);EM_SEARCH_TIMER=setTimeout(embellishmentFiltersChanged,275);}
 function clearEmbellishmentFilters(){for(const id of ['em-date','em-buyer','em-team','em-search']){
   const node=document.getElementById(id);if(node)node.value='';
 }embellishmentFiltersChanged();}
@@ -140,24 +141,18 @@ async function previewEmbellishmentFile(){
 }
 async function loadEmbellishmentModule(force=false){
   if(EM_MODE==='preview'&&!force){renderEmbellishmentModule();return;}
-  if(!force&&EM_ROWS.length&&EM_MODE==='sql'){renderEmbellishmentModule();return;}
+  if(!force&&dataCacheEntry('snapshot:embellishment')?.loaded&&dataCacheEntry('snapshot:embellishment').value===EM_ROWS&&EM_MODE==='sql'){recordDataCacheHit('snapshot:embellishment');renderEmbellishmentModule();return;}
   const token=++EM_LOAD_TOKEN,session=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   if(!userId||!canAccessSlide(19))return;
   emMessage('em-msg','Loading Embellishment SQL snapshot…');
   try{
-    const rows=[];
-    for(let offset=0;;offset+=1000){
-      const {data,error}=await SB.from('embellishment_send_receive_rows').select('*').eq('is_active',true)
-        .order('source_row_no',{ascending:true}).range(offset,offset+999);
-      if(error)throw error;
-      if(token!==EM_LOAD_TOKEN||session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
-      rows.push(...(data||[]));if((data||[]).length<1000)break;
-    }
+    const rows=await loadActiveModuleRows('embellishment',force);
+    if(token!==EM_LOAD_TOKEN||session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
     embellishmentSetRows(rows,rows[0]?.file_name||'',rows[0]?.uploaded_at||'','sql');
     S12_EM_ROWS=rows;S12_EM_ERROR='';if(CURRENT_SLIDE===11)renderS12();
     if(!rows.length)emMessage('em-msg','No SQL snapshot yet. Upload the CSV in Upload / Data Control.');
   }catch(error){
-    if(token!==EM_LOAD_TOKEN||session!==SITE_SESSION_GENERATION)return;
+    if(token!==EM_LOAD_TOKEN||session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
     emMessage('em-msg','SQL load failed');
     const tableError=document.getElementById('em-table');
     if(tableError)tableError.innerHTML=`<div class="modal-msg">${esc(error?.message||error)}</div>`;
@@ -189,8 +184,9 @@ async function uploadEmbellishmentFile(){
     if(data?.status!=='SUCCESS'||Number(data?.uploaded_rows)!==rows.length)
       throw Error('SQL row-count audit failed; previous snapshot remains active.');
     emMessage('em-upload-msg',`✓ ${emCount(rows.length)} rows verified and activated. ${data.report_dates} report dates in the snapshot.`);
-    await loadEmbellishmentModule(true);
-    resetGanttHoverCache();
+    if(session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
+    await refreshDashboardAfterSuccessfulUpload('embellishment');
+    await loadEmbellishmentModule();
   }catch(error){emMessage('em-upload-msg','Upload not activated: '+(error?.message||error));}
   finally{button.disabled=false;}
 }

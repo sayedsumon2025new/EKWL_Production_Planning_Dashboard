@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const html=fs.readFileSync(__dirname+'/../index.html','utf8');
+const html=require('./dashboard-source.js').readDashboardHTML();
 const parser=html.slice(html.indexOf('function parseRecords('),html.indexOf('\nfunction chassisOf('));
 const upload=html.slice(html.indexOf('let ORDER_BANK_UPLOADING='),html.indexOf('\n\n\nfunction selectUploadReport'));
 function setup(text,options={}){
