@@ -1,6 +1,6 @@
-# Performance release checkpoint — normal-user login rejected
+# Performance release — publication in progress
 
-Status date: 15 October 2026 (Asia/Dhaka). **This is not a completed release. Phase A and the admin comparisons below passed. The Phase B normal-user/account-switching requirement is incomplete, so the Phase D merge/deployment gate remains closed.**
+Status date: 15 October 2026 (Asia/Dhaka). **Publication is in progress. Phase A and the listed admin parity checks passed. Normal-user/account-switching verification is incomplete. After being informed of that failure, the user explicitly instructed publication ("ok ache tumi live koro"); this latest instruction waives that remaining pre-merge gate for this release. It does not establish normal-user parity.**
 
 ## Source, backup and current live state
 
@@ -9,7 +9,7 @@ Status date: 15 October 2026 (Asia/Dhaka). **This is not a completed release. Ph
 - Release preparation branch: `release/performance-steps-1-3`, created from the approved implementation because that release branch did not previously exist.
 - Backup tag created and pushed: `backup/pre-performance-20261015`, at the original main hash. No pre-existing tag was moved.
 - GitHub Pages configuration, read without modification: legacy branch deployment, `main`, repository root; reported status `built`.
-- No release merge, deployment trigger, repository settings/secrets change, production upload/replacement, user/permission/settings change, schema/index change or `ANALYZE` was performed. Production testing used sign-in/sign-out lifecycle operations and read-only application queries only.
+- At this checkpoint no release merge or deployment has yet been performed. No repository settings/secrets change, production upload/replacement, user/permission/settings change, schema/index change or `ANALYZE` was performed. Production testing used sign-in/sign-out lifecycle operations and read-only application queries only.
 
 ## Gate results
 
@@ -21,8 +21,8 @@ Status date: 15 October 2026 (Asia/Dhaka). **This is not a completed release. Ph
 | B: production access | PASS | Correct project accessed directly; explicit read-only SQL connection precheck; authenticated admin login to local OLD and NEW against production |
 | B: admin parity | PASS for listed checks | Real-data comparisons below, including a second planning selection and locally generated exports |
 | B: normal-user/account switching | **BLOCKED** | Read-only aggregate account checks confirm four application/Auth accounts: one active admin and three active other accounts. A supplied normal-user login was rejected by production Auth with HTTP 400 / `invalid_credentials`; no normal-user secure credential bindings are configured |
-| C: isolated write tests | NOT STARTED | Phase B is incomplete. No temporary project/branch was created; production was not used as a substitute |
-| D: merge, publish and smoke | WITHHELD | The requested gate permits merging only after A and B pass |
+| C: isolated write tests | SKIPPED (isolation unavailable) | No existing development branches. The linked organization is on the free tier; the connector's cost/provisioning prerequisite reports that its tool is unavailable. A new branch/project cannot be safely provisioned through this connection. No isolated resources or secrets were created, so no cleanup was required. Production was not substituted |
+| D: merge, publish and smoke | IN PROGRESS | Latest explicit publication instruction waives the failed normal-login pre-merge gate; deployment smoke and automatic revert requirements remain |
 | E: database diagnostics/indexes | NOT STARTED | Later phase not reached; no optimization or migration file was applied/generated |
 | F: deployed speed measurements | NOT RUN | Requires completed parity and deployment; no live speedup is claimed |
 
@@ -103,8 +103,12 @@ No code release has been merged, so no merge commit hash or release rollback com
 
 Verify an existing normal-user login in the dashboard, then configure its credentials securely (`EKWL_TEST_USER_EMAIL` and `EKWL_TEST_USER_PASSWORD`). The newly supplied credentials were tested without saving their values; production Auth rejected them with HTTP 400 / `invalid_credentials`, confirmed by an independent minimal native-browser authentication probe. After the user confirmed using the same credentials successfully, a further probe used the actual live GitHub Pages login form with a fresh browser context and native verified TLS. Its Auth token request again returned HTTP 400; neither an authenticated user nor an authorized profile was established. No credentials were saved. No password reset, user creation or permission modification was attempted. The account-switch probe confirmed cleared planning/shared-report/Order Bank arrays after admin logout on OLD; NEW cross-account verification remains incomplete because normal login failed. Actual normal accounts exist, so this cannot be described as a single-account project or replaced by an admin-side profile simulation. Production users/roles/passwords will not be created or changed to obtain that access.
 
-Then complete the Phase B normal-user and same-session account-switching checks and any further requested filter coverage. Only once the gate passes should the workflow proceed to isolated write tests (or the expressly allowed isolation-unavailable skip), conditional merge/Pages deployment and smoke/revert, evidence-backed additive indexes, and native-browser live measurements. Re-run checks if main gains new commits before merge.
+Then complete the Phase B normal-user and same-session account-switching checks and any further requested filter coverage. The latest publication instruction permits proceeding with the normal-user limitation recorded. Continue conditional merge/Pages deployment and smoke/revert, evidence-backed additive indexes, and native-browser live measurements. Re-run checks if main gains new commits before merge.
 
 Home aggregation RPCs, Order Bank server-side paging/facets and RLS wrapper changes remain future audit candidates, not implemented optimizations or evidence-backed Phase E recommendations. Their measured priority and EXPLAIN justification are still unestablished.
 
-**Release withheld at the user's Phase B / Phase D gate. No live speedup is claimed. The unresolved release risk is unverified normal-user permissions and cross-user cache isolation; offline semantic coverage does not replace that production check.**
+**Publication authorized with a known test gap: normal-user permissions and cross-user cache isolation remain unverified on production. No live speedup is claimed yet. Offline semantic coverage does not replace that production check.**
+
+## Final pre-merge recheck
+
+All 17 Node files and all eight offline browser scripts passed again immediately before publication, including the full theme suite. All root JavaScript syntax checks and composite diff whitespace checks passed. Main still matches the backed-up original baseline; no newer main changes need integration.
