@@ -1,6 +1,6 @@
 # Final performance release report
 
-Status: 17 October 2026 (Asia/Dhaka). **Publication verification in progress.**
+Status: 17 October 2026 (Asia/Dhaka). **Published and verified.**
 
 ## Release and backup
 
@@ -10,8 +10,8 @@ Status: 17 October 2026 (Asia/Dhaka). **Publication verification in progress.**
 - New branch: `release/performance-final-20261017`.
 - Release PR: [#26](https://github.com/sayedsumon2025new/EKWL_Production_Planning_Dashboard/pull/26).
 - Backup tag: `backup/pre-performance-20261017` at pre-retry main; original `backup/pre-performance-20261015` remains at `479090d`.
-- Merge commit: `not merged yet`.
-- GitHub Pages: legacy `main` / root deployment; awaiting deployment.
+- Merge commit: `a0fa5c3bef1ba2d0128f8d8fe5d1dfdab25911a5`.
+- GitHub Pages: legacy `main` / root deployment; built successfully for the actual merge; 27 assets and all 19 permitted live slides passed.
 
 ## Changes
 
@@ -29,9 +29,9 @@ Status: 17 October 2026 (Asia/Dhaka). **Publication verification in progress.**
 | B: fresh current pinned admin parity | PASS | Current OLD and NEW compared on the same completed planning upload, not the obsolete historical baseline |
 | B: normal-user/account switching | INCOMPLETE, accepted publication gap | Automated normal-user Auth failed; owner explicitly authorized publication after disclosure. Real normal-user isolation is not claimed. Offline owner/session-generation tests passed |
 | C: isolated write tests | SKIPPED, isolation unavailable | No existing preview branches; cost/provisioning prerequisites unavailable through the connector. No isolated resources created; no production write-flow substitution |
-| D: live parity/slides/logout | PENDING | 0 permitted live slides opened; pinned comparisons and logout assertions |
-| E: DB optimizations | Not reached yet; no SQL changes applied | Only evidence-backed additive indexes/ANALYZE are authorized; no RLS/functions/views/data changes |
-| F: three-run native measurements | Not run yet | No general live speedup percentage is claimed without the requested medians |
+| D: live parity/slides/logout | PASS | 19 permitted live slides opened; pinned comparisons and logout assertions |
+| E: DB optimizations | BLOCKED: connector denies read-only SQL; no database changes applied | Only evidence-backed additive indexes/ANALYZE are authorized; no RLS/functions/views/data changes |
+| F: three-run native measurements | Pending native three-run measurements | No general live speedup percentage is claimed without the requested medians |
 
 ## Current data parity
 
@@ -42,19 +42,19 @@ Status: 17 October 2026 (Asia/Dhaka). **Publication verification in progress.**
 
 | Feature | Current pre-merge comparison | Live comparison |
 | --- | --- | --- |
-| Home | EXACT MATCH | pending |
-| Planning and shared sources | EXACT MATCH | pending |
-| Core tables | EXACT MATCH | pending |
-| Gantt conditions and filters | EXACT MATCH | pending |
-| Fabrics match and not-in-plan | EXACT MATCH | pending |
-| Chassis | EXACT MATCH | pending |
-| Ladder | EXACT MATCH | pending |
-| Order Bank | EXACT MATCH | pending |
-| Size Set | EXACT MATCH | pending |
-| Accessories | EXACT MATCH | pending |
-| Embellishment | EXACT MATCH | pending |
-| Readiness and coverage | EXACT MATCH | pending |
-| Order Execution | EXACT MATCH | pending |
+| Home | EXACT MATCH | EXACT MATCH |
+| Planning and shared sources | EXACT MATCH | EXACT MATCH |
+| Core tables | EXACT MATCH | EXACT MATCH |
+| Gantt conditions and filters | EXACT MATCH | EXACT MATCH |
+| Fabrics match and not-in-plan | EXACT MATCH | EXACT MATCH |
+| Chassis | EXACT MATCH | EXACT MATCH |
+| Ladder | EXACT MATCH | EXACT MATCH |
+| Order Bank | EXACT MATCH | EXACT MATCH |
+| Size Set | EXACT MATCH | EXACT MATCH |
+| Accessories | EXACT MATCH | EXACT MATCH |
+| Embellishment | EXACT MATCH | EXACT MATCH |
+| Readiness and coverage | EXACT MATCH | EXACT MATCH |
+| Order Execution | EXACT MATCH | EXACT MATCH |
 
 The pinned upload identifier stayed in test-process memory and is omitted. Complete source arrays were compared using browser-computed hashes; only equality results and aggregate values were saved. Gantt comparison includes stacked cell payloads/text/classes, all four material conditions, toggle, EWO/line/date filters and earlier/hidden demand. Normal slide-open Readiness/Coverage reads were verified to complete with HTTP 200 before comparing complete rows/KPIs; the probe did not add stress refreshes.
 
@@ -68,19 +68,19 @@ Automatic approval review rejected an earlier proposed reduction of test cases. 
 
 ## Measurements
 
-A single real-data functional Gantt batch took OLD **95.463 s** and NEW **0.710 s** on already-loaded report inputs. Both run the same condition/filter/toggle batch; timing includes DOM construction, hash serialization, protocol overhead and an idle-detection tail. This is not a first-open metric or a three-run median and must not be generalized to overall site speed.
+A single real-data functional Gantt batch took OLD **95.843 s** and NEW **0.599 s** on already-loaded report inputs. Both run the same condition/filter/toggle batch; timing includes DOM construction, hash serialization, protocol overhead and an idle-detection tail. This is not a first-open metric or a three-run median and must not be generalized to overall site speed.
 
 Requested OLD-vs-NEW-live cache-disabled three-run medians (unthrottled and declared Fast 4G + 4× CPU) are pending. No synthetic values are substituted.
 
 ## Live smoke and rollback
 
-Live asset check: pending. Live console/page/HTTP/request/write-guard error counts: `{}`. Logout state cleared: `pending`.
-Any logout/teardown aborts are recorded separately and are not silently reclassified as successful requests: `[]`.
+Live asset check: 27 local referenced/fallback assets: HTTP 200, expected MIME types and exact release bytes. Live console/page/HTTP/request/write-guard error counts: `{"blockedWrites": 0, "console": 0, "failed": 0, "http": 0, "page": 0}`. Logout state cleared: `True`.
+Any logout/teardown aborts are recorded separately and are not silently reclassified as successful requests: `[{"reason": "net::ERR_ABORTED", "path": "/auth/v1/logout"}]`.
 
 If the new deployment or smoke fails, revert this actual merge without rewriting history:
 
 ```sh
-git revert -m 1 ACTUAL_NEW_MERGE_SHA --no-edit
+git revert -m 1 a0fa5c3bef1ba2d0128f8d8fe5d1dfdab25911a5 --no-edit
 git push origin main
 ```
 
@@ -90,6 +90,6 @@ The prior attempt merged as `af16ab3fc21c1a2309837ae2d9d465ff62779243` and was r
 
 ## Database and next steps
 
-No SQL, indexes, ANALYZE, user/settings changes or production uploads were applied during frontend publication verification. Existing import/read-access migrations were not rerun. Additive optimization diagnostics and any exact rollback SQL will be documented separately if that phase completes.
+The production Supabase SQL connector returned MCP ProtocolError -32600 (permission denied) for both the catalog diagnostic transaction and a minimal read-only version/statement_timeout query. Browser Data API access still works, but it is not database-management access. Consequently table/index/RLS/statistics/EXPLAIN diagnostics could not be collected and no indexes or ANALYZE were applied. DB_DIAGNOSTICS.md documents the limitation and reviewable read-only diagnostic SQL. supabase/performance-migration.sql is intentionally a no-op; no evidence-backed DDL can be safely inferred. No rollback SQL needs execution because no database change occurred.
 
 No secret values, emails, production row samples, private identifiers or tokens are included in these reports. Remaining known limits include unverified normal-user production isolation, skipped isolated uploads/settings/user-write flows, independent-device cache freshness requiring existing refresh controls, and any backend statement-timeout recurrence. Home summary RPC, server-side Order Bank paging/facets and RLS wrapper changes remain proposals, not implemented changes. Rank future work from measured results when available; do not invent impact percentages.
