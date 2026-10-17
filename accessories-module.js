@@ -61,6 +61,7 @@ function populateAccessoriesFilters(){
 }
 
 function renderAccessoriesModule(){
+  if(typeof recordDashboardRender==='function')recordDashboardRender('accessories');
   const table=document.getElementById('ac-table');if(!table)return;
   const buyer=document.getElementById('ac-buyer')?.value||'';
   const line=document.getElementById('ac-line')?.value||'';
@@ -109,7 +110,7 @@ function renderAccessoriesModule(){
     ' · All 15 CSV columns shown. PSD / PCD text is displayed as supplied; a missing year is not inferred.');
 }
 function accessoriesPage(page){AC_PAGE=page;renderAccessoriesModule();document.getElementById('ac-table')?.scrollTo({top:0,left:0});}
-function accessoriesSearchChanged(){clearTimeout(AC_SEARCH_TIMER);AC_SEARCH_TIMER=setTimeout(()=>{AC_PAGE=1;renderAccessoriesModule()},160);}
+function accessoriesSearchChanged(){clearTimeout(AC_SEARCH_TIMER);AC_SEARCH_TIMER=setTimeout(()=>{AC_PAGE=1;renderAccessoriesModule()},275);}
 function clearAccessoriesFilters(){
   for(const id of ['ac-date','ac-buyer','ac-line','ac-sewing','ac-status','ac-owner','ac-search']){
     const node=document.getElementById(id);if(node)node.value='';
@@ -131,24 +132,17 @@ async function previewAccessoriesFile(){
 
 async function loadAccessoriesModule(force=false){
   if(AC_MODE==='preview'&&!force){renderAccessoriesModule();return;}
-  if(!force&&AC_ROWS.length&&AC_MODE==='sql'){renderAccessoriesModule();return;}
+  if(!force&&dataCacheEntry('snapshot:accessories')?.loaded&&dataCacheEntry('snapshot:accessories').value===AC_ROWS&&AC_MODE==='sql'){recordDataCacheHit('snapshot:accessories');renderAccessoriesModule();return;}
   const token=++AC_LOAD_TOKEN,session=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   if(!userId||!canAccessSlide(18))return;
   acMessage('ac-msg','Loading Accessories SQL snapshots…');
   try{
-    const rows=[];
-    for(let offset=0;;offset+=1000){
-      const {data,error}=await SB.from('accessories_rows')
-        .select('source_row_no,row_data,file_name,uploaded_at').eq('is_active',true)
-        .order('source_row_no',{ascending:true}).range(offset,offset+999);
-      if(error)throw error;
-      if(token!==AC_LOAD_TOKEN||session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
-      rows.push(...(data||[]));if((data||[]).length<1000)break;
-    }
+    const rows=await loadActiveModuleRows('accessories',force);
+    if(token!==AC_LOAD_TOKEN||session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
     accessoriesSetRows(rows,rows[0]?.file_name||'',rows[0]?.uploaded_at||'','sql');
     if(!rows.length)acMessage('ac-msg','No SQL snapshot yet');
   }catch(error){
-    if(token!==AC_LOAD_TOKEN||session!==SITE_SESSION_GENERATION)return;
+    if(token!==AC_LOAD_TOKEN||session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
     acMessage('ac-msg','SQL load failed');
     acMessage('ac-source','SQL table and functions must be installed before live data can load.');
     const table=document.getElementById('ac-table');if(table)table.innerHTML=`<div class="modal-msg">${esc(error?.message||error)}</div>`;
@@ -183,8 +177,9 @@ async function uploadAccessoriesFile(){
     if(error)throw error;
     if(data?.status!=='SUCCESS'||Number(data?.uploaded_rows)!==rows.length)throw Error('SQL row-count audit did not match. Previous snapshot remains active.');
     acMessage('ac-upload-msg',`✓ ${acCount(rows.length)} rows verified and activated. Report Date comes from each row's PSD.`);
-    await loadAccessoriesModule(true);
-    resetGanttHoverCache();
+    if(session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
+    await refreshDashboardAfterSuccessfulUpload('accessories');
+    await loadAccessoriesModule();
   }catch(error){acMessage('ac-upload-msg','Upload not activated: '+(error?.message||error));}
   finally{button.disabled=false;}
 }
