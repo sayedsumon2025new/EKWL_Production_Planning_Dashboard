@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const html=require('./dashboard-source.js').readDashboardHTML();
+const html=fs.readFileSync(__dirname+'/../index.html','utf8');
 const source=html.slice(html.indexOf('const ORDER_BANK_SOURCE_COLUMNS='),html.indexOf('\nlet EFF15_SUB='));
 function setup(rows=[],error=null){
   const elements=new Map(),calls=[];
@@ -7,11 +7,11 @@ function setup(rows=[],error=null){
     if(!elements.has(id))elements.set(id,{innerHTML:'',textContent:'',value:'',querySelectorAll:()=>[]});
     return elements.get(id);
   }};
-  const c={document,SITE_AUTH_USER:{id:'test-admin'},SITE_SESSION_GENERATION:0,fmt:String,esc:v=>String(v).replaceAll('&','&amp;').replaceAll('<','&lt;'),SB:{from(table){
+  const c={document,SITE_SESSION_GENERATION:0,fmt:String,esc:v=>String(v).replaceAll('&','&amp;').replaceAll('<','&lt;'),SB:{from(table){
     assert.ok(['order_bank_latest_all','order_bank_raw'].includes(table));
     return {select(columns){assert.equal(columns,'*');const q={eq(k,v){assert.equal(k,'upload_batch_id');assert.equal(v,7);return q;},order(k){assert.equal(k,'source_row_no');return q;},async range(from,to){calls.push([from,to]);return {data:rows.slice(from,to+1),error};}};return q;}};
   }}};
-  vm.createContext(c);vm.runInContext(fs.readFileSync(__dirname+'/../data-cache.js','utf8'),c);vm.runInContext(source,c);
+  vm.createContext(c);vm.runInContext(source,c);
   return {c,e:id=>document.getElementById(id),calls,read:s=>vm.runInContext(s,c)};
 }
 (async()=>{

@@ -3,11 +3,10 @@ from pathlib import Path
 import re
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[1]
-html=(ROOT/'index.html').read_text()+'\n'+(ROOT/'dashboard-main.js').read_text()
+html=(ROOT/'index.html').read_text()
 script=html[html.index("let GANTT_EWO_SEARCH='';"):html.index('\nfunction renderS7(data){')]
 styles='\n'.join(re.findall(r'<style\b[^>]*>(.*?)</style>',html,re.S))
 fixture="""
-const prepareSharedReportView=()=>true;
 const N=v=>Number(v)||0,esc=v=>String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
 const getChassisMasterLines=()=>new Set([11]),activePlanningLabel=()=> 'P04',monthFromISO=()=> 'Oct-26';
 const ACTIVE_PLAN_UPLOAD={id:'P04'},CLOCK_HOUR_DATA=[],DATA=[],FABRIC_CUTTING_DATA=[];

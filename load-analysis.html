@@ -935,7 +935,7 @@
 <div class="screenshot-toast" id="screenshotToast"></div>
 
 <script src="load-analysis-plan-row.js?v=3"></script>
-<script src="frontend-runtime.js?v=2"></script>
+<script src="html2canvas.min.js"></script>
 <script>
 (function () {
   var btn = document.getElementById('screenshotBtn');
@@ -965,17 +965,16 @@
     }
   }
 
-  btn.addEventListener('click', async function () {
-    if(btn.classList.contains('capturing'))return;
-    btn.classList.add('capturing');
-    var html2canvas;
-    try{html2canvas=await ensureHtml2Canvas();}
-    catch(error){btn.classList.remove('capturing');showToast('Screenshot library unavailable: '+error.message,true);return;}
+  btn.addEventListener('click', function () {
+    if (typeof html2canvas !== 'function') {
+      showToast('Screenshot library not loaded. Keep html2canvas.min.js next to this HTML file.', true);
+      return;
+    }
 
     var page = document.querySelector('.page');
     if (!page) {
       showToast('Report content not found', true);
-      btn.classList.remove('capturing');return;
+      return;
     }
 
     var reportWidth = Math.max(page.offsetWidth, ...Array.from(page.querySelectorAll('.plan-table-scroll')).map(function (wrap) { return wrap.scrollWidth + 56; }));

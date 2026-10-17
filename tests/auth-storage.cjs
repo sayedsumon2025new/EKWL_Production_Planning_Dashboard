@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const html=require('./dashboard-source.js').readDashboardHTML();
+const html=fs.readFileSync(__dirname+'/../index.html','utf8');
 const start=html.indexOf('function createResilientAuthStorage(');
 const source=html.slice(start,html.indexOf('\nconst SB =',start));
 const c={console:{warn(){}}};vm.createContext(c);vm.runInContext(source,c);
@@ -15,4 +15,4 @@ for(const [localBlocked,sessionBlocked] of [[false,false],[true,false],[true,tru
 const blocked={};for(const name of ['localStorage','sessionStorage'])Object.defineProperty(blocked,name,{get(){throw Error('SecurityError')}});
 const s=c.createResilientAuthStorage(blocked);s.setItem('auth','new');assert.equal(s.getItem('auth'),'new');s.removeItem('auth');assert.equal(s.getItem('auth'),null);
 let count=0;for(const match of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)){if(match[1].trim()){new vm.Script(match[1]);count++}}
-console.log('PASS normal, local quota, both quotas, blocked storage, refresh, logout, unrelated data; '+count+' application scripts parse');
+console.log('PASS normal, local quota, both quotas, blocked storage, refresh, logout, unrelated data; '+count+' inline scripts parse');

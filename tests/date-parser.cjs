@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const html=require('./dashboard-source.js').readDashboardHTML();
+const html=fs.readFileSync(__dirname+'/../index.html','utf8');
 function fn(name){const start=html.search(new RegExp('^(?:async )?function '+name+'\\(','m'));return html.slice(start,html.indexOf('\n}',start)+2);}
 const c={};vm.createContext(c);
 vm.runInContext(html.slice(html.indexOf('function validDate('),html.indexOf('\nfunction parseRecords(')),c);

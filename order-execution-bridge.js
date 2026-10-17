@@ -4,8 +4,6 @@ let OE_PENDING_KEY='';
 let OE_RENDERED_KEY='';
 let OE_LOAD_TOKEN=0;
 
-function invalidateOrderExecutionData(){++OE_LOAD_TOKEN;OE_PENDING_KEY='';OE_RENDERED_KEY='';}
-
 function resetOrderExecutionSlide(){
   ++OE_LOAD_TOKEN;
   OE_LOAD_PROMISE=null;OE_PENDING_KEY='';OE_RENDERED_KEY='';
@@ -16,16 +14,8 @@ function resetOrderExecutionSlide(){
 window.addEventListener('message',event=>{
   const frame=document.getElementById('order-execution-frame');
   if(!frame || event.source!==frame.contentWindow || !event.data || document.body.classList.contains('site-locked'))return;
-  if(event.data.type==='ekwl-frontend-timing'&&(window.EKWL_PERF_ENABLED===true||new URLSearchParams(location.search).get('ekwlPerf')==='1')){
-    const t=event.data.timing;
-    if(t&&['library.three','filter.render'].includes(t.name)&&Number.isFinite(t.durationMs)){
-      (window.EKWL_TIMINGS||(window.EKWL_TIMINGS=[])).push({name:t.name,durationMs:t.durationMs,status:t.status,requests:t.requests,renders:t.renders,frame:'execution'});
-      if(Number.isInteger(t.renders))window.EKWL_FILTER_RENDER_COUNT=(window.EKWL_FILTER_RENDER_COUNT||0)+t.renders;
-    }
-  }
   if(event.data.type==='ekwl-execution-ready'){
     frame.dataset.ready='1';
-    frame.contentWindow.postMessage({type:'ekwl-execution-visible',visible:CURRENT_SLIDE===16},'*');
     if(CURRENT_SLIDE===16)loadOrderExecutionSlide();
   }
   if(event.data.type==='ekwl-execution-rendered'){
@@ -63,9 +53,20 @@ async function loadOrderExecutionSlide(force=false){
   send({type:'ekwl-execution-loading'});
   OE_LOAD_PROMISE=(async()=>{
     try{
-      const all=await loadOrderBankSnapshot(force);
-      if(!current())return;
-      const orders=(!force&&ORDER_BANK_RAW_ROWS.length)?ORDER_BANK_RAW_ROWS:all;
+      let orders=(!force && ORDER_BANK_RAW_ROWS.length)?ORDER_BANK_RAW_ROWS:null;
+      if(!orders){
+        orders=[];
+        for(let from=0;;from+=1000){
+          const {data,error}=await SB.from('order_bank_latest_all').select('*')
+            .order('source_row_no',{ascending:true}).order('id',{ascending:true})
+            .range(from,from+999);
+          if(error)throw error;
+          if(!current())return;
+          orders.push(...(data||[]));
+          if((data||[]).length<1000)break;
+        }
+        ORDER_BANK_RAW_ROWS=orders;
+      }
       let records=[],daily=[],dateRange=[],planningError='';
       if(planningReady){
         try{

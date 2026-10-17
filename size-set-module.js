@@ -183,7 +183,6 @@ function populateSizeSetFilters(){
 }
 
 function renderSizeSetModule(){
-  if(typeof recordDashboardRender==='function')recordDashboardRender('size-set');
   const table=document.getElementById('ss-table');if(!table)return;
   const columns=[['year','__efd_year','All EFD Years'],['line','Line','All Lines'],['buyer','Buyer','All Buyers'],['product','Product Type','All Products'],['action','Next Action to Do\n(What)','All Actions']];
   const values=Object.fromEntries(columns.map(([name])=>[name,document.getElementById('ss-'+name)?.value||'']));
@@ -234,7 +233,7 @@ function renderSizeSetModule(){
 }
 
 function sizeSetPage(page){SS_PAGE=page;renderSizeSetModule();document.getElementById('ss-table')?.scrollTo({top:0,left:0});}
-function sizeSetSearchChanged(){clearTimeout(SS_SEARCH_TIMER);SS_SEARCH_TIMER=setTimeout(()=>{SS_PAGE=1;renderSizeSetModule()},275);}
+function sizeSetSearchChanged(){clearTimeout(SS_SEARCH_TIMER);SS_SEARCH_TIMER=setTimeout(()=>{SS_PAGE=1;renderSizeSetModule()},160);}
 function clearSizeSetFilters(){
   for(const id of ['ss-year','ss-line','ss-buyer','ss-product','ss-action','ss-search']){
     const el=document.getElementById(id);if(el)el.value='';
@@ -245,13 +244,21 @@ function clearSizeSetFilters(){
 async function loadSizeSetModule(force=false){
   const upload=document.getElementById('ss-upload-card');if(upload)upload.style.display=siteIsAdmin()?'':'none';
   if(SS_MODE==='preview'&&!force){renderSizeSetModule();return;}
-  if(!force&&dataCacheEntry('snapshot:size')?.loaded&&dataCacheEntry('snapshot:size').value===SS_ROWS&&SS_MODE==='sql'){recordDataCacheHit('snapshot:size');renderSizeSetModule();return;}
+  if(!force&&SS_ROWS.length&&SS_MODE==='sql'){renderSizeSetModule();return;}
   const token=++SS_LOAD_TOKEN,session=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   if(!userId||!canAccessSlide(17))return;
   ssMessage('ss-msg','Loading latest Size Set SQL snapshot…');
   try{
-    const all=await loadActiveModuleRows('size',force);
-    if(token!==SS_LOAD_TOKEN||session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
+    const all=[];
+    for(let offset=0;;offset+=1000){
+      const {data,error}=await SB.from('size_set_rows')
+        .select('source_row_no,row_data,file_name,uploaded_at').eq('is_active',true)
+        .order('source_row_no',{ascending:true}).range(offset,offset+999);
+      if(error)throw error;
+      if(token!==SS_LOAD_TOKEN||session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
+      all.push(...(data||[]));
+      if((data||[]).length<1000)break;
+    }
     SS_ROWS=all;SS_MODE='sql';SS_PAGE=1;SS_FILE_NAME=all[0]?.file_name||'';SS_UPLOADED_AT=all[0]?.uploaded_at||'';
     populateSizeSetFilters();
     if(!all.length){
@@ -266,7 +273,7 @@ async function loadSizeSetModule(force=false){
     }
     renderSizeSetModule();
   }catch(error){
-    if(token!==SS_LOAD_TOKEN||session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
+    if(token!==SS_LOAD_TOKEN||session!==SITE_SESSION_GENERATION)return;
     ssMessage('ss-msg','SQL load failed');
     document.getElementById('ss-table').innerHTML=`<div class="modal-msg">${esc(error?.message||error)}. The SQL table must be installed before uploading. Local CSV preview is available above.</div>`;
     document.getElementById('ss-tna-table').innerHTML='<div class="modal-msg">TNA KPI will appear when the Size Set SQL snapshot is available.</div>';
@@ -305,9 +312,8 @@ async function uploadSizeSetFile(){
     if(error)throw error;
     if(data?.status!=='SUCCESS'||Number(data?.uploaded_rows)!==rows.length)throw Error('SQL row-count audit failed. Previous snapshot remains active.');
     ssMessage('ss-upload-msg',`✓ ${ssCount(rows.length)} / ${ssCount(data.uploaded_rows)} source rows verified in SQL. Snapshot activated.`);
-    if(session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
-    await refreshDashboardAfterSuccessfulUpload('size');
-    await loadSizeSetModule();
+    await loadSizeSetModule(true);
+    resetGanttHoverCache();
   }catch(error){ssMessage('ss-upload-msg','Upload not activated: '+(error?.message||error));}
   finally{button.disabled=false;}
 }
