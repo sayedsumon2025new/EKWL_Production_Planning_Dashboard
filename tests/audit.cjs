@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const html=fs.readFileSync(__dirname+'/../index.html','utf8');
+const html=require('./dashboard-source.js').readDashboardHTML();
 function fn(name){const start=html.search(new RegExp('^(?:async )?function '+name+'\\(','m'));assert.ok(start>=0,name);return html.slice(start,html.indexOf('\n}',start)+2);}
 function context(c,names){vm.createContext(c);for(const n of names)vm.runInContext(fn(n),c);return c;}
 (async()=>{
@@ -9,13 +9,18 @@ function context(c,names){vm.createContext(c);for(const n of names)vm.runInConte
   c.EFF15_METRIC_UPLOAD_ID='B';c.fetchPlanningSnapshot=()=>{throw Error('Unexpected duplicate SQL fetch');};assert.equal(await c.loadEff15ExactMetricSource(),true);
   console.log('PASS stale Slide 15 request discarded; current snapshot avoids repeat download');
   let cleared,removed=[];const l=context({dashboardCacheKey:()=> 'user-A',fastBootCacheKey:()=> 'fast-A',SITE_SESSION_GENERATION:0,SUPABASE_LOAD_TOKEN:0,PLAN_FILTER_TOKEN:0,EFF15_FR_TOKEN:0,DATA:[1],PLAN_VERSION_CACHE:new Map([['A',1]]),SITE_AUTH_USER:{id:'A'},SITE_USER_PROFILE:{},SITE_BOOTED:true,SB:{auth:{signOut:async()=>{}}},clearDashboardCache:async key=>cleared=key,sessionStorage:{removeItem:k=>removed.push(k)},indexedDB:{deleteDatabase:k=>removed.push(k)},document:{getElementById:()=>({value:''})},showSiteLogin(){},console},['siteLogout']);
-  l.closeS2LineDetails=()=>{};l.resetOrderExecutionSlide=()=>{};l.resetGanttHoverCache=()=>{};
-  await l.siteLogout();assert.equal(l.DATA.length,0);assert.equal(l.PLAN_VERSION_CACHE.size,0);assert.equal(l.SUPABASE_LOAD_TOKEN,1);assert.equal(l.SITE_AUTH_USER,null);assert.equal(cleared,'user-A');assert.ok(removed.includes('fast-A'));
+  l.closeS2LineDetails=()=>{};l.resetOrderExecutionSlide=()=>{};l.resetGanttHoverCache=()=>{};l.invalidateGanttIndex=()=>{};
+  l.setTimeout=setTimeout;l.clearTimeout=clearTimeout;
+  vm.runInContext(fs.readFileSync(__dirname+'/../data-cache.js','utf8'),l);
+  vm.runInContext(fs.readFileSync(__dirname+'/../frontend-runtime.js','utf8'),l);
+  vm.runInContext(fs.readFileSync(__dirname+'/../shared-report-loader.js','utf8'),l);
+  vm.runInContext("SHARED_REPORT_LOADS.set('fabric',{loaded:true,generation:0,userId:'A'})",l);
+  await l.siteLogout();assert.equal(l.DATA.length,0);assert.equal(l.PLAN_VERSION_CACHE.size,0);assert.equal(l.SUPABASE_LOAD_TOKEN,1);assert.equal(l.SITE_AUTH_USER,null);assert.equal(cleared,'user-A');assert.ok(removed.includes('fast-A'));assert.equal(vm.runInContext('SHARED_REPORT_LOADS.size',l),0);
   console.log('PASS logout invalidates in-flight loads and clears account data/cache');
   const keys=context({SITE_AUTH_USER:{id:'A'},SUPABASE_URL:'project',FAST_BOOT_KEY:'v3'},['dashboardCacheOwner','dashboardCacheKey','fastBootCacheKey']);
   const keyA=keys.fastBootCacheKey();keys.SITE_AUTH_USER={id:'B'};assert.notEqual(keys.fastBootCacheKey(),keyA);
   console.log('PASS cache names isolate users');
-  let renders=[];const r=context({document:{getElementById:()=>null,querySelector:()=>null},CURRENT_SLIDE:7,canAccessSlide:()=>true,renderHome:()=>renders.push('home'),renderSlide:n=>renders.push(n),console},['renderAll','refreshPermittedSlides']);
+  let renders=[];const r=context({document:{getElementById:()=>null,querySelector:()=>null},CURRENT_SLIDE:7,canAccessSlide:()=>true,renderHome:()=>renders.push('home'),ACTIVE_PLAN_UPLOAD:null,finishHomeFirstDataTiming(){},renderSlide:n=>renders.push(n),console},['renderAll','refreshPermittedSlides']);
   r.renderAll();assert.deepEqual(renders,['home',7]);renders=[];r.refreshPermittedSlides('planning');assert.deepEqual(renders,[7]);
   console.log('PASS hidden slides do not render during load');
   const button={style:{display:'inline-block'},dataset:{},textContent:'Export'};let isAdmin=false;

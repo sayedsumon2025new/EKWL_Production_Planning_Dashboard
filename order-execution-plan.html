@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>EKWL HW — Production Planning Suite v5 Advanced</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="frontend-runtime.js?v=2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -589,7 +589,7 @@ thead th,.batch-tbl th{background:var(--tone-e9edf0);color:var(--tone-233247)}
   <select id="fb"><option value="">All Buyers</option></select>
   <select id="fpt"><option value="">All Products</option></select>
   <select id="frisk"><option value="">All Risk</option><option>Overdue</option><option>Critical</option><option>Urgent</option><option>Watch</option><option>On Track</option></select>
-  <input id="fs" placeholder="🔍 EWO / PO / Color…" onkeydown="if(event.key==='Enter')gf()">
+  <input id="fs" placeholder="🔍 EWO / PO / Color…" onkeydown="if(event.key==='Enter')flushDashboardInput(this,gf)">
   <input id="fd1" type="date" title="EFD From" style="width:130px">
   <input id="fd2" type="date" title="EFD To" style="width:130px">
   <button class="btn bp" onclick="gf()">Filter</button>
@@ -837,6 +837,7 @@ function S(t){
   const pt=document.getElementById('page-title');
   if(pt) pt.textContent=titles[t]||t;
   if(!built[t]){built[t]=true;buildTab(t);}
+  syncExecution3D();
   // mobile: auto-collapse sidebar after navigate
   if(window.innerWidth<=900){
     const sb=document.getElementById('sidebar');
@@ -970,6 +971,7 @@ function renderPage(){
 }
 
 function gf(){
+  if(typeof recordDashboardRender==='function')recordDashboardRender('execution');
   const l=document.getElementById('fl').value.toLowerCase();
   const b=document.getElementById('fb').value.toLowerCase();
   const pt=document.getElementById('fpt').value.toLowerCase();
@@ -1323,8 +1325,8 @@ function buildSched(){
         <div class="cf"><label>SMV (min)</label><input id="sf-smv" type="number" value="14.91" step=".01" oninput="runSched()"></div>
         <div class="cf"><label>Manpower</label><input id="sf-mp" type="number" value="41" oninput="runSched()"></div>
         <div class="cf"><label>Target Efficiency %</label><input id="sf-ef" type="number" value="65" oninput="runSched()"></div>
-        <div class="cf"><label>EFD (M/D/YYYY)</label><input id="sf-efd" type="text" value="10/30/2026" oninput="runSched()"></div>
-        <div class="cf"><label>Start Date</label><input id="sf-sd" type="text" value="9/26/2026" oninput="runSched()"></div>
+        <div class="cf"><label>EFD (M/D/YYYY)</label><input id="sf-efd" type="text" value="10/30/2026" oninput="debounceDashboardInput(this,()=>{runSched()})"></div>
+        <div class="cf"><label>Start Date</label><input id="sf-sd" type="text" value="9/26/2026" oninput="debounceDashboardInput(this,()=>{runSched()})"></div>
         <div class="cf"><label>Buffer Days</label><input id="sf-buf" type="number" value="3" oninput="runSched()"></div>
         <div class="cf"><label>Work Hours/Day</label><input id="sf-hrs" type="number" value="8" step=".5" oninput="runSched()"></div>
       </div>
@@ -1563,9 +1565,9 @@ function buildCalc(){
     <div class="calc-sec"><h4>🔢 Batch Calculator — Multiple Lines</h4>
       <div style="font-size:10px;color:#aaa;margin-bottom:8px">Comma-separated values, same number of entries per field</div>
       <div class="cf-g2" style="grid-template-columns:1fr 1fr 1fr">
-        <div class="cf" style="grid-column:1/-1"><label>Plan/Day per Line</label><input id="b1" type="text" value="500,300,450,600,700" oninput="c3f()"></div>
-        <div class="cf" style="grid-column:1/-1"><label>SMV per Line</label><input id="b2" type="text" value="14.91,23.76,17,8.66,9.38" oninput="c3f()"></div>
-        <div class="cf" style="grid-column:1/-1"><label>Manpower per Line</label><input id="b3" type="text" value="41,51,41,41,31" oninput="c3f()"></div>
+        <div class="cf" style="grid-column:1/-1"><label>Plan/Day per Line</label><input id="b1" type="text" value="500,300,450,600,700" oninput="debounceDashboardInput(this,()=>{c3f()})"></div>
+        <div class="cf" style="grid-column:1/-1"><label>SMV per Line</label><input id="b2" type="text" value="14.91,23.76,17,8.66,9.38" oninput="debounceDashboardInput(this,()=>{c3f()})"></div>
+        <div class="cf" style="grid-column:1/-1"><label>Manpower per Line</label><input id="b3" type="text" value="41,51,41,41,31" oninput="debounceDashboardInput(this,()=>{c3f()})"></div>
       </div>
       <div id="batch-out" style="overflow-x:auto"></div>
     </div>`;
@@ -2258,14 +2260,70 @@ const _bdRenderOrig = typeof bdRender==='function' ? bdRender : null;
 let factoryScene,factoryCam,factoryRenderer,factorySpin=true,factoryMeshes=[];
 let pyrScene,pyrCam,pyrRenderer,pyrSpin=true;
 
-function initFactory3D(){
+let factoryAnimationFrame=null,pyramidAnimationFrame=null;
+let EXECUTION_PARENT_VISIBLE=window.parent===window;
+let EXECUTION_3D_VERSION=0;
+const EXECUTION_3D_TEMPLATES=Object.fromEntries(['factory3d','pyramid3d'].map(id=>[id,document.querySelector('#'+id+'-view .dinr').innerHTML]));
+function execution3DVisible(view){
+  return EXECUTION_PARENT_VISIBLE&&!document.hidden&&document.getElementById(view+'-view')?.classList.contains('on');
+}
+function animateFactory3D(){
+  factoryAnimationFrame=null;
+  if(!execution3DVisible('factory3d')||!factoryRenderer)return;
+  if(factorySpin&&factoryCam){factoryCam.position.applyAxisAngle(new THREE.Vector3(0,1,0),0.003);factoryCam.lookAt(0,2,0);}
+  factoryRenderer.render(factoryScene,factoryCam);
+  factoryAnimationFrame=requestAnimationFrame(animateFactory3D);
+}
+function animatePyramid3D(){
+  pyramidAnimationFrame=null;
+  if(!execution3DVisible('pyramid3d')||!pyrRenderer)return;
+  if(pyrSpin&&pyrCam){pyrCam.position.applyAxisAngle(new THREE.Vector3(0,1,0),0.004);pyrCam.lookAt(0,5,0);}
+  pyrRenderer.render(pyrScene,pyrCam);
+  pyramidAnimationFrame=requestAnimationFrame(animatePyramid3D);
+}
+function syncExecution3D(){
+  if(execution3DVisible('factory3d')&&factoryRenderer){if(factoryAnimationFrame===null)factoryAnimationFrame=requestAnimationFrame(animateFactory3D);}
+  else{if(factoryAnimationFrame!==null)cancelAnimationFrame(factoryAnimationFrame);factoryAnimationFrame=null;}
+  if(execution3DVisible('pyramid3d')&&pyrRenderer){if(pyramidAnimationFrame===null)pyramidAnimationFrame=requestAnimationFrame(animatePyramid3D);}
+  else{if(pyramidAnimationFrame!==null)cancelAnimationFrame(pyramidAnimationFrame);pyramidAnimationFrame=null;}
+}
+function resetExecution3D(){
+  ++EXECUTION_3D_VERSION;
+  if(factoryAnimationFrame!==null)cancelAnimationFrame(factoryAnimationFrame);
+  if(pyramidAnimationFrame!==null)cancelAnimationFrame(pyramidAnimationFrame);
+  factoryAnimationFrame=pyramidAnimationFrame=null;
+  for(const scene of [factoryScene,pyrScene])scene?.traverse(node=>{
+    node.geometry?.dispose();
+    const materials=Array.isArray(node.material)?node.material:[node.material];
+    materials.forEach(material=>{material?.map?.dispose();material?.dispose();});
+  });
+  factoryRenderer?.dispose();pyrRenderer?.dispose();
+  factoryRenderer=pyrRenderer=null;factoryScene=pyrScene=null;
+}
+document.addEventListener('visibilitychange',syncExecution3D);
+window.addEventListener('message',event=>{
+  if(event.source===window.parent&&event.data?.type==='ekwl-execution-visible'){
+    EXECUTION_PARENT_VISIBLE=event.data.visible===true;syncExecution3D();
+  }
+});
+
+async function initFactory3D(){
   const wrap=document.getElementById('factory-canvas-wrap');
   if(!wrap) return;
   if(wrap.querySelector('canvas')) return;
-  if(typeof THREE==='undefined'){
-    wrap.insertAdjacentHTML('beforeend','<div style="color:#fff;padding:40px;text-align:center">Three.js load failed (need internet)</div>');
+  const version=EXECUTION_3D_VERSION;
+  try{await ensureThreeJS();}
+  catch(error){
+    if(version!==EXECUTION_3D_VERSION||!wrap.isConnected)return;
+    built['factory3d']=false;
+    wrap.querySelector('[data-three-error]')?.remove();
+    wrap.insertAdjacentHTML('beforeend','<div data-three-error style="color:#fff;padding:40px;text-align:center">Three.js unavailable. Reopen this view to retry.</div>');
     return;
   }
+  if(version!==EXECUTION_3D_VERSION||!wrap.isConnected)return;
+  if(!execution3DVisible('factory3d')){built['factory3d']=false;return;}
+  wrap.querySelector('[data-three-error]')?.remove();
+  if(wrap.querySelector('canvas'))return;
   const W=wrap.clientWidth||800,H=wrap.clientHeight||420;
   factoryScene=new THREE.Scene();
   factoryScene.fog=new THREE.Fog(0x0d1b2a,40,120);
@@ -2357,26 +2415,28 @@ function initFactory3D(){
     factoryCam.position.setFromSpherical(sph);
     factoryCam.lookAt(0,2,0);
   });
-  (function animate(){
-    requestAnimationFrame(animate);
-    if(factorySpin&&factoryCam){
-      factoryCam.position.applyAxisAngle(new THREE.Vector3(0,1,0),0.003);
-      factoryCam.lookAt(0,2,0);
-    }
-    if(factoryRenderer) factoryRenderer.render(factoryScene,factoryCam);
-  })();
+  syncExecution3D();
 }
 function resetFactoryCam(){ if(factoryCam){factoryCam.position.set(18,22,28);factoryCam.lookAt(0,2,0);} }
 function togFactoryAnim(){ factorySpin=!factorySpin; }
 
-function initPyramid3D(){
+async function initPyramid3D(){
   const wrap=document.getElementById('pyramid-canvas-wrap');
   if(!wrap) return;
   if(wrap.querySelector('canvas')) return;
-  if(typeof THREE==='undefined'){
-    wrap.insertAdjacentHTML('beforeend','<div style="color:#fff;padding:40px;text-align:center">Three.js load failed</div>');
+  const version=EXECUTION_3D_VERSION;
+  try{await ensureThreeJS();}
+  catch(error){
+    if(version!==EXECUTION_3D_VERSION||!wrap.isConnected)return;
+    built['pyramid3d']=false;
+    wrap.querySelector('[data-three-error]')?.remove();
+    wrap.insertAdjacentHTML('beforeend','<div data-three-error style="color:#fff;padding:40px;text-align:center">Three.js unavailable. Reopen this view to retry.</div>');
     return;
   }
+  if(version!==EXECUTION_3D_VERSION||!wrap.isConnected)return;
+  if(!execution3DVisible('pyramid3d')){built['pyramid3d']=false;return;}
+  wrap.querySelector('[data-three-error]')?.remove();
+  if(wrap.querySelector('canvas'))return;
   const W=wrap.clientWidth||800,H=wrap.clientHeight||420;
   pyrScene=new THREE.Scene();
   pyrScene.fog=new THREE.Fog(0x0d1b2a,30,90);
@@ -2423,11 +2483,7 @@ function initPyramid3D(){
     pyrCam.position.setFromSpherical(sph);
     pyrCam.lookAt(0,5,0);
   });
-  (function animate(){
-    requestAnimationFrame(animate);
-    if(pyrSpin&&pyrCam){ pyrCam.position.applyAxisAngle(new THREE.Vector3(0,1,0),0.004); pyrCam.lookAt(0,5,0); }
-    if(pyrRenderer) pyrRenderer.render(pyrScene,pyrCam);
-  })();
+  syncExecution3D();
 }
 function resetPyramidCam(){ if(pyrCam){pyrCam.position.set(0,12,28);pyrCam.lookAt(0,5,0);} }
 function togPyramidAnim(){ pyrSpin=!pyrSpin; }
@@ -3128,11 +3184,16 @@ function applySQLSnapshot(payload){
   try{
     if(!Array.isArray(payload.orders))throw Error('Order Bank rows are missing');
     sp(10,'Building authenticated SQL report…');
+    resetExecution3D();cancelDashboardDebounces();
     const model=oeDataset(payload),extras=oeAdvanced(model);
     D=model.plan;D1=model.dashboard;D2=model.risk;RMAP=model.riskMap;AD=extras.advanced;EX=extras.execution;
     ALL=expand(D);FIL=ALL.slice();page=1;_new=false;dateStartIdx=0;
     for(const key of Object.keys(built))delete built[key];
-    document.querySelectorAll('.view .dinr').forEach(el=>el.replaceChildren());
+    document.querySelectorAll('.view .dinr').forEach(el=>{
+      const view=el.closest('.view').id.replace('-view','');
+      if(EXECUTION_3D_TEMPLATES[view]!==undefined)el.innerHTML=EXECUTION_3D_TEMPLATES[view];
+      else el.replaceChildren();
+    });
     for(const id of ['fl','fb','fpt']){const el=document.getElementById(id);while(el.options.length>1)el.remove(1);}
     buildHeader();popFilters();updInfo();renderPage();
     document.getElementById('ib-t').textContent=ALL.length.toLocaleString();

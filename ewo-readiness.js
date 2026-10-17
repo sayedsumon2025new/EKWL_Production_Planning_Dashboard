@@ -32,6 +32,7 @@ function resetEWOReadinessBoard(){
   renderEWOReadinessBoard();
 }
 function renderEWOReadinessBoard(){
+  if(typeof recordDashboardRender==='function')recordDashboardRender('readiness');
   const body=document.getElementById('rd-body'),kpis=document.getElementById('rd-kpis'),msg=document.getElementById('rd-msg');
   if(!body||!kpis||!msg)return;
   if(!SITE_AUTH_USER||!canAccessSlide(21)){
@@ -70,8 +71,8 @@ function rdPopulateBuyers(){
     .sort().map(buyer=>`<option value="${esc(buyer)}">${esc(buyer)}</option>`).join('');
   select.value=[...select.options].some(o=>o.value===previous)?previous:'';
 }
-async function loadEWOReadinessBoard(){
-  if(typeof loadReadyInputCoverage==='function')loadReadyInputCoverage();
+async function loadEWOReadinessBoard(includeCoverage=true){
+  if(includeCoverage&&typeof loadReadyInputCoverage==='function')loadReadyInputCoverage();
   const token=++RD_LOAD_TOKEN,session=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   const selectedId=String(ACTIVE_PLAN_UPLOAD?.id||'');
   const current=()=>token===RD_LOAD_TOKEN&&session===SITE_SESSION_GENERATION&&userId===SITE_AUTH_USER?.id&&

@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
+const html=require('./dashboard-source.js').readDashboardHTML();
 const source=html.slice(html.indexOf('let S2_LINE_DETAILS=[];'),html.indexOf('/* ══ SLIDE 3:'));
 const elements=new Map();const document={getElementById(id){if(id==='s2-line-dialog')return null;if(!elements.has(id))elements.set(id,{});return elements.get(id);}};
 const ctx={document,N:x=>Number(x)||0,fmt:String,esc:x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),sortedMonths:rows=>[...new Set(rows.map(r=>r.month))],authoritativeOrderQty:rows=>rows.reduce((s,r)=>s+(Number(r.orderqty)||0),0)};
