@@ -67,20 +67,20 @@
       view.nativeWidth=Math.max(800,view.prefix*160+dates.length*44+150);
       view.table.style.minWidth=view.nativeWidth+'px';
       for(const template of view.rows){
-        const row=template.row,isPlan=row.id==='selected-plan-sah-row';
+        const row=template.row,isPlan=row.id==='selected-plan-sah-row',isTarget=row.id==='abp-daily-capacity-row';
         row.replaceChildren(...template.leading.map(c=>c.cloneNode(true)));
         let total=0,count=0,matched=0;
         for(const date of dates){
           const source=template.source.get(date);
           const cell=(source||template.sample).cloneNode(true);
-          const supplied=isPlan?Object.hasOwn(data.totals||{},date):!!source;
-          const value=isPlan?(supplied?Number(data.totals[date]):null):(supplied?numeric(source):null);
+          const supplied=isTarget?Number.isFinite(data.dailyCapacity):isPlan?Object.hasOwn(data.totals||{},date):!!source;
+          const value=isTarget?(supplied?data.dailyCapacity:null):isPlan?(supplied?Number(data.totals[date]):null):(supplied?numeric(source):null);
           cell.removeAttribute('data-plan-day');cell.dataset.planDate=date;
           if(value==null||!Number.isFinite(value)){
-            cell.textContent='—';cell.title=date+' · No '+(isPlan?'SAH/Day':'supplied snapshot')+' source value';
+            cell.textContent='—';cell.title=date+' · No '+(isTarget?'ABP Target Daily Capacity':isPlan?'SAH/Day':'supplied snapshot')+' source value';
           }else{
-            if(isPlan)cell.textContent=format(value);
-            cell.title=date+' · '+(isPlan?'Selected-plan SAH/Day total: ':'Supplied snapshot value: ')+format(value);
+            if(isPlan||isTarget)cell.textContent=format(value);
+            cell.title=date+' · '+(isTarget?'ABP Target · Daily Capacity: ':isPlan?'Selected-plan SAH/Day total: ':'Supplied snapshot value: ')+format(value);
             total+=value;matched++;if(isPlan?value>0:true)count++;
           }
           row.appendChild(cell);
@@ -90,7 +90,7 @@
         setCell(totalCell,matched?display(total):'—');
         setCell(avgCell,count?display(total/count):'—');
         totalCell.title='Sum of displayed dates';
-        avgCell.title=isPlan?'Displayed total ÷ '+count+' active SAH days (positive SAH)':'Average of '+count+' supplied date values';
+        avgCell.title=isTarget?'ABP Target Daily Capacity · average across '+count+' displayed dates':isPlan?'Displayed total ÷ '+count+' active SAH days (positive SAH)':'Average of '+count+' supplied date values';
         row.append(totalCell,avgCell);
         if(isPlan)row.cells[0].title='SAH/Day · '+String(data.label||'Selected plan');
       }

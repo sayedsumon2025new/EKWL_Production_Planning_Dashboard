@@ -2,6 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),asse
 let sent,allowed=true,locked=false;
 const frame={contentWindow:{postMessage(payload,origin){sent={payload,origin};}}};
 const context={window:{addEventListener(){}},document:{addEventListener(){},getElementById(){return frame;},body:{classList:{contains(){return locked;}}}},
+  LOAD_ANALYSIS_ABP_CONFIG:{metrics:[['Daily Capacity','10,133 Hour']]},
   location:{origin:'https://example.test'},SITE_AUTH_USER:{id:'test-user'},CURRENT_SLIDE:20,
   ACTIVE_PLAN_UPLOAD:{id:'selected'},EFF15_METRIC_UPLOAD_ID:'selected',
   canAccessSlide(){return allowed;},activePlanningLabel(){return 'Selected fixture';}};
@@ -18,11 +19,18 @@ const rows=[
 assert.deepEqual(JSON.parse(JSON.stringify(context.buildLoadAnalysisPlanTotals(rows))),{'2026-10-03':30.5,'2026-10-04':0});
 assert.deepEqual(Array.from(context.buildLoadAnalysisPlanDates([{date:'2024-02-28'},{date:'2024-03-01'}])),['2024-02-28','2024-02-29','2024-03-01']);
 assert.deepEqual(Array.from(context.buildLoadAnalysisPlanDates([{date:'2026-09-30'},{date:'2026-10-02'}])),['2026-09-30','2026-10-01','2026-10-02']);
+for(const [raw,expected] of [['10,133 Hour',10133],['123.45',123.45],[0,0],['',null],['oops',null],['-20 Hour',null],[null,null]]){
+  assert.equal(context.loadAnalysisDailyCapacity({metrics:[['Daily Capacity',raw]]}),expected);
+}
+assert.equal(context.loadAnalysisDailyCapacity(null),null);
+assert.equal(context.loadAnalysisDailyCapacity({metrics:[]}),null);
 context.EFF15_METRIC_DAILY=rows;
 context.refreshLoadAnalysisPlan();
 assert.equal(sent.origin,context.location.origin);
 assert.equal(sent.payload.ready,true);
+assert.equal(sent.payload.dailyCapacity,10133);
 assert.equal(sent.payload.totals['2026-10-03'],30.5);
+context.LOAD_ANALYSIS_ABP_CONFIG=null;context.refreshLoadAnalysisPlan();assert.equal(sent.payload.dailyCapacity,null);
 context.EFF15_METRIC_UPLOAD_ID='previous';context.refreshLoadAnalysisPlan();assert.equal(sent.payload.ready,false);assert.deepEqual(Object.keys(sent.payload.totals),[]);
 context.EFF15_METRIC_UPLOAD_ID='selected';allowed=false;context.refreshLoadAnalysisPlan();assert.equal(sent.payload.ready,false);
 allowed=true;locked=true;context.refreshLoadAnalysisPlan();assert.equal(sent.payload.ready,false);

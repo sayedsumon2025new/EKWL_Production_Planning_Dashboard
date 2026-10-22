@@ -15,6 +15,15 @@ function buildLoadAnalysisPlanTotals(rows){
   }
   return totals;
 }
+function loadAnalysisDailyCapacity(config){
+  const metric=Array.isArray(config?.metrics)?config.metrics.find(row=>
+    Array.isArray(row) && String(row[0]).trim().toLowerCase()==='daily capacity'):null;
+  if(!metric || metric[1]==null)return null;
+  const text=String(metric[1]).trim().replace(/\s*(?:hours?|hrs?)\s*$/i,'').replace(/,/g,'').trim();
+  if(!/^\d+(?:\.\d+)?$/.test(text))return null;
+  const value=Number(text);
+  return Number.isFinite(value)?value:null;
+}
 function refreshLoadAnalysisPlan(){
   const frame=document.getElementById('load-analysis-workspace');
   if(!frame?.contentWindow)return;
@@ -24,6 +33,7 @@ function refreshLoadAnalysisPlan(){
   frame.contentWindow.postMessage({type:'ekwl-load-analysis-plan',ready,
     dates:ready?buildLoadAnalysisPlanDates(EFF15_METRIC_DAILY):[],
     label:ready?activePlanningLabel():'',
+    dailyCapacity:ready?loadAnalysisDailyCapacity(LOAD_ANALYSIS_ABP_CONFIG):null,
     totals:ready?buildLoadAnalysisPlanTotals(EFF15_METRIC_DAILY):{}},location.origin);
 }
 function buildLoadAnalysisPlanDates(rows){
