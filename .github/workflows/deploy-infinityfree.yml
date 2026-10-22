@@ -1,0 +1,90 @@
+name: Deploy EKWL Frontend to InfinityFree
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infinityfree-ekwl-frontend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FTP_HOST: ${{ secrets.INFINITYFREE_FTP_HOST }}
+      FTP_USER: ${{ secrets.INFINITYFREE_FTP_USERNAME }}
+      FTP_PASS: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check FTP secrets
+        id: ready
+        shell: bash
+        run: |
+          if [[ -n "$FTP_HOST" && -n "$FTP_USER" && -n "$FTP_PASS" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::FTP deployment skipped: add all three INFINITYFREE_FTP_* repository secrets."
+          fi
+
+      - name: Stage frontend files ONLY
+        if: steps.ready.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          root=Path('.')
+          stage=Path('/tmp/ekwl-frontend-stage')
+          allow={'.html','.htm','.css','.js','.mjs','.svg','.png','.jpg','.jpeg','.webp','.gif','.ico','.woff','.woff2','.ttf','.otf','.wasm'}
+          forbidden={'ekwl-mysql','.git','.github','supabase','tests','node_modules','vendor','backup','backups'}
+          count=0
+          for file in root.rglob('*'):
+              if not file.is_file() or file.is_symlink():
+                  continue
+              rel=file.relative_to(root)
+              if any(part.startswith('.') or part.lower() in forbidden for part in rel.parts):
+                  continue
+              if file.suffix.lower() not in allow:
+                  continue
+              dest=stage/rel
+              dest.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copy2(file,dest)
+              count+=1
+          if count==0 or not (stage/'index.html').is_file():
+              raise SystemExit('No index.html in staged frontend. Refusing deployment.')
+          print(f'Staged {count} public frontend files. No PHP, SQL, secrets or protected folders.')
+          PY
+
+      - name: Install LFTP
+        if: steps.ready.outputs.enabled == 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Upload frontend without deleting any server files
+        if: steps.ready.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          # Reverse mirror uploads. No --delete or --delete-first option is used.
+          # Explicit FTPS with certificate verification; fail closed if unavailable.
+          lftp -u "$FTP_USER","$FTP_PASS" "ftp://$FTP_HOST" <<'LFTP'
+          set cmd:fail-exit yes
+          set ftp:ssl-allow yes
+          set ftp:ssl-force yes
+          set ftp:ssl-protect-data yes
+          set ssl:verify-certificate yes
+          set net:max-retries 2
+          set net:timeout 20
+          mirror --reverse --verbose --no-perms --parallel=1 /tmp/ekwl-frontend-stage /htdocs
+          bye
+          LFTP
+
+      - name: Deployment summary
+        if: steps.ready.outputs.enabled == 'true'
+        run: echo "Frontend uploaded to InfinityFree /htdocs. Server files were not deleted."
