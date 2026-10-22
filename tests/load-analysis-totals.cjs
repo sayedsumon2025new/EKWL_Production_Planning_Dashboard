@@ -2,7 +2,8 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),asse
 let sent,allowed=true,locked=false;
 const frame={contentWindow:{postMessage(payload,origin){sent={payload,origin};}}};
 const context={window:{addEventListener(){}},document:{addEventListener(){},getElementById(){return frame;},body:{classList:{contains(){return locked;}}}},
-  LOAD_ANALYSIS_ABP_CONFIG:{metrics:[['Daily Capacity','10,133 Hour']]},
+  ABP_TARGET_CACHE:null, DEFAULT_ABP_TARGET:{metrics:[['Daily Capacity','10,133 Hour']]},
+  getABPTarget:()=>context.ABP_TARGET_CACHE||context.DEFAULT_ABP_TARGET,
   location:{origin:'https://example.test'},SITE_AUTH_USER:{id:'test-user'},CURRENT_SLIDE:20,
   ACTIVE_PLAN_UPLOAD:{id:'selected'},EFF15_METRIC_UPLOAD_ID:'selected',
   canAccessSlide(){return allowed;},activePlanningLabel(){return 'Selected fixture';}};
@@ -30,7 +31,9 @@ assert.equal(sent.origin,context.location.origin);
 assert.equal(sent.payload.ready,true);
 assert.equal(sent.payload.dailyCapacity,10133);
 assert.equal(sent.payload.totals['2026-10-03'],30.5);
-context.LOAD_ANALYSIS_ABP_CONFIG=null;context.refreshLoadAnalysisPlan();assert.equal(sent.payload.dailyCapacity,null);
+context.ABP_TARGET_CACHE={metrics:[['Daily Capacity','12,345 Hour']]};context.refreshLoadAnalysisPlan();assert.equal(sent.payload.dailyCapacity,12345);
+context.ABP_TARGET_CACHE=null;context.refreshLoadAnalysisPlan();assert.equal(sent.payload.dailyCapacity,10133);
+context.ABP_TARGET_CACHE={metrics:[]};context.refreshLoadAnalysisPlan();assert.equal(sent.payload.dailyCapacity,null);
 context.EFF15_METRIC_UPLOAD_ID='previous';context.refreshLoadAnalysisPlan();assert.equal(sent.payload.ready,false);assert.deepEqual(Object.keys(sent.payload.totals),[]);
 context.EFF15_METRIC_UPLOAD_ID='selected';allowed=false;context.refreshLoadAnalysisPlan();assert.equal(sent.payload.ready,false);
 allowed=true;locked=true;context.refreshLoadAnalysisPlan();assert.equal(sent.payload.ready,false);

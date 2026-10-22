@@ -33,7 +33,7 @@ function refreshLoadAnalysisPlan(){
   frame.contentWindow.postMessage({type:'ekwl-load-analysis-plan',ready,
     dates:ready?buildLoadAnalysisPlanDates(EFF15_METRIC_DAILY):[],
     label:ready?activePlanningLabel():'',
-    dailyCapacity:ready?loadAnalysisDailyCapacity(LOAD_ANALYSIS_ABP_CONFIG):null,
+    dailyCapacity:ready?loadAnalysisDailyCapacity(getABPTarget()):null,
     totals:ready?buildLoadAnalysisPlanTotals(EFF15_METRIC_DAILY):{}},location.origin);
 }
 function buildLoadAnalysisPlanDates(rows){

@@ -438,8 +438,6 @@ const DEFAULT_ABP_TARGET={
   ]
 };
 let ABP_TARGET_CACHE=null;
-// Only a successfully loaded/saved SQL matrix supplies the Load Analysis target.
-let LOAD_ANALYSIS_ABP_CONFIG=null;
 
 function getABPTarget(){
   if(ABP_TARGET_CACHE) return JSON.parse(JSON.stringify(ABP_TARGET_CACHE));
@@ -455,12 +453,10 @@ async function loadABPTargetFromSQL(render=true,sharedRead=null){
     }else{
       ABP_TARGET_CACHE=JSON.parse(JSON.stringify(DEFAULT_ABP_TARGET));
     }
-    LOAD_ANALYSIS_ABP_CONFIG=data?.config || null;
     if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
     if(render)renderABPTarget();
     return ABP_TARGET_CACHE;
   }catch(e){
-    LOAD_ANALYSIS_ABP_CONFIG=null;
     if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
     console.error('ABP Target SQL load failed',e);
     const m=document.getElementById('abp-save-msg');
@@ -492,7 +488,6 @@ async function saveABPTarget(){
     if(error)throw error;
     invalidateTinySettings(['abp']);
     ABP_TARGET_CACHE=JSON.parse(JSON.stringify(d));
-    LOAD_ANALYSIS_ABP_CONFIG=JSON.parse(JSON.stringify(d));
     if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
     const effRow=(d.metrics||[]).find(r=>Array.isArray(r)&&String(r[0]||'').trim().toLowerCase()==='efficiency');
     if(effRow)LIVE_ABP_TARGET_EFF=parsePercentNumber(effRow[1],LIVE_ABP_TARGET_EFF);
