@@ -1,6 +1,6 @@
 
-const SUPABASE_URL = "https://rdslpcazdzqjlenbezaf.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Vp8l2awmxvWpiqXOVabT_w_iZYX-faF";
+const SUPABASE_URL = new URL("api/index.php",document.baseURI).href;
+
 // Auth writes must not fail login when Firefox/browser storage is full or blocked.
 function createResilientAuthStorage(root){
   const memory=new Map();
@@ -33,11 +33,7 @@ function createResilientAuthStorage(root){
     }
   };
 }
-const SB = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,{
-  global:{fetch:dashboardTrackedFetch},
-  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,
-    storage:createResilientAuthStorage(window)}
-});
+const SB = EKWLData.createClient();
 
 const esc = v => String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -262,7 +258,7 @@ function renderEfficiencyLadder(){
     <div class="eff-toolbar">
       <div>
         <div class="eff-note">Item-wise running day efficiency target (%)</div>
-        <div class="eff-note2">Value edit করে Save Changes চাপুন। Data centralized Supabase SQL-এ save হবে এবং সব device একই value ব্যবহার করবে।</div>
+        <div class="eff-note2">Value edit করে Save Changes চাপুন। Data centralized MySQL SQL-এ save হবে এবং সব device একই value ব্যবহার করবে।</div>
       </div>
       <div class="eff-actions">
         <span id="eff-save-msg"></span>
@@ -395,7 +391,7 @@ function renderChassisPriority(){
   document.getElementById('admin-setting-panel-body').innerHTML=`
     <div class="chassis-master-note">
       <div class="eff-note">Line-wise 1st & 2nd chassis priority</div>
-      <div class="eff-note2">এই Chassis list-ই পুরো dashboard-এর MASTER LINE LIST এবং এখন Supabase SQL থেকে load হয়। এখানে যে line থাকবে শুধু সেটাই Order, Buyer, EWO, Feeding, Calendar, KPI, Chart ও সব Count/Sum-এ গণনা হবে। শুধু Line 1–45, 47 এবং 48 valid। Line 46, 49, 50 বা অন্য কোনো line Dashboard calculation-এ allow করা হয় না।</div>
+      <div class="eff-note2">এই Chassis list-ই পুরো dashboard-এর MASTER LINE LIST এবং এখন MySQL SQL থেকে load হয়। এখানে যে line থাকবে শুধু সেটাই Order, Buyer, EWO, Feeding, Calendar, KPI, Chart ও সব Count/Sum-এ গণনা হবে। শুধু Line 1–45, 47 এবং 48 valid। Line 46, 49, 50 বা অন্য কোনো line Dashboard calculation-এ allow করা হয় না।</div>
     </div>
     <div class="tbl-wrap chassis-table-wrap">
       <table class="dt chassis-priority-table">
@@ -582,7 +578,7 @@ function applySitePermissions(){
   // User Home is a permission launcher only. Do not expose cross-module totals/status.
   if(!siteIsAdmin()){
     // Requested clean User Home: hide Fabrics & Cutting quick button
-    // and the complete Supabase/cache loading-status panel.
+    // and the complete MySQL/cache loading-status panel.
     document.querySelectorAll('[data-admin-home-extra="1"]').forEach(hideForRole);
 
     const home=document.getElementById('s0');
@@ -729,7 +725,7 @@ function setLoadChip(id,state,label){
   el.textContent=(state==='ok'?'✓ ':state==='loading'?'⟳ ':state==='err'?'✕ ':'')+label;
 }
 function resetLoadUI(){
-  setLoadProgress(3,'Supabase reports load শুরু হচ্ছে...');
+  setLoadProgress(3,'MySQL reports load শুরু হচ্ছে...');
   setLoadChip('load-plan','loading','Planning');
   setLoadChip('load-fabric','','Fabrics & Cutting');
   setLoadChip('load-sewing','','Sewing I/O');
@@ -933,7 +929,7 @@ async function switchPlanningInstant(uploadId){
   if(upload)ACTIVE_PLAN_UPLOAD=upload;
   if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
 
-  // Previously opened versions are restored instantly with zero Supabase requests.
+  // Previously opened versions are restored instantly with zero MySQL requests.
   if(PLAN_VERSION_CACHE.has(String(uploadId))&&canReusePlanningSnapshot(PLAN_VERSION_CACHE.get(String(uploadId)),upload)){
     restorePlanningState(PLAN_VERSION_CACHE.get(String(uploadId)));
     renderAll();
@@ -998,7 +994,7 @@ async function bootLiveSupabaseData(){
     invalidateSharedReports();
     invalidateTinySettings();
     const abpRead=fetchABPTargetFromSQL();
-    setSupabaseLiveBadge('','Supabase · checking live data…');
+    setSupabaseLiveBadge('','MySQL · checking live data…');
     await Promise.all([
       loadCentralAdminSettingsBeforeData(abpRead),
       loadS4StrengthsFromSQL(false),
@@ -1016,12 +1012,12 @@ async function bootLiveSupabaseData(){
       const keepId=ACTIVE_PLAN_UPLOAD?.id||null;
       if(!await loadFromSupabase(keepId,true,true))throw Error('Live report load did not complete');
       timingStatus='loaded';
-      setSupabaseLiveBadge('ok','Supabase Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+      setSupabaseLiveBadge('ok','MySQL Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
       return true;
     }catch(e){
-      console.error('Live Supabase verification failed',e);
+      console.error('Live MySQL verification failed',e);
       timingStatus=cached?'cached':'failed';
-      setSupabaseLiveBadge('err',cached?'Supabase check failed · cached data':'Supabase sync failed');
+      setSupabaseLiveBadge('err',cached?'MySQL check failed · cached data':'MySQL sync failed');
       if(!cached)throw e;
       return false;
     }
@@ -1075,7 +1071,7 @@ function restoreFastBootCache(){
   }catch(e){console.warn('Fast boot cache restore failed',e);return false;}
 }
 
-// ===== Persistent browser cache: instant bootstrap only; live Supabase is always verified =====
+// ===== Persistent browser cache: instant bootstrap only; live MySQL is always verified =====
 const DASH_CACHE_DB='EKWL_Planning_Cache_v3', DASH_CACHE_STORE='snapshots', DASH_CACHE_KEY='dashboard';
 function openDashCache(){
   return new Promise((resolve,reject)=>{
@@ -1150,7 +1146,7 @@ async function restoreDashboardFromCache(){
   setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
   setLoadChip('load-production','ok','Date Wise Production ('+DATE_WISE_PRODUCTION_DATA.length.toLocaleString()+')');
   setLoadProgress(100,'Browser cache থেকে instantly loaded');
-  setStatus(true,'Cached Supabase reports instantly loaded',
+  setStatus(true,'Cached MySQL reports instantly loaded',
     activePlanningLabel()+' · '+DATA.length+' Plan/Day · '+FABRIC_CUTTING_DATA.length+' Fabric/Cutting · '+SEWING_IO_DATA.length+' Sewing I/O · '+DATE_WISE_PRODUCTION_DATA.length+' Production');
   return true;
 }
@@ -1160,7 +1156,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
   const generation=SITE_SESSION_GENERATION,owner=SITE_AUTH_USER?.id;
   const current=()=>loadToken===SUPABASE_LOAD_TOKEN&&generation===SITE_SESSION_GENERATION&&owner===SITE_AUTH_USER?.id;
   try{
-    setStatus(true,'Supabase থেকে reports load হচ্ছে...','3%');
+    setStatus(true,'MySQL থেকে reports load হচ্ছে...','3%');
     resetLoadUI();
 
     const {data:uploads,error:upErr}=await SB.from('plan_uploads')
@@ -1169,7 +1165,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
       .order('uploaded_at',{ascending:false});
     if(!current())return false;
     if(upErr) throw upErr;
-    if(!uploads || !uploads.length) throw Error('Supabase-এ কোনো completed upload পাওয়া যায়নি.');
+    if(!uploads || !uploads.length) throw Error('MySQL-এ কোনো completed upload পাওয়া যায়নি.');
     PLAN_UPLOAD_CATALOG=uploads;
 
     const oldMonth=preserveFilters?document.getElementById('month-filter')?.value:'';
@@ -1216,9 +1212,9 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
   }catch(error){
     if(!current())return false;
     console.error(error);
-    setSupabaseLiveBadge('err','Supabase sync failed');
+    setSupabaseLiveBadge('err','MySQL sync failed');
     const lf=document.getElementById('load-fill');if(lf)lf.classList.remove('loading');
-    setStatus(false,'Supabase load failed: '+(error?.message||error)+'. CSV upload এখনও ব্যবহার করা যাবে.');
+    setStatus(false,'MySQL load failed: '+(error?.message||error)+'. CSV upload এখনও ব্যবহার করা যাবে.');
     return false;
   }
 }
@@ -1263,7 +1259,7 @@ function parseCSV(text){
    metadata.set(key,row);candidates.push(row);
   });
   DATA=candidates;MONTHS=sortedMonths(DATA);
-  // Legacy local CSV preview must not overwrite the Supabase Planning History filters.
+  // Legacy local CSV preview must not overwrite the MySQL Planning History filters.
   renderAll();goSlide(CURRENT_SLIDE);setStatus(true,DATA.length+' rows loaded successfully',DATA.length+' rows · '+MONTHS.length+' data months');return true;
  }catch(error){setStatus(false,error.message+' — previous data retained.');return false}
 }
@@ -3124,7 +3120,7 @@ function renderFeedingPie(elId, entries, totalFeeding){
     <div class="feeding-pie-center"><b>${fmt(totalFeeding)}</b><span>Total Feeding</span></div></div>
     <div class="feeding-pie-legend">${clean.map((x,i)=>`<div class="feeding-leg-row">
       <span class="feeding-leg-dot" style="background:${palette[i%palette.length]}"></span>
-      <span class="feeding-leg-name" title="${x.name}">${x.name}</span>
+      <span class="feeding-leg-name" title="${esc(x.name)}">${esc(x.name)}</span>
       <span class="feeding-leg-count">${fmt(x.value)}</span>
       <span class="feeding-leg-pct">${(x.value/totalFeeding*100).toFixed(1)}%</span>
     </div>`).join('')}</div>`;
@@ -3579,7 +3575,7 @@ async function addNewSiteUser(){
   const msg=document.getElementById('user-add-msg');
 
   if(!email){if(msg)msg.innerHTML='<span style="color:#dc2626">✕ Email দিন</span>';return}
-  if(password.length<6){if(msg)msg.innerHTML='<span style="color:#dc2626">✕ Password কমপক্ষে 6 characters দিন</span>';return}
+  if(password.length<12){if(msg)msg.innerHTML='<span style="color:#dc2626">✕ Password কমপক্ষে 12 characters দিন</span>';return}
   if(!SITE_USER_PROFILE || String(SITE_USER_PROFILE.role||'').toLowerCase()!=='admin'){
     if(msg)msg.innerHTML='<span style="color:#dc2626">✕ Admin access required</span>';return;
   }
@@ -3596,7 +3592,7 @@ async function addNewSiteUser(){
     if(msg)msg.innerHTML='<span style="color:#d97706">Creating confirmed Auth user...</span>';
 
     // Server-side Edge Function creates the Auth account with email_confirm:true.
-    // The current Admin JWT is sent automatically by the Supabase client.
+    // The current Admin JWT is sent automatically by the MySQL client.
     const {data:{session}}=await SB.auth.getSession();
     if(!session?.access_token)throw Error('Admin session expired. Please sign in again.');
     const {data,error}=await SB.functions.invoke('admin-create-user',{
@@ -3650,7 +3646,7 @@ async function loadSiteUsers(){
     '<th>Action</th>';
 
   body.innerHTML=`<tr><td colspan="${totalCols}" class="cen">Loading...</td></tr>`;
-  if(msg)msg.textContent='Loading from Supabase...';
+  if(msg)msg.textContent='Loading from MySQL...';
   try{
     const {data,error}=await SB.from('site_users').select('id,auth_user_id,email,role,status,permissions,created_at').order('created_at',{ascending:true});
     if(error)throw error;
@@ -3688,7 +3684,7 @@ async function saveSiteUser(id,btn){
     });
     if(error)throw error;
     if(!data?.success)throw Error(data?.error||'User update failed.');
-    if(msg)msg.textContent='✓ Saved to Supabase';await loadSiteUsers();
+    if(msg)msg.textContent='✓ Saved to MySQL';await loadSiteUsers();
   }catch(e){console.error(e);if(msg)msg.textContent='Save failed: '+e.message}
   finally{btn.disabled=false}
 }
@@ -3705,7 +3701,7 @@ async function removeSiteUser(id,btn){
     if(msg)msg.textContent='নিজের logged-in Admin account Remove করা যাবে না।';
     return;
   }
-  if(!confirm(`Permanently remove user?\n\n${email}\n\nAuth account + dashboard access দুটোই delete হবে।`))return;
+  if(!confirm(`Deactivate user?\n\n${email}\n\nএই account-এর login এবং dashboard access বন্ধ হবে।`))return;
   btn.disabled=true;if(msg)msg.textContent='Removing user...';
   try{
     const {data:{session}}=await SB.auth.getSession();
@@ -3716,7 +3712,7 @@ async function removeSiteUser(id,btn){
     });
     if(error)throw error;
     if(!data?.success)throw Error(data?.error||'User remove failed.');
-    if(msg)msg.textContent='✓ User permanently removed — Auth + dashboard access deleted';
+    if(msg)msg.textContent='✓ User deactivated — login and dashboard access revoked';
     await loadSiteUsers();
   }catch(e){
     console.error(e);
@@ -3825,11 +3821,11 @@ async function siteSendResetEmail(){
   if(!email){siteLoginMessage('Email দিন।','err');return}
   btn.disabled=true; siteLoginMessage('Reset link পাঠানো হচ্ছে...');
   try{
-    // Return to this exact dashboard URL; Supabase must allow this URL in Auth Redirect URLs.
+    // Return to this exact dashboard URL; MySQL must allow this URL in Auth Redirect URLs.
     const redirectTo=location.origin+location.pathname;
     const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo});
     if(error)throw error;
-    siteLoginMessage('Password reset link পাঠানো হয়েছে। Email inbox/spam check করুন।','ok');
+    siteLoginMessage('Reset request জমা হয়েছে। আপনার Admin-এর কাছ থেকে secure reset link নিন।','ok');
   }catch(e){
     console.error(e);
     siteLoginMessage(e?.message||'Reset email পাঠানো যায়নি।','err');
@@ -3839,7 +3835,7 @@ async function siteUpdatePassword(){
   const p1=document.getElementById('site-new-password')?.value||'';
   const p2=document.getElementById('site-confirm-password')?.value||'';
   const btn=document.getElementById('site-reset-update-btn');
-  if(p1.length<6){siteLoginMessage('Password কমপক্ষে 6 characters হতে হবে।','err');return}
+  if(p1.length<12){siteLoginMessage('Password কমপক্ষে 12 characters হতে হবে।','err');return}
   if(p1!==p2){siteLoginMessage('Confirm password মিলছে না।','err');return}
   btn.disabled=true; siteLoginMessage('Password update হচ্ছে...');
   try{
@@ -3858,9 +3854,10 @@ async function siteUpdatePassword(){
   }finally{btn.disabled=false}
 }
 
-// Supabase recovery event can arrive after the page has loaded.
+// MySQL recovery event can arrive after the page has loaded.
 SB.auth.onAuthStateChange((event,session)=>{
   if(event==='PASSWORD_RECOVERY') siteShowNewPassword();
+  if(event==='SESSION_EXPIRED'&&SITE_AUTH_USER)void siteLogout();
 });
 
 async function siteLogin(){
@@ -3879,7 +3876,7 @@ async function siteLogin(){
     if(!SITE_BOOTED){
       SITE_BOOTED=true;
 
-      // Load centralized SQL settings first, then always verify/reload live Supabase reports.
+      // Load centralized SQL settings first, then always verify/reload live MySQL reports.
       await bootLiveSupabaseData();
 
       applySitePermissions();
@@ -4059,7 +4056,7 @@ async function uploadNewPlan(){
   if(!planningId)planningId='P'+String(sequenceNo).padStart(2,'0');
 
   const {data:up,error:ue}=await SB.from('plan_uploads').insert({
-    file_name:file.name,row_count:rows.length,status:'processing',
+    file_name:file.name,row_count:rows.length,expected_daily_rows:rows.length*dateFields.length,status:'processing',
     planning_month:planningMonth+'-01',sequence_no:sequenceNo,planning_id:planningId
   }).select('id').single();
   if(ue)throw ue; uploadId=up.id; prog.value=8;
@@ -4071,7 +4068,7 @@ async function uploadNewPlan(){
   const records=rows.map((r,i)=>({
    upload_id:uploadId,source_row:i+2,is_summary_row:!r['Buyer']||!r['Line #'],
    unit:r['Unit']||null,line_no:r['Line #']||null,buyer:r['Buyer']||null,
-   product_type:r['Product Type']||null,product:r['Product']||null,ewo:csvNum(r['EWO']),
+   product_type:r['Product Type']||null,product:r['Product']||null,ewo:String(r['EWO']??'').trim()||null,
    stroke:r['Stroke']||null,po:r['P.O.']||null,col:r['Col']||null,print:r['Print']||null,
    emb:r['Emb']||null,outsource:r['Outsource']||null,order_qty:csvNum(r['Order qty']),
    planned_qty:csvNum(r['Planned qty']),pcd:planningCsvDate(r['PCD']),psd:planningCsvDate(r['PSD']),pfd:planningCsvDate(r['PFD']),
@@ -4103,7 +4100,7 @@ async function uploadNewPlan(){
 
 
 async function refreshDashboardAfterSuccessfulUpload(source,options={}){
-  setSupabaseLiveBadge('','Supabase · refreshing after upload…');
+  setSupabaseLiveBadge('','MySQL · refreshing after upload…');
   const session=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   const current=()=>session===SITE_SESSION_GENERATION&&userId===SITE_AUTH_USER?.id;
   const dep=invalidateUploadDependencies(source);
@@ -4129,7 +4126,7 @@ async function refreshDashboardAfterSuccessfulUpload(source,options={}){
     if(dep.readiness)await loadEWOReadinessBoard(dep.coverage===true);
     else if(dep.coverage)await loadReadyInputCoverage();
   }else if((dep.reports||source==='embellishment')&&[7,11].includes(CURRENT_SLIDE)&&canAccessSlide(CURRENT_SLIDE))renderSlide(CURRENT_SLIDE);
-  setSupabaseLiveBadge('ok','Supabase Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+  setSupabaseLiveBadge('ok','MySQL Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
 }
 
 /* ══ FABRICS & CUTTING CSV UPLOAD ═══════════════ */
@@ -4405,7 +4402,7 @@ async function uploadDateWiseProduction(){
     prog.value=100;
     msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Date: ${dates.join(', ')}. Local cache update হচ্ছে...`;
     await refreshDashboardAfterSuccessfulUpload('production');
-    msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Actual Production Report: ${dwpDisplayDate(dates[0])} → ${dwpDisplayDate(dates[dates.length-1])}. Live Supabase data updated; local cache refreshed.`;
+    msg.textContent=`✓ Upload complete: ${rows.length.toLocaleString()} rows | Actual Production Report: ${dwpDisplayDate(dates[0])} → ${dwpDisplayDate(dates[dates.length-1])}. Live MySQL data updated; local cache refreshed.`;
   }catch(e){console.error(e);msg.textContent='Upload failed: '+(e?.message||e);prog.value=0;}
 }
 
@@ -4418,7 +4415,7 @@ document.addEventListener('keydown',e=>{
 /* ══ RESIZE CHARTS ══════════════════════════════ */
 window.addEventListener('resize',()=>{if(DATA.length&&CURRENT_SLIDE===8)renderS7(getFiltered())});
 
-/* Centralized runtime settings: source of truth is Supabase, never localStorage. */
+/* Centralized runtime settings: source of truth is MySQL, never localStorage. */
 let LIVE_ABP_TARGET_EFF=55;
 function parsePercentNumber(v,fallback=55){
   const n=Number(String(v??'').replace(/[^0-9.+-]/g,''));
@@ -4478,7 +4475,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
     return;
   }
 
-  // Persistent login: browser refresh/reopen keeps the valid Supabase session.
+  // Persistent login: browser refresh/reopen keeps the valid MySQL session.
   try{
     const {data:{session},error}=await SB.auth.getSession();
     if(error)throw error;
@@ -4487,7 +4484,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
       unlockSite(session.user,profile);
       SITE_BOOTED=true;
 
-      // Cache may paint instantly, but Supabase is always checked and reloaded.
+      // Cache may paint instantly, but MySQL is always checked and reloaded.
       await bootLiveSupabaseData();
       applySitePermissions();
       restoreActiveTab();
@@ -4690,7 +4687,7 @@ async function uploadFloorAllocation(){
     msg.textContent=`✓ Floor Allocation updated: ${Number(a.inserted_rows).toLocaleString()} rows | Missing Rows: 0 | Status: SUCCESS`;
   msg.textContent=msg.textContent+' · refreshing live dashboard…';
      await refreshDashboardAfterSuccessfulUpload('floor');
-     msg.textContent=msg.textContent.replace(' · refreshing live dashboard…','')+' · Live Supabase refreshed';
+     msg.textContent=msg.textContent.replace(' · refreshing live dashboard…','')+' · Live MySQL refreshed';
   }catch(e){msg.textContent='Upload failed: '+(e?.message||e);}
 }
 

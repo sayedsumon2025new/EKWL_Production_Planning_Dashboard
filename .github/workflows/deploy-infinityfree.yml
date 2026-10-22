@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:
       FTP_HOST: ${{ secrets.INFINITYFREE_FTP_HOST }}
@@ -22,6 +23,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Refuse PHP migration from frontend-only deployment
+        shell: bash
+        run: |
+          if [[ -f mysql-api-client.js ]]; then
+            echo "::error::PHP/MySQL staging requires a separately reviewed backend cutover. This workflow cannot publish it."
+            exit 1
+          fi
 
       - name: Check FTP secrets
         id: ready
@@ -44,7 +53,7 @@ jobs:
           root=Path('.')
           stage=Path('/tmp/ekwl-frontend-stage')
           allow={'.html','.htm','.css','.js','.mjs','.svg','.png','.jpg','.jpeg','.webp','.gif','.ico','.woff','.woff2','.ttf','.otf','.wasm'}
-          forbidden={'ekwl-mysql','.git','.github','supabase','tests','node_modules','vendor','backup','backups'}
+          forbidden={'ekwl-mysql','.git','.github','supabase','tests','node_modules','vendor','backup','backups','backend','database','tools','docs','api','dist'}
           count=0
           for file in root.rglob('*'):
               if not file.is_file() or file.is_symlink():
