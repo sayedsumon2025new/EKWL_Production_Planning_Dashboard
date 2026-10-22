@@ -39,7 +39,8 @@ function setup(source,options={}){
   c.resetLoadUI=()=>{};
   Object.assign(c,{EFF15_METRIC_DAILY:[],EFF15_METRIC_UPLOAD_ID:null,SITE_SESSION_GENERATION:0,SITE_AUTH_USER:{id:'test-admin'}});
   vm.createContext(c);
-  const names=['capturePlanningState','restorePlanningState','fetchPlanningSnapshot','loadFromSupabase'];
+  c.PLANNING_CACHE_VALIDATION=null;c.getChassisMasterLines=()=>new Set([1,2,3]);
+  const names=['planningSnapshotVersion','canReusePlanningSnapshot','capturePlanningState','restorePlanningState','fetchPlanningSnapshot','loadFromSupabase'];
   if(source.includes('async function sbPaged('))names.unshift('sbPaged');else names.unshift('sbAll');
   vm.runInContext(fs.readFileSync(__dirname+'/../frontend-runtime.js','utf8'),c);
   vm.runInContext(fs.readFileSync(__dirname+'/../shared-report-loader.js','utf8'),c);
@@ -66,6 +67,43 @@ function state(c){return JSON.parse(JSON.stringify({planning:c.capturePlanningSt
   assert.ok(next.maxActive()>=2);
   assert.equal(next.calls.filter(q=>['fabric_cutting_info','sewing_input_output','date_wise_production'].includes(q.table)).length,0);
   console.log('PASS Home boot performs zero raw shared-report reads');
+  // A page refresh restores a serialized, owner-scoped complete snapshot.
+  const saved=JSON.parse(JSON.stringify(next.c.capturePlanningState()));
+  const refresh=setup(html);
+  refresh.c.restorePlanningState(saved);
+  refresh.c.PLAN_VERSION_CACHE.set('1',saved);
+  assert.equal(await refresh.c.loadFromSupabase(1,true,true),true);
+  assert.equal(refresh.calls.length,1);
+  assert.equal(refresh.calls[0].table,'plan_uploads');
+  assert.deepEqual(state(refresh.c).planning,state(next.c).planning);
+  assert.ok(refresh.events.some(e=>String(e[1]).includes('Planning unchanged')));
+  console.log('PASS unchanged refresh: one metadata request, zero planning-detail requests, full result parity');
+  const reuseCase=()=>{const x=setup(html);x.c.PLAN_VERSION_CACHE.set('1',JSON.parse(JSON.stringify(saved)));return x;};
+  async function expectDetails(x,reuse=true){
+    assert.equal(await x.c.loadFromSupabase(1,true,reuse),true);
+    assert.ok(x.calls.some(q=>q.table==='plan_records'));
+    assert.ok(x.calls.some(q=>q.table==='plan_daily'));
+  }
+  const changed=reuseCase();changed.tables.plan_uploads[0].row_count=999;await expectDetails(changed);
+  const expired=reuseCase();expired.c.PLAN_VERSION_CACHE.get('1').cacheValidation.fetchedAt=Date.now()-16*60*1000;await expectDetails(expired);
+  const differentOwner=reuseCase();differentOwner.c.SITE_AUTH_USER={id:'another-user'};await expectDetails(differentOwner);
+  const lines=reuseCase();lines.c.getChassisMasterLines=()=>new Set([1,2]);await expectDetails(lines);
+  const legacy=reuseCase();delete legacy.c.PLAN_VERSION_CACHE.get('1').cacheValidation;await expectDetails(legacy);
+  const corrupt=reuseCase();delete corrupt.c.PLAN_VERSION_CACHE.get('1').EFF15_METRIC_DAILY;await expectDetails(corrupt);
+  await expectDetails(reuseCase(),false); // Explicit reload remains a full fetch.
+  const newPlan=reuseCase();
+  newPlan.tables.plan_uploads.push({...newPlan.tables.plan_uploads[0],id:2});
+  newPlan.tables.plan_records.push(...newPlan.tables.plan_records.map(r=>({...r,upload_id:2})));
+  newPlan.tables.plan_daily.push(...newPlan.tables.plan_daily.map(r=>({...r,upload_id:2})));
+  assert.equal(await newPlan.c.loadFromSupabase(2,true,true),true);
+  assert.equal(newPlan.c.EFF15_METRIC_UPLOAD_ID,'2');
+  assert.ok(newPlan.calls.some(q=>q.table==='plan_daily'));
+  const revoked=reuseCase();const pendingRefresh=revoked.c.loadFromSupabase(1,true,true);
+  revoked.c.SITE_SESSION_GENERATION++;revoked.c.SITE_AUTH_USER=null;
+  assert.equal(await pendingRefresh,false);
+  assert.equal(revoked.c.DATA.length,0);
+  console.log('PASS new/changed uploads, expiry, owner/line changes, legacy/corrupt caches and explicit reload fetch fresh data; logout blocks publication');
+
   const homeRequests=next.calls.length;
   await next.c.ensureSharedReports(next.c.sharedReportsForSlide(7));
   assert.ok(next.maxActive()>=3);

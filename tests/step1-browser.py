@@ -85,6 +85,16 @@ try:
         assert len([c for c in home.evaluate('window.calls') if c['table']=='abp_target']) == 1
         home_values = home.locator('#home-live-kpis .home-live-kpi-val').all_text_contents()
         assert home_values[:2] == ['100','300'], home_values
+        for storage in ['sessionStorage', 'indexedDB']:
+            if storage == 'indexedDB':
+                home.evaluate("Object.keys(sessionStorage).filter(k=>k.startsWith('EKWL_FAST_BOOT_')).forEach(k=>sessionStorage.removeItem(k))")
+            home.reload(wait_until='domcontentloaded')
+            home.wait_for_function("window.EKWL_TIMINGS?.some(t=>t.name==='boot'&&t.status==='loaded')")
+            assert not [c for c in home.evaluate('window.calls') if c['table'] in ['plan_records','plan_daily']]
+            assert len([c for c in home.evaluate('window.calls') if c['table']=='plan_uploads']) == 1
+            assert home.locator('#home-live-kpis .home-live-kpi-val').all_text_contents() == home_values
+            assert home.evaluate('canReusePlanningSnapshot(capturePlanningState(),ACTIVE_PLAN_UPLOAD)')
+        print('PASS real page refresh: sessionStorage and IndexedDB restore; metadata only, no planning-detail downloads, identical Home totals')
         # Direct filter/action calls during first open share the same dependency request.
         home.evaluate("goSlide(7);renderS11(getFiltered());showGanttActionTab('psd');")
         home.wait_for_function("document.querySelector('#gantt-action-body')?.textContent.includes('PSD') && sharedReportsReady(['fabric','sewing','production'])")

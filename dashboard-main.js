@@ -80,6 +80,7 @@ let DATE_WISE_PRODUCTION_DATA = [];
 let PLAN_UPLOAD_CATALOG=[];
 let ACTIVE_PLAN_UPLOAD=null;
 const PLAN_VERSION_CACHE=new Map();
+let PLANNING_CACHE_VALIDATION=null;
 let PLAN_FILTER_TOKEN=0;
 let DAILY_PLAN = [];
 let SAH_DATA = [];
@@ -774,6 +775,7 @@ function rebuildPlanningFilters(preferredMonth,preferredUploadId){
 
 function capturePlanningState(){
   return {
+    cacheValidation:PLANNING_CACHE_VALIDATION,
     DATA,DAILY_PLAN,SAH_DATA,SAH_DAILY,CLOCK_HOUR_DATA,BUYER_PLAN_DATA,
     EFF15_METRIC_DAILY,EFF15_METRIC_UPLOAD_ID,
     CLOCK_HOUR_DAILY:typeof CLOCK_HOUR_DAILY!=='undefined'?CLOCK_HOUR_DAILY:[],
@@ -781,6 +783,7 @@ function capturePlanningState(){
   };
 }
 function restorePlanningState(c){
+  PLANNING_CACHE_VALIDATION=c.cacheValidation||null;
   DATA=c.DATA||[];DAILY_PLAN=c.DAILY_PLAN||[];SAH_DATA=c.SAH_DATA||[];SAH_DAILY=c.SAH_DAILY||[];
   CLOCK_HOUR_DATA=c.CLOCK_HOUR_DATA||[];BUYER_PLAN_DATA=c.BUYER_PLAN_DATA||[];
   if(typeof CLOCK_HOUR_DAILY!=='undefined')CLOCK_HOUR_DAILY=c.CLOCK_HOUR_DAILY||[];
@@ -812,7 +815,23 @@ async function sbAll(table,select,filters=[]){
   }
   return out;
 }
+// Completed app uploads are snapshots; new uploads receive a new ID.
+// Bound reuse because direct SQL edits may not update upload metadata.
+function planningSnapshotVersion(upload){
+  return JSON.stringify({schema:1,owner:SITE_AUTH_USER?.id||'',
+    upload:Object.keys(upload||{}).sort().map(key=>[key,upload[key]]),
+    lines:[...getChassisMasterLines()].sort((a,b)=>a-b)});
+}
+function canReusePlanningSnapshot(snapshot,upload){
+  const stamp=snapshot?.cacheValidation;
+  if(!stamp || stamp.version!==planningSnapshotVersion(upload))return false;
+  const age=Date.now()-stamp.fetchedAt;
+  if(!Number.isFinite(age)||age<0||age>=15*60*1000)return false;
+  const fields=['DATA','DAILY_PLAN','SAH_DATA','SAH_DAILY','CLOCK_HOUR_DATA','CLOCK_HOUR_DAILY','BUYER_PLAN_DATA','MONTHS','EFF15_METRIC_DAILY'];
+  return fields.every(key=>Array.isArray(snapshot[key])) && String(snapshot.EFF15_METRIC_UPLOAD_ID)===String(upload.id);
+}
 async function fetchPlanningSnapshot(upload){
+  const version=planningSnapshotVersion(upload);
   const [records,daily]=await Promise.all([
     sbPaged(()=>SB.from('plan_records')
       .select('id,source_row,line_no,buyer,product_type,product,ewo,po,col,print,emb,outsource,order_qty,pcd,delivery,psd,pfd,manpower,smv,criteria,total,is_summary_row')
@@ -877,7 +896,7 @@ async function fetchPlanningSnapshot(upload){
     if(c)CLOCK_DAILY_LOCAL.push({record_id:d.record_id,date:d.plan_date,value:N(d.value),
       line:c.line,ewo:c.ewo,buyer:c.buyer,style:c.style});
   }
-  return {DATA:DATA_LOCAL,DAILY_PLAN:DAILY_LOCAL,SAH_DATA:SAH_LOCAL,SAH_DAILY:SAH_DAILY_LOCAL,CLOCK_HOUR_DATA:CLOCK_LOCAL,
+  return {cacheValidation:{version,fetchedAt:Date.now()},DATA:DATA_LOCAL,DAILY_PLAN:DAILY_LOCAL,SAH_DATA:SAH_LOCAL,SAH_DAILY:SAH_DAILY_LOCAL,CLOCK_HOUR_DATA:CLOCK_LOCAL,
     EFF15_METRIC_DAILY:METRIC_LOCAL,EFF15_METRIC_UPLOAD_ID:String(upload.id),
     CLOCK_HOUR_DAILY:CLOCK_DAILY_LOCAL,BUYER_PLAN_DATA:BUYER_PLAN_DATA_LOCAL,
     MONTHS:[...new Set(DAILY_LOCAL.map(d=>monthFromISO(d.date)).filter(Boolean))].sort((a,b)=>monthTime(a)-monthTime(b))};
@@ -915,7 +934,7 @@ async function switchPlanningInstant(uploadId){
   if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
 
   // Previously opened versions are restored instantly with zero Supabase requests.
-  if(PLAN_VERSION_CACHE.has(String(uploadId))){
+  if(PLAN_VERSION_CACHE.has(String(uploadId))&&canReusePlanningSnapshot(PLAN_VERSION_CACHE.get(String(uploadId)),upload)){
     restorePlanningState(PLAN_VERSION_CACHE.get(String(uploadId)));
     renderAll();
     if(CURRENT_SLIDE>9){try{renderSlide(CURRENT_SLIDE)}catch(e){console.error(e)}}
@@ -995,7 +1014,7 @@ async function bootLiveSupabaseData(){
     if(generation!==SITE_SESSION_GENERATION||!SITE_AUTH_USER)return false;
     try{
       const keepId=ACTIVE_PLAN_UPLOAD?.id||null;
-      if(!await loadFromSupabase(keepId,true))throw Error('Live report load did not complete');
+      if(!await loadFromSupabase(keepId,true,true))throw Error('Live report load did not complete');
       timingStatus='loaded';
       setSupabaseLiveBadge('ok','Supabase Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
       return true;
@@ -1136,17 +1155,19 @@ async function restoreDashboardFromCache(){
   return true;
 }
 let SUPABASE_LOAD_TOKEN=0;
-async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
+async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reuseCache=false){
   const loadToken=++SUPABASE_LOAD_TOKEN;
+  const generation=SITE_SESSION_GENERATION,owner=SITE_AUTH_USER?.id;
+  const current=()=>loadToken===SUPABASE_LOAD_TOKEN&&generation===SITE_SESSION_GENERATION&&owner===SITE_AUTH_USER?.id;
   try{
     setStatus(true,'Supabase থেকে reports load হচ্ছে...','3%');
     resetLoadUI();
 
     const {data:uploads,error:upErr}=await SB.from('plan_uploads')
-      .select('id,file_name,uploaded_at,row_count,planning_month,sequence_no,planning_id')
+      .select('*') // Small upload metadata only, including any source revision fields.
       .eq('status','complete')
       .order('uploaded_at',{ascending:false});
-    if(loadToken!==SUPABASE_LOAD_TOKEN)return false;
+    if(!current())return false;
     if(upErr) throw upErr;
     if(!uploads || !uploads.length) throw Error('Supabase-এ কোনো completed upload পাওয়া যায়নি.');
     PLAN_UPLOAD_CATALOG=uploads;
@@ -1156,8 +1177,10 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     const selectedId=requestedUploadId || document.getElementById('planning-sequence-filter')?.value || uploads[0].id;
     const upload=uploads.find(u=>String(u.id)===String(selectedId)) || uploads[0];
     ACTIVE_PLAN_UPLOAD=upload;
-    const snapshot=await fetchPlanningSnapshot(upload);
-    if(loadToken!==SUPABASE_LOAD_TOKEN)return false;
+    const cached=PLAN_VERSION_CACHE.get(String(upload.id));
+    const reused=reuseCache&&canReusePlanningSnapshot(cached,upload);
+    const snapshot=reused?cached:await fetchPlanningSnapshot(upload);
+    if(!current())return false;
     restorePlanningState(snapshot);
 
     // Keep Slide 15 FR Comparison synchronized with the selected Planning upload.
@@ -1177,12 +1200,11 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
 
     renderAll();
     PLAN_VERSION_CACHE.set(String(upload.id),capturePlanningState());
-    saveFastBootCache();
-    await saveDashboardCache();
-    if(loadToken!==SUPABASE_LOAD_TOKEN)return false;
-    setLoadProgress(100,'Planning loaded · shared reports load on demand');
+    if(!reused){saveFastBootCache();await saveDashboardCache();}
+    if(!current())return false;
+    setLoadProgress(100,reused?'Planning version checked · browser cache reused':'Planning loaded · shared reports load on demand');
     setStatus(true,
-      'Planning successfully loaded',
+      reused?'Planning unchanged · loaded from browser cache':'Planning successfully loaded',
       activePlanningLabel()+' · '+DATA.length+' Plan/Day · '+FABRIC_CUTTING_DATA.length+' Fabric/Cutting · '+SEWING_IO_DATA.length+' Sewing I/O · '+DATE_WISE_PRODUCTION_DATA.length+' Production'
     );
     // Keep whichever tab the user is currently working on.
@@ -1192,7 +1214,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false){
     // A version is fetched only when the user explicitly selects it.
     return true;
   }catch(error){
-    if(loadToken!==SUPABASE_LOAD_TOKEN)return false;
+    if(!current())return false;
     console.error(error);
     setSupabaseLiveBadge('err','Supabase sync failed');
     const lf=document.getElementById('load-fill');if(lf)lf.classList.remove('loading');

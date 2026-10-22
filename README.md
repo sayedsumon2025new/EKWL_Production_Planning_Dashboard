@@ -35,3 +35,24 @@ node tests/order-bank-upload.cjs /absolute/path/to/Order\ Bank.csv
 
 `tests/order-bank-import.sql` verifies SQL snapshot activation using an existing
 active admin fixture and rolls back all fixture rows and batches.
+
+## Planning refresh cache
+
+On browser refresh, startup reads the completed-upload catalog and compares the
+selected upload metadata with the cached snapshot. Matching complete snapshots
+reuse their planning records and daily values for up to 15 minutes from the last
+full fetch. The cache stamp includes the signed-in user, master line set, and
+snapshot schema version. Legacy, incomplete, expired, or mismatched snapshots
+are downloaded again. Normal app uploads create a new upload ID and invalidate
+planning caches; selecting a new version fetches its details.
+
+Direct SQL edits to detail rows might not change upload metadata. They become
+visible on the next full fetch, including startup after the 15-minute reuse
+window expires. The interval is checked on load, not by a background timer.
+Explicit internal full reloads and successful planning uploads bypass reuse.
+The Home status distinguishes a reused snapshot from freshly downloaded data.
+
+Validation: `node tests/loading.cjs` covers version changes, expiry, ownership,
+master lines, invalid caches, new uploads, forced loads, and session races.
+`python tests/step1-browser.py` verifies actual reloads through sessionStorage
+and IndexedDB with unchanged Home totals and no planning-detail requests.
