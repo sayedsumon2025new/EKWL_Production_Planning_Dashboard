@@ -1269,7 +1269,7 @@ box-shadow:0 10px 28px rgba(15,39,72,.28);font-size:10px;line-height:1.35}
 .eff15-fr-cell.eff15-above > *{background:transparent!important}
 
 #s6 .s6-filter-bar{display:flex;align-items:center;gap:10px;margin:10px 0 14px;font-size:12px;font-weight:700}
-#s6-feeding-filter,#s6-order-range-filter{padding:6px 12px;border:1px solid #9eafbc;border-radius:4px;background:#fff;color:#17314e}
+#s6-feeding-filter,#s6-order-range-filter,#s6-psd-from,#s6-psd-to{padding:6px 12px;border:1px solid #9eafbc;border-radius:4px;background:#fff;color:#17314e}
 #s6 #s6-tbl thead th{background:#c6efce;color:#176125;border:1px solid #8a9d95}
 #s6 #s6-tbl tbody tr:nth-child(odd) td{background:#c0e6f2;color:#17314e}
 #s6 #s6-tbl tbody tr:nth-child(even) td{background:#fff;color:#17314e}
@@ -1295,6 +1295,8 @@ box-shadow:0 10px 28px rgba(15,39,72,.28);font-size:10px;line-height:1.35}
 #s6 #s6-tbl th:nth-child(3),#s6 #s6-tbl td:nth-child(3){white-space:nowrap}
 #s6 #s6-tbl th:nth-child(4),#s6 #s6-tbl td:nth-child(4),#s6 #s6-tbl th:nth-child(9),#s6 #s6-tbl td:nth-child(9){min-width:100px}
 #s6 .s6-filter-bar{flex-wrap:wrap;gap:10px}
+#s6 .s6-psd-note{font-size:12px;color:var(--text2)}
+#s6 .s6-controls input[type="date"]{padding:7px 10px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text);font:inherit;color-scheme:light dark;max-width:100%;box-sizing:border-box}
 @media(max-width:700px){#s6 .s6-analysis-top{grid-template-columns:1fr}#s6 table th,#s6 table td{padding:6px}#s6 #s6-tbl{min-width:800px}}
 
 #s6{--s6-border:#d5e1ee}
@@ -2482,7 +2484,11 @@ input,select,textarea{
     </div>
   </div>
   <div class="card s6-controls">    <div class="s6-filter-bar"><label for="s6-feeding-filter">No. of Feeding</label>
-      <select id="s6-feeding-filter" onchange="renderS6(getFiltered())"><option value="">All</option></select><label for="s6-order-range-filter">Order Qty Range</label><select id="s6-order-range-filter" onchange="renderS6(getFiltered())"><option value="">All ranges</option></select></div></div>
+      <select id="s6-feeding-filter" onchange="renderS6(getFiltered())"><option value="">All</option></select><label for="s6-order-range-filter">Order Qty Range</label><select id="s6-order-range-filter" onchange="renderS6(getFiltered())"><option value="">All ranges</option></select>
+      <label for="s6-psd-from">PSD From</label><input id="s6-psd-from" type="date" onchange="s6PSDRangeChanged('from')">
+      <label for="s6-psd-to">PSD To</label><input id="s6-psd-to" type="date" onchange="s6PSDRangeChanged('to')">
+      <button type="button" class="pg-btn" onclick="s6ResetPSDRange()">All PSD dates</button>
+    </div><div id="s6-psd-note" class="s6-psd-note" aria-live="polite"></div></div>
   <div class="card" id="s6-data-warning" role="status" hidden></div>
   <div class="kpi-row" id="s6-kpi"></div>
 <div class="s6-reference-row"><div class="card"><div class="card-title">📊 Order QTY Range Analysis</div><div class="tbl-wrap" id="s6-range-summary"></div></div><div class="card"><div class="s2-top-pie" id="s6-range-pie"></div></div></div><div class="card"><div class="card-title">📈 Order Range Distribution</div><div class="bar-chart" id="s6-range-bar"></div></div><div class="card"><div class="card-title">📌 Summary</div><div id="s6-range-kpis"></div></div><div class="s6-reference-row"><div class="card">
@@ -3134,7 +3140,7 @@ input,select,textarea{
 <script defer src="shared-report-loader.js?v=2"></script>
 <script defer src="frontend-runtime.js?v=2"></script>
 <script defer src="data-cache.js?v=3"></script>
-<script defer src="dashboard-main.js?v=20261022-plancache1"></script>
+<script defer src="dashboard-main.js?v=20261022-psdrange1"></script>
 <script defer src="dashboard-effects.js?v=2"></script>
 <script defer src="order-execution-bridge.js?v=3"></script>
 <script defer src="load-analysis-bridge.js?v=20261022-abp2"></script>

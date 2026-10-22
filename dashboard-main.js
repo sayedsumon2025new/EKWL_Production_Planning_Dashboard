@@ -2581,12 +2581,12 @@ function renderS5(data){
 }
 
 /* ══ SLIDE 6: EWO DETAILS ═══════════════════════ */
-function buildS6Rows(data,month){
+function buildS6Rows(data,month,from='',to=''){
   const groups=new Map();
   for(const r of data){
     const psd=String(r.startdate||'').slice(0,10),ewo=String(r.ewo??'').trim();
     // DATA contains only Plan/Day rows. PSD must belong to the selected plan month.
-    if(!ewo||!/^\d{4}-\d{2}-\d{2}$/.test(psd)||psd.slice(0,7)!==month)continue;
+    if(!ewo||!s6PSDMatches(r,month,from,to))continue;
     if(!groups.has(ewo))groups.set(ewo,{ewo,firstPSD:psd,buyers:new Set(),items:new Set(),orderqty:0,planqty:0,lineQty:new Map()});
     const g=groups.get(ewo),line=String(r.line??'').trim();
     if(psd<g.firstPSD)g.firstPSD=psd;
@@ -2598,6 +2598,22 @@ function buildS6Rows(data,month){
     const lines=[...g.lineQty.keys()].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
     return {...g,lines,splits:lines.map(l=>g.lineQty.get(l)),feeding:lines.length};
   }).sort((a,b)=>a.firstPSD.localeCompare(b.firstPSD)||a.ewo.localeCompare(b.ewo,undefined,{numeric:true}));
+}
+function s6PSDMatches(row,month,from='',to=''){
+  const psd=String(row.startdate||'').slice(0,10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(psd)&&psd.slice(0,7)===month&&(!from||psd>=from)&&(!to||psd<=to);
+}
+function s6PSDRangeChanged(which){
+  const from=document.getElementById('s6-psd-from'),to=document.getElementById('s6-psd-to');
+  if(from.value&&to.value&&from.value>to.value){
+    if(which==='from')to.value=from.value;else from.value=to.value;
+  }
+  renderS6(getFiltered());
+}
+function s6ResetPSDRange(){
+  document.getElementById('s6-psd-from').value='';
+  document.getElementById('s6-psd-to').value='';
+  renderS6(getFiltered());
 }
 function buildS6RangeSummary(rows){
   const ranges=[['Below 500',0,500],['501-1000',501,1000],['1001-2000',1001,2000],['2001-3000',2001,3000],['3001-5000',3001,5000],['5001-8000',5001,8000],['Above 8000',8001,Infinity]];
@@ -2638,7 +2654,16 @@ function renderS6(data){
   const previous=filter.dataset.scope===scope?filter.value:'';
   const previousRange=rangeFilter.dataset.scope===scope?rangeFilter.value:'';
   filter.dataset.scope=scope;rangeFilter.dataset.scope=scope;
-  const allRows=buildS6Rows(data,month);
+  const fromInput=document.getElementById('s6-psd-from'),toInput=document.getElementById('s6-psd-to');
+  for(const input of [fromInput,toInput]){
+    if(input.dataset.scope!==scope)input.value='';
+    input.dataset.scope=scope;
+    input.min=month+'-01';
+    input.max=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10);
+  }
+  const from=fromInput.value,to=toInput.value;
+  document.getElementById('s6-psd-note').textContent='PSD: '+(from||'month start')+' → '+(to||'month end')+' · '+monthText;
+  const allRows=buildS6Rows(data,month,from,to);
   const missingPSD=data.filter(r=>!/^\d{4}-\d{2}-\d{2}$/.test(String(r.startdate||''))).length;
   const warning=document.getElementById('s6-data-warning');
   warning.hidden=!missingPSD;
@@ -2656,7 +2681,7 @@ function renderS6(data){
   document.getElementById('s6-feeding-body').innerHTML=[...frequencies].sort((a,b)=>a[0]-b[0]).map(([times,count])=>'<tr><td class="cen">'+times+'</td><td class="num">'+fmt(count)+'</td><td class="num">'+fmt(times*count)+'</td><td class="num">'+(rows.length?count/rows.length*100:0).toFixed(1)+'%</td><td></td></tr>').join('');
   document.getElementById('s6-feeding-foot').innerHTML='<td>Total Run EWO</td><td class="num">'+fmt(rows.length)+'</td><td class="num">'+fmt(rows.reduce((s,r)=>s+r.feeding,0))+'</td><td class="num">'+(rows.length?'100.0%':'0.0%')+'</td><td></td>';
   const selectedEwos=new Set(rows.map(r=>r.ewo));
-  S6_FEEDING_SOURCE=data.filter(r=>String(r.startdate||'').slice(0,7)===month&&selectedEwos.has(String(r.ewo??'').trim())).map(r=>({...r,month}));
+  S6_FEEDING_SOURCE=data.filter(r=>s6PSDMatches(r,month,from,to)&&selectedEwos.has(String(r.ewo??'').trim())).map(r=>({...r,month}));
   renderS6RangeSummary(rows,S6_FEEDING_SOURCE);
   renderS8(S6_FEEDING_SOURCE);
   if(data.length&&missingPSD===data.length){
@@ -2675,7 +2700,7 @@ function renderS6(data){
     '<td>'+r.lines.map(esc).join(' | ')+'</td><td class="num">'+r.feeding+'</td>'+
     '<td>'+[...r.items].map(esc).join(', ')+'</td><td class="num">'+fmt(r.orderqty)+'</td>'+
     '<td class="num">'+fmt(r.planqty)+'</td><td>'+r.splits.map(fmt).join(' | ')+'</td></tr>').join('')||
-    '<tr><td colspan="9" class="cen">No EWOs match the planning month PSD, feeding and Order Qty Range filters.</td></tr>';
+    '<tr><td colspan="9" class="cen">No EWOs match the PSD date range, planning month, feeding and Order Qty Range filters.</td></tr>';
   document.getElementById('s6-foot').innerHTML='<td><strong>Total</strong></td><td>—</td><td class="num">'+rows.length+'</td><td>—</td><td class="num">'+fmt(feeding)+'</td><td>—</td><td class="num">'+fmt(totOrd)+'</td><td class="num">'+fmt(totPlan)+'</td><td class="num">'+fmt(totPlan)+'</td>';
   if(data.length&&missingPSD===data.length){
     document.getElementById('s6-body').innerHTML='<tr><td colspan="9" class="cen">Analysis unavailable: all source PSD dates are missing.</td></tr>';

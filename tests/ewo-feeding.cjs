@@ -4,8 +4,8 @@ const source=html.slice(html.indexOf('function buildS6Rows('),html.indexOf('/* â
 const nodes=new Map();
 const document={getElementById(id){if(!nodes.has(id))nodes.set(id,{value:'',innerHTML:'',textContent:'',dataset:{}});return nodes.get(id);}};
 const upload={id:'P04',planning_month:'2026-09'};
-const api=new Function('N','document','ACTIVE_PLAN_UPLOAD','uploadMonthKey','planningMonthLabel','fmt','esc','renderS8',source+';return {buildS6Rows,renderS6};')(
- x=>Number(x)||0,document,upload,u=>u.planning_month,m=>m,String,String,()=>{});
+const api=new Function('N','document','ACTIVE_PLAN_UPLOAD','uploadMonthKey','planningMonthLabel','fmt','esc','renderS8','getFiltered',source+';return {buildS6Rows,renderS6,s6PSDRangeChanged,s6ResetPSDRange,get source(){return S6_FEEDING_SOURCE}};')(
+ x=>Number(x)||0,document,upload,u=>u.planning_month,m=>m,String,String,()=>{},()=>data);
 const data=[
  {ewo:'A',line:2,startdate:'2026-09-05',buyer:'Buyer A',style:'Hoody',po:'P1',color:'Black',orderqty:3000,planqty:2000},
  {ewo:'A',line:2,startdate:'2026-09-05',buyer:'Buyer A',style:'Hoody',po:'P2',color:'Blue',orderqty:1000,planqty:500},
@@ -46,3 +46,28 @@ assert.doesNotMatch(document.getElementById('s6-foot').innerHTML,/>0<\/td>/);
 api.renderS6(data);assert.equal(document.getElementById('s6-data-warning').hidden,false);
 api.renderS6(data.filter(r=>r.startdate));assert.equal(document.getElementById('s6-data-warning').hidden,true);
 console.log('PASS missing PSD never presented as zero orders; warning resets on valid plan');
+
+upload.planning_month='2026-09';upload.id='PSD-test';api.renderS6(data);
+const from=document.getElementById('s6-psd-from'),to=document.getElementById('s6-psd-to');
+from.value='2026-09-12';to.value='2026-09-15';api.renderS6(data);
+const ranged=api.buildS6Rows(data,'2026-09',from.value,to.value);
+assert.equal(ranged.length,2);assert.equal(ranged[0].orderqty,2000);assert.equal(ranged[1].orderqty,6000);
+assert.equal(ranged[1].feeding,1); // Same EWO's later PSD/line must be excluded before grouping.
+assert.deepEqual(api.source.map(r=>r.startdate),['2026-09-12','2026-09-15']);
+assert.match(document.getElementById('s6-kpi').innerHTML,/8000/);
+assert.doesNotMatch(document.getElementById('s6-body').innerHTML,/7000/);
+assert.equal(api.buildS6Rows(data,'2026-09','2026-09-16','').length,1);
+assert.equal(api.buildS6Rows(data,'2026-09','','2026-09-05')[0].orderqty,4000);
+assert.equal(api.buildS6Rows(data,'2026-09','2026-09-20','2026-09-21').length,0);
+from.value='2026-09-20';api.s6PSDRangeChanged('from');assert.equal(to.value,'2026-09-20');
+to.value='2026-09-05';api.s6PSDRangeChanged('to');assert.equal(from.value,'2026-09-05');
+api.s6ResetPSDRange();assert.equal(from.value,'');assert.equal(to.value,'');
+assert.equal(api.source.length,5);
+from.value='2026-09-15';to.value='2026-09-16';api.renderS6(data);
+filter.value='2';document.getElementById('s6-order-range-filter').value='5';api.renderS6(data);
+assert.match(document.getElementById('s6-count').textContent,/1 of 1/);
+assert.match(document.getElementById('s6-kpi').innerHTML,/7000/);
+upload.id='PSD-next';api.renderS6(data);assert.equal(from.value,'');assert.equal(to.value,'');
+assert.equal(filter.value,'');assert.equal(document.getElementById('s6-order-range-filter').value,'');
+assert.equal(from.min,'2026-09-01');assert.equal(to.max,'2026-09-30');
+console.log('PASS inclusive PSD range before grouping, source/chart scope, open bounds, empty range, reversed-date correction, combined filters, reset and planning switch');
