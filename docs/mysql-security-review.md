@@ -36,3 +36,21 @@ application recovery or permission to delete. New quarter cleanup is not exposed
 through the API. External writes must remain paused throughout archive/cleanup.
 
 No production security certification or cutover approval is granted by this file.
+
+## Offline first-Admin SQL helper
+
+The downloadable self-contained HTML uses pinned bcryptjs 3.0.2, cost 12, a secure
+browser RNG and no remote resources. Tarball SHA-512 and upstream/vendored JS
+SHA-256 provenance are included; only comment-line trailing whitespace was
+normalized and the upstream license is retained. Hash-based CSP blocks unexpected
+scripts, all network connections and form navigation. The helper only accepts
+input from a local file or secure loopback preview, and clears password fields
+when its private SQL is downloaded. It never stores plaintext in SQL, logs,
+localStorage or a public backend endpoint. Operators must keep generated SQL private.
+
+SQL explicitly selects the staging database, serializes bootstrap with the users
+mutex and runs user/profile/audit changes in a transaction. A matching imported
+active Admin retains its Auth UUID, profile ID and permissions. General/disabled
+users are not promoted. Activated Admin credentials are never replaced and repeat
+execution is harmless. The helper grants no direct remote access: a trusted
+phpMyAdmin operator still executes the private file. It is not a recovery endpoint.

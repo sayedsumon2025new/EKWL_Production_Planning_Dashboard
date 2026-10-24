@@ -34,3 +34,5 @@ protected paths; production uses Apache .htaccess, which requires hosted tests.
 Containers/databases/config/exports are deliberately not automatically deleted.
 Stop the three `ekwl-migration-*` containers when finished; inspect private output
 before any explicit cleanup. Do not commit ignored configuration or fixture data.
+
+`python tests/mysql/offline-admin.py` verifies the local-only initial-Admin SQL helper against fresh isolated databases. Passwords and generated SQL remain in private temporary files; no real account is touched.
