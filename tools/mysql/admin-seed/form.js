@@ -25,7 +25,7 @@
 USE \`if0_43242550_ekwl_stage\`;
 SET NAMES utf8mb4;
 START TRANSACTION;
-SELECT name INTO @ekwl_bootstrap_lock FROM ekwl_locks WHERE name='users' FOR UPDATE;
+UPDATE ekwl_locks SET name=name WHERE name='users';
 SET @ekwl_bootstrap_email=CONVERT(0x${hex(address)} USING utf8mb4);
 SET @ekwl_bootstrap_hash='${hash}';
 SET @ekwl_bootstrap_uuid='${id}';
@@ -54,7 +54,7 @@ COMMIT;
 SELECT COUNT(*) AS ready_admin_accounts
  FROM ekwl_site_users s JOIN ekwl_users u ON u.id=s.auth_user_id
  WHERE LOWER(s.role)='admin' AND LOWER(s.status)='active' AND u.password_hash IS NOT NULL;
-SET @ekwl_bootstrap_hash=NULL,@ekwl_bootstrap_email=NULL,@ekwl_bootstrap_uuid=NULL,@ekwl_bootstrap_owner=NULL,@ekwl_bootstrap_allowed=NULL,@ekwl_bootstrap_lock=NULL;
+SET @ekwl_bootstrap_hash=NULL,@ekwl_bootstrap_email=NULL,@ekwl_bootstrap_uuid=NULL,@ekwl_bootstrap_owner=NULL,@ekwl_bootstrap_allowed=NULL;
 `;
   }
   const localFile = location.protocol === 'file:';

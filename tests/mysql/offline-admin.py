@@ -19,7 +19,7 @@ def fixture():
 apply=r"""require '/app/backend/src/bootstrap.php';$in=json_decode(stream_get_contents(STDIN),true);$sql=$in['sql'];
 $target='USE `if0_43242550_ekwl_stage`;';if(substr_count($sql,$target)!==1)exit(1);
 $sql=str_replace($target,'USE `'.$in['database'].'`;',$sql);$sql=preg_replace('/^--[^\n]*$/m','',$sql);$last=[];
-foreach(explode(';',$sql) as $s)if(trim($s)){$q=Ekwl\db()->query($s);if($q->columnCount())$last=$q->fetchAll();$q->closeCursor();}
+foreach(explode(';',$sql) as $s)if(trim($s)){if(preg_match('/^\\s*SELECT\\b/i',$s))$s.=' LIMIT 0,25';$q=Ekwl\db()->query($s);if($q->columnCount())$last=$q->fetchAll();$q->closeCursor();}
 echo json_encode($last);
 """
 class LocalForm(http.server.BaseHTTPRequestHandler):
@@ -49,10 +49,19 @@ with tempfile.TemporaryDirectory(prefix='ekwl-private-admin-test-') as folder,sy
   assert page.locator('#password').input_value()=='' and page.locator('#confirm').input_value()==''
   return text
  sql=generate(address,password)
+ assert 'SELECT name INTO' not in sql and 'UPDATE ekwl_locks SET name=name' in sql
  assert not remote and not errors,(remote,errors)
  # CSP must block networking even if a later script tries to send input remotely.
  assert page.evaluate("fetch('https://example.invalid/').then(()=>false,()=>true)")
- name,config=fixture();got=json.loads(php(apply,dict(sql=sql,database=name),config));assert got==[{'ready_admin_accounts':1}],got
+ name,config=fixture()
+ old=r"""require '/app/backend/src/bootstrap.php';try{Ekwl\run("SELECT name INTO @old_lock FROM ekwl_locks WHERE name='users' FOR UPDATE LIMIT 0,25");exit(1);}catch(PDOException $e){if(($e->errorInfo[1]??0)!==1064)exit(1);}echo 'reproduced';"""
+ assert php(old,config=config)=='reproduced'
+ lock=r"""require '/app/backend/src/bootstrap.php';$c=Ekwl\config();$one=Ekwl\db();$two=new PDO($c['dsn'],$c['db_user'],$c['db_password'],[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+$one->beginTransaction();$one->exec("UPDATE ekwl_locks SET name=name WHERE name='users'");$two->exec('SET SESSION innodb_lock_wait_timeout=1');$two->beginTransaction();$blocked=false;
+try{$two->exec("UPDATE ekwl_locks SET name=name WHERE name='users'");}catch(PDOException $e){$blocked=($e->errorInfo[1]??0)===1205;}
+if($two->inTransaction())$two->rollBack();$one->rollBack();if(!$blocked)exit(1);echo 'lock preserved';"""
+ assert php(lock,config=config)=='lock preserved'
+ got=json.loads(php(apply,dict(sql=sql,database=name),config));assert got==[{'ready_admin_accounts':1}],got
  login=r"""require '/app/backend/src/bootstrap.php';require '/app/backend/src/auth.php';$in=json_decode(stream_get_contents(STDIN),true);
 $_SERVER['REMOTE_ADDR']='127.0.0.1';$_SERVER['REQUEST_METHOD']='POST';$_SERVER['HTTP_ORIGIN']=Ekwl\config()['origin'];
 Ekwl\startSession();$_SERVER['HTTP_X_CSRF_TOKEN']=$_SESSION['csrf'];$result=Ekwl\authAction('login',$in);if(empty($result['session']['user']['id']))exit(1);echo 'authenticated';
