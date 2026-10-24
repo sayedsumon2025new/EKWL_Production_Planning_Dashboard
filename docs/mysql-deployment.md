@@ -8,8 +8,9 @@ GitHub Pages/InfinityFree application and Notes module intact during staging.
 ## Exact staging setup
 
 1. Configure privileged **read-only export** access to Supabase project
-   `rdslpcazdzqjlenbezaf` in a protected environment. The current connector returns
-   permission denied. Account URLs are not credentials. Never put secrets in chat,
+   `rdslpcazdzqjlenbezaf` in a protected environment. Connector access was restored on 2026-10-24 and read-only metadata
+   inspection passed. A private direct/pooler DSN is still required for the
+   repeatable-read bulk export tooling; it is not configured. Account URLs are not credentials. Never put secrets in chat,
    a commit, frontend JS, PR body or a web installer.
 2. Create a **new dedicated staging database** and a separate staging folder/site,
    for example `/htdocs/ekwl-staging/`. Never select the existing Notes database
@@ -31,7 +32,7 @@ GitHub Pages/InfinityFree application and Notes module intact during staging.
    character archive attestation key if using signed restore evidence.
 6. With staging CLI/operator credentials run `php tools/mysql/migrate.php`, then
    repeat and require SKIP. This applies `schema.sql`, services migration and
-   `indexes.sql`. For phpMyAdmin-only hosting, import these files in that order
+   `002_live_source_alignment.sql`, then `indexes.sql`. For phpMyAdmin-only hosting, import these files in that order
    into the NEW database and keep a private application ledger of file hashes;
    do not expose the CLI migration runner as an unauthenticated HTTP installer.
    DDL partial failure needs inspection, not a blind retry.

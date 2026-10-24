@@ -17,6 +17,7 @@ foreach($m['tables'] as $name=>$meta){
     $n=0;$f=fopen($file,'rb');while(($line=fgets($f))!==false){
         $row=json_decode($line,true,64,JSON_THROW_ON_ERROR);
         foreach($row as $key=>$value)if(!isset($cat[$name]['columns'][$key]))throw new RuntimeException('Unmapped column '.$name.'.'.$key);
+        foreach($cat[$name]['pk'] as $key)if(!isset($row[$key]))throw new RuntimeException('Missing source primary key '.$name.'.'.$key);
         $n++;
     }fclose($f);if($n!==$meta['rows'])throw new RuntimeException('Export row count failed: '.$name);$counts[$name]=$n;
 }
@@ -30,7 +31,7 @@ $profiles=[];if(isset($m['tables']['site_users'])){
 }
 foreach($identities as $identity)if(!isset($profiles[$identity['id']])||$profiles[$identity['id']]!==strtolower($identity['email']??''))throw new RuntimeException('Auth identity needs a reviewed matching profile; no orphan account is silently discarded.');
 // Explicit dependency order. A new source table must be mapped before it can be imported.
-$order=['site_users','plan_uploads','plan_records','plan_daily','order_bank_upload_batches','order_bank_raw','order_bank_import_rows','fabric_cutting_info','sewing_input_output','date_wise_production','efficiency_run_day_ladder','line_chassis_priority','abp_target','dashboard_master_settings','slide4_chassis_strength','floor_allocation','size_set_rows','accessories_rows','embellishment_send_receive_rows'];
+$order=['site_users','plan_uploads','plan_records','plan_daily','order_bank_upload_batches','order_bank_raw','order_bank_staging','order_bank_import_rows','fabric_cutting_info','sewing_input_output','date_wise_production','efficiency_run_day_ladder','line_chassis_priority','abp_target','dashboard_master_settings','slide4_chassis_strength','floor_allocation','size_set_rows','accessories_rows','embellishment_send_receive_rows'];
 if(!$apply){echo json_encode(['mode'=>'validated-dry-run','rows'=>$counts],JSON_PRETTY_PRINT)."\n";exit;}
 foreach($order as $name){
     if(!isset($m['tables'][$name]))continue;

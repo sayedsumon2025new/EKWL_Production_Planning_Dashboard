@@ -7,7 +7,8 @@
       "role": "VARCHAR(16)",
       "status": "VARCHAR(16)",
       "permissions": "LONGTEXT",
-      "created_at": "DATETIME(6)"
+      "created_at": "DATETIME(6)",
+      "updated_at": "DATETIME(6)"
     },
     "pk": [
       "id"
@@ -24,7 +25,17 @@
         "email"
       ]
     ],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "auth_user_id",
+      "email",
+      "role",
+      "status",
+      "permissions",
+      "created_at",
+      "updated_at"
+    ]
   },
   "plan_uploads": {
     "columns": {
@@ -48,7 +59,18 @@
     ],
     "write": "planning_upload",
     "unique": [],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "file_name",
+      "uploaded_by",
+      "uploaded_at",
+      "row_count",
+      "status",
+      "planning_month",
+      "sequence_no",
+      "planning_id"
+    ]
   },
   "plan_records": {
     "columns": {
@@ -78,7 +100,8 @@
       "id": "BIGINT AUTO_INCREMENT",
       "upload_id": "VARCHAR(36)",
       "source_row": "BIGINT",
-      "is_summary_row": "TINYINT(1)"
+      "is_summary_row": "TINYINT(1)",
+      "unit": "TEXT"
     },
     "pk": [
       "id"
@@ -93,7 +116,37 @@
         "source_row"
       ]
     ],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "upload_id",
+      "source_row",
+      "is_summary_row",
+      "unit",
+      "line_no",
+      "buyer",
+      "product_type",
+      "product",
+      "ewo",
+      "stroke",
+      "po",
+      "col",
+      "print",
+      "emb",
+      "outsource",
+      "order_qty",
+      "planned_qty",
+      "pcd",
+      "psd",
+      "pfd",
+      "strip_plan_qty",
+      "delivery",
+      "manpower",
+      "smv",
+      "average",
+      "criteria",
+      "total"
+    ]
   },
   "plan_daily": {
     "columns": {
@@ -116,7 +169,14 @@
         "plan_date"
       ]
     ],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "record_id",
+      "upload_id",
+      "plan_date",
+      "value"
+    ]
   },
   "fabric_cutting_info": {
     "columns": {
@@ -142,7 +202,7 @@
       "cutting_percent": "DECIMAL(24,8)",
       "pattern_received_date": "DATE",
       "replacement_receive_commitment_date": "DATE",
-      "pattern_received_time": "TIME",
+      "pattern_received_time": "TEXT",
       "replace_ask_qty": "DECIMAL(24,8)",
       "replacement_settlement_qty": "DECIMAL(24,8)",
       "fabrication": "VARCHAR(255)",
@@ -164,7 +224,40 @@
     ],
     "write": "fabric",
     "unique": [],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "buyer",
+      "ewo",
+      "color_name",
+      "item_product_type",
+      "style_embellishment_type",
+      "pattern_update",
+      "pattern_received_date",
+      "pattern_received_time",
+      "color_order_qty",
+      "fabric_booking_qty",
+      "replace_ask_qty",
+      "replacement_settlement_qty",
+      "replacement_receive_commitment_date",
+      "fabrication",
+      "gsm",
+      "width",
+      "day_received",
+      "total_fabric_received",
+      "fabric_balance",
+      "bc_consumption",
+      "fabric_stock_after_cut",
+      "cutable_qty",
+      "day_cut",
+      "total_cut_qty",
+      "cutting_balance",
+      "cutting_percent",
+      "status",
+      "cutting_difficulties",
+      "source_row",
+      "uploaded_at"
+    ]
   },
   "sewing_input_output": {
     "columns": {
@@ -195,7 +288,23 @@
     ],
     "write": "sewing",
     "unique": [],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "buyer",
+      "ewo",
+      "po_no",
+      "color",
+      "line",
+      "line_no",
+      "order_qty",
+      "total_input_qty",
+      "total_output_qty",
+      "total_reject_qty",
+      "total_wip_qty",
+      "source_row",
+      "uploaded_at"
+    ]
   },
   "date_wise_production": {
     "columns": {
@@ -211,7 +320,8 @@
       "line_no": "VARCHAR(255)",
       "output_date": "DATE",
       "total_qty": "DECIMAL(24,8)",
-      "report_batch_id": "VARCHAR(36)"
+      "report_batch_id": "VARCHAR(36)",
+      "source_row": "BIGINT"
     },
     "pk": [
       "id"
@@ -222,7 +332,21 @@
     ],
     "write": "production",
     "unique": [],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "code",
+      "buyer",
+      "ewo",
+      "po_no",
+      "color",
+      "line",
+      "line_no",
+      "output_date",
+      "total_qty",
+      "source_row",
+      "uploaded_at"
+    ]
   },
   "efficiency_run_day_ladder": {
     "columns": {
@@ -232,7 +356,8 @@
       "day_3": "DECIMAL(24,8)",
       "day_4": "DECIMAL(24,8)",
       "day_5": "DECIMAL(24,8)",
-      "day_6_plus": "DECIMAL(24,8)"
+      "day_6_plus": "DECIMAL(24,8)",
+      "updated_at": "DATETIME(6)"
     },
     "pk": [
       "item"
@@ -242,41 +367,76 @@
     ],
     "write": "admin_settings",
     "unique": [],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "item",
+      "day_1",
+      "day_2",
+      "day_3",
+      "day_4",
+      "day_5",
+      "day_6_plus",
+      "updated_at"
+    ]
   },
   "line_chassis_priority": {
     "columns": {
       "line_no": "BIGINT",
       "priority_order": "BIGINT",
-      "product_name": "VARCHAR(255)"
+      "product_name": "VARCHAR(255)",
+      "id": "BIGINT AUTO_INCREMENT",
+      "updated_at": "DATETIME(6)"
     },
     "pk": [
-      "line_no",
-      "priority_order"
+      "id"
     ],
     "read": [
       "home"
     ],
     "write": "admin_settings",
-    "unique": [],
-    "storage_names": {}
+    "unique": [
+      [
+        "line_no",
+        "priority_order"
+      ]
+    ],
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "line_no",
+      "priority_order",
+      "product_name",
+      "updated_at"
+    ]
   },
   "abp_target": {
     "columns": {
       "parameter_name": "VARCHAR(255)",
       "target_value": "DECIMAL(24,8)",
       "config": "LONGTEXT",
-      "updated_at": "DATETIME(6)"
+      "updated_at": "DATETIME(6)",
+      "id": "BIGINT AUTO_INCREMENT"
     },
     "pk": [
-      "parameter_name"
+      "id"
     ],
     "read": [
       "home"
     ],
     "write": "admin_settings",
-    "unique": [],
-    "storage_names": {}
+    "unique": [
+      [
+        "parameter_name"
+      ]
+    ],
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "parameter_name",
+      "target_value",
+      "updated_at",
+      "config"
+    ]
   },
   "dashboard_master_settings": {
     "columns": {
@@ -292,23 +452,37 @@
     ],
     "write": "admin_settings",
     "unique": [],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "setting_key",
+      "setting_value",
+      "updated_at"
+    ]
   },
   "slide4_chassis_strength": {
     "columns": {
       "item_name": "VARCHAR(255)",
       "line_strength": "DECIMAL(24,8)",
-      "updated_at": "DATETIME(6)"
+      "updated_at": "DATETIME(6)",
+      "id": "BIGINT AUTO_INCREMENT",
+      "sort_order": "BIGINT"
     },
     "pk": [
-      "item_name"
+      "id"
     ],
     "read": [
       "home"
     ],
     "write": "admin_settings",
     "unique": [],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "item_name",
+      "line_strength",
+      "sort_order",
+      "updated_at"
+    ]
   },
   "floor_allocation": {
     "columns": {
@@ -326,7 +500,14 @@
     ],
     "write": "admin_settings",
     "unique": [],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "line_no",
+      "level",
+      "ie_name_line_block",
+      "employee_id",
+      "updated_at"
+    ]
   },
   "size_set_rows": {
     "columns": {
@@ -379,7 +560,17 @@
       "Today Print Send Qty\n": "source_field_16",
       "Total Print Send Qty\n": "source_field_17",
       " Today Print Receive Qty": "source_field_18"
-    }
+    },
+    "source_columns": [
+      "id",
+      "batch_id",
+      "source_row_no",
+      "file_name",
+      "row_data",
+      "uploaded_by",
+      "uploaded_at",
+      "is_active"
+    ]
   },
   "accessories_rows": {
     "columns": {
@@ -408,7 +599,18 @@
         "source_row_no"
       ]
     ],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "batch_id",
+      "report_date",
+      "source_row_no",
+      "file_name",
+      "row_data",
+      "uploaded_by",
+      "uploaded_at",
+      "is_active"
+    ]
   },
   "embellishment_send_receive_rows": {
     "columns": {
@@ -461,7 +663,37 @@
       "Today Print Send Qty\n": "source_field_15",
       "Total Print Send Qty\n": "source_field_16",
       " Today Print Receive Qty": "source_field_17"
-    }
+    },
+    "source_columns": [
+      "id",
+      "batch_id",
+      "source_row_no",
+      "file_name",
+      "Code",
+      "Date",
+      "EWO No",
+      "Style No",
+      "Buyer",
+      "Buyer Team",
+      "Color",
+      "Order Qty",
+      "Today Print Send Qty\n",
+      "Total Print Send Qty\n",
+      " Today Print Receive Qty",
+      "Total Print Receive Qty",
+      "Today Print Return Qty",
+      "Total Print Return Qty",
+      "Today EMB Send Qty",
+      "Total EMB Send Qty",
+      "Today EMB Receive Qty",
+      "Total EMB Receive Qty",
+      "Today EMB Return Qty",
+      "Total EMB Return Qty",
+      "csv_column_21",
+      "uploaded_by",
+      "uploaded_at",
+      "is_active"
+    ]
   },
   "order_bank_upload_batches": {
     "columns": {
@@ -474,7 +706,8 @@
       "status": "VARCHAR(255)",
       "source_columns": "LONGTEXT",
       "note": "TEXT",
-      "upload_token": "VARCHAR(36)"
+      "upload_token": "VARCHAR(36)",
+      "staging_rows": "BIGINT"
     },
     "pk": [
       "id"
@@ -490,7 +723,18 @@
         "upload_token"
       ]
     ],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "file_name",
+      "uploaded_at",
+      "staging_rows",
+      "raw_rows",
+      "nonblank_rows",
+      "status",
+      "note",
+      "source_columns"
+    ]
   },
   "order_bank_raw": {
     "columns": {
@@ -536,7 +780,9 @@
       "id": "BIGINT AUTO_INCREMENT",
       "upload_batch_id": "BIGINT",
       "source_row_no": "BIGINT",
-      "source_data": "LONGTEXT"
+      "source_data": "LONGTEXT",
+      "Code-EWO": "TEXT",
+      "uploaded_at": "DATETIME(6)"
     },
     "pk": [
       "id"
@@ -553,7 +799,54 @@
         "source_row_no"
       ]
     ],
-    "storage_names": {}
+    "storage_names": {},
+    "source_columns": [
+      "id",
+      "upload_batch_id",
+      "source_row_no",
+      "Code-EWO",
+      "Code",
+      "Buyer",
+      "Dept",
+      "EWO",
+      "PO",
+      "GmtColor",
+      "EWO&Color",
+      "Stroke",
+      "Description",
+      "Destination",
+      "TechPackDate",
+      "FOB",
+      "RevisedFOB",
+      "EFD",
+      "FRDate",
+      "CostingSMV",
+      "UpdatedSMV",
+      "TotalHour",
+      "FRHour",
+      "OrderQty",
+      "OrderRate",
+      "Ordervalue",
+      "Season",
+      "ContractNo",
+      "ContractUnit",
+      "ExecutionUnit",
+      "Gender",
+      "ConsumptionQtyInHouse",
+      "ConsumptionQtyOutSource",
+      "FabrickgInHouse",
+      "FabrickgOutSource",
+      "TotalFabricinKG",
+      "Ordertype",
+      "OrderStatus",
+      "TNADays",
+      "MMTeam",
+      "CancelReason",
+      "Remarks",
+      "Month",
+      "uploaded_at",
+      "source_data"
+    ]
   },
   "order_bank_import_rows": {
     "columns": {
@@ -572,6 +865,108 @@
     ],
     "write": "admin",
     "unique": [],
+    "storage_names": {},
+    "source_columns": [
+      "upload_token",
+      "source_row_no",
+      "source_data",
+      "uploaded_by",
+      "created_at"
+    ]
+  },
+  "order_bank_staging": {
+    "columns": {
+      "staging_id": "BIGINT AUTO_INCREMENT",
+      "Code-EWO": "TEXT",
+      "Code": "TEXT",
+      "Buyer": "TEXT",
+      "Dept": "TEXT",
+      "EWO": "TEXT",
+      "PO": "TEXT",
+      "GmtColor": "TEXT",
+      "EWO&Color": "TEXT",
+      "Stroke": "TEXT",
+      "Description": "TEXT",
+      "Destination": "TEXT",
+      "TechPackDate": "TEXT",
+      "FOB": "TEXT",
+      "RevisedFOB": "TEXT",
+      "EFD": "TEXT",
+      "FRDate": "TEXT",
+      "CostingSMV": "TEXT",
+      "UpdatedSMV": "TEXT",
+      "TotalHour": "TEXT",
+      "FRHour": "TEXT",
+      "OrderQty": "TEXT",
+      "OrderRate": "TEXT",
+      "Ordervalue": "TEXT",
+      "Season": "TEXT",
+      "ContractNo": "TEXT",
+      "ContractUnit": "TEXT",
+      "ExecutionUnit": "TEXT",
+      "Gender": "TEXT",
+      "ConsumptionQtyInHouse": "TEXT",
+      "ConsumptionQtyOutSource": "TEXT",
+      "FabrickgInHouse": "TEXT",
+      "FabrickgOutSource": "TEXT",
+      "TotalFabricinKG": "TEXT",
+      "Ordertype": "TEXT",
+      "OrderStatus": "TEXT",
+      "TNADays": "TEXT",
+      "MMTeam": "TEXT",
+      "CancelReason": "TEXT",
+      "Remarks": "TEXT",
+      "Month": "TEXT"
+    },
+    "pk": [
+      "staging_id"
+    ],
+    "read": [],
+    "write": null,
+    "unique": [],
+    "source_columns": [
+      "staging_id",
+      "Code-EWO",
+      "Code",
+      "Buyer",
+      "Dept",
+      "EWO",
+      "PO",
+      "GmtColor",
+      "EWO&Color",
+      "Stroke",
+      "Description",
+      "Destination",
+      "TechPackDate",
+      "FOB",
+      "RevisedFOB",
+      "EFD",
+      "FRDate",
+      "CostingSMV",
+      "UpdatedSMV",
+      "TotalHour",
+      "FRHour",
+      "OrderQty",
+      "OrderRate",
+      "Ordervalue",
+      "Season",
+      "ContractNo",
+      "ContractUnit",
+      "ExecutionUnit",
+      "Gender",
+      "ConsumptionQtyInHouse",
+      "ConsumptionQtyOutSource",
+      "FabrickgInHouse",
+      "FabrickgOutSource",
+      "TotalFabricinKG",
+      "Ordertype",
+      "OrderStatus",
+      "TNADays",
+      "MMTeam",
+      "CancelReason",
+      "Remarks",
+      "Month"
+    ],
     "storage_names": {}
   }
 }

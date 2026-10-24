@@ -1,10 +1,13 @@
 # MySQL staging database
 
-This is an additive candidate schema, not a verified copy of the complete live
-PostgreSQL schema. `backend/catalog.json` is the query allowlist and source-field
+The candidate was aligned read-only with all 20 live public base tables on
+2026-10-24. The versioned inventory is `source-schema-20261024.json`; migration
+002 adds missing source fields, preserves source IDs/primary keys and retains
+the legacy Order Bank staging table. This is not a complete database backup or
+proof of full data migration. `backend/catalog.json` is the query allowlist and source-field
 type mapping. `tools/mysql/build_catalog.py` generates it and `schema.sql` from
 repository evidence. Unknown source tables or columns stop migration instead of
-being discarded. Production introspection and reconciliation remain required.
+being discarded. Full row/field reconciliation and type-range checks remain required.
 
 Use a newly created staging database. Do not use
 `if0_43242550_ekwl_extra`: its existing Notes schema has not been inspected and is
@@ -49,7 +52,7 @@ pair. Order Bank rows reference the corresponding upload batch. UUID identities
 stay strings. Numeric source EWO columns are mapped to strings so identifiers are
 not rounded; new planning CSV uploads retain leading zeros. Known source uniqueness
 is enforced for staged rows. The repository-documented daily `(record_id,plan_date)` uniqueness
-must still be confirmed against the live schema before data migration; source export
+was confirmed in the live constraints on 2026-10-24; source export
 preserves all rows and import refuses incompatible data.
 
 `indexes.sql` is applied once by the migration ledger. It covers upload/date,

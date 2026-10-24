@@ -1,0 +1,3259 @@
+{
+  "project_id": "rdslpcazdzqjlenbezaf",
+  "observed_on": "2026-10-24",
+  "counts_are_snapshot_not_realtime": true,
+  "tables": [
+    {
+      "name": "public.plan_uploads",
+      "rls_enabled": true,
+      "rows": 1,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "file_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "uploaded_by",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "auth.uid()"
+        },
+        {
+          "name": "uploaded_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "row_count",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "status",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'processing'::text"
+        },
+        {
+          "name": "planning_month",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "sequence_no",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "planning_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "plan_records_upload_id_fkey",
+          "source_table": "public.plan_records",
+          "source_columns": [
+            "upload_id"
+          ],
+          "target_table": "public.plan_uploads",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "plan_daily_upload_id_fkey",
+          "source_table": "public.plan_daily",
+          "source_columns": [
+            "upload_id"
+          ],
+          "target_table": "public.plan_uploads",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.plan_records",
+      "rls_enabled": true,
+      "rows": 5880,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "ALWAYS"
+        },
+        {
+          "name": "upload_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "source_row",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "is_summary_row",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "unit",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "line_no",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "buyer",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "product_type",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "product",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ewo",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "stroke",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "po",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "col",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "print",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "emb",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "outsource",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "order_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "planned_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "pcd",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "psd",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "pfd",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "strip_plan_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "delivery",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "manpower",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "smv",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "average",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "criteria",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "total",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "plan_records_upload_id_fkey",
+          "source_table": "public.plan_records",
+          "source_columns": [
+            "upload_id"
+          ],
+          "target_table": "public.plan_uploads",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "plan_daily_record_id_fkey",
+          "source_table": "public.plan_daily",
+          "source_columns": [
+            "record_id"
+          ],
+          "target_table": "public.plan_records",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.plan_daily",
+      "rls_enabled": true,
+      "rows": 88200,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "ALWAYS"
+        },
+        {
+          "name": "record_id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "upload_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "plan_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "value",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "plan_daily_record_id_fkey",
+          "source_table": "public.plan_daily",
+          "source_columns": [
+            "record_id"
+          ],
+          "target_table": "public.plan_records",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "plan_daily_upload_id_fkey",
+          "source_table": "public.plan_daily",
+          "source_columns": [
+            "upload_id"
+          ],
+          "target_table": "public.plan_uploads",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.fabric_cutting_info",
+      "rls_enabled": true,
+      "rows": 1421,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "BY DEFAULT"
+        },
+        {
+          "name": "buyer",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ewo",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "color_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "item_product_type",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "style_embellishment_type",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "pattern_update",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "pattern_received_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "pattern_received_time",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "color_order_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "fabric_booking_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "replace_ask_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "replacement_settlement_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "replacement_receive_commitment_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "fabrication",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "gsm",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "width",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "day_received",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "total_fabric_received",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "fabric_balance",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "bc_consumption",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "fabric_stock_after_cut",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "cutable_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "day_cut",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "total_cut_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "cutting_balance",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "cutting_percent",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "status",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "cutting_difficulties",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "source_row",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "uploaded_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ]
+    },
+    {
+      "name": "public.sewing_input_output",
+      "rls_enabled": true,
+      "rows": 21690,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "BY DEFAULT"
+        },
+        {
+          "name": "buyer",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ewo",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "po_no",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "color",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "line",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "line_no",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "order_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "total_input_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "total_output_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "total_reject_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "total_wip_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "source_row",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "uploaded_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ]
+    },
+    {
+      "name": "public.date_wise_production",
+      "rls_enabled": true,
+      "rows": 25236,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "BY DEFAULT"
+        },
+        {
+          "name": "code",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "buyer",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ewo",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "po_no",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "color",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "line",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "line_no",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "output_date",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "total_qty",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "source_row",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "uploaded_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ]
+    },
+    {
+      "name": "public.site_users",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "BY DEFAULT"
+        },
+        {
+          "name": "auth_user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "email",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "role",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'user'::text",
+          "check": "role = ANY (ARRAY['admin'::text, 'user'::text])"
+        },
+        {
+          "name": "status",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'active'::text",
+          "check": "status = ANY (ARRAY['active'::text, 'disabled'::text])"
+        },
+        {
+          "name": "permissions",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'{\"fabric\": false, \"sewing\": false, \"production\": false, \"user_admin\": false, \"planning_view\": true, \"admin_settings\": false, \"planning_upload\": false}'::jsonb"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "site_users_auth_user_id_fkey",
+          "source_table": "public.site_users",
+          "source_columns": [
+            "auth_user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.order_bank_upload_batches",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "ALWAYS"
+        },
+        {
+          "name": "file_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "uploaded_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "staging_rows",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "raw_rows",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "nonblank_rows",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "status",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'PROCESSING'::text",
+          "check": "status = ANY (ARRAY['PROCESSING'::text, 'SUCCESS'::text, 'FAILED'::text])"
+        },
+        {
+          "name": "note",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "source_columns",
+          "data_type": "ARRAY",
+          "format": "_text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "order_bank_raw_upload_batch_id_fkey",
+          "source_table": "public.order_bank_raw",
+          "source_columns": [
+            "upload_batch_id"
+          ],
+          "target_table": "public.order_bank_upload_batches",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.order_bank_staging",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "staging_id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "ALWAYS"
+        },
+        {
+          "name": "Code-EWO",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Code",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Buyer",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Dept",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "EWO",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "PO",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "GmtColor",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "EWO&Color",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Stroke",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Description",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Destination",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "TechPackDate",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "FOB",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "RevisedFOB",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "EFD",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "FRDate",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "CostingSMV",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "UpdatedSMV",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "TotalHour",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "FRHour",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "OrderQty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "OrderRate",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Ordervalue",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Season",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ContractNo",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ContractUnit",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ExecutionUnit",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Gender",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ConsumptionQtyInHouse",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ConsumptionQtyOutSource",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "FabrickgInHouse",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "FabrickgOutSource",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "TotalFabricinKG",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Ordertype",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "OrderStatus",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "TNADays",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "MMTeam",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "CancelReason",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Remarks",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Month",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ],
+      "primary_keys": [
+        "staging_id"
+      ]
+    },
+    {
+      "name": "public.order_bank_raw",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "ALWAYS"
+        },
+        {
+          "name": "upload_batch_id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "source_row_no",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Code-EWO",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Code",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Buyer",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Dept",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "EWO",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "PO",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "GmtColor",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "EWO&Color",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Stroke",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Description",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Destination",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "TechPackDate",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "FOB",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "RevisedFOB",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "EFD",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "FRDate",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "CostingSMV",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "UpdatedSMV",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "TotalHour",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "FRHour",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "OrderQty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "OrderRate",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Ordervalue",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Season",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ContractNo",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ContractUnit",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ExecutionUnit",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Gender",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ConsumptionQtyInHouse",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ConsumptionQtyOutSource",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "FabrickgInHouse",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "FabrickgOutSource",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "TotalFabricinKG",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Ordertype",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "OrderStatus",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "TNADays",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "MMTeam",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "CancelReason",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Remarks",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "Month",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "uploaded_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "source_data",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "order_bank_raw_upload_batch_id_fkey",
+          "source_table": "public.order_bank_raw",
+          "source_columns": [
+            "upload_batch_id"
+          ],
+          "target_table": "public.order_bank_upload_batches",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.floor_allocation",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "line_no",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "check": "line_no > 0 AND line_no <> 46"
+        },
+        {
+          "name": "level",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "ie_name_line_block",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "employee_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "line_no"
+      ]
+    },
+    {
+      "name": "public.efficiency_run_day_ladder",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "item",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "day_1",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "updatable"
+          ],
+          "check": "day_1 >= 0::numeric AND day_1 <= 100::numeric"
+        },
+        {
+          "name": "day_2",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "updatable"
+          ],
+          "check": "day_2 >= 0::numeric AND day_2 <= 100::numeric"
+        },
+        {
+          "name": "day_3",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "updatable"
+          ],
+          "check": "day_3 >= 0::numeric AND day_3 <= 100::numeric"
+        },
+        {
+          "name": "day_4",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "updatable"
+          ],
+          "check": "day_4 >= 0::numeric AND day_4 <= 100::numeric"
+        },
+        {
+          "name": "day_5",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "updatable"
+          ],
+          "check": "day_5 >= 0::numeric AND day_5 <= 100::numeric"
+        },
+        {
+          "name": "day_6_plus",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "updatable"
+          ],
+          "check": "day_6_plus >= 0::numeric AND day_6_plus <= 100::numeric"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "item"
+      ]
+    },
+    {
+      "name": "public.line_chassis_priority",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "BY DEFAULT"
+        },
+        {
+          "name": "line_no",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "check": "line_no > 0 AND line_no <> 46"
+        },
+        {
+          "name": "priority_order",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "check": "priority_order > 0"
+        },
+        {
+          "name": "product_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ]
+    },
+    {
+      "name": "public.abp_target",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "BY DEFAULT"
+        },
+        {
+          "name": "parameter_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "target_value",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "updatable"
+          ],
+          "check": "target_value >= 0::numeric"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "config",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ]
+    },
+    {
+      "name": "public.dashboard_master_settings",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "setting_key",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "setting_value",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "setting_key"
+      ]
+    },
+    {
+      "name": "public.size_set_rows",
+      "rls_enabled": true,
+      "rows": 59564,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "ALWAYS"
+        },
+        {
+          "name": "batch_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "source_row_no",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "check": "source_row_no >= 2"
+        },
+        {
+          "name": "file_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "row_data",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "updatable"
+          ],
+          "check": "jsonb_typeof(row_data) = 'object'::text"
+        },
+        {
+          "name": "uploaded_by",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "auth.uid()"
+        },
+        {
+          "name": "uploaded_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "is_active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ]
+    },
+    {
+      "name": "public.accessories_rows",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "ALWAYS"
+        },
+        {
+          "name": "batch_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "report_date",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "source_row_no",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "check": "source_row_no >= 2"
+        },
+        {
+          "name": "file_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "row_data",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "updatable"
+          ],
+          "check": "jsonb_typeof(row_data) = 'object'::text AND row_data ?& ARRAY['SI'::text, 'Buyer/Team'::text, 'EWO'::text, 'Line No'::text, 'PSD'::text, 'PCD'::text, 'Sewing Trims Pending Stts'::text, 'Finishing Trims Pending stts'::text, 'Carton Receiving Stts'::text, 'Inventory Status'::text, 'Inspection Status'::text, 'Trims Card status'::text, 'Final Status'::text, 'Relavant Concern '::text, 'Relevant M&M Name'::text]"
+        },
+        {
+          "name": "uploaded_by",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "auth.uid()"
+        },
+        {
+          "name": "uploaded_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "is_active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ]
+    },
+    {
+      "name": "public.embellishment_send_receive_rows",
+      "rls_enabled": true,
+      "rows": 79874,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "ALWAYS"
+        },
+        {
+          "name": "batch_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "source_row_no",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "check": "source_row_no >= 2"
+        },
+        {
+          "name": "file_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Code",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Date",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "EWO No",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Style No",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Buyer",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Buyer Team",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Color",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Order Qty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Today Print Send Qty\n",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Total Print Send Qty\n",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": " Today Print Receive Qty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Total Print Receive Qty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Today Print Return Qty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Total Print Return Qty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Today EMB Send Qty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Total EMB Send Qty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Today EMB Receive Qty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Total EMB Receive Qty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Today EMB Return Qty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "Total EMB Return Qty",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "csv_column_21",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "uploaded_by",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "auth.uid()"
+        },
+        {
+          "name": "uploaded_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "is_active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ]
+    },
+    {
+      "name": "public.slide4_chassis_strength",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "identity",
+            "updatable"
+          ],
+          "identity_generation": "ALWAYS"
+        },
+        {
+          "name": "item_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "check": "length(btrim(item_name)) >= 1 AND length(btrim(item_name)) <= 80"
+        },
+        {
+          "name": "line_strength",
+          "data_type": "numeric",
+          "format": "numeric",
+          "options": [
+            "updatable"
+          ],
+          "check": "line_strength >= 0::numeric AND line_strength <= 9999::numeric"
+        },
+        {
+          "name": "sort_order",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "check": "sort_order >= 1 AND sort_order <= 100"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ]
+    },
+    {
+      "name": "public.order_bank_import_rows",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "upload_token",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "source_row_no",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "updatable"
+          ],
+          "check": "source_row_no > 0"
+        },
+        {
+          "name": "source_data",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "updatable"
+          ],
+          "check": "jsonb_typeof(source_data) = 'object'::text"
+        },
+        {
+          "name": "uploaded_by",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "auth.uid()"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "upload_token",
+        "source_row_no"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "order_bank_import_rows_uploaded_by_fkey",
+          "source_table": "public.order_bank_import_rows",
+          "source_columns": [
+            "uploaded_by"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "name": "floor_allocation_pkey",
+      "type": "p",
+      "table": "floor_allocation",
+      "definition": "PRIMARY KEY (line_no)"
+    },
+    {
+      "name": "plan_uploads_pkey",
+      "type": "p",
+      "table": "plan_uploads",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "plan_records_pkey",
+      "type": "p",
+      "table": "plan_records",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "plan_records_upload_id_source_row_key",
+      "type": "u",
+      "table": "plan_records",
+      "definition": "UNIQUE (upload_id, source_row)"
+    },
+    {
+      "name": "plan_records_upload_id_fkey",
+      "type": "f",
+      "table": "plan_records",
+      "definition": "FOREIGN KEY (upload_id) REFERENCES plan_uploads(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "plan_daily_pkey",
+      "type": "p",
+      "table": "plan_daily",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "plan_daily_record_id_plan_date_key",
+      "type": "u",
+      "table": "plan_daily",
+      "definition": "UNIQUE (record_id, plan_date)"
+    },
+    {
+      "name": "plan_daily_record_id_fkey",
+      "type": "f",
+      "table": "plan_daily",
+      "definition": "FOREIGN KEY (record_id) REFERENCES plan_records(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "plan_daily_upload_id_fkey",
+      "type": "f",
+      "table": "plan_daily",
+      "definition": "FOREIGN KEY (upload_id) REFERENCES plan_uploads(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "fabric_cutting_info_pkey",
+      "type": "p",
+      "table": "fabric_cutting_info",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "sewing_input_output_pkey",
+      "type": "p",
+      "table": "sewing_input_output",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "date_wise_production_pkey",
+      "type": "p",
+      "table": "date_wise_production",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "site_users_role_check",
+      "type": "c",
+      "table": "site_users",
+      "definition": "CHECK ((role = ANY (ARRAY['admin'::text, 'user'::text])))"
+    },
+    {
+      "name": "site_users_status_check",
+      "type": "c",
+      "table": "site_users",
+      "definition": "CHECK ((status = ANY (ARRAY['active'::text, 'disabled'::text])))"
+    },
+    {
+      "name": "site_users_pkey",
+      "type": "p",
+      "table": "site_users",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "site_users_auth_user_id_key",
+      "type": "u",
+      "table": "site_users",
+      "definition": "UNIQUE (auth_user_id)"
+    },
+    {
+      "name": "site_users_email_key",
+      "type": "u",
+      "table": "site_users",
+      "definition": "UNIQUE (email)"
+    },
+    {
+      "name": "site_users_auth_user_id_fkey",
+      "type": "f",
+      "table": "site_users",
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "order_bank_upload_batches_status_check",
+      "type": "c",
+      "table": "order_bank_upload_batches",
+      "definition": "CHECK ((status = ANY (ARRAY['PROCESSING'::text, 'SUCCESS'::text, 'FAILED'::text])))"
+    },
+    {
+      "name": "order_bank_upload_batches_pkey",
+      "type": "p",
+      "table": "order_bank_upload_batches",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "order_bank_staging_pkey",
+      "type": "p",
+      "table": "order_bank_staging",
+      "definition": "PRIMARY KEY (staging_id)"
+    },
+    {
+      "name": "order_bank_raw_pkey",
+      "type": "p",
+      "table": "order_bank_raw",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "order_bank_raw_upload_batch_id_source_row_no_key",
+      "type": "u",
+      "table": "order_bank_raw",
+      "definition": "UNIQUE (upload_batch_id, source_row_no)"
+    },
+    {
+      "name": "order_bank_raw_upload_batch_id_fkey",
+      "type": "f",
+      "table": "order_bank_raw",
+      "definition": "FOREIGN KEY (upload_batch_id) REFERENCES order_bank_upload_batches(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "floor_allocation_line_no_check",
+      "type": "c",
+      "table": "floor_allocation",
+      "definition": "CHECK (((line_no > 0) AND (line_no <> 46)))"
+    },
+    {
+      "name": "efficiency_run_day_ladder_day_1_check",
+      "type": "c",
+      "table": "efficiency_run_day_ladder",
+      "definition": "CHECK (((day_1 >= (0)::numeric) AND (day_1 <= (100)::numeric)))"
+    },
+    {
+      "name": "efficiency_run_day_ladder_day_2_check",
+      "type": "c",
+      "table": "efficiency_run_day_ladder",
+      "definition": "CHECK (((day_2 >= (0)::numeric) AND (day_2 <= (100)::numeric)))"
+    },
+    {
+      "name": "efficiency_run_day_ladder_day_3_check",
+      "type": "c",
+      "table": "efficiency_run_day_ladder",
+      "definition": "CHECK (((day_3 >= (0)::numeric) AND (day_3 <= (100)::numeric)))"
+    },
+    {
+      "name": "efficiency_run_day_ladder_day_4_check",
+      "type": "c",
+      "table": "efficiency_run_day_ladder",
+      "definition": "CHECK (((day_4 >= (0)::numeric) AND (day_4 <= (100)::numeric)))"
+    },
+    {
+      "name": "efficiency_run_day_ladder_day_5_check",
+      "type": "c",
+      "table": "efficiency_run_day_ladder",
+      "definition": "CHECK (((day_5 >= (0)::numeric) AND (day_5 <= (100)::numeric)))"
+    },
+    {
+      "name": "efficiency_run_day_ladder_day_6_plus_check",
+      "type": "c",
+      "table": "efficiency_run_day_ladder",
+      "definition": "CHECK (((day_6_plus >= (0)::numeric) AND (day_6_plus <= (100)::numeric)))"
+    },
+    {
+      "name": "efficiency_run_day_ladder_pkey",
+      "type": "p",
+      "table": "efficiency_run_day_ladder",
+      "definition": "PRIMARY KEY (item)"
+    },
+    {
+      "name": "line_chassis_priority_valid_line",
+      "type": "c",
+      "table": "line_chassis_priority",
+      "definition": "CHECK (((line_no > 0) AND (line_no <> 46)))"
+    },
+    {
+      "name": "line_chassis_priority_valid_priority",
+      "type": "c",
+      "table": "line_chassis_priority",
+      "definition": "CHECK ((priority_order > 0))"
+    },
+    {
+      "name": "line_chassis_priority_pkey",
+      "type": "p",
+      "table": "line_chassis_priority",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "line_chassis_priority_line_order_unique",
+      "type": "u",
+      "table": "line_chassis_priority",
+      "definition": "UNIQUE (line_no, priority_order)"
+    },
+    {
+      "name": "abp_target_value_valid",
+      "type": "c",
+      "table": "abp_target",
+      "definition": "CHECK ((target_value >= (0)::numeric))"
+    },
+    {
+      "name": "abp_target_pkey",
+      "type": "p",
+      "table": "abp_target",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "abp_target_parameter_unique",
+      "type": "u",
+      "table": "abp_target",
+      "definition": "UNIQUE (parameter_name)"
+    },
+    {
+      "name": "dashboard_master_settings_pkey",
+      "type": "p",
+      "table": "dashboard_master_settings",
+      "definition": "PRIMARY KEY (setting_key)"
+    },
+    {
+      "name": "size_set_rows_source_row_no_check",
+      "type": "c",
+      "table": "size_set_rows",
+      "definition": "CHECK ((source_row_no >= 2))"
+    },
+    {
+      "name": "size_set_rows_row_data_check",
+      "type": "c",
+      "table": "size_set_rows",
+      "definition": "CHECK ((jsonb_typeof(row_data) = 'object'::text))"
+    },
+    {
+      "name": "size_set_rows_pkey",
+      "type": "p",
+      "table": "size_set_rows",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "size_set_rows_batch_id_source_row_no_key",
+      "type": "u",
+      "table": "size_set_rows",
+      "definition": "UNIQUE (batch_id, source_row_no)"
+    },
+    {
+      "name": "accessories_rows_source_row_no_check",
+      "type": "c",
+      "table": "accessories_rows",
+      "definition": "CHECK ((source_row_no >= 2))"
+    },
+    {
+      "name": "accessories_rows_row_data_check",
+      "type": "c",
+      "table": "accessories_rows",
+      "definition": "CHECK (((jsonb_typeof(row_data) = 'object'::text) AND (row_data ?& ARRAY['SI'::text, 'Buyer/Team'::text, 'EWO'::text, 'Line No'::text, 'PSD'::text, 'PCD'::text, 'Sewing Trims Pending Stts'::text, 'Finishing Trims Pending stts'::text, 'Carton Receiving Stts'::text, 'Inventory Status'::text, 'Inspection Status'::text, 'Trims Card status'::text, 'Final Status'::text, 'Relavant Concern '::text, 'Relevant M&M Name'::text])))"
+    },
+    {
+      "name": "accessories_rows_pkey",
+      "type": "p",
+      "table": "accessories_rows",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "accessories_rows_batch_id_source_row_no_key",
+      "type": "u",
+      "table": "accessories_rows",
+      "definition": "UNIQUE (batch_id, source_row_no)"
+    },
+    {
+      "name": "order_bank_import_rows_source_data_check",
+      "type": "c",
+      "table": "order_bank_import_rows",
+      "definition": "CHECK ((jsonb_typeof(source_data) = 'object'::text))"
+    },
+    {
+      "name": "order_bank_import_rows_pkey",
+      "type": "p",
+      "table": "order_bank_import_rows",
+      "definition": "PRIMARY KEY (upload_token, source_row_no)"
+    },
+    {
+      "name": "order_bank_import_rows_uploaded_by_fkey",
+      "type": "f",
+      "table": "order_bank_import_rows",
+      "definition": "FOREIGN KEY (uploaded_by) REFERENCES auth.users(id)"
+    },
+    {
+      "name": "accessories_report_date_matches_psd",
+      "type": "c",
+      "table": "accessories_rows",
+      "definition": "CHECK (((report_date <> ''::text) AND (report_date = COALESCE(btrim((row_data ->> 'PSD'::text)), ''::text))))"
+    },
+    {
+      "name": "embellishment_send_receive_rows_source_row_no_check",
+      "type": "c",
+      "table": "embellishment_send_receive_rows",
+      "definition": "CHECK ((source_row_no >= 2))"
+    },
+    {
+      "name": "embellishment_send_receive_rows_pkey",
+      "type": "p",
+      "table": "embellishment_send_receive_rows",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "embellishment_send_receive_rows_batch_id_source_row_no_key",
+      "type": "u",
+      "table": "embellishment_send_receive_rows",
+      "definition": "UNIQUE (batch_id, source_row_no)"
+    },
+    {
+      "name": "slide4_chassis_strength_item_name_check",
+      "type": "c",
+      "table": "slide4_chassis_strength",
+      "definition": "CHECK (((length(btrim(item_name)) >= 1) AND (length(btrim(item_name)) <= 80)))"
+    },
+    {
+      "name": "slide4_chassis_strength_line_strength_check",
+      "type": "c",
+      "table": "slide4_chassis_strength",
+      "definition": "CHECK (((line_strength >= (0)::numeric) AND (line_strength <= (9999)::numeric)))"
+    },
+    {
+      "name": "slide4_chassis_strength_sort_order_check",
+      "type": "c",
+      "table": "slide4_chassis_strength",
+      "definition": "CHECK (((sort_order >= 1) AND (sort_order <= 100)))"
+    },
+    {
+      "name": "slide4_chassis_strength_pkey",
+      "type": "p",
+      "table": "slide4_chassis_strength",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "order_bank_import_rows_source_row_no_check",
+      "type": "c",
+      "table": "order_bank_import_rows",
+      "definition": "CHECK ((source_row_no > 0))"
+    }
+  ],
+  "counts": {
+    "abp_target": 2,
+    "plan_daily": 1552043,
+    "site_users": 4,
+    "plan_records": 68161,
+    "plan_uploads": 13,
+    "size_set_rows": 59564,
+    "order_bank_raw": 245979,
+    "accessories_rows": 1976,
+    "floor_allocation": 47,
+    "order_bank_staging": 31057,
+    "fabric_cutting_info": 1421,
+    "sewing_input_output": 21690,
+    "date_wise_production": 25236,
+    "line_chassis_priority": 0,
+    "order_bank_import_rows": 0,
+    "slide4_chassis_strength": 6,
+    "dashboard_master_settings": 2,
+    "efficiency_run_day_ladder": 23,
+    "order_bank_upload_batches": 8,
+    "embellishment_send_receive_rows": 79874
+  },
+  "identity_checks": {
+    "auth_count": 4,
+    "profile_count": 4,
+    "auth_without_profile": 0,
+    "profile_without_auth": 0
+  },
+  "storage": [
+    {
+      "id": "plan-data",
+      "public": false,
+      "objects": 14
+    }
+  ]
+}

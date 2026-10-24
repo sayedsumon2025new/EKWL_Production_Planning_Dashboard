@@ -1,8 +1,11 @@
 """Build a private-config-free review package. Does not connect to FTP or deploy."""
-import hashlib,json,shutil
+import argparse,hashlib,json,shutil
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
-OUT=ROOT/'dist/mysql-staging'
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--out',type=Path,help='New output directory; an existing directory is never overwritten.')
+args=parser.parse_args()
+OUT=(args.out or ROOT/'dist/mysql-staging').resolve()
 if OUT.exists():raise SystemExit('Package already exists. Inspect it and choose a new output location before rebuilding.')
 OUT.mkdir(parents=True)
 for file in ROOT.iterdir():

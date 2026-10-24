@@ -34,10 +34,37 @@ an additional storage-test user. The index used was `ekwl_plan_daily_upload_date
 This measures local batched SQL/CLI work, not browser upload time, hosted request
 time, full dashboard memory or shared-host throughput.
 
+## Source access and schema alignment update — 2026-10-24
+
+Reconnect succeeded. Read-only inspection covered all 20 public base tables,
+columns/keys/constraints, functions/views/policies and exact counts. Source has
+13 uploads, 68,161 planning records, 1,552,043 daily cells, 245,979 raw Order Bank
+rows, 31,057 legacy staging rows, 4 Auth identities/4 profiles without ID linkage
+orphans and 14 private Storage objects. These are snapshot counts, not estimates.
+
+Additive migration 002 passed against both a previously migrated fixture and a
+fresh database; original migration hashes remain unchanged. `source-schema.py`
+confirms actual MySQL DDL preserves every observed column and primary key across
+all 20 source tables. `master-contracts.py` verifies the real frontend Floor
+Allocation field names/result shape, rollback on invalid/duplicate/Line 46 rows,
+strength trim/order/duplicates/range validation and chassis clear/append.
+Expanded source pipeline passed with 9 synthetic source tables, including rejected
+checksum-valid missing-primary-key exports before any import, explicit
+source IDs, legacy staging, Unit and free-form fabric time strings.
+
+Seven source calculation helper/RPC definitions and both readiness/coverage view
+definitions match the PostgreSQL oracle definitions exactly after CRLF normalization.
+The fixture permission helper intentionally differs from production authorization;
+API permissions are independently tested. Both original PostgreSQL fixtures and
+actual scoped MySQL loaders again pass 29 readiness + 9 coverage every-field parity.
+The real API regression passed after alignment (29 independent sessions/concurrency
+10, 1.917 seconds). These are local fixture results, not live report reconciliation.
+
 ## Blocked
 
-- Supabase project metadata request returns permission denied for the supplied
-  project; complete live schema/RPC/policy/constraint and row inventory unavailable.
+- Bulk source export still needs a secure project-specific PostgreSQL DSN for
+  the repeatable-read exporter. Connector read access is restored; full actual
+  row/field export/import and live report comparison have not run.
 - Actual source data, Auth/profile/owner reconciliation and Storage objects have
   not been migrated. The new backup endpoint does not copy old Storage objects.
 - No authenticated new InfinityFree staging DB/files/runtime connection. Account

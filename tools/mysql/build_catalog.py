@@ -57,7 +57,6 @@ for name in ['fabric_cutting_info','sewing_input_output','date_wise_production']
 # Source-dependent derived SQL is deliberately not represented as a stored fake snapshot.
 for spec in catalog.values():
  spec['storage_names']={key:'source_field_'+str(i) for i,key in enumerate(spec['columns']) if key!=key.rstrip() or '\n' in key or key.startswith(' ')}
-(ROOT/'backend/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')
 def q(s):return '`'+s.replace('`','``')+'`'
 sql=['-- Staging only. No DROP statements. Prefix isolates existing Notes tables.','SET NAMES utf8mb4;','SET time_zone = \'+00:00\';']
 for name,c in catalog.items():
@@ -72,3 +71,23 @@ for name,c in catalog.items():
  defs += ['UNIQUE KEY '+q('uq_'+str(i))+' ('+','.join(map(q,keys))+')' for i,keys in enumerate(c['unique'])]
  sql.append('CREATE TABLE IF NOT EXISTS '+q('ekwl_'+name)+' (\n  '+',\n  '.join(defs)+'\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;')
 (ROOT/'database/mysql/schema.sql').write_text('\n\n'.join(sql)+'\n')
+
+# Keep the already-published base DDL immutable; migration 002 aligns live source keys/fields.
+source=json.loads((ROOT/'database/mysql/source-schema-20261024.json').read_text())
+for observed in source['tables']:
+ name=observed['name'].split('.')[1]
+ if name not in catalog:table(name,{},','.join(observed['primary_keys']),read=[],write=None)
+ spec=catalog[name]
+ for col in observed['columns']:
+  key=col['name'];dtype=col['data_type']
+  if key not in spec['columns']:
+   spec['columns'][key]=('BIGINT AUTO_INCREMENT' if 'identity' in col['options'] else I) if dtype in ['bigint','integer'] else 'DATETIME(6)' if dtype=='timestamp with time zone' else 'DATE' if dtype=='date' else D if dtype=='numeric' else 'TINYINT(1)' if dtype=='boolean' else J if dtype in ['jsonb','ARRAY'] else ID if dtype=='uuid' else T
+ spec['pk']=observed['primary_keys']
+ spec['source_columns']=[c['name'] for c in observed['columns']]
+# Source is text, including free-form times; never coerce or discard unparseable evidence.
+catalog['fabric_cutting_info']['columns']['pattern_received_time']=T
+catalog['line_chassis_priority']['unique']=[['line_no','priority_order']]
+catalog['abp_target']['unique']=[['parameter_name']]
+for spec in catalog.values():
+ spec['storage_names']={key:'source_field_'+str(i) for i,key in enumerate(spec['columns']) if key!=key.rstrip() or '\n' in key or key.startswith(' ')}
+(ROOT/'backend/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')

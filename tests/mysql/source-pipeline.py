@@ -18,13 +18,23 @@ pg("""CREATE SCHEMA auth;
 CREATE TABLE auth.users(id uuid PRIMARY KEY,email text,created_at timestamptz);
 CREATE TABLE public.site_users(id bigint PRIMARY KEY,auth_user_id uuid,email text,role text,status text,permissions jsonb,created_at timestamptz);
 CREATE TABLE public.plan_uploads(id uuid PRIMARY KEY,file_name text,row_count bigint,status text,planning_month date,sequence_no bigint,planning_id text,uploaded_at timestamptz,uploaded_by uuid);
-CREATE TABLE public.plan_records(id bigint PRIMARY KEY,upload_id uuid REFERENCES plan_uploads(id),source_row bigint,ewo text,order_qty numeric,psd date,is_summary_row boolean);
+CREATE TABLE public.plan_records(id bigint PRIMARY KEY,upload_id uuid REFERENCES plan_uploads(id),source_row bigint,ewo text,order_qty numeric,psd date,is_summary_row boolean,unit text);
 CREATE TABLE public.plan_daily(id bigint PRIMARY KEY,upload_id uuid,record_id bigint REFERENCES plan_records(id),plan_date date,value numeric);
 INSERT INTO auth.users VALUES ('UID','source@fixture.invalid','2026-10-01T12:34:56.123456+06');
 INSERT INTO site_users SELECT 1,id,email,'admin','active','{"slide21":true}',created_at FROM auth.users;
 INSERT INTO plan_uploads VALUES ('UPLOAD','বাংলা.csv',1,'complete','2026-10-01',8,'P08','2026-10-17T12:00:00+06','UID');
-INSERT INTO plan_records VALUES (1,'UPLOAD',2,'0000123',123456789.12345678,'2026-10-17',false);
+INSERT INTO plan_records VALUES (1,'UPLOAD',2,'0000123',123456789.12345678,'2026-10-17',false,'EKWL Highway');
 INSERT INTO plan_daily VALUES (1,'UPLOAD',1,'2026-10-17',0.00000001);
+CREATE TABLE public.line_chassis_priority(id bigint PRIMARY KEY,line_no integer,priority_order integer,product_name text,updated_at timestamptz);
+CREATE TABLE public.abp_target(id bigint PRIMARY KEY,parameter_name text UNIQUE,target_value numeric,config jsonb,updated_at timestamptz);
+CREATE TABLE public.slide4_chassis_strength(id bigint PRIMARY KEY,item_name text,line_strength numeric,sort_order integer,updated_at timestamptz);
+CREATE TABLE public.order_bank_staging(staging_id bigint PRIMARY KEY,"Code-EWO" text,"EWO" text);
+CREATE TABLE public.fabric_cutting_info(id bigint PRIMARY KEY,pattern_received_time text,ewo text);
+INSERT INTO line_chassis_priority VALUES (90001,1,1,'Shirt','2026-10-17T12:00:00Z');
+INSERT INTO abp_target VALUES (90002,'Daily Capacity',10133,'{}','2026-10-17T12:00:00Z');
+INSERT INTO slide4_chassis_strength VALUES (90003,'Shirt',2.5,1,'2026-10-17T12:00:00Z');
+INSERT INTO order_bank_staging VALUES (90004,'001-0000123','0000123');
+INSERT INTO fabric_cutting_info VALUES (90005,'Pending / 9 PM','0000123');
 GRANT USAGE ON SCHEMA public,auth TO "ROLE";
 GRANT SELECT ON ALL TABLES IN SCHEMA public,auth TO "ROLE";
 """.replace('UID',uid).replace('UPLOAD',upload).replace('ROLE',role),name)
@@ -60,4 +70,14 @@ with tempfile.TemporaryDirectory(prefix='ekwl-source-fixture-') as tmp:
     script="require '/app/backend/src/bootstrap.php';Ekwl\\db()->exec(stream_get_contents(STDIN));"
     subprocess.run(['docker','exec','-i','-e','EKWL_CONFIG_FILE='+config,API,'php','-r',script],input=seed,check=True)
     assert report['tables']['plan_daily']['matching_rows']==1
-    print('PASS read-only synthetic PG export, Unicode/leading zeros/exact decimals/UTC, new MySQL dry-run/import/retry/full reconciliation, NULL passwords, mapped Notes retry/rejection, offline Admin seed')
+    for table in ['line_chassis_priority','abp_target','slide4_chassis_strength','order_bank_staging','fabric_cutting_info']:assert report['tables'][table]['matching_rows']==1
+    # A checksum-valid malformed export must not generate a replacement source ID.
+    malformed=json.loads((out/'manifest.json').read_text());name='line_chassis_priority'
+    row=json.loads((out/'line_chassis_priority.ndjson').read_text());del row['id']
+    bad=(json.dumps(row)+'\n').encode();(out/'missing-key.ndjson').write_bytes(bad)
+    malformed['tables'][name]=dict(malformed['tables'][name],file='missing-key.ndjson',sha256=hashlib.sha256(bad).hexdigest())
+    (out/'missing-key-manifest.json').write_text(json.dumps(malformed))
+    for file in ['missing-key.ndjson','missing-key-manifest.json']:subprocess.run(['docker','cp',str(out/file),API+':'+dest+'/'+file],check=True)
+    rejected=cli('import_source.php',dest+'/missing-key-manifest.json','--apply',ok=False)
+    assert rejected.returncode!=0 and 'Missing source primary key' in rejected.stderr+rejected.stdout, (rejected.returncode,(rejected.stderr+rejected.stdout)[-1200:])
+    print('PASS read-only synthetic PG export, Unicode/leading zeros/exact decimals/UTC, new MySQL dry-run/import/retry/full reconciliation, NULL passwords, mapped Notes retry/rejection, offline Admin seed, live-schema source IDs/staging/Unit/free-form time preservation')

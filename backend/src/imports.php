@@ -116,14 +116,47 @@ function rpc(array $u,array $q): array {
     $snap=['finalize_size_set_upload'=>'size_set_rows','finalize_accessories_upload'=>'accessories_rows','finalize_embellishment_upload'=>'embellishment_send_receive_rows'];
     if(isset($snap[$name]))return ['data'=>finalizeSnapshot($snap[$name],$u,$b)];
     if($name==='finalize_order_bank_import')return ['data'=>finalizeOrderBank($u,$b)];
-    if(in_array($name,['replace_floor_allocation','replace_slide4_chassis_strength'],true)){
-        requirePermission($u,'admin_settings');$table=$name==='replace_floor_allocation'?'floor_allocation':'slide4_chassis_strength';$rows=$b['p_rows']??[];
-        if(!is_array($rows)||!$rows||count($rows)>1000)throw new ApiError('Invalid master rows.');
-        return transaction(function()use($table,$rows,$u){snapshotLock();run('DELETE FROM '.ident('ekwl_'.$table));insertRows($table,$rows);audit('master.replace',$table);return ['data'=>['status'=>'SUCCESS','row_count'=>count($rows)]];});
+    if($name==='replace_floor_allocation'){
+        requirePermission($u,'admin');$source=$b['p_rows']??[];
+        if(!is_array($source)||!array_is_list($source)||!$source||count($source)>1000)throw new ApiError('Invalid floor allocation rows.');
+        $rows=[];$seen=[];
+        foreach($source as $r){
+            if(!is_array($r))throw new ApiError('Allocation rows must be objects.');
+            foreach(['Line','Level','IE Name & Line Block','ID'] as $key)if(!isset($r[$key])||!is_scalar($r[$key])||trim((string)$r[$key],' ')==='')throw new ApiError('Blank required allocation field.');
+            $line=(string)$r['Line'];
+            if(!preg_match('/^\\d+$/',$line)||(int)$line<1||(int)$line===46||(int)$line>2147483647)throw new ApiError('Invalid Line (Line 46 is not allowed).');
+            $line=(int)$line;if(isset($seen[$line]))throw new ApiError('Duplicate allocation Line.');$seen[$line]=true;
+            $rows[]=['line_no'=>$line,'level'=>$r['Level'],'ie_name_line_block'=>$r['IE Name & Line Block'],'employee_id'=>$r['ID'],'updated_at'=>gmdate('Y-m-d H:i:s')];
+        }
+        return transaction(function()use($rows){snapshotLock();run('DELETE FROM ekwl_floor_allocation');insertRows('floor_allocation',$rows);audit('master.replace','floor_allocation');return ['data'=>['status'=>'SUCCESS','inserted_rows'=>count($rows)]];});
+    }
+    if($name==='replace_slide4_chassis_strength'){
+        requirePermission($u,'admin_settings');$source=$b['p_rows']??[];
+        if(!is_array($source)||!array_is_list($source)||!$source||count($source)>100)throw new ApiError('Provide 1 to 100 chassis rows.');
+        $rows=[];$seen=[];
+        foreach($source as $i=>$r){
+            if(!is_array($r)||!is_string($r['item_name']??null))throw new ApiError('Item name required.');
+            $item=trim($r['item_name'],' ');$len=preg_match_all('/./us',$item);
+            if(!$len||$len>80)throw new ApiError('Item name must contain 1 to 80 characters.');
+            if(preg_match('/[^\\x00-\\x7F]/',$item)&&!function_exists('mb_strtolower'))throw new ApiError('Unicode item normalization requires mbstring.',503);
+            $key=function_exists('mb_strtolower')?mb_strtolower($item,'UTF-8'):strtolower($item);
+            if($key==='unmapped'||isset($seen[$key]))throw new ApiError('Reserved or duplicate chassis item name.');$seen[$key]=true;
+            $strength=$r['line_strength']??null;
+            if(!is_int($strength)&&!is_float($strength))throw new ApiError('Numeric strength required.');
+            if(!is_finite((float)$strength)||$strength<0||$strength>9999)throw new ApiError('Strength must be from 0 to 9999.');
+            $rows[]=['item_name'=>$item,'line_strength'=>$strength,'sort_order'=>$i+1,'updated_at'=>gmdate('Y-m-d H:i:s')];
+        }
+        return transaction(function()use($rows){snapshotLock();run('DELETE FROM ekwl_slide4_chassis_strength');insertRows('slide4_chassis_strength',$rows);audit('master.replace','slide4_chassis_strength');return ['data'=>['status'=>'SUCCESS','row_count'=>count($rows)]];});
     }
     if($name==='ekwl_save_report'&&($b['p_kind']??'')==='chassis'){
-        requirePermission($u,'admin_settings');$rows=$b['p_rows']??[];if(!is_array($rows)||!$rows||count($rows)>1000)throw new ApiError('Invalid chassis rows.');
-        return transaction(function()use($rows){snapshotLock();run('DELETE FROM ekwl_line_chassis_priority');insertRows('line_chassis_priority',$rows);audit('chassis.replace');return ['data'=>['success'=>true,'inserted_rows'=>count($rows)]];});
+        requirePermission($u,'admin');$rows=$b['p_rows']??[];
+        if(!is_array($rows)||!array_is_list($rows)||count($rows)>1000)throw new ApiError('Invalid chassis rows.');
+        foreach($rows as $r){
+            if(!is_array($r)||array_diff(array_keys($r),['line_no','priority_order','product_name','updated_at']))throw new ApiError('Unexpected chassis field.');
+            if(!preg_match('/^\\d+$/',(string)($r['line_no']??''))||(int)$r['line_no']<1||(int)$r['line_no']===46||!preg_match('/^\\d+$/',(string)($r['priority_order']??''))||(int)$r['priority_order']<1||!is_string($r['product_name']??null))throw new ApiError('Invalid chassis line, priority or product.');
+        }
+        $replace=$b['p_replace']??true;
+        return transaction(function()use($rows,$replace){snapshotLock();if($replace)run('DELETE FROM ekwl_line_chassis_priority');if($rows)insertRows('line_chassis_priority',$rows);audit('chassis.replace');return ['data'=>['success'=>true,'inserted_rows'=>count($rows)]];});
     }
     if($name==='get_ready_input_coverage')return ['data'=>derivedQuery($u,$q,'coverage')];
     throw new ApiError('Unknown business operation.',404);

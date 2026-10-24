@@ -11,7 +11,9 @@ A trusted test operator needs Docker access; no production credentials required.
    proxy/CA setup described by your managed cloud runtime. No fixed passwords.
 2. `python tests/mysql/new-fixture.py` creates a NEW test DB and Admin (never drops
    an existing DB); private `/tmp/ekwl-test-auth.json` holds test credentials.
-3. Run `python tests/mysql/api-integration.py /tmp/ekwl-test-auth.json`, then
+3. Run `python tests/mysql/source-schema.py` and
+   `python tests/mysql/master-contracts.py /tmp/ekwl-test-auth.json`, then
+   `python tests/mysql/api-integration.py /tmp/ekwl-test-auth.json`, then
    `python tests/mysql/browser.py /tmp/ekwl-test-auth.json`,
    `python tests/mysql/storage.py /tmp/ekwl-test-auth.json` and
    `python tests/mysql/archive-integration.py /tmp/ekwl-test-auth.json`.
