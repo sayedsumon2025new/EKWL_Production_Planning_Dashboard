@@ -114,3 +114,18 @@ as its first two arguments. Deletion is checkpoint-like and partial commits can
 occur: inspect output and audit log before resuming. Latest/active data may remain;
 this is not an automatic space-reclamation guarantee. Production authorization,
 retention review and full backup are still required; no production cleanup ran.
+
+## One-time phpMyAdmin setup for the confirmed empty staging database
+
+`staging-install-if0_43242550_ekwl_stage.sql` combines the four reviewed migration
+files in order, records their exact SHA-256 ledger entries and explicitly selects
+`if0_43242550_ekwl_stage`. Import it once into the confirmed empty staging DB via
+phpMyAdmin Import. It contains no credentials, source rows or Admin account.
+A plain CREATE for the ledger prevents accidental repeat installation: on any
+error, stop and inspect it rather than rerun/delete tables. MySQL DDL is not
+transactional. Do not edit the target to the existing Notes database.
+Generate with `python tools/mysql/build_phpmyadmin_install.py`. Local test
+`tests/mysql/phpmyadmin-install.py` substitutes only the USE target for a new
+isolated fixture database, verifies the full schema/four ledger hashes and tests
+that CLI migration subsequently reports four SKIPs. Actual hosted import still
+requires the operator to confirm its phpMyAdmin success/error result.

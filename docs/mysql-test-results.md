@@ -87,3 +87,12 @@ verifies historical rows, not a complete application/disaster recovery image.
 
 See `tests/mysql/README.md`. Tests require an isolated checkout/runtime and use
 new fixture databases. Never point them at a hosted or production database.
+
+## Guided phpMyAdmin installer
+
+The 20.8 KB one-time installer was executed on a new isolated local fixture
+(substituting only its USE target). Complete schema and four migration hashes
+verified; repeated ledger creation was blocked; CLI migration recognized all
+four hashes and returned SKIP. The generated bundle explicitly targets the
+confirmed empty `if0_43242550_ekwl_stage` and contains no source data or credentials.
+Actual hosted phpMyAdmin import is pending user execution/verification.
