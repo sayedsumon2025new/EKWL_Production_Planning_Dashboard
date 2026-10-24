@@ -96,3 +96,14 @@ verified; repeated ledger creation was blocked; CLI migration recognized all
 four hashes and returned SKIP. The generated bundle explicitly targets the
 confirmed empty `if0_43242550_ekwl_stage` and contains no source data or credentials.
 Actual hosted phpMyAdmin import is pending user execution/verification.
+
+## User-assisted hosted schema evidence — 2026-10-24
+
+User screenshots show phpMyAdmin importing the exact published staging SQL into
+`if0_43242550_ekwl_stage`: 73 queries completed successfully. The follow-up SELECT
+shows that database name, `11.4.13-MariaDB` and 4 migration ledger entries. This is
+manual screenshot evidence; no direct server connection or full hosted schema/
+application/security/load verification is claimed. The user also created the empty
+`/htdocs/ekwl-staging/` directory. The curated download in `downloads/` contains
+66 reviewed files plus its manifest, no real config/private data, and no outer
+folder. ZIP CRC, all paths and every file SHA were verified before publication.
