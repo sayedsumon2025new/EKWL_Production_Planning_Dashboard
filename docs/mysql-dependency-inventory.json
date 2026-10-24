@@ -1,0 +1,4522 @@
+{
+  "baseline": "25f9d3a6403bc2a8852285a2858b03e1fe1563f8",
+  "files": [
+    {
+      "path": ".github/workflows/deploy-infinityfree.yml",
+      "bytes": 3316,
+      "kind": "yml",
+      "third_party": false
+    },
+    {
+      "path": "accessories-module.js",
+      "bytes": 12536,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "dashboard-effects.js",
+      "bytes": 4920,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "dashboard-main.js",
+      "bytes": 301250,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "dashboard-theme.css",
+      "bytes": 37145,
+      "kind": "css",
+      "third_party": false
+    },
+    {
+      "path": "dashboard-theme.js",
+      "bytes": 2879,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "data-cache.js",
+      "bytes": 9170,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "embellishment-module.js",
+      "bytes": 13188,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "ewo-readiness.css",
+      "bytes": 1716,
+      "kind": "css",
+      "third_party": false
+    },
+    {
+      "path": "ewo-readiness.js",
+      "bytes": 9634,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "frontend-runtime.js",
+      "bytes": 7234,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "gantt-action-calendars.js",
+      "bytes": 45385,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "gantt-hover.js",
+      "bytes": 16247,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "html2canvas.min.js",
+      "bytes": 198690,
+      "kind": "js",
+      "third_party": true
+    },
+    {
+      "path": "index.html",
+      "bytes": 204746,
+      "kind": "html",
+      "third_party": false
+    },
+    {
+      "path": "load-analysis-bridge.js",
+      "bytes": 2818,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "load-analysis-plan-row.js",
+      "bytes": 6422,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "load-analysis.html",
+      "bytes": 47579,
+      "kind": "html",
+      "third_party": false
+    },
+    {
+      "path": "order-execution-bridge.js",
+      "bytes": 4863,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "order-execution-plan.html",
+      "bytes": 173437,
+      "kind": "html",
+      "third_party": false
+    },
+    {
+      "path": "ready-input-coverage.js",
+      "bytes": 7536,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "shared-report-loader.js",
+      "bytes": 8497,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "size-set-module.js",
+      "bytes": 20825,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "slides-config.js",
+      "bytes": 5342,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20260923_audit_fixes.sql",
+      "bytes": 5282,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20260924_report_replace_where.sql",
+      "bytes": 725,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20260926_accessories_daily.sql",
+      "bytes": 5654,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20260926_size_set_module.sql",
+      "bytes": 4055,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20260927_accessories_psd_report_date.sql",
+      "bytes": 3018,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20260927_embellishment_send_receive.sql",
+      "bytes": 5031,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20260928_embellishment_upload_permission.sql",
+      "bytes": 2922,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20260929_slide4_chassis_strength.sql",
+      "bytes": 4290,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20260929_slide4_chassis_strength_safe_delete.sql",
+      "bytes": 786,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20261012093837_chassis_slide10_read_access.sql",
+      "bytes": 596,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20261014020815_ewo_readiness_board.sql",
+      "bytes": 18662,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20261014021253_ewo_readiness_query_performance.sql",
+      "bytes": 15284,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20261014021617_ewo_readiness_daily_unique_scan.sql",
+      "bytes": 15181,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20261014032704_flexible_date_parser.sql",
+      "bytes": 3554,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20261014065351_ready_input_coverage.sql",
+      "bytes": 11524,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/migrations/20261014065710_ready_input_scoped_query.sql",
+      "bytes": 11697,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/order-bank-flexible-import.sql",
+      "bytes": 7790,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/order-bank-import-timeout.sql",
+      "bytes": 315,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/order-bank-read-access.sql",
+      "bytes": 536,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "supabase/performance-migration.sql",
+      "bytes": 663,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "table-visuals.css",
+      "bytes": 5408,
+      "kind": "css",
+      "third_party": false
+    },
+    {
+      "path": "tests/admin-user.cjs",
+      "bytes": 3491,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/audit.cjs",
+      "bytes": 4173,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/auth-storage.cjs",
+      "bytes": 1788,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/chassis-slide10-access.sql",
+      "bytes": 3132,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "tests/dashboard-source.js",
+      "bytes": 489,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "tests/data-cache.cjs",
+      "bytes": 8936,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/date-parser.cjs",
+      "bytes": 4381,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/ewo-feeding.cjs",
+      "bytes": 5953,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/ewo-readiness-browser.py",
+      "bytes": 9292,
+      "kind": "py",
+      "third_party": false
+    },
+    {
+      "path": "tests/ewo-readiness.cjs",
+      "bytes": 3253,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/ewo-readiness.sql",
+      "bytes": 18383,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "tests/fixtures/gantt-before-step3.js",
+      "bytes": 17855,
+      "kind": "js",
+      "third_party": false
+    },
+    {
+      "path": "tests/frontend-runtime.cjs",
+      "bytes": 6258,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/gantt-index-parity.cjs",
+      "bytes": 7809,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/gantt-multiple-ewos.cjs",
+      "bytes": 3623,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/gantt-multiple-visual.py",
+      "bytes": 4543,
+      "kind": "py",
+      "third_party": false
+    },
+    {
+      "path": "tests/gantt-plan-sah.cjs",
+      "bytes": 2333,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/line-popup.cjs",
+      "bytes": 4847,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/load-analysis-totals.cjs",
+      "bytes": 3394,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/loading.cjs",
+      "bytes": 19005,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/order-bank-import.sql",
+      "bytes": 3273,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "tests/order-bank-timeout.sql",
+      "bytes": 1598,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "tests/order-bank-upload.cjs",
+      "bytes": 4745,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/order-bank.cjs",
+      "bytes": 4005,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/readiness-schema.sql",
+      "bytes": 5453,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "tests/ready-input-coverage.cjs",
+      "bytes": 3284,
+      "kind": "cjs",
+      "third_party": false
+    },
+    {
+      "path": "tests/ready-input-coverage.sql",
+      "bytes": 7276,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "tests/release-assets.py",
+      "bytes": 6808,
+      "kind": "py",
+      "third_party": false
+    },
+    {
+      "path": "tests/report-replace.sql",
+      "bytes": 1350,
+      "kind": "sql",
+      "third_party": false
+    },
+    {
+      "path": "tests/s6-psd-range-browser.py",
+      "bytes": 4218,
+      "kind": "py",
+      "third_party": false
+    },
+    {
+      "path": "tests/slides-navigation.py",
+      "bytes": 7573,
+      "kind": "py",
+      "third_party": false
+    },
+    {
+      "path": "tests/step1-browser.py",
+      "bytes": 9269,
+      "kind": "py",
+      "third_party": false
+    },
+    {
+      "path": "tests/step2-browser.py",
+      "bytes": 8731,
+      "kind": "py",
+      "third_party": false
+    },
+    {
+      "path": "tests/step3-browser.py",
+      "bytes": 7684,
+      "kind": "py",
+      "third_party": false
+    },
+    {
+      "path": "tests/theme-visual.py",
+      "bytes": 29472,
+      "kind": "py",
+      "third_party": false
+    },
+    {
+      "path": "three.min.js",
+      "bytes": 603445,
+      "kind": "js",
+      "third_party": true
+    }
+  ],
+  "service_references": [
+    {
+      "file": "accessories-module.js",
+      "line": 161,
+      "source": "const {error:tableError}=await SB.from('accessories_rows').select('source_row_no').limit(1);"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 170,
+      "source": "const {error}=await SB.from('accessories_rows').insert(part);"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 174,
+      "source": "const {data,error}=await SB.rpc('finalize_accessories_upload',{"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 36,
+      "source": "const SB = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,{"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 163,
+      "source": "const {data,error}=await readTinySetting('ladder',()=>SB.from('efficiency_run_day_ladder')"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 213,
+      "source": "const {error:upErr}=await SB.from('efficiency_run_day_ladder').upsert(payload,{onConflict:'item'});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 216,
+      "source": "const {data:existing,error:readErr}=await SB.from('efficiency_run_day_ladder').select('item');"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 221,
+      "source": "const {error:delErr}=await SB.from('efficiency_run_day_ladder').delete().in('item',deleted);"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 316,
+      "source": "const {data,error}=await readTinySetting('chassis',()=>SB.from('line_chassis_priority')"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 483,
+      "source": "const {error}=await SB.from('abp_target').upsert({"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 809,
+      "source": "let q=SB.from(table).select(select);"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 836,
+      "source": "sbPaged(()=>SB.from('plan_records')"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 842,
+      "source": "sbPaged(()=>SB.from('plan_daily').select('record_id,plan_date,value')"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 963,
+      "source": "const {data,error}=await SB.from('plan_uploads').select('sequence_no,planning_id')"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1166,
+      "source": "const {data:uploads,error:upErr}=await SB.from('plan_uploads')"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2286,
+      "source": "const {data,error}=await readTinySetting('strength',()=>SB.from('slide4_chassis_strength')"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2363,
+      "source": "const {data,error}=await SB.rpc('replace_slide4_chassis_strength',{p_rows:rows});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3600,
+      "source": "const {data:{session}}=await SB.auth.getSession();"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3602,
+      "source": "const {data,error}=await SB.functions.invoke('admin-create-user',{"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3655,
+      "source": "const {data,error}=await SB.from('site_users').select('id,auth_user_id,email,role,status,permissions,created_at').order('created_at',{ascending:true});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3683,
+      "source": "const {data:{session}}=await SB.auth.getSession();"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3685,
+      "source": "const {data,error}=await SB.functions.invoke('admin-create-user',{"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3711,
+      "source": "const {data:{session}}=await SB.auth.getSession();"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3713,
+      "source": "const {data,error}=await SB.functions.invoke('admin-create-user',{"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3760,
+      "source": "let q=SB.from('site_users').select('id,auth_user_id,email,role,status,permissions').eq('auth_user_id',user.id).limit(1);"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3765,
+      "source": "const r=await SB.from('site_users').select('id,auth_user_id,email,role,status,permissions').ilike('email',user.email).limit(1);"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3775,
+      "source": "const {data:{session},error}=await SB.auth.getSession();"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3783,
+      "source": "try{await SB.auth.signOut()}catch(_){}"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3830,
+      "source": "const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3846,
+      "source": "const {error}=await SB.auth.updateUser({password:p1});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3848,
+      "source": "await SB.auth.signOut();"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3862,
+      "source": "SB.auth.onAuthStateChange((event,session)=>{"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3873,
+      "source": "const {data,error}=await SB.auth.signInWithPassword({email,password});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3891,
+      "source": "try{await SB.auth.signOut()}catch(_){}"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3924,
+      "source": "try{await SB.auth.signOut()}catch(e){console.error(e)}"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4006,
+      "source": "const {data:{user}}=await SB.auth.getUser();"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4016,
+      "source": "const {error}=await SB.auth.signInWithPassword({email,password});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4020,
+      "source": "async function sbLogout(){await SB.auth.signOut();await refreshSbAuth()}"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4055,
+      "source": "const {data:lastSeq,error:seqErr}=await SB.from('plan_uploads').select('sequence_no')"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4061,
+      "source": "const {data:up,error:ue}=await SB.from('plan_uploads').insert({"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4068,
+      "source": "const backup=await SB.storage.from('plan-data').upload(safeName,file,{contentType:'text/csv',upsert:false});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4083,
+      "source": "const {data,error}=await SB.from('plan_records').insert(batch).select('id,source_row');if(error)throw error;"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4091,
+      "source": "const {error}=await SB.from('plan_daily').insert(batch);if(error)throw error;done+=batch.length;"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4094,
+      "source": "const {error:fe}=await SB.from('plan_uploads').update({status:'complete'}).eq('id',uploadId);if(fe)throw fe;"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4222,
+      "source": "const {data,error}=await SB.rpc('ekwl_save_report',{p_kind:kind,p_rows:rows,p_replace:replace});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4439,
+      "source": "const {data,error}=await SB.from('dashboard_master_settings')"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4451,
+      "source": "const {error}=await SB.from('dashboard_master_settings').upsert({"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4471,
+      "source": "const {data:{session}}=await SB.auth.getSession();"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4483,
+      "source": "const {data:{session},error}=await SB.auth.getSession();"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4590,
+      "source": "const {error}=await SB.from('order_bank_import_rows').insert(chunk);"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4598,
+      "source": "const {data:a,error}=await SB.rpc('finalize_order_bank_import',{p_upload_token:token,p_file_name:f.name,p_expected_rows:rows.length,p_source_columns:headers});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4618,
+      "source": "const {error}=await SB.from('order_bank_import_rows').delete().eq('upload_token',token);"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4686,
+      "source": "const {data,error}=await SB.rpc('replace_floor_allocation',{p_rows:rows});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4703,
+      "source": "const {data,error}=await readTinySetting('floor',()=>SB.from('floor_allocation').select('line_no,level,ie_name_line_block,employee_id,updated_at').order('line_no'));"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4729,
+      "source": "const {data:existing,error:checkError}=await SB.from('floor_allocation').select('line_no').eq('line_no',lineNo).limit(1);"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4733,
+      "source": "const {error}=await SB.from('floor_allocation').insert({line_no:lineNo,level,ie_name_line_block:block,employee_id:employeeId});"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 5200,
+      "source": "const {data,error}=await readTinySetting('ladder',()=>SB.from('efficiency_run_day_ladder').select('item,day_1,day_2,day_3,day_4,day_5,day_6_plus').order('item'));"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 44,
+      "source": "return loadVersionedData('snapshot:'+type,current=>cachedPagedRows(()=>SB.from(table).select(columns).eq('is_active',true).order('source_row_no',{ascending:true}),current),{force});"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 50,
+      "source": "let query=SB.from(snapshotId===null?'order_bank_latest_all':'order_bank_raw').select('*');"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 82,
+      "source": "let query=SB.from(table).select(columns);"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 176,
+      "source": "const {error}=await SB.from('embellishment_send_receive_rows').insert(part);"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 180,
+      "source": "const {data,error}=await SB.rpc('finalize_embellishment_upload',{"
+    },
+    {
+      "file": "ewo-readiness.js",
+      "line": 87,
+      "source": "const {data,error}=await SB.from('plan_uploads').select('id').eq('status','complete')"
+    },
+    {
+      "file": "ewo-readiness.js",
+      "line": 95,
+      "source": "const {data,error}=await SB.from('ewo_readiness_board').select(RD_COLUMNS).eq('upload_id',uploadId)"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 385,
+      "source": "const {data,error}=await SB.from('fabric_cutting_info').select('ewo,color_name,pattern_received_date,replacement_receive_commitment_date,status').order('id',{ascending:true}).range(from,from+499);"
+    },
+    {
+      "file": "order-execution-bridge.js",
+      "line": 72,
+      "source": "records=await sbPaged(()=>SB.from('plan_records')"
+    },
+    {
+      "file": "ready-input-coverage.js",
+      "line": 47,
+      "source": "const {data,error}=await SB.from('plan_uploads').select('id').eq('status','complete').order('uploaded_at',{ascending:false}).limit(1);"
+    },
+    {
+      "file": "ready-input-coverage.js",
+      "line": 51,
+      "source": "const cutoff=await SB.from('date_wise_production').select('output_date').order('output_date',{ascending:false}).limit(1);"
+    },
+    {
+      "file": "ready-input-coverage.js",
+      "line": 55,
+      "source": "const {data,error}=await SB.rpc('get_ready_input_coverage',{p_upload_id:upload}).order('ewo',{ascending:true}).range(offset,offset+999);"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 80,
+      "source": "rows=await paged(()=>SB.from('fabric_cutting_info')"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 84,
+      "source": "const source=await paged(()=>SB.from('sewing_input_output')"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 94,
+      "source": "const source=await paged(()=>SB.from('date_wise_production')"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 167,
+      "source": "return readTinySetting('abp',()=>SB.from('abp_target').select('parameter_name,config')"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 290,
+      "source": "const {error:tableError}=await SB.from('size_set_rows').select('source_row_no').limit(1);"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 298,
+      "source": "const {error}=await SB.from('size_set_rows').insert(part);"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 302,
+      "source": "const {data,error}=await SB.rpc('finalize_size_set_upload',{"
+    }
+  ],
+  "functions": [
+    {
+      "file": "accessories-module.js",
+      "line": 15,
+      "function": "acMessage"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 17,
+      "function": "parseAccessoriesCSV"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 35,
+      "function": "accessoriesSetRows"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 41,
+      "function": "populateAccessoriesFilters"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 63,
+      "function": "renderAccessoriesModule"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 112,
+      "function": "accessoriesPage"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 113,
+      "function": "accessoriesSearchChanged"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 114,
+      "function": "clearAccessoriesFilters"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 121,
+      "function": "previewAccessoriesFile"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 133,
+      "function": "loadAccessoriesModule"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 152,
+      "function": "uploadAccessoriesFile"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 187,
+      "function": "resetAccessoriesModule"
+    },
+    {
+      "file": "accessories-module.js",
+      "line": 198,
+      "function": "setAccessoriesDemoRows"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 5,
+      "function": "createResilientAuthStorage"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 44,
+      "function": "monthTime"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 45,
+      "function": "sortedMonths"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 46,
+      "function": "validDate"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 47,
+      "function": "parseRecords"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 63,
+      "function": "chassisOf"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 64,
+      "function": "strengths"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 71,
+      "function": "csvCell"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 107,
+      "function": "itemColor"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 108,
+      "function": "itemChip"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 155,
+      "function": "getEfficiencyLadder"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 161,
+      "function": "loadEfficiencyLadderFromSQL"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 184,
+      "function": "saveEfficiencyLadder"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 233,
+      "function": "addEfficiencyLadderItem"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 248,
+      "function": "deleteEfficiencyLadderItem"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 252,
+      "function": "resetEfficiencyLadder"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 258,
+      "function": "renderEfficiencyLadder"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 294,
+      "function": "getChassisMasterLines"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 301,
+      "function": "isChassisMasterLine"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 308,
+      "function": "getChassisPriority"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 314,
+      "function": "loadChassisPriorityFromSQL"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 341,
+      "function": "saveChassisPriority"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 372,
+      "function": "resetChassisPriority"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 379,
+      "function": "addChassisPriorityLine"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 392,
+      "function": "renderChassisPriority"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 443,
+      "function": "getABPTarget"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 448,
+      "function": "loadABPTargetFromSQL"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 469,
+      "function": "saveABPTarget"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 501,
+      "function": "resetABPTarget"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 508,
+      "function": "renderABPTarget"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 525,
+      "function": "openAdminSetting"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 556,
+      "function": "siteIsAdmin"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 559,
+      "function": "siteHasPerm"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 564,
+      "function": "slidePermissionKey"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 567,
+      "function": "canAccessSlide"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 571,
+      "function": "applySitePermissions"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 624,
+      "function": "requireSitePerm"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 630,
+      "function": "goSlide"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 681,
+      "function": "restoreActiveTab"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 695,
+      "function": "monthFromISO"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 701,
+      "function": "lineNumber"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 705,
+      "function": "dashboardStyle"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 721,
+      "function": "setLoadProgress"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 726,
+      "function": "setLoadChip"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 731,
+      "function": "resetLoadUI"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 739,
+      "function": "planningMonthLabel"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 745,
+      "function": "uploadMonthKey"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 750,
+      "function": "uploadSeq"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 751,
+      "function": "activePlanningLabel"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 758,
+      "function": "rebuildPlanningFilters"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 776,
+      "function": "capturePlanningState"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 785,
+      "function": "restorePlanningState"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 796,
+      "function": "sbPaged"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 806,
+      "function": "sbAll"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 820,
+      "function": "planningSnapshotVersion"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 825,
+      "function": "canReusePlanningSnapshot"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 833,
+      "function": "fetchPlanningSnapshot"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 904,
+      "function": "prefetchPlanningVersions"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 927,
+      "function": "switchPlanningInstant"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 952,
+      "function": "planningMonthChanged"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 956,
+      "function": "planningSequenceChanged"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 959,
+      "function": "updateNextPlanningSequence"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 977,
+      "function": "setSupabaseLiveBadge"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 983,
+      "function": "loadCentralAdminSettingsBeforeData"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 991,
+      "function": "bootLiveSupabaseData"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1037,
+      "function": "dashboardCacheOwner"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1038,
+      "function": "dashboardCacheKey"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1039,
+      "function": "fastBootCacheKey"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1040,
+      "function": "saveFastBootCache"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1057,
+      "function": "restoreFastBootCache"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1080,
+      "function": "openDashCache"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1087,
+      "function": "saveDashboardCache"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1110,
+      "function": "readDashboardCache"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1122,
+      "function": "clearDashboardCache"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1132,
+      "function": "restoreDashboardFromCache"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1158,
+      "function": "loadFromSupabase"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1234,
+      "function": "handleFile"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1236,
+      "function": "readFile"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1238,
+      "function": "parseCSV"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1271,
+      "function": "setStatus"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1277,
+      "function": "getFiltered"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1292,
+      "function": "getMonthFilteredAux"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1297,
+      "function": "applyFilter"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1303,
+      "function": "renderAll"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1316,
+      "function": "homeFirstPSDCount"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1326,
+      "function": "clearHomeDateRange"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1331,
+      "function": "renderHome"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1438,
+      "function": "s12DateRangeChanged"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1446,
+      "function": "s12ResetDateRange"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1451,
+      "function": "fabricEwoColorKey"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1456,
+      "function": "fabricCuttingCascade"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1486,
+      "function": "loadS12Embellishment"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1497,
+      "function": "s12CuttingWip"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1509,
+      "function": "s12EmbellishmentTotals"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1526,
+      "function": "renderS12"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1704,
+      "function": "renderSlide"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1720,
+      "function": "refreshPermittedSlides"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1731,
+      "function": "groupBy"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1734,
+      "function": "sum"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1735,
+      "function": "unique"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1738,
+      "function": "getUniqueEWOs"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1749,
+      "function": "monthLabel"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1757,
+      "function": "getUniqueOrderComponents"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1768,
+      "function": "authoritativeOrderQty"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1769,
+      "function": "uniqueOrderQty"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1772,
+      "function": "s1Fill"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1780,
+      "function": "clearOrderFilters"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1786,
+      "function": "colorBreakdownHtml"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1803,
+      "function": "showOrderHover"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1809,
+      "function": "moveOrderHover"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1817,
+      "function": "hideOrderHover"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1819,
+      "function": "renderS1"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1890,
+      "function": "s2DateRangeRows"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1894,
+      "function": "s2DateRangeChanged"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1901,
+      "function": "s2ResetDateRange"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1902,
+      "function": "closeS2LineDetails"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1906,
+      "function": "buildS2EwoRows"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1920,
+      "function": "summarizeS2Line"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1926,
+      "function": "openS2LineDetails"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 1951,
+      "function": "renderS2"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2091,
+      "function": "renderS3PlanPie"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2099,
+      "function": "copyReportData"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2104,
+      "function": "captureReport"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2125,
+      "function": "setupReportActions"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2135,
+      "function": "s3DateRangeChanged"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2140,
+      "function": "renderS3"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2279,
+      "function": "getS4Strengths"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2283,
+      "function": "loadS4StrengthsFromSQL"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2304,
+      "function": "s4StrengthRow"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2309,
+      "function": "s4StrengthChanged"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2317,
+      "function": "renderS4StrengthSettings"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2332,
+      "function": "addS4StrengthItem"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2338,
+      "function": "saveS4Strengths"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2385,
+      "function": "s4DateRangeChanged"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2392,
+      "function": "s4ResetDateRange"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2393,
+      "function": "captureS4Image"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2423,
+      "function": "renderS4"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2521,
+      "function": "drawS4ChassisChart"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2552,
+      "function": "renderS5"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2584,
+      "function": "buildS6Rows"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2602,
+      "function": "s6PSDMatches"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2606,
+      "function": "s6PSDRangeChanged"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2613,
+      "function": "s6ResetPSDRange"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2618,
+      "function": "buildS6RangeSummary"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2625,
+      "function": "renderS6RangeSummary"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2647,
+      "function": "renderS6"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2715,
+      "function": "s11DateRangeChanged"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2722,
+      "function": "s11ResetDateRange"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2723,
+      "function": "ganttCoverageCondition"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2726,
+      "function": "ganttConditionVisible"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2731,
+      "function": "invalidateGanttIndex"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2732,
+      "function": "getGanttIndex"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 2901,
+      "function": "renderS11"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3038,
+      "function": "renderS7"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3049,
+      "function": "drawGroupedBar"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3116,
+      "function": "renderFeedingPie"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3133,
+      "function": "renderS8"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3190,
+      "function": "renderS9"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3468,
+      "function": "downloadTemplate"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3493,
+      "function": "exportData"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3500,
+      "function": "download"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3507,
+      "function": "loadSampleData"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3558,
+      "function": "getDashboardSlideRegistry"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3561,
+      "function": "getUserPermissionKeys"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3565,
+      "function": "getMaxDashboardSlide"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3568,
+      "function": "umEsc"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3569,
+      "function": "umOn"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3572,
+      "function": "addNewSiteUser"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3632,
+      "function": "loadSiteUsers"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3677,
+      "function": "saveSiteUser"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3697,
+      "function": "removeSiteUser"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3734,
+      "function": "siteLoginMessage"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3740,
+      "function": "showSiteLogin"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3747,
+      "function": "unlockSite"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3758,
+      "function": "getAuthorizedSiteUser"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3773,
+      "function": "authorizeSiteSession"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3789,
+      "function": "siteRecoveryInUrl"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3794,
+      "function": "siteForgotPassword"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3804,
+      "function": "siteBackToLogin"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3812,
+      "function": "siteShowNewPassword"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3822,
+      "function": "siteSendResetEmail"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3838,
+      "function": "siteUpdatePassword"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3866,
+      "function": "siteLogin"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3895,
+      "function": "siteLogout"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3939,
+      "function": "openUploadModal"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3966,
+      "function": "closeUploadModal"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3967,
+      "function": "sbMsg"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3968,
+      "function": "csvNum"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 3969,
+      "function": "csvDate"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4001,
+      "function": "csvChunks"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4002,
+      "function": "rawDateHeader"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4003,
+      "function": "rawHeaderDate"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4004,
+      "function": "planningCsvDate"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4005,
+      "function": "refreshSbAuth"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4013,
+      "function": "sbLogin"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4020,
+      "function": "sbLogout"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4021,
+      "function": "parseRawPlanFile"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4044,
+      "function": "uploadNewPlan"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4105,
+      "function": "refreshDashboardAfterSuccessfulUpload"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4136,
+      "function": "openFabricUpload"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4143,
+      "function": "fcNormHeader"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4147,
+      "function": "fcPick"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4156,
+      "function": "fcText"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4160,
+      "function": "fcDate"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4191,
+      "function": "fcTime"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4208,
+      "function": "parseFabricCuttingFile"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4221,
+      "function": "saveReportAtomically"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4228,
+      "function": "uploadFabricCutting"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4287,
+      "function": "sioLineNo"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4293,
+      "function": "sioEwo"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4299,
+      "function": "parseSewingIOFile"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4313,
+      "function": "uploadSewingIO"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4360,
+      "function": "dwpEwo"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4361,
+      "function": "dwpDate"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4373,
+      "function": "dwpDisplayDate"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4380,
+      "function": "dwpLineNo"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4381,
+      "function": "parseDateWiseProductionFile"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4394,
+      "function": "uploadDateWiseProduction"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4423,
+      "function": "parsePercentNumber"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4427,
+      "function": "loadABPTargetEfficiencyLive"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4438,
+      "function": "loadDashboardMasterSettingsFromSQL"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4450,
+      "function": "saveDashboardMasterSetting"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4511,
+      "function": "openPlanningMonthPicker"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4520,
+      "function": "changePlanningPickerYear"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4521,
+      "function": "renderPlanningMonthPicker"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4527,
+      "function": "selectPlanningMonth"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4535,
+      "function": "getPlanningMonthValue"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4559,
+      "function": "parseOrderBankCSV"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4572,
+      "function": "uploadOrderBank"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4625,
+      "function": "selectUploadReport"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4647,
+      "function": "refreshUploadReportOptions"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4665,
+      "function": "uploadFloorAllocation"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4698,
+      "function": "loadFloorAllocationAdmin"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4712,
+      "function": "addFloorAllocationRow"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4752,
+      "function": "saveMasterAnalysisSettings"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4790,
+      "function": "obVal"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4794,
+      "function": "obNum"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4798,
+      "function": "buildOrderBankFilterIndex"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4809,
+      "function": "obIntersectSets"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4820,
+      "function": "obMatchingIndexSet"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4836,
+      "function": "obCascadeOptions"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4845,
+      "function": "renderOrderBankFilters"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4884,
+      "function": "renderOrderBankTotals"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4900,
+      "function": "renderOrderBankPage"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4923,
+      "function": "goOrderBankPage"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4927,
+      "function": "renderOrderBankView"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4934,
+      "function": "loadOrderBankSlide"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4974,
+      "function": "showEff15Sub"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4983,
+      "function": "refreshEfficiencySlide15"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 4993,
+      "function": "loadEff15FRComparison"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 5020,
+      "function": "bindEff15DynamicHover"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 5068,
+      "function": "loadEff15ExactMetricSource"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 5079,
+      "function": "renderEff15LineDateTable"
+    },
+    {
+      "file": "dashboard-main.js",
+      "line": 5195,
+      "function": "loadEfficiencyAnalysisSlide"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 4,
+      "function": "dataCacheOwner"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 5,
+      "function": "dataCacheEntry"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 9,
+      "function": "recordDataCacheHit"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 14,
+      "function": "invalidateDataCache"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 17,
+      "function": "loadVersionedData"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 32,
+      "function": "cachedPagedRows"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 41,
+      "function": "loadActiveModuleRows"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 46,
+      "function": "loadOrderBankSnapshot"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 65,
+      "function": "invalidateEwoSources"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 70,
+      "function": "loadEwoSource"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 90,
+      "function": "dashboardPerfEnabled"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 91,
+      "function": "beginDashboardSlideOpen"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 97,
+      "function": "dashboardTrackedFetch"
+    },
+    {
+      "file": "data-cache.js",
+      "line": 117,
+      "function": "invalidateUploadDependencies"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 14,
+      "function": "emMessage"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 18,
+      "function": "parseEmbellishmentRecords"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 41,
+      "function": "emDateTime"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 50,
+      "function": "parseEmbellishmentCSV"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 80,
+      "function": "embellishmentSetRows"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 92,
+      "function": "renderEmbellishmentModule"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 126,
+      "function": "embellishmentPage"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 127,
+      "function": "embellishmentFiltersChanged"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 128,
+      "function": "embellishmentSearchChanged"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 129,
+      "function": "clearEmbellishmentFilters"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 133,
+      "function": "previewEmbellishmentFile"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 142,
+      "function": "loadEmbellishmentModule"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 161,
+      "function": "uploadEmbellishmentFile"
+    },
+    {
+      "file": "embellishment-module.js",
+      "line": 193,
+      "function": "resetEmbellishmentModule"
+    },
+    {
+      "file": "ewo-readiness.js",
+      "line": 12,
+      "function": "rdFmt"
+    },
+    {
+      "file": "ewo-readiness.js",
+      "line": 15,
+      "function": "rdLight"
+    },
+    {
+      "file": "ewo-readiness.js",
+      "line": 19,
+      "function": "rdRisk"
+    },
+    {
+      "file": "ewo-readiness.js",
+      "line": 23,
+      "function": "resetEWOReadinessBoard"
+    },
+    {
+      "file": "ewo-readiness.js",
+      "line": 34,
+      "function": "renderEWOReadinessBoard"
+    },
+    {
+      "file": "ewo-readiness.js",
+      "line": 67,
+      "function": "rdPopulateBuyers"
+    },
+    {
+      "file": "ewo-readiness.js",
+      "line": 74,
+      "function": "loadEWOReadinessBoard"
+    },
+    {
+      "file": "ewo-readiness.js",
+      "line": 107,
+      "function": "showEWOReadinessEvidence"
+    },
+    {
+      "file": "frontend-runtime.js",
+      "line": 6,
+      "function": "readTinySetting"
+    },
+    {
+      "file": "frontend-runtime.js",
+      "line": 19,
+      "function": "invalidateTinySettings"
+    },
+    {
+      "file": "frontend-runtime.js",
+      "line": 24,
+      "function": "startFrontendTiming"
+    },
+    {
+      "file": "frontend-runtime.js",
+      "line": 41,
+      "function": "trackDashboardFilter"
+    },
+    {
+      "file": "frontend-runtime.js",
+      "line": 50,
+      "function": "recordDashboardRender"
+    },
+    {
+      "file": "frontend-runtime.js",
+      "line": 61,
+      "function": "debounceDashboardInput"
+    },
+    {
+      "file": "frontend-runtime.js",
+      "line": 74,
+      "function": "cancelDashboardDebounces"
+    },
+    {
+      "file": "frontend-runtime.js",
+      "line": 78,
+      "function": "flushDashboardInput"
+    },
+    {
+      "file": "frontend-runtime.js",
+      "line": 137,
+      "function": "ensureHtml2Canvas"
+    },
+    {
+      "file": "frontend-runtime.js",
+      "line": 143,
+      "function": "ensureThreeJS"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 7,
+      "function": "resetGanttActionCache"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 8,
+      "function": "ganttActionRefresh"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 9,
+      "function": "ganttActionToday"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 17,
+      "function": "ganttActionExport"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 29,
+      "function": "ganttActionDate"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 42,
+      "function": "ganttActionSqlRows"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 46,
+      "function": "ganttActionAdd"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 50,
+      "function": "ganttPsdKey"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 51,
+      "function": "ganttPsdGroups"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 69,
+      "function": "ganttPsdPlanTotals"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 79,
+      "function": "ganttPsdNumber"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 80,
+      "function": "ganttPsdPaged"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 84,
+      "function": "ganttPsdSources"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 89,
+      "function": "ganttPsdDateKey"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 90,
+      "function": "ganttPsdStatus"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 91,
+      "function": "ganttPsdFlag"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 92,
+      "function": "ganttPsdPriorityMatch"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 99,
+      "function": "ganttPsdFirstLineEwo"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 109,
+      "function": "ganttPsdSelectedSummaryPairs"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 116,
+      "function": "ganttPsdSummary"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 155,
+      "function": "ganttPsdTable"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 199,
+      "function": "copyGanttPsdTableImage"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 229,
+      "function": "copyGanttPsdSummaryImage"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 260,
+      "function": "ganttPsdExcelFile"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 295,
+      "function": "exportGanttPsdExcel"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 319,
+      "function": "renderGanttPsdTable"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 368,
+      "function": "ganttActionEvents"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 427,
+      "function": "showGanttActionTab"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 437,
+      "function": "ganttActionPickMonth"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 438,
+      "function": "ganttActionPickDay"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 439,
+      "function": "ganttActionLines"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 440,
+      "function": "ganttActionSelect"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 445,
+      "function": "ganttActionMoveMonth"
+    },
+    {
+      "file": "gantt-action-calendars.js",
+      "line": 449,
+      "function": "renderGanttActionCalendar"
+    },
+    {
+      "file": "gantt-hover.js",
+      "line": 7,
+      "function": "resetGanttHoverCache"
+    },
+    {
+      "file": "gantt-hover.js",
+      "line": 9,
+      "function": "ganttHoverSources"
+    },
+    {
+      "file": "gantt-hover.js",
+      "line": 47,
+      "function": "ganttHoverSewing"
+    },
+    {
+      "file": "gantt-hover.js",
+      "line": 61,
+      "function": "ganttHoverPlan"
+    },
+    {
+      "file": "gantt-hover.js",
+      "line": 73,
+      "function": "ganttHoverPlanSah"
+    },
+    {
+      "file": "gantt-hover.js",
+      "line": 92,
+      "function": "ganttPopupColors"
+    },
+    {
+      "file": "gantt-hover.js",
+      "line": 104,
+      "function": "ganttPopupHeader"
+    },
+    {
+      "file": "gantt-hover.js",
+      "line": 122,
+      "function": "ganttHoverHtml"
+    },
+    {
+      "file": "gantt-hover.js",
+      "line": 183,
+      "function": "closeGanttPopup"
+    },
+    {
+      "file": "gantt-hover.js",
+      "line": 187,
+      "function": "copyGanttPopupImage"
+    },
+    {
+      "file": "gantt-hover.js",
+      "line": 217,
+      "function": "showGanttPopup"
+    },
+    {
+      "file": "load-analysis-bridge.js",
+      "line": 2,
+      "function": "buildLoadAnalysisPlanTotals"
+    },
+    {
+      "file": "load-analysis-bridge.js",
+      "line": 18,
+      "function": "loadAnalysisDailyCapacity"
+    },
+    {
+      "file": "load-analysis-bridge.js",
+      "line": 27,
+      "function": "refreshLoadAnalysisPlan"
+    },
+    {
+      "file": "load-analysis-bridge.js",
+      "line": 39,
+      "function": "buildLoadAnalysisPlanDates"
+    },
+    {
+      "file": "order-execution-bridge.js",
+      "line": 7,
+      "function": "invalidateOrderExecutionData"
+    },
+    {
+      "file": "order-execution-bridge.js",
+      "line": 9,
+      "function": "resetOrderExecutionSlide"
+    },
+    {
+      "file": "order-execution-bridge.js",
+      "line": 43,
+      "function": "loadOrderExecutionSlide"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 797,
+      "function": "decomp"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 824,
+      "function": "S"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 847,
+      "function": "toggleSidebar"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 852,
+      "function": "buildTab"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 860,
+      "function": "expand"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 873,
+      "function": "buildHeader"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 896,
+      "function": "shiftDates"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 901,
+      "function": "resetDates"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 902,
+      "function": "updateStickyOffsets"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 911,
+      "function": "sortByCol"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 924,
+      "function": "togDark"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 930,
+      "function": "renderPage"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 973,
+      "function": "gf"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 993,
+      "function": "cf"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 999,
+      "function": "tn"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1005,
+      "function": "qr"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1007,
+      "function": "updInfo"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1025,
+      "function": "pg"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1026,
+      "function": "psc"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1027,
+      "function": "popFilters"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1035,
+      "function": "exportCSV"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1045,
+      "function": "bars"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1056,
+      "function": "canvasLine"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1099,
+      "function": "kpi"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1100,
+      "function": "rbadge"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1103,
+      "function": "buildDash"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1145,
+      "function": "buildRisk"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1171,
+      "function": "fR"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1194,
+      "function": "buildAlert"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1211,
+      "function": "va"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1212,
+      "function": "fA"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1227,
+      "function": "buildLoad"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1260,
+      "function": "buildLoader"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1289,
+      "function": "runLoader"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1317,
+      "function": "buildSched"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1338,
+      "function": "runSched"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1381,
+      "function": "buildScenario"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1406,
+      "function": "runScenario"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1441,
+      "function": "buildBuyer"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1478,
+      "function": "buildShip"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1502,
+      "function": "buildEffi"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1526,
+      "function": "buildHeat"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1538,
+      "function": "buildCalc"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1576,
+      "function": "crH"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1577,
+      "function": "c1f"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1590,
+      "function": "c2f"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1599,
+      "function": "c3f"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1620,
+      "function": "bdFmt"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1625,
+      "function": "bdIsWk"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1626,
+      "function": "bdOverlap"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1628,
+      "function": "buildBoard"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1724,
+      "function": "hashStr"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1726,
+      "function": "bdPack"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1787,
+      "function": "bdBuildGrid"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1819,
+      "function": "bdCell"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1823,
+      "function": "bdRender"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1877,
+      "function": "bdUndo"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1883,
+      "function": "bdRedo"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1889,
+      "function": "bdUpdBtns"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1894,
+      "function": "bdReset"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1899,
+      "function": "bdExport"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1910,
+      "function": "bdToast"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1916,
+      "function": "bdStatus"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1918,
+      "function": "bdDragStart"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1925,
+      "function": "bdDragEnd"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1930,
+      "function": "bdOver"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 1943,
+      "function": "bdDrop"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2008,
+      "function": "bdResizeMove"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2017,
+      "function": "bdResizeEnd"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2047,
+      "function": "bdApplyFromLoader"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2073,
+      "function": "bdLogAdd"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2079,
+      "function": "bdRenderLog"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2084,
+      "function": "bdTogglePanel"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2095,
+      "function": "bdBottleneck"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2117,
+      "function": "bdSetZoom"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2125,
+      "function": "bdFullscreen"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2132,
+      "function": "bdSave"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2140,
+      "function": "bdLoad"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2154,
+      "function": "bdExportCSV"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2166,
+      "function": "bdMailDigest"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2176,
+      "function": "bdCapacityOK"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2188,
+      "function": "bdFindFreeSlot"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2202,
+      "function": "bdColorFor"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2219,
+      "function": "bdOpenNote"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2226,
+      "function": "bdCloseModal"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2227,
+      "function": "bdSaveNote"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2234,
+      "function": "bdAutoPlace"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2267,
+      "function": "execution3DVisible"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2270,
+      "function": "animateFactory3D"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2277,
+      "function": "animatePyramid3D"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2284,
+      "function": "syncExecution3D"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2290,
+      "function": "resetExecution3D"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2310,
+      "function": "initFactory3D"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2420,
+      "function": "resetFactoryCam"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2421,
+      "function": "togFactoryAnim"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2423,
+      "function": "initPyramid3D"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2488,
+      "function": "resetPyramidCam"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2489,
+      "function": "togPyramidAnim"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2498,
+      "function": "wcProb"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2507,
+      "function": "wcProbColor"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2513,
+      "function": "buildWCPredict"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2552,
+      "function": "wcRecovery"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2569,
+      "function": "buildWCLive"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2590,
+      "function": "wcSeedEvents"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2601,
+      "function": "wcToggleLive"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2614,
+      "function": "wcRenderFeed"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2621,
+      "function": "wcRenderPVA"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2635,
+      "function": "buildWCAPS"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2679,
+      "function": "buildWCCap"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2726,
+      "function": "buildWCChat"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2745,
+      "function": "wcChatPush"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2754,
+      "function": "wcChatSend"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2763,
+      "function": "wcChatAnswer"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2785,
+      "function": "buildWCApprove"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2815,
+      "function": "wcRenderApprovals"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2827,
+      "function": "wcApprove"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2836,
+      "function": "buildGuide"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2955,
+      "function": "sp"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2963,
+      "function": "oeString"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2964,
+      "function": "oeNumber"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2965,
+      "function": "oeDisplay"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2966,
+      "function": "oeRowValue"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2971,
+      "function": "oeKey"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2975,
+      "function": "oeDate"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2985,
+      "function": "oeDayLabel"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2991,
+      "function": "oeToday"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 2996,
+      "function": "oeRisk"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 3002,
+      "function": "oeDataset"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 3144,
+      "function": "oeAdvanced"
+    },
+    {
+      "file": "order-execution-plan.html",
+      "line": 3183,
+      "function": "applySQLSnapshot"
+    },
+    {
+      "file": "ready-input-coverage.js",
+      "line": 3,
+      "function": "rcDateOffset"
+    },
+    {
+      "file": "ready-input-coverage.js",
+      "line": 8,
+      "function": "rcDayCell"
+    },
+    {
+      "file": "ready-input-coverage.js",
+      "line": 16,
+      "function": "resetReadyInputCoverage"
+    },
+    {
+      "file": "ready-input-coverage.js",
+      "line": 22,
+      "function": "renderReadyInputCoverage"
+    },
+    {
+      "file": "ready-input-coverage.js",
+      "line": 39,
+      "function": "loadReadyInputCoverage"
+    },
+    {
+      "file": "ready-input-coverage.js",
+      "line": 64,
+      "function": "showReadyInputEvidence"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 9,
+      "function": "startDashboardTiming"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 25,
+      "function": "finishHomeFirstDataTiming"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 29,
+      "function": "sharedReportsForSlide"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 35,
+      "function": "sharedReportsReady"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 44,
+      "function": "registerSharedReportCache"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 52,
+      "function": "sharedReportCacheAvailability"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 59,
+      "function": "invalidateSharedReports"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 64,
+      "function": "loadSharedReport"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 134,
+      "function": "ensureSharedReports"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 138,
+      "function": "prepareSharedReportView"
+    },
+    {
+      "file": "shared-report-loader.js",
+      "line": 166,
+      "function": "fetchABPTargetFromSQL"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 41,
+      "function": "ssMessage"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 44,
+      "function": "ssTnaDateParts"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 54,
+      "function": "ssFilterValue"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 55,
+      "function": "sizeSetTNAMonthChanged"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 63,
+      "function": "refreshSizeSetTNA"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 64,
+      "function": "clearSizeSetTNAFilters"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 74,
+      "function": "showSizeSetSub"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 83,
+      "function": "renderSizeSetTNA"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 124,
+      "function": "parseSizeSetCSV"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 145,
+      "function": "previewSizeSetFile"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 161,
+      "function": "populateSizeSetFilters"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 185,
+      "function": "renderSizeSetModule"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 236,
+      "function": "sizeSetPage"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 237,
+      "function": "sizeSetSearchChanged"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 238,
+      "function": "clearSizeSetFilters"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 245,
+      "function": "loadSizeSetModule"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 276,
+      "function": "uploadSizeSetFile"
+    },
+    {
+      "file": "size-set-module.js",
+      "line": 315,
+      "function": "resetSizeSetModule"
+    },
+    {
+      "file": "slides-config.js",
+      "line": 25,
+      "function": "resolveSlideNumber"
+    },
+    {
+      "file": "slides-config.js",
+      "line": 29,
+      "function": "slideLabel"
+    },
+    {
+      "file": "slides-config.js",
+      "line": 33,
+      "function": "requestedSlideFromHash"
+    },
+    {
+      "file": "slides-config.js",
+      "line": 43,
+      "function": "adjacentDashboardSlide"
+    },
+    {
+      "file": "slides-config.js",
+      "line": 48,
+      "function": "initializeSlideUI"
+    }
+  ],
+  "catalog": {
+    "site_users": {
+      "columns": {
+        "id": "BIGINT AUTO_INCREMENT",
+        "auth_user_id": "VARCHAR(36)",
+        "email": "VARCHAR(255)",
+        "role": "VARCHAR(16)",
+        "status": "VARCHAR(16)",
+        "permissions": "LONGTEXT",
+        "created_at": "DATETIME(6)",
+        "updated_at": "DATETIME(6)"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "self"
+      ],
+      "write": null,
+      "unique": [
+        [
+          "auth_user_id"
+        ],
+        [
+          "email"
+        ]
+      ],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "auth_user_id",
+        "email",
+        "role",
+        "status",
+        "permissions",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "plan_uploads": {
+      "columns": {
+        "id": "VARCHAR(36)",
+        "file_name": "TEXT",
+        "row_count": "BIGINT",
+        "status": "VARCHAR(20)",
+        "planning_month": "DATE",
+        "sequence_no": "BIGINT",
+        "planning_id": "VARCHAR(255)",
+        "uploaded_at": "DATETIME(6)",
+        "uploaded_by": "VARCHAR(36)",
+        "revision": "BIGINT",
+        "expected_daily_rows": "BIGINT"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "home"
+      ],
+      "write": "planning_upload",
+      "unique": [],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "file_name",
+        "uploaded_by",
+        "uploaded_at",
+        "row_count",
+        "status",
+        "planning_month",
+        "sequence_no",
+        "planning_id"
+      ]
+    },
+    "plan_records": {
+      "columns": {
+        "line_no": "VARCHAR(255)",
+        "buyer": "VARCHAR(255)",
+        "product_type": "VARCHAR(255)",
+        "product": "VARCHAR(255)",
+        "ewo": "VARCHAR(255)",
+        "stroke": "VARCHAR(255)",
+        "po": "VARCHAR(255)",
+        "col": "VARCHAR(255)",
+        "print": "VARCHAR(255)",
+        "emb": "VARCHAR(255)",
+        "outsource": "VARCHAR(255)",
+        "criteria": "VARCHAR(255)",
+        "order_qty": "DECIMAL(24,8)",
+        "planned_qty": "DECIMAL(24,8)",
+        "strip_plan_qty": "DECIMAL(24,8)",
+        "manpower": "DECIMAL(24,8)",
+        "smv": "DECIMAL(24,8)",
+        "average": "DECIMAL(24,8)",
+        "total": "DECIMAL(24,8)",
+        "pcd": "DATE",
+        "psd": "DATE",
+        "pfd": "DATE",
+        "delivery": "DATE",
+        "id": "BIGINT AUTO_INCREMENT",
+        "upload_id": "VARCHAR(36)",
+        "source_row": "BIGINT",
+        "is_summary_row": "TINYINT(1)",
+        "unit": "TEXT"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "home"
+      ],
+      "write": "planning_upload",
+      "unique": [
+        [
+          "upload_id",
+          "source_row"
+        ]
+      ],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "upload_id",
+        "source_row",
+        "is_summary_row",
+        "unit",
+        "line_no",
+        "buyer",
+        "product_type",
+        "product",
+        "ewo",
+        "stroke",
+        "po",
+        "col",
+        "print",
+        "emb",
+        "outsource",
+        "order_qty",
+        "planned_qty",
+        "pcd",
+        "psd",
+        "pfd",
+        "strip_plan_qty",
+        "delivery",
+        "manpower",
+        "smv",
+        "average",
+        "criteria",
+        "total"
+      ]
+    },
+    "plan_daily": {
+      "columns": {
+        "id": "BIGINT AUTO_INCREMENT",
+        "upload_id": "VARCHAR(36)",
+        "record_id": "BIGINT",
+        "plan_date": "DATE",
+        "value": "DECIMAL(24,8)"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "home"
+      ],
+      "write": "planning_upload",
+      "unique": [
+        [
+          "record_id",
+          "plan_date"
+        ]
+      ],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "record_id",
+        "upload_id",
+        "plan_date",
+        "value"
+      ]
+    },
+    "fabric_cutting_info": {
+      "columns": {
+        "id": "BIGINT AUTO_INCREMENT",
+        "uploaded_by": "VARCHAR(36)",
+        "uploaded_at": "DATETIME(6)",
+        "buyer": "VARCHAR(255)",
+        "ewo": "VARCHAR(255)",
+        "color_name": "VARCHAR(255)",
+        "item_product_type": "VARCHAR(255)",
+        "style_embellishment_type": "VARCHAR(255)",
+        "pattern_update": "VARCHAR(255)",
+        "status": "VARCHAR(255)",
+        "cutting_difficulties": "VARCHAR(255)",
+        "color_order_qty": "DECIMAL(24,8)",
+        "fabric_booking_qty": "DECIMAL(24,8)",
+        "total_fabric_received": "DECIMAL(24,8)",
+        "fabric_balance": "DECIMAL(24,8)",
+        "fabric_stock_after_cut": "DECIMAL(24,8)",
+        "cutable_qty": "DECIMAL(24,8)",
+        "total_cut_qty": "DECIMAL(24,8)",
+        "cutting_balance": "DECIMAL(24,8)",
+        "cutting_percent": "DECIMAL(24,8)",
+        "pattern_received_date": "DATE",
+        "replacement_receive_commitment_date": "DATE",
+        "pattern_received_time": "TEXT",
+        "replace_ask_qty": "DECIMAL(24,8)",
+        "replacement_settlement_qty": "DECIMAL(24,8)",
+        "fabrication": "VARCHAR(255)",
+        "gsm": "DECIMAL(24,8)",
+        "width": "VARCHAR(255)",
+        "day_received": "DECIMAL(24,8)",
+        "bc_consumption": "DECIMAL(24,8)",
+        "day_cut": "DECIMAL(24,8)",
+        "source_row": "BIGINT",
+        "report_batch_id": "VARCHAR(36)"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "slide_7",
+        "slide_11",
+        "slide_21"
+      ],
+      "write": "fabric",
+      "unique": [],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "buyer",
+        "ewo",
+        "color_name",
+        "item_product_type",
+        "style_embellishment_type",
+        "pattern_update",
+        "pattern_received_date",
+        "pattern_received_time",
+        "color_order_qty",
+        "fabric_booking_qty",
+        "replace_ask_qty",
+        "replacement_settlement_qty",
+        "replacement_receive_commitment_date",
+        "fabrication",
+        "gsm",
+        "width",
+        "day_received",
+        "total_fabric_received",
+        "fabric_balance",
+        "bc_consumption",
+        "fabric_stock_after_cut",
+        "cutable_qty",
+        "day_cut",
+        "total_cut_qty",
+        "cutting_balance",
+        "cutting_percent",
+        "status",
+        "cutting_difficulties",
+        "source_row",
+        "uploaded_at"
+      ]
+    },
+    "sewing_input_output": {
+      "columns": {
+        "id": "BIGINT AUTO_INCREMENT",
+        "uploaded_by": "VARCHAR(36)",
+        "uploaded_at": "DATETIME(6)",
+        "ewo": "VARCHAR(255)",
+        "color": "VARCHAR(255)",
+        "line": "VARCHAR(255)",
+        "line_no": "VARCHAR(255)",
+        "po_no": "VARCHAR(255)",
+        "order_qty": "DECIMAL(24,8)",
+        "total_input_qty": "DECIMAL(24,8)",
+        "total_output_qty": "DECIMAL(24,8)",
+        "total_wip_qty": "DECIMAL(24,8)",
+        "total_reject_qty": "DECIMAL(24,8)",
+        "buyer": "VARCHAR(255)",
+        "source_row": "BIGINT",
+        "report_batch_id": "VARCHAR(36)"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "slide_7",
+        "slide_11",
+        "slide_21"
+      ],
+      "write": "sewing",
+      "unique": [],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "buyer",
+        "ewo",
+        "po_no",
+        "color",
+        "line",
+        "line_no",
+        "order_qty",
+        "total_input_qty",
+        "total_output_qty",
+        "total_reject_qty",
+        "total_wip_qty",
+        "source_row",
+        "uploaded_at"
+      ]
+    },
+    "date_wise_production": {
+      "columns": {
+        "id": "BIGINT AUTO_INCREMENT",
+        "uploaded_by": "VARCHAR(36)",
+        "uploaded_at": "DATETIME(6)",
+        "code": "VARCHAR(255)",
+        "buyer": "VARCHAR(255)",
+        "ewo": "VARCHAR(255)",
+        "po_no": "VARCHAR(255)",
+        "color": "VARCHAR(255)",
+        "line": "VARCHAR(255)",
+        "line_no": "VARCHAR(255)",
+        "output_date": "DATE",
+        "total_qty": "DECIMAL(24,8)",
+        "report_batch_id": "VARCHAR(36)",
+        "source_row": "BIGINT"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "slide_7",
+        "slide_21"
+      ],
+      "write": "production",
+      "unique": [],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "code",
+        "buyer",
+        "ewo",
+        "po_no",
+        "color",
+        "line",
+        "line_no",
+        "output_date",
+        "total_qty",
+        "source_row",
+        "uploaded_at"
+      ]
+    },
+    "efficiency_run_day_ladder": {
+      "columns": {
+        "item": "VARCHAR(255)",
+        "day_1": "DECIMAL(24,8)",
+        "day_2": "DECIMAL(24,8)",
+        "day_3": "DECIMAL(24,8)",
+        "day_4": "DECIMAL(24,8)",
+        "day_5": "DECIMAL(24,8)",
+        "day_6_plus": "DECIMAL(24,8)",
+        "updated_at": "DATETIME(6)"
+      },
+      "pk": [
+        "item"
+      ],
+      "read": [
+        "home"
+      ],
+      "write": "admin_settings",
+      "unique": [],
+      "storage_names": {},
+      "source_columns": [
+        "item",
+        "day_1",
+        "day_2",
+        "day_3",
+        "day_4",
+        "day_5",
+        "day_6_plus",
+        "updated_at"
+      ]
+    },
+    "line_chassis_priority": {
+      "columns": {
+        "line_no": "BIGINT",
+        "priority_order": "BIGINT",
+        "product_name": "VARCHAR(255)",
+        "id": "BIGINT AUTO_INCREMENT",
+        "updated_at": "DATETIME(6)"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "home"
+      ],
+      "write": "admin_settings",
+      "unique": [
+        [
+          "line_no",
+          "priority_order"
+        ]
+      ],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "line_no",
+        "priority_order",
+        "product_name",
+        "updated_at"
+      ]
+    },
+    "abp_target": {
+      "columns": {
+        "parameter_name": "VARCHAR(255)",
+        "target_value": "DECIMAL(24,8)",
+        "config": "LONGTEXT",
+        "updated_at": "DATETIME(6)",
+        "id": "BIGINT AUTO_INCREMENT"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "home"
+      ],
+      "write": "admin_settings",
+      "unique": [
+        [
+          "parameter_name"
+        ]
+      ],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "parameter_name",
+        "target_value",
+        "updated_at",
+        "config"
+      ]
+    },
+    "dashboard_master_settings": {
+      "columns": {
+        "setting_key": "VARCHAR(255)",
+        "setting_value": "TEXT",
+        "updated_at": "DATETIME(6)"
+      },
+      "pk": [
+        "setting_key"
+      ],
+      "read": [
+        "home"
+      ],
+      "write": "admin_settings",
+      "unique": [],
+      "storage_names": {},
+      "source_columns": [
+        "setting_key",
+        "setting_value",
+        "updated_at"
+      ]
+    },
+    "slide4_chassis_strength": {
+      "columns": {
+        "item_name": "VARCHAR(255)",
+        "line_strength": "DECIMAL(24,8)",
+        "updated_at": "DATETIME(6)",
+        "id": "BIGINT AUTO_INCREMENT",
+        "sort_order": "BIGINT"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "home"
+      ],
+      "write": "admin_settings",
+      "unique": [],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "item_name",
+        "line_strength",
+        "sort_order",
+        "updated_at"
+      ]
+    },
+    "floor_allocation": {
+      "columns": {
+        "line_no": "BIGINT",
+        "level": "VARCHAR(255)",
+        "ie_name_line_block": "VARCHAR(255)",
+        "employee_id": "VARCHAR(255)",
+        "updated_at": "DATETIME(6)"
+      },
+      "pk": [
+        "line_no"
+      ],
+      "read": [
+        "home"
+      ],
+      "write": "admin_settings",
+      "unique": [],
+      "storage_names": {},
+      "source_columns": [
+        "line_no",
+        "level",
+        "ie_name_line_block",
+        "employee_id",
+        "updated_at"
+      ]
+    },
+    "size_set_rows": {
+      "columns": {
+        "id": "BIGINT AUTO_INCREMENT",
+        "uploaded_by": "VARCHAR(36)",
+        "uploaded_at": "DATETIME(6)",
+        "batch_id": "VARCHAR(36)",
+        "source_row_no": "BIGINT",
+        "file_name": "TEXT",
+        "is_active": "TINYINT(1)",
+        "row_data": "LONGTEXT",
+        "Code": "TEXT",
+        "Date": "TEXT",
+        "EWO No": "TEXT",
+        "Style No": "TEXT",
+        "Buyer": "TEXT",
+        "Buyer Team": "TEXT",
+        "Color": "TEXT",
+        "Order Qty": "TEXT",
+        "Today Print Send Qty\n": "TEXT",
+        "Total Print Send Qty\n": "TEXT",
+        " Today Print Receive Qty": "TEXT",
+        "Total Print Receive Qty": "TEXT",
+        "Today Print Return Qty": "TEXT",
+        "Total Print Return Qty": "TEXT",
+        "Today EMB Send Qty": "TEXT",
+        "Total EMB Send Qty": "TEXT",
+        "Today EMB Receive Qty": "TEXT",
+        "Total EMB Receive Qty": "TEXT",
+        "Today EMB Return Qty": "TEXT",
+        "Total EMB Return Qty": "TEXT",
+        "csv_column_21": "TEXT"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "slide_17",
+        "slide_7",
+        "slide_21"
+      ],
+      "write": "admin",
+      "unique": [
+        [
+          "batch_id",
+          "source_row_no"
+        ]
+      ],
+      "storage_names": {
+        "Today Print Send Qty\n": "source_field_16",
+        "Total Print Send Qty\n": "source_field_17",
+        " Today Print Receive Qty": "source_field_18"
+      },
+      "source_columns": [
+        "id",
+        "batch_id",
+        "source_row_no",
+        "file_name",
+        "row_data",
+        "uploaded_by",
+        "uploaded_at",
+        "is_active"
+      ]
+    },
+    "accessories_rows": {
+      "columns": {
+        "id": "BIGINT AUTO_INCREMENT",
+        "uploaded_by": "VARCHAR(36)",
+        "uploaded_at": "DATETIME(6)",
+        "batch_id": "VARCHAR(36)",
+        "source_row_no": "BIGINT",
+        "file_name": "TEXT",
+        "is_active": "TINYINT(1)",
+        "row_data": "LONGTEXT",
+        "report_date": "VARCHAR(255)"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "slide_18",
+        "slide_7",
+        "slide_21"
+      ],
+      "write": "admin",
+      "unique": [
+        [
+          "batch_id",
+          "source_row_no"
+        ]
+      ],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "batch_id",
+        "report_date",
+        "source_row_no",
+        "file_name",
+        "row_data",
+        "uploaded_by",
+        "uploaded_at",
+        "is_active"
+      ]
+    },
+    "embellishment_send_receive_rows": {
+      "columns": {
+        "id": "BIGINT AUTO_INCREMENT",
+        "uploaded_by": "VARCHAR(36)",
+        "uploaded_at": "DATETIME(6)",
+        "batch_id": "VARCHAR(36)",
+        "source_row_no": "BIGINT",
+        "file_name": "TEXT",
+        "is_active": "TINYINT(1)",
+        "Code": "TEXT",
+        "Date": "TEXT",
+        "EWO No": "TEXT",
+        "Style No": "TEXT",
+        "Buyer": "TEXT",
+        "Buyer Team": "TEXT",
+        "Color": "TEXT",
+        "Order Qty": "TEXT",
+        "Today Print Send Qty\n": "TEXT",
+        "Total Print Send Qty\n": "TEXT",
+        " Today Print Receive Qty": "TEXT",
+        "Total Print Receive Qty": "TEXT",
+        "Today Print Return Qty": "TEXT",
+        "Total Print Return Qty": "TEXT",
+        "Today EMB Send Qty": "TEXT",
+        "Total EMB Send Qty": "TEXT",
+        "Today EMB Receive Qty": "TEXT",
+        "Total EMB Receive Qty": "TEXT",
+        "Today EMB Return Qty": "TEXT",
+        "Total EMB Return Qty": "TEXT",
+        "csv_column_21": "TEXT"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "slide_19",
+        "slide_7",
+        "slide_21",
+        "slide_11"
+      ],
+      "write": "embellishment_upload",
+      "unique": [
+        [
+          "batch_id",
+          "source_row_no"
+        ]
+      ],
+      "storage_names": {
+        "Today Print Send Qty\n": "source_field_15",
+        "Total Print Send Qty\n": "source_field_16",
+        " Today Print Receive Qty": "source_field_17"
+      },
+      "source_columns": [
+        "id",
+        "batch_id",
+        "source_row_no",
+        "file_name",
+        "Code",
+        "Date",
+        "EWO No",
+        "Style No",
+        "Buyer",
+        "Buyer Team",
+        "Color",
+        "Order Qty",
+        "Today Print Send Qty\n",
+        "Total Print Send Qty\n",
+        " Today Print Receive Qty",
+        "Total Print Receive Qty",
+        "Today Print Return Qty",
+        "Total Print Return Qty",
+        "Today EMB Send Qty",
+        "Total EMB Send Qty",
+        "Today EMB Receive Qty",
+        "Total EMB Receive Qty",
+        "Today EMB Return Qty",
+        "Total EMB Return Qty",
+        "csv_column_21",
+        "uploaded_by",
+        "uploaded_at",
+        "is_active"
+      ]
+    },
+    "order_bank_upload_batches": {
+      "columns": {
+        "id": "BIGINT AUTO_INCREMENT",
+        "file_name": "TEXT",
+        "uploaded_at": "DATETIME(6)",
+        "uploaded_by": "VARCHAR(36)",
+        "raw_rows": "BIGINT",
+        "nonblank_rows": "BIGINT",
+        "status": "VARCHAR(255)",
+        "source_columns": "LONGTEXT",
+        "note": "TEXT",
+        "upload_token": "VARCHAR(36)",
+        "staging_rows": "BIGINT"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "slide_14",
+        "slide_16",
+        "slide_7"
+      ],
+      "write": null,
+      "unique": [
+        [
+          "upload_token"
+        ]
+      ],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "file_name",
+        "uploaded_at",
+        "staging_rows",
+        "raw_rows",
+        "nonblank_rows",
+        "status",
+        "note",
+        "source_columns"
+      ]
+    },
+    "order_bank_raw": {
+      "columns": {
+        "Code": "TEXT",
+        "Buyer": "TEXT",
+        "Dept": "TEXT",
+        "EWO": "TEXT",
+        "PO": "TEXT",
+        "GmtColor": "TEXT",
+        "EWO&Color": "TEXT",
+        "Stroke": "TEXT",
+        "Description": "TEXT",
+        "Destination": "TEXT",
+        "TechPackDate": "TEXT",
+        "FOB": "TEXT",
+        "RevisedFOB": "TEXT",
+        "EFD": "TEXT",
+        "FRDate": "TEXT",
+        "CostingSMV": "TEXT",
+        "UpdatedSMV": "TEXT",
+        "TotalHour": "TEXT",
+        "FRHour": "TEXT",
+        "OrderQty": "TEXT",
+        "OrderRate": "TEXT",
+        "Ordervalue": "TEXT",
+        "Season": "TEXT",
+        "ContractNo": "TEXT",
+        "ContractUnit": "TEXT",
+        "ExecutionUnit": "TEXT",
+        "Gender": "TEXT",
+        "ConsumptionQtyInHouse": "TEXT",
+        "ConsumptionQtyOutSource": "TEXT",
+        "FabrickgInHouse": "TEXT",
+        "FabrickgOutSource": "TEXT",
+        "TotalFabricinKG": "TEXT",
+        "Ordertype": "TEXT",
+        "OrderStatus": "TEXT",
+        "TNADays": "TEXT",
+        "MMTeam": "TEXT",
+        "CancelReason": "TEXT",
+        "Remarks": "TEXT",
+        "Month": "TEXT",
+        "id": "BIGINT AUTO_INCREMENT",
+        "upload_batch_id": "BIGINT",
+        "source_row_no": "BIGINT",
+        "source_data": "LONGTEXT",
+        "Code-EWO": "TEXT",
+        "uploaded_at": "DATETIME(6)"
+      },
+      "pk": [
+        "id"
+      ],
+      "read": [
+        "slide_14",
+        "slide_16",
+        "slide_7"
+      ],
+      "write": null,
+      "unique": [
+        [
+          "upload_batch_id",
+          "source_row_no"
+        ]
+      ],
+      "storage_names": {},
+      "source_columns": [
+        "id",
+        "upload_batch_id",
+        "source_row_no",
+        "Code-EWO",
+        "Code",
+        "Buyer",
+        "Dept",
+        "EWO",
+        "PO",
+        "GmtColor",
+        "EWO&Color",
+        "Stroke",
+        "Description",
+        "Destination",
+        "TechPackDate",
+        "FOB",
+        "RevisedFOB",
+        "EFD",
+        "FRDate",
+        "CostingSMV",
+        "UpdatedSMV",
+        "TotalHour",
+        "FRHour",
+        "OrderQty",
+        "OrderRate",
+        "Ordervalue",
+        "Season",
+        "ContractNo",
+        "ContractUnit",
+        "ExecutionUnit",
+        "Gender",
+        "ConsumptionQtyInHouse",
+        "ConsumptionQtyOutSource",
+        "FabrickgInHouse",
+        "FabrickgOutSource",
+        "TotalFabricinKG",
+        "Ordertype",
+        "OrderStatus",
+        "TNADays",
+        "MMTeam",
+        "CancelReason",
+        "Remarks",
+        "Month",
+        "uploaded_at",
+        "source_data"
+      ]
+    },
+    "order_bank_import_rows": {
+      "columns": {
+        "upload_token": "VARCHAR(36)",
+        "source_row_no": "BIGINT",
+        "source_data": "LONGTEXT",
+        "uploaded_by": "VARCHAR(36)",
+        "created_at": "DATETIME(6)"
+      },
+      "pk": [
+        "upload_token",
+        "source_row_no"
+      ],
+      "read": [
+        "admin"
+      ],
+      "write": "admin",
+      "unique": [],
+      "storage_names": {},
+      "source_columns": [
+        "upload_token",
+        "source_row_no",
+        "source_data",
+        "uploaded_by",
+        "created_at"
+      ]
+    },
+    "order_bank_staging": {
+      "columns": {
+        "staging_id": "BIGINT AUTO_INCREMENT",
+        "Code-EWO": "TEXT",
+        "Code": "TEXT",
+        "Buyer": "TEXT",
+        "Dept": "TEXT",
+        "EWO": "TEXT",
+        "PO": "TEXT",
+        "GmtColor": "TEXT",
+        "EWO&Color": "TEXT",
+        "Stroke": "TEXT",
+        "Description": "TEXT",
+        "Destination": "TEXT",
+        "TechPackDate": "TEXT",
+        "FOB": "TEXT",
+        "RevisedFOB": "TEXT",
+        "EFD": "TEXT",
+        "FRDate": "TEXT",
+        "CostingSMV": "TEXT",
+        "UpdatedSMV": "TEXT",
+        "TotalHour": "TEXT",
+        "FRHour": "TEXT",
+        "OrderQty": "TEXT",
+        "OrderRate": "TEXT",
+        "Ordervalue": "TEXT",
+        "Season": "TEXT",
+        "ContractNo": "TEXT",
+        "ContractUnit": "TEXT",
+        "ExecutionUnit": "TEXT",
+        "Gender": "TEXT",
+        "ConsumptionQtyInHouse": "TEXT",
+        "ConsumptionQtyOutSource": "TEXT",
+        "FabrickgInHouse": "TEXT",
+        "FabrickgOutSource": "TEXT",
+        "TotalFabricinKG": "TEXT",
+        "Ordertype": "TEXT",
+        "OrderStatus": "TEXT",
+        "TNADays": "TEXT",
+        "MMTeam": "TEXT",
+        "CancelReason": "TEXT",
+        "Remarks": "TEXT",
+        "Month": "TEXT"
+      },
+      "pk": [
+        "staging_id"
+      ],
+      "read": [],
+      "write": null,
+      "unique": [],
+      "source_columns": [
+        "staging_id",
+        "Code-EWO",
+        "Code",
+        "Buyer",
+        "Dept",
+        "EWO",
+        "PO",
+        "GmtColor",
+        "EWO&Color",
+        "Stroke",
+        "Description",
+        "Destination",
+        "TechPackDate",
+        "FOB",
+        "RevisedFOB",
+        "EFD",
+        "FRDate",
+        "CostingSMV",
+        "UpdatedSMV",
+        "TotalHour",
+        "FRHour",
+        "OrderQty",
+        "OrderRate",
+        "Ordervalue",
+        "Season",
+        "ContractNo",
+        "ContractUnit",
+        "ExecutionUnit",
+        "Gender",
+        "ConsumptionQtyInHouse",
+        "ConsumptionQtyOutSource",
+        "FabrickgInHouse",
+        "FabrickgOutSource",
+        "TotalFabricinKG",
+        "Ordertype",
+        "OrderStatus",
+        "TNADays",
+        "MMTeam",
+        "CancelReason",
+        "Remarks",
+        "Month"
+      ],
+      "storage_names": {}
+    }
+  }
+}

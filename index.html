@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="preconnect" href="https://rdslpcazdzqjlenbezaf.supabase.co" crossorigin>
+<meta name="referrer" content="same-origin">
+
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2713%27 fill=%27%230d2843%27/%3E%3Cpath d=%27M12 46V20h7v26m8 0V12h7v34m8 0V27h7v19%27 stroke=%27%23efa82c%27 stroke-width=%275%27 fill=%27none%27/%3E%3C/svg%3E">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,23 +25,23 @@
 <!-- GANTT HOVER: informational Style/Emb, Status, Cutting Difficulties matched by exact EWO + Color only -->
 <!-- GANTT: exact EWO search + valid master Line filter; approved Gantt calculations unchanged -->
 <!-- ORDER BANK: dedicated exact EWO search integrated with indexed cascading filters -->
-<!-- ALL UPLOADS: automatic authoritative Supabase reload after successful upload -->
+<!-- ALL UPLOADS: automatic authoritative MySQL reload after successful upload -->
 <!-- ORDER BANK PERFORMANCE: pre-indexed cascading filters + 100-row DOM pagination; totals remain full filtered scope -->
 <!-- ORDER BANK: complete paged raw snapshot + total cells + cascading filters -->
 <!-- ORDER BANK RAW AS-IS: order_bank_latest_all, 40 CSV source columns, exact source order, no aggregation/transformation -->
 <!-- HOME FIX: cards 14 Order Bank and 15 Efficiency Ladder Analysis added to Home grid -->
-<!-- Added Slide 14 Order Bank + Slide 15 Efficiency Ladder Analysis; both live Supabase SQL -->
+<!-- Added Slide 14 Order Bank + Slide 15 Efficiency Ladder Analysis; both live MySQL SQL -->
 <!-- RENDERING FIX: removed accidental recursive authoritativeOrderQty override -->
 <!-- CROSS-CHECKED ORDER QTY: all slide totals/details/charts use direct SUM of filtered valid-line Plan/Day rows -->
 <!-- CROSS-CHECKED: Slide03 ABP Target Efficiency comes from abp_target/ABP_MATRIX_2026_27/config.metrics[Efficiency] -->
 <!-- SLIDE03 ABP TARGET EFFICIENCY: live SQL dashboard_master_settings/buyer_efficiency_target -->
 <!-- MASTER LINE HARD FIX: only 1-45,47,48 can enter any planning calculation; Line 50 excluded even if present in SQL/source -->
 <!-- SLIDE 01 FINAL: Order Qty = direct SUM(order_qty) after Plan/Day + hard valid-line filter 1-45,47,48 -->
-<!-- AUDIT FIX: no slide/calculation settings are sourced from localStorage; remaining master settings centralized in Supabase -->
-<!-- LIVE SYNC FIX: SQL admin settings load before planning filters; Supabase always revalidated after cache bootstrap -->
-<!-- ABP TARGET MATRIX: centralized Supabase SQL-backed -->
-<!-- LINE WISE CHASSIS PRIORITY: centralized Supabase SQL-backed -->
-<!-- EFFICIENCY RUN DAY LADDER: centralized Supabase SQL-backed -->
+<!-- AUDIT FIX: no slide/calculation settings are sourced from localStorage; remaining master settings centralized in MySQL -->
+<!-- LIVE SYNC FIX: SQL admin settings load before planning filters; MySQL always revalidated after cache bootstrap -->
+<!-- ABP TARGET MATRIX: centralized MySQL SQL-backed -->
+<!-- LINE WISE CHASSIS PRIORITY: centralized MySQL SQL-backed -->
+<!-- EFFICIENCY RUN DAY LADDER: centralized MySQL SQL-backed -->
 <!-- FLOOR ALLOCATION MOVED TO SLIDE 12 ADMIN/PARAMETER SETTING -->
 <!-- FLOOR ALLOCATION: dropdown uploader + atomic SQL replacement RPC -->
 <!-- FRIENDLY UPLOAD CONTROL: report-name dropdown with Plan/Fabric/Sewing/Production/Order Bank uploaders under Home 00 -->
@@ -390,7 +391,7 @@ table.dt tfoot td{
 
 /* ══ LOADING % CELL ══════════════════════════════ */
 
-/* Live Supabase multi-report loading status */
+/* Live MySQL multi-report loading status */
 .load-panel{margin-top:10px;width:100%;display:none!important}
 .load-track{height:8px;border-radius:999px;background:rgba(120,147,189,.18);overflow:hidden;border:1px solid rgba(120,147,189,.28)}
 .load-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#22c55e,#38bdf8,#f59e0b);transition:width .32s ease;position:relative}
@@ -2103,7 +2104,7 @@ input,select,textarea{
 <link rel="stylesheet" href="ewo-readiness.css?v=2">
 </head>
 <body class="site-locked">
-<div id="supabase-live-badge">Supabase · waiting</div>
+<div id="supabase-live-badge">MySQL · waiting</div>
 
 <div id="site-login-gate">
   <div class="site-login-card">
@@ -2141,7 +2142,7 @@ input,select,textarea{
         <button class="site-login-btn" id="site-reset-update-btn" type="button" onclick="siteUpdatePassword()">Update Password</button>
       </div>
     </div>
-    <div id="site-login-msg">Use your Supabase Authentication email and password.</div>
+    <div id="site-login-msg">Use your MySQL Authentication email and password.</div>
   </div>
 </div>
 
@@ -2171,7 +2172,7 @@ input,select,textarea{
 
 <!-- ══ SLIDES ═════════════════════════════════ -->
 
-<!-- Supabase Upload Modal -->
+<!-- MySQL Upload Modal -->
 <div id="upload-modal" class="modal-bg" onclick="if(event.target===this)closeUploadModal()">
   <div class="modal-box">
     <div class="modal-head"><h3>☁ Upload / Data Control</h3><button class="modal-close" onclick="closeUploadModal()">×</button></div>
@@ -2354,7 +2355,7 @@ input,select,textarea{
       <span hidden data-slide-description="11">Fabric receipt, stock, cutable qty, cutting progress, balance and difficulties</span>
       <span hidden data-slide-description="12">Efficiency ladder, chassis priority, ABP target and master parameters</span>
       <span hidden data-slide-description="13">Admin/User role, account status and module-wise permission control</span>
-      <span hidden data-slide-description="14">Latest successful Order Bank snapshot from live Supabase SQL</span>
+      <span hidden data-slide-description="14">Latest successful Order Bank snapshot from live MySQL SQL</span>
       <span hidden data-slide-description="15">Item-wise Day-1 to Day-6+ efficiency ladder analysis from live SQL</span>
       <span hidden data-slide-description="16">SQL Order Bank and matched daily planning, with v3 analysis views</span>
       <span hidden data-slide-description="17">SS.csv source rows, milestone plan/actual and next actions</span>
@@ -2876,7 +2877,7 @@ input,select,textarea{
       <div><label class="setting-label">STATUS</label><select id="new-user-status" style="width:100%"><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
       <button class="pg-btn" style="height:34px" onclick="addNewSiteUser()">＋ Add User</button>
     </div>
-    <div style="font-size:10px;color:var(--text3);margin-top:8px">Admin এখান থেকে Email + Password দিয়ে সরাসরি confirmed Supabase Auth user তৈরি করতে পারবেন। <b>admin-create-user</b> Edge Function account create + email confirm + <b>site_users</b> link করবে; তারপর dashboard permission save হবে।</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:8px">Admin এখান থেকে Email + Password দিয়ে সরাসরি confirmed MySQL Auth user তৈরি করতে পারবেন। <b>admin-create-user</b> Edge Function account create + email confirm + <b>site_users</b> link করবে; তারপর dashboard permission save হবে।</div>
   </div>
 
   <div class="card" style="margin-top:14px">
@@ -3135,13 +3136,14 @@ input,select,textarea{
   <div id="rd-detail-body"></div>
 </dialog>
 
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="mysql-api-client.js?v=1"></script>
 <script defer src="slides-config.js"></script>
 <script defer src="shared-report-loader.js?v=2"></script>
 <script defer src="frontend-runtime.js?v=2"></script>
 <script defer src="data-cache.js?v=3"></script>
-<script defer src="dashboard-main.js?v=20261022-psdrange1"></script>
+<script defer src="dashboard-main.js?v=mysql-staging-1"></script>
 <script defer src="dashboard-effects.js?v=2"></script>
+<script defer src="mysql-management.js?v=1"></script>
 <script defer src="order-execution-bridge.js?v=3"></script>
 <script defer src="load-analysis-bridge.js?v=20261022-abp2"></script>
 <script defer src="size-set-module.js?v=3"></script>
