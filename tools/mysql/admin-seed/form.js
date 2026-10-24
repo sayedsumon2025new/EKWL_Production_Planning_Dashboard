@@ -92,7 +92,7 @@ SET @ekwl_bootstrap_hash=NULL,@ekwl_bootstrap_email=NULL,@ekwl_bootstrap_uuid=NU
       const url = URL.createObjectURL(new Blob([sql], {type:'application/sql;charset=utf-8'}));
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'ekwl-staging-admin-private.sql';
+      link.download = 'ekwl-staging-admin-private-v2.sql';
       document.body.append(link);
       link.click();
       link.remove();

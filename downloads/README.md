@@ -28,3 +28,5 @@ password-reset backdoor. Full source migration still requires a fresh reconciled
 target and approved account activation; preserve the source identities.
 
 Build: `python tools/mysql/build_offline_admin_form.py`.
+
+The phpMyAdmin-compatible helper now downloads `ekwl-staging-admin-private-v2.sql`, so it is distinguishable from earlier generated SQL. Use the newly generated file; the original private SQL must never be committed or shared.
