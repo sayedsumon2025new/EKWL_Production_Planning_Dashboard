@@ -5,7 +5,9 @@ function startSession(): void {
     $c=config();$dir=$c['private_dir'].'/sessions';
     if (!is_dir($dir)&&!mkdir($dir,0700,true)&&!is_dir($dir)) throw new ApiError('Session storage unavailable.',503);
     ini_set('session.use_strict_mode','1');ini_set('session.use_only_cookies','1');
-    session_save_path($dir);session_name('EKWL_MYSQL_SESSION');
+    $sessionName=$c['session_name']??'EKWL_MYSQL_SESSION';
+    if(!is_string($sessionName)||!preg_match('/^[A-Za-z][A-Za-z0-9_]{0,63}$/D',$sessionName))throw new ApiError('Session configuration invalid.',503);
+    session_save_path($dir);session_name($sessionName);
     session_set_cookie_params(['lifetime'=>0,'path'=>$c['base_path'],'secure'=>$c['secure_cookies']??true,'httponly'=>true,'samesite'=>'Strict']);
     session_start();
     $_SESSION['csrf']??=bin2hex(random_bytes(32));
