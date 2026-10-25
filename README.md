@@ -1,5 +1,23 @@
 # EKWL_Production_Planning_Dashboard
-Planning Analysis
+Production Planning on PHP/MySQL: https://littleboy.kesug.com/
+
+## Live updates
+
+`main` is the MySQL application used by the live root site. Open a pull request
+for design, slide, calculation or backend changes. GitHub Actions validates PHP
+and JavaScript, runs regressions, and checks the code-only deployment package.
+After merging into `main`, the FTPS workflow updates `/htdocs/` automatically
+when the three InfinityFree Actions secrets are configured. Missing credentials
+fail visibly; a successful build alone does not establish a live deployment.
+
+Server config, CSV data, private storage, `ekwl-staging` and the legacy
+`ekwl-mysql` Notes module are preserved. The root site's existing config still
+uses the protected configuration in `ekwl-staging`; do not delete that folder.
+No SQL is executed automatically. Schema changes need a reviewed versioned SQL
+migration and a private database backup before an operator applies them through
+phpMyAdmin, followed by the compatible code release.
+
+See [automatic deployment setup](docs/mysql-automatic-deployment.md).
 
 ## Order Bank CSV uploads
 
@@ -15,13 +33,12 @@ blank records, and column order are retained. Header names are trimmed. The tabl
 shows the current upload's columns; familiar filters and totals appear only when
 the corresponding columns exist. Existing 40-column snapshots remain readable.
 
-Uploads use isolated tokens and 500-row requests, with progress and a final
+Uploads use isolated tokens and chunked requests, with progress and a final
 CSV-to-SQL row-count check. Only a completely verified snapshot becomes latest;
 historical snapshots remain stored. Uploads require an active admin. Viewing
-requires an active admin or the `slide_14` permission. SQL setup is in
-`supabase/order-bank-flexible-import.sql`; the read-policy repair is in
-`supabase/order-bank-read-access.sql`. These changes have already been applied to
-the configured project through Supabase migration history; do not rerun them.
+requires an active admin or the `slide_14` permission. The live system uses the
+existing MySQL schema. Retained Supabase SQL is historical reference; do not
+run it against MySQL or reimport the initial installer for normal uploads.
 
 Validation:
 

@@ -9,7 +9,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--out', type=Path, required=True, help='New output directory')
+p.add_argument('--asset-version', default='mysql-live-20261025', help='Public runtime asset cache version')
 a = p.parse_args()
+import re
+if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', a.asset_version):
+    raise SystemExit('Invalid asset version')
 out = a.out.resolve()
 if out.exists():
     raise SystemExit('Choose a new output directory; existing files are never overwritten.')
@@ -41,9 +45,8 @@ return array_replace($c,[
 ''', encoding='utf-8')
 index = site / 'index.html'
 # Root URLs previously served the Supabase frontend. Force fresh runtime assets.
-import re
 html = index.read_text(encoding='utf-8')
-html = re.sub(r'((?:src|href)=["\'])([^"\'?#]+\.(?:js|css))(?:\?[^"\']*)?(["\'])', r'\1\2?v=mysql-live-20261025\3', html)
+html = re.sub(r'((?:src|href)=["\'])([^"\'?#]+\.(?:js|css))(?:\?[^"\']*)?(["\'])', lambda m: m[1]+m[2]+'?v='+a.asset_version+m[3], html)
 index.write_text(html, encoding='utf-8')
 (site / '.htaccess').write_text('''Options -Indexes
 DirectoryIndex index.html index.php
