@@ -16,4 +16,7 @@ with tempfile.TemporaryDirectory() as d:
     assert '--delete' not in workflow and '--delete-first' not in workflow
     assert 'refs/heads/main' in workflow and 'needs: validate' in workflow
     assert 'set ssl:verify-certificate yes' in workflow
+    assert 'mput *.html' in workflow
+    assert '--include-glob' not in workflow
+    assert 'tools/mysql/verify_live.py --version' in workflow
 print('PASS code-only release isolation, fresh assets, test/branch gates and verified FTPS without deletion')

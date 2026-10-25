@@ -72,13 +72,12 @@ jobs:
           mirror --reverse --verbose --no-perms --parallel=1 --exclude-glob '*.html' --exclude-glob '.htaccess' /tmp/ekwl-live-deploy/site /htdocs
           put /tmp/ekwl-live-deploy/site/backend/.htaccess -o /htdocs/backend/.htaccess
           put /tmp/ekwl-live-deploy/site/.htaccess -o /htdocs/.htaccess
-          mirror --reverse --verbose --no-perms --parallel=1 --include-glob '*/' --include-glob '*.html' --exclude-glob '*' /tmp/ekwl-live-deploy/site /htdocs
+          lcd /tmp/ekwl-live-deploy/site
+          cd /htdocs
+          mput *.html
           bye
           LFTP
-      - name: Verify public origin responds
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --retry 2 --max-time 30 https://littleboy.kesug.com/ -o /tmp/ekwl-root-response
-          echo "Code uploaded. InfinityFree may return browser verification to curl; confirm Planning in a normal browser."
-          echo "No SQL migrations were run and no server file was deleted."
+      - name: Install browser verification client
+        run: python3 -m pip install playwright==1.58.0
+      - name: Verify live release and anonymous API in Chrome
+        run: python3 tools/mysql/verify_live.py --version "${{ github.sha }}"

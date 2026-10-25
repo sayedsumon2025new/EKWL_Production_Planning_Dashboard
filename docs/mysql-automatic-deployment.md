@@ -22,9 +22,11 @@ to plaintext FTP or disable TLS verification when the host rejects TLS.
 2. PHP/JS syntax checks, Node regressions and package isolation checks must pass.
 3. Merge the tested change. The main-only deploy job uploads public assets and
    backend/API code to `/htdocs/`, with HTML entry points transferred last.
-4. Check the workflow's actual deploy job and confirm the new version in a normal
-   browser. InfinityFree browser verification can mask API responses to curl;
-   an HTTP success from its public origin alone is not authenticated smoke proof.
+4. The deploy job opens Chrome, checks the release SHA in the page's runtime
+   script URL and verifies the anonymous session API returns a CSRF token without
+   JavaScript errors. This is a public smoke check; authenticated business flows
+   still need operator verification. InfinityFree browser verification can mask
+   API responses to curl, so curl is not used as release proof.
 
 The agent cannot inspect or set repository Actions secrets through the current
 connector. Missing secrets cause a visible failed deployment, never a false
@@ -52,7 +54,11 @@ before releasing code which requires it. Do not reimport the initial installer,
 reset users, replace the database or replay unrelated source migrations.
 A PHP-only or design change does not require another CSV upload.
 
-Live workflow verification is pending until the main push run is inspected.
-A successful PR validation does not establish that FTPS secrets exist or that a
-live upload occurred. The current source includes operator tools and historical
-migration evidence; only the allowlisted runtime payload is deployed.
+The first main deployment failed FTP authentication. After the operator updated
+Actions secrets, its retry uploaded runtime files successfully, but HTML was
+excluded by overlapping mirror filters and curl returned an empty response.
+HTML entry points now use an explicit final `mput *.html` and release verification
+uses Chrome. A successful PR validation alone does not establish a live release;
+inspect the deploy job and its expected-SHA browser check. The current source
+includes operator tools and historical migration evidence; only the allowlisted
+runtime payload is deployed.
