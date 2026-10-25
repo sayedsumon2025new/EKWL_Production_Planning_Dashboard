@@ -1,7 +1,9 @@
-name: Deploy EKWL Frontend to InfinityFree
+name: Deploy EKWL MySQL Live
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -9,70 +11,56 @@ permissions:
   contents: read
 
 concurrency:
-  group: infinityfree-ekwl-frontend
+  group: infinityfree-ekwl-live
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check runtime syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          find api backend -name '*.php' ! -name '*.local.php' -print0 | xargs -0 -n1 php -l
+          for file in *.js; do node --check "$file"; done
+      - name: Verify deployment isolation
+        run: python3 tests/mysql/deploy-package.py
+      - name: Run calculation, cache and API adapter regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in tests/*.cjs tests/mysql/api-client.cjs; do node "$file"; done
+      - name: Build code-only release
+        run: python3 tools/mysql/build_deploy.py --out /tmp/ekwl-live-deploy --version "${{ github.sha }}"
+
   deploy:
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
       FTP_HOST: ${{ secrets.INFINITYFREE_FTP_HOST }}
       FTP_USER: ${{ secrets.INFINITYFREE_FTP_USERNAME }}
       FTP_PASS: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check FTP secrets
-        id: ready
+      - uses: actions/checkout@v4
+      - name: Require hosting credentials
         shell: bash
         run: |
-          if [[ -n "$FTP_HOST" && -n "$FTP_USER" && -n "$FTP_PASS" ]]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::FTP deployment skipped: add all three INFINITYFREE_FTP_* repository secrets."
+          set -euo pipefail
+          if [[ -z "$FTP_HOST" || -z "$FTP_USER" || -z "$FTP_PASS" ]]; then
+            echo "::error::Set INFINITYFREE_FTP_HOST, INFINITYFREE_FTP_USERNAME and INFINITYFREE_FTP_PASSWORD in repository Actions secrets. No files were deployed."
+            exit 1
           fi
-
-      - name: Stage frontend files ONLY
-        if: steps.ready.outputs.enabled == 'true'
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import shutil
-          root=Path('.')
-          stage=Path('/tmp/ekwl-frontend-stage')
-          allow={'.html','.htm','.css','.js','.mjs','.svg','.png','.jpg','.jpeg','.webp','.gif','.ico','.woff','.woff2','.ttf','.otf','.wasm'}
-          forbidden={'ekwl-mysql','.git','.github','supabase','tests','node_modules','vendor','backup','backups'}
-          count=0
-          for file in root.rglob('*'):
-              if not file.is_file() or file.is_symlink():
-                  continue
-              rel=file.relative_to(root)
-              if any(part.startswith('.') or part.lower() in forbidden for part in rel.parts):
-                  continue
-              if file.suffix.lower() not in allow:
-                  continue
-              dest=stage/rel
-              dest.parent.mkdir(parents=True,exist_ok=True)
-              shutil.copy2(file,dest)
-              count+=1
-          if count==0 or not (stage/'index.html').is_file():
-              raise SystemExit('No index.html in staged frontend. Refusing deployment.')
-          print(f'Staged {count} public frontend files. No PHP, SQL, secrets or protected folders.')
-          PY
-
-      - name: Install LFTP
-        if: steps.ready.outputs.enabled == 'true'
+      - name: Build release
+        run: python3 tools/mysql/build_deploy.py --out /tmp/ekwl-live-deploy --version "${{ github.sha }}"
+      - name: Install FTPS client
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-
-      - name: Upload frontend without deleting any server files
-        if: steps.ready.outputs.enabled == 'true'
+      - name: Update code while preserving server data and config
         shell: bash
         run: |
-          # Reverse mirror uploads. No --delete or --delete-first option is used.
-          # Explicit FTPS with certificate verification; fail closed if unavailable.
+          set -euo pipefail
           lftp -u "$FTP_USER","$FTP_PASS" "ftp://$FTP_HOST" <<'LFTP'
           set cmd:fail-exit yes
           set ftp:ssl-allow yes
@@ -81,10 +69,16 @@ jobs:
           set ssl:verify-certificate yes
           set net:max-retries 2
           set net:timeout 20
-          mirror --reverse --verbose --no-perms --parallel=1 /tmp/ekwl-frontend-stage /htdocs
+          mirror --reverse --verbose --no-perms --parallel=1 --exclude-glob '*.html' --exclude-glob '.htaccess' /tmp/ekwl-live-deploy/site /htdocs
+          put /tmp/ekwl-live-deploy/site/backend/.htaccess -o /htdocs/backend/.htaccess
+          put /tmp/ekwl-live-deploy/site/.htaccess -o /htdocs/.htaccess
+          mirror --reverse --verbose --no-perms --parallel=1 --include-glob '*/' --include-glob '*.html' --exclude-glob '*' /tmp/ekwl-live-deploy/site /htdocs
           bye
           LFTP
-
-      - name: Deployment summary
-        if: steps.ready.outputs.enabled == 'true'
-        run: echo "Frontend uploaded to InfinityFree /htdocs. Server files were not deleted."
+      - name: Verify public origin responds
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 2 --max-time 30 https://littleboy.kesug.com/ -o /tmp/ekwl-root-response
+          echo "Code uploaded. InfinityFree may return browser verification to curl; confirm Planning in a normal browser."
+          echo "No SQL migrations were run and no server file was deleted."

@@ -66,14 +66,14 @@ function context(options={}){
   console.log('PASS one affected render per applyFilter, 275-ms trailing debounce, immediate flush and session cancellation');
 
   const actual=fs.readFileSync(__dirname+'/../index.html','utf8');
-  assert.match(actual,/<link rel="preconnect" href="https:\/\/rdslpcazdzqjlenbezaf.supabase.co" crossorigin>/);
+  assert.doesNotMatch(actual,/supabase\.co|@supabase\/supabase-js/);
   const scripts=[...actual.matchAll(/<script([^>]*)src="([^"]+)"/g)];
-  const sdk=scripts.findIndex(m=>m[2].includes('@supabase/supabase-js'));
+  const sdk=scripts.findIndex(m=>m[2].includes('mysql-api-client.js'));
   const main=scripts.findIndex(m=>m[2].includes('dashboard-main.js'));assert.ok(sdk<main);
   assert.match(scripts[sdk][1],/defer/);assert.match(scripts[main][1],/defer/);
   assert.doesNotMatch(scripts.find(m=>m[2].includes('dashboard-theme.js'))[1],/defer|async/);
   assert.ok(actual.indexOf('dashboard-theme.js')<actual.indexOf('<body'));
   assert.doesNotMatch(actual,/<script[^>]*src="[^"]*html2canvas/);
   assert.doesNotMatch(fs.readFileSync(__dirname+'/../order-execution-plan.html','utf8'),/<script[^>]*src="[^"]*three.min/);
-  console.log('PASS SDK/runtime dependency order, synchronous head theme, preconnect and no upfront heavy-library tags');
+  console.log('PASS SDK/runtime dependency order, synchronous head theme, same-origin API and no upfront heavy-library tags');
 })().catch(error=>{console.error(error);process.exitCode=1;});
