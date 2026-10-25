@@ -22,7 +22,7 @@ with sync_playwright() as p:
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.goto('https://littleboy.kesug.com/', wait_until='networkidle', timeout=60000)
         script = page.locator('script[src*="mysql-api-client.js"]')
-        script.wait_for(timeout=15000)
+        script.wait_for(state='attached', timeout=15000)
         actual = script.get_attribute('src')
         if actual != 'mysql-api-client.js?v=' + args.version:
             raise RuntimeError('Live release version mismatch: ' + str(actual))
