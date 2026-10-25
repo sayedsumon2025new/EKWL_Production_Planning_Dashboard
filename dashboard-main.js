@@ -1011,8 +1011,9 @@ async function bootLiveSupabaseData(){
     try{
       const keepId=ACTIVE_PLAN_UPLOAD?.id||null;
       if(!await loadFromSupabase(keepId,true,true))throw Error('Live report load did not complete');
-      timingStatus='loaded';
-      setSupabaseLiveBadge('ok','MySQL Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+      timingStatus=PLAN_UPLOAD_CATALOG.length?'loaded':'empty';
+      if(PLAN_UPLOAD_CATALOG.length)setSupabaseLiveBadge('ok','MySQL Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+      else setSupabaseLiveBadge('','MySQL connected · no planning');
       return true;
     }catch(e){
       console.error('Live MySQL verification failed',e);
@@ -1165,7 +1166,24 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
       .order('uploaded_at',{ascending:false});
     if(!current())return false;
     if(upErr) throw upErr;
-    if(!uploads || !uploads.length) throw Error('MySQL-এ কোনো completed upload পাওয়া যায়নি.');
+    if(!Array.isArray(uploads))throw Error('Planning upload response is incomplete.');
+    if(!uploads.length){
+      // A successful empty catalog is valid for a new staging DB. Its live response
+      // also invalidates any older planning snapshot restored from this user's cache.
+      PLAN_UPLOAD_CATALOG=[];ACTIVE_PLAN_UPLOAD=null;PLAN_VERSION_CACHE.clear();
+      restorePlanningState({});
+      rebuildPlanningFilters('','');
+      try{sessionStorage.removeItem(fastBootCacheKey());}catch(e){console.warn(e)}
+      await clearDashboardCache();
+      if(!current())return false;
+      if(typeof invalidateGanttIndex==='function')invalidateGanttIndex();
+      renderAll();
+      setLoadChip('load-plan','','Planning · no upload');
+      setLoadProgress(100,'MySQL connected · planning data not imported yet');
+      setStatus(true,'MySQL connected · planning data not imported yet','Complete data migration or upload a Planning CSV.');
+      setSupabaseLiveBadge('','MySQL connected · no planning');
+      return true;
+    }
     PLAN_UPLOAD_CATALOG=uploads;
 
     const oldMonth=preserveFilters?document.getElementById('month-filter')?.value:'';
