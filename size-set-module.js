@@ -78,6 +78,36 @@ function showSizeSetSub(which){
     if(tab){tab.setAttribute('aria-selected',String(active));tab.tabIndex=active?0:-1;}
     if(view)view.hidden=!active;
   }
+  if(which==='tna'){
+    const frame=document.getElementById('ss-tna-performance');
+    if(frame&&!frame.getAttribute('src')){
+      const version=document.querySelector('script[src*="size-set-module.js"]')?.src.split('?')[1]||'v=1';
+      frame.src='size-set-tna.html?'+version;
+    }
+    syncSizeSetPerformance();
+  }
+}
+
+let SS_PERFORMANCE_SENT=null;
+function syncSizeSetPerformance(themeOnly=false,force=false){
+  const frame=document.getElementById('ss-tna-performance');
+  if(!frame?.getAttribute('src'))return;
+  const message={type:'ekwl:size-tna',theme:document.documentElement.dataset.theme||'light'};
+  if(!themeOnly){
+    const label=(SS_MODE==='preview'?'Local preview':'MySQL live')+' · '+SS_FILE_NAME;
+    if(!force&&SS_PERFORMANCE_SENT?.label===label&&SS_PERFORMANCE_SENT.rows.length===SS_FILTERED.length&&SS_FILTERED.every((row,i)=>row===SS_PERFORMANCE_SENT.rows[i]))return;
+    message.rows=SS_FILTERED.map(row=>row.row_data);
+    message.label=label;
+    SS_PERFORMANCE_SENT={label,rows:SS_FILTERED.slice()};
+  }
+  frame.contentWindow?.postMessage(message,location.origin);
+}
+if(typeof window!=='undefined'){
+  window.addEventListener('message',event=>{
+    const frame=document.getElementById('ss-tna-performance');
+    if(event.origin===location.origin&&event.source===frame?.contentWindow&&event.data?.type==='ekwl:size-tna-ready')syncSizeSetPerformance(false,true);
+  });
+  new MutationObserver(()=>syncSizeSetPerformance(true)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 }
 
 function renderSizeSetTNA(valid){
@@ -214,6 +244,7 @@ function renderSizeSetModule(){
   document.getElementById('ss-kpis').innerHTML=kpis.map(([name,n,sub])=>
     `<div class="kpi"><div class="kpi-lbl">${name}</div><div class="kpi-val">${ssCount(n)}</div><div class="kpi-sub">${sub}</div></div>`).join('');
   renderSizeSetTNA(valid);
+  syncSizeSetPerformance();
   const pages=Math.max(1,Math.ceil(SS_FILTERED.length/SS_PAGE_SIZE));
   SS_PAGE=Math.min(SS_PAGE,pages);
   const start=(SS_PAGE-1)*SS_PAGE_SIZE;
@@ -315,6 +346,9 @@ async function uploadSizeSetFile(){
 function resetSizeSetModule(){
   ++SS_LOAD_TOKEN;++SS_FILE_TOKEN;clearTimeout(SS_SEARCH_TIMER);
   SS_ROWS=[];SS_FILTERED=[];SS_PAGE=1;SS_MODE='sql';SS_PREVIEW=null;SS_FILE_NAME='';SS_UPLOADED_AT='';
+  const performanceFrame=document.getElementById('ss-tna-performance');
+  SS_PERFORMANCE_SENT=null;
+  if(performanceFrame)performanceFrame.removeAttribute('src');
   const file=document.getElementById('ss-file');if(file)file.value='';
   ssMessage('ss-upload-msg','No CSV selected.');
   ssMessage('ss-source','');ssMessage('ss-msg','Waiting for sign in…');
