@@ -27,6 +27,8 @@ jobs:
           for file in *.js; do node --check "$file"; done
       - name: Verify deployment isolation
         run: python3 tests/mysql/deploy-package.py
+      - name: Verify report JSON EWO filters
+        run: php tests/mysql/json-ewo-filter.php
       - name: Run calculation, cache and API adapter regressions
         shell: bash
         run: |

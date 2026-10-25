@@ -247,7 +247,7 @@ async function showGanttPopup(cell,selectedColor,selectedEwo){
     const source=await ganttHoverSources(w.ewo,w.color,w.selectedColors);
     if(token!==GANTT_HOVER_REQUEST||!dialog.open)return;
     content.innerHTML=ganttHoverHtml(w,source)+(source.errors.length?
-      `<div class="gt-loading">${esc(source.errors.join(', '))} status unavailable for this account.</div>`:'');
+      `<div class="gt-loading">${esc(source.errors.join(', '))} status load failed. Refresh করে আবার চেষ্টা করুন; সমস্যা থাকলে account permission পরীক্ষা করুন।</div>`:'');
     bindColor();
   }catch(error){
     if(token!==GANTT_HOVER_REQUEST||!dialog.open)return;

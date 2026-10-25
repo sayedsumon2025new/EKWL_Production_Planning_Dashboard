@@ -21,7 +21,12 @@ function filterSQL(array $filters,array $c,array &$args): array {
     $where=[];if(count($filters)>30)throw new ApiError('Too many filters.');
     foreach($filters as $filter){
         if(!is_array($filter)||count($filter)!==3)throw new ApiError('Invalid filter.');
-        [$op,$key,$value]=$filter;$col=columnSpec((string)$key,$c);
+        [$op,$key,$value]=$filter;
+        // The report popup filters the original CSV JSON by its exact EWO text.
+        // Keep the JSON field/path fixed; arbitrary expressions remain forbidden.
+        $col=$key==='row_data->>EWO' && isset($c['columns']['row_data'])
+            ? "JSON_UNQUOTE(JSON_EXTRACT(".columnSpec('row_data',$c).", '$.EWO'))"
+            : columnSpec((string)$key,$c);
         if($op==='in'){
             if(!is_array($value)||count($value)>500)throw new ApiError('Invalid value list.');
             $where[]=$value?$col.' IN ('.implode(',',array_fill(0,count($value),'?')).')':'1=0';
