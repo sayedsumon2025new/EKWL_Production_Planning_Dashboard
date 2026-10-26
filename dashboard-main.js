@@ -3045,6 +3045,7 @@ function renderS11(data){
       }
     });
   }
+  if(typeof renderGanttDailySummary==='function')renderGanttDailySummary({dates:displayDates,lines,search:searchEwo});
   if(typeof GANTT_ACTION_TAB!=='undefined'&&GANTT_ACTION_TAB!=='gantt')renderGanttActionCalendar();
   finishRender({lines:lines.length,dates:displayDates.length});
 }
@@ -3924,6 +3925,7 @@ async function siteLogout(){
   EFF15_METRIC_DAILY=[];EFF15_METRIC_UPLOAD_ID=null;
   ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];
   resetOrderExecutionSlide();
+  if(typeof resetGanttDailySummary==='function')resetGanttDailySummary();
   if(typeof resetSizeSetModule==='function')resetSizeSetModule();
   if(typeof resetAccessoriesModule==='function')resetAccessoriesModule();
   if(typeof resetEmbellishmentModule==='function')resetEmbellishmentModule();
