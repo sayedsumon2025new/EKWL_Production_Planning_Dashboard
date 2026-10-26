@@ -15,8 +15,8 @@ f.selected=[1,3];r=first(f);assert.equal(r.values[3],210);assert.equal(r.values[
 f.selected=[];r=first(f);assert.equal(r.values[3],0);assert.equal(r.values[4],0);
 f=fixture();f.lines=[1];r=first(f);assert.equal(r.values[3],160);assert.equal(r.values[4],32);assert.equal(r.values[7],10);
 f=fixture();f.search='B';r=first(f);assert.equal(r.values[2],100);assert.equal(r.values[3],340);assert.equal(r.values[4],170);
-f=fixture();f.fabric=[];r=first(f);assert.equal(r.values[3],null);assert.equal(r.stages[0],null);f.selected=[3];r=first(f);assert.equal(r.values[3],150);assert.equal(r.values[4],54);
-f=fixture();f.data.push({...f.data[0],smv:18});r=first(f);assert.equal(r.values[3],540);assert.equal(r.values[4],null);
+f=fixture();f.fabric=[];r=first(f);assert.equal(r.values[3],240);assert.equal(r.partial[3],true);assert.equal(r.stages[0],null);f.selected=[3];r=first(f);assert.equal(r.values[3],150);assert.equal(r.values[4],54);
+f=fixture();f.data.push({...f.data[0],smv:18});r=first(f);assert.equal(r.values[3],540);assert.equal(r.values[4],170);assert.equal(r.partial[4],true);
 f=fixture();f.data.push({...f.data[0],manpower:15});r=first(f);assert.equal(r.values[7],null);assert.equal(r.values[6],null);
 f=fixture();f.fabric[1].cutable_qty=0;r=first(f);assert.equal(r.values[3],340);
 f=fixture();f.clock=[];r=first(f);assert.equal(r.values[0],null);assert.equal(r.values[5],null);
@@ -25,3 +25,16 @@ f=fixture();f.embellishment[0][' Today Print Receive Qty']=80;r=build(f);assert.
 f=fixture();f.plan.push({record_id:99,line:1,ewo:'00123',date:'2026-10-25',value:10,smv:12});r=first(f);assert.equal(r.values[2],410);
 f=fixture();f.clock.push({...f.clock[0]});f.sah.push({...f.sah[0]});r=first(f);assert.equal(r.values[0],400);assert.equal(r.values[1],110);
 console.log('PASS daily planning totals, per-EWO SAH, shared stock deduplication, WIP-only filtering, source-row identity, line/search scope, missing/zero/conflicting inputs and nonnegative WIP');
+
+// Realistic mixed coverage: one missing EWO must not blank matched report totals.
+f=fixture();f.fabric.pop();f.embellishment.pop();r=first(f);
+assert.deepEqual(r.stages,[100,20,10,150]);assert.deepEqual(r.stagePartial,[true,true,true,false]);
+assert.equal(r.values[3],280);assert.equal(r.values[4],80);assert.equal(r.total,280);assert.equal(r.totalPartial,true);assert.equal(r.partial[3],true);
+// A blank source field does not erase another numeric row in the same EWO.
+f=fixture();f.fabric.push({ewo:'00123',cutable_qty:''});r=first(f);assert.equal(r.stages[0],300);assert.equal(r.stagePartial[0],true);assert.equal(r.values[3],540);assert.equal(r.partial[3],true);
+// Identifiers are normalized after loading the active report.
+f=fixture();f.embellishment[0]['EWO No']=' 00123.00 ';r=first(f);assert.equal(r.values[3],540);assert.equal(r.values[4],210);
+// No numeric stock anywhere remains unavailable; do not fabricate zero stock.
+f=fixture();f.fabric=[];f.sewing=[];f.embellishment=[];r=first(f);assert.equal(r.values[3],null);assert.equal(r.values[4],null);assert.equal(r.total,null);
+f=fixture();f.data.forEach(row=>row.smv=0);r=first(f);assert.equal(r.values[3],540);assert.equal(r.values[4],null);
+console.log('PASS mixed report coverage retains available WIP/SAH with partial markers; wholly missing data remains unavailable');

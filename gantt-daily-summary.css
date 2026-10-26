@@ -13,3 +13,5 @@
 #s11 #gantt-daily-summary .gds-divider th{position:static!important;background:#25435f!important;color:#dbeaff!important;font-size:10px;min-width:96px}
 .gds-consumable{margin-top:17px;border:1px solid var(--border,#cbd9e7);border-radius:6px;padding:12px;color:var(--text,#16345a);font-size:12px}.gds-consumable>summary{cursor:pointer;font-weight:750}.gds-consumable-wrap{overflow:auto;margin-top:12px}.gds-consumable table{width:100%;border-collapse:collapse;min-width:700px;font-variant-numeric:tabular-nums}.gds-consumable th,.gds-consumable td{border:1px solid var(--border,#bccddf);padding:8px 10px;text-align:right;white-space:nowrap}.gds-consumable th:first-child{text-align:left;min-width:155px}.gds-consumable thead th,.gds-lower-total{background:var(--card,#e7f0f7);font-weight:750}.gds-consumable p{font-size:11px;color:var(--text2,#526176);line-height:1.5;margin:10px 0 0}
 #gantt-daily-summary[hidden],.gds-menu[hidden],#gds-note[hidden]{display:none!important}
+
+.gds-partial{color:#dc9b13;font-size:11px;font-weight:900;cursor:help;margin-left:2px}

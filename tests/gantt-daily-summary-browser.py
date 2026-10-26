@@ -49,6 +49,16 @@ with sync_playwright() as p:
  page.wait_for_function('GDS_STATE.source?.error===true')
  assert first('Forecastable Pcs')=='150 pcs'
  assert 'could not load' in page.locator('#gds-note').inner_text()
+ # Mixed coverage reproduces the live all-dashes bug: retain known amounts.
+ page.evaluate('failSource=false;FABRIC_CUTTING_DATA.pop();GDS_STATE.selected=new Set([0,1,2,3]);renderS11([])')
+ page.wait_for_function('GDS_STATE.source?.loading===false')
+ assert '340' in first('Forecastable Pcs')
+ assert '110' in first('Forecastable SAH')
+ assert page.locator('#gantt-daily-summary .gds-metric').filter(has=page.locator('th',has_text='Forecastable Pcs')).locator('.gds-partial').first.is_visible()
+ assert page.locator('#gds-consumable-table .gds-partial').count()>0
+ assert 'Available WIP subtotal' in page.locator('#gds-note').inner_text()
+ FABRIC_RESTORE={'ewo':'B','cutable_qty':200}
+ page.evaluate('row=>FABRIC_CUTTING_DATA.push(row)',FABRIC_RESTORE)
  # A late source response must not repaint after sign-out/reset.
  page.evaluate('holdSource={};renderS11([]);SITE_SESSION_GENERATION++;SITE_AUTH_USER=null;resetGanttDailySummary();holdSource.resolve(f.embellishment)')
  assert page.locator('#gantt-daily-summary').inner_text()==''
