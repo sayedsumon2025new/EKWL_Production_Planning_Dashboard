@@ -4,7 +4,8 @@ The EWO Gantt view adds eight date-aligned rows and a separate Consumable WIP
 summary. WIP categories default to all four. Selecting categories changes only
 Forecastable Pcs/SAH; Gantt entries, colors, planning metrics and the lower full
 WIP totals remain independent. Hide summary hides its filter and notes together;
-showing it retains the selection. Line, EWO search and date range scope the
+showing it retains the selection. The compact view starts with summary and
+lower detail panels collapsed, matching the approved layout demo. Line, EWO search and date range scope the
 summary. No EWO breakdown is displayed. Logout resets controls and discards late
 source responses. Existing Gantt calculations and payloads remain unchanged.
 
