@@ -2102,6 +2102,7 @@ input,select,textarea{
 
 <link rel="stylesheet" href="table-visuals.css?v=1">
 <link rel="stylesheet" href="ewo-readiness.css?v=2">
+<link rel="stylesheet" href="gantt-daily-summary.css?v=1">
 </head>
 <body class="site-locked">
 <div id="supabase-live-badge">MySQL · waiting</div>
@@ -2574,7 +2575,11 @@ input,select,textarea{
 <span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#312e81;margin-right:6px"></b>Dark Indigo → Sewing WIP + Cutting WIP fail, কিন্তু remaining Plan Cutable Qty cover করে</span>
 <span><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#ef4444;margin-right:6px"></b>Red → Cutable Qty-ও cumulative Plan cover করতে পারে না</span>
 </div>
-<div class="gantt-wrap"><table class="gantt"><thead id="s11-head"></thead><tbody id="s11-body"></tbody></table></div>
+<div class="gds-toolbar"><span>DAILY PLAN SUMMARY</span><button type="button" class="top-btn" id="gds-visibility" onclick="gdsToggleVisibility()" aria-expanded="true" aria-controls="gantt-daily-summary gds-note">Hide summary ▴</button></div>
+<div id="gds-note" class="gds-note" role="status"></div>
+<div class="gantt-wrap"><table class="gantt"><thead id="s11-head"></thead><tbody id="gantt-daily-summary"></tbody><tbody id="s11-body"></tbody></table></div>
+<details class="gds-consumable" open><summary>Consumable WIP Summary · date-wise totals</summary><div class="gds-consumable-wrap"><table id="gds-consumable-table" aria-label="Date-wise consumable WIP summary"></table></div><p id="gds-consumable-note"></p></details>
+<details class="gds-consumable"><summary>Data sources &amp; calculation method</summary><div class="gds-consumable-wrap"><table><thead><tr><th>Row</th><th>Source / calculation</th></tr></thead><tbody><tr><th>Clock Hour</th><td>Selected Planning · date-wise Clock Hour/Day sum (man-hours)</td></tr><tr><th>Plan SAH</th><td>Date-wise SAH/Day; if missing, derive Σ(Plan Pcs × SMV ÷ 60)</td></tr><tr><th>Plan Pcs</th><td>Date-wise Plan/Day sum</td></tr><tr><th>Forecastable Pcs</th><td>Selected consumable WIP for each date’s scheduled EWOs; shared EWO stock counted once</td></tr><tr><th>Forecastable SAH</th><td>Σ(each EWO’s selected Consumable WIP Pcs × its own SMV ÷ 60)</td></tr><tr><th>Plan Efficiency</th><td>Total Plan SAH ÷ total Clock Hour × 100</td></tr><tr><th>Plan Working Hours</th><td>Total Clock Hour ÷ total Plan Manpower</td></tr><tr><th>Plan Manpower</th><td>One consistent manpower per scheduled line; sum selected lines</td></tr></tbody></table></div><p>Cutable WIP: Fabrics &amp; Cutting report. Sewing WIP: Sewing I/O report. Print and Embroidery WIP: active report Send minus Receive, as in the EWO popup. These are latest report stocks scoped to scheduled EWOs; historical stock is not reconstructed. Missing or conflicting required data shows —.</p></details>
     </div>
     <div id="gantt-action-view" hidden><div class="action-tools">
       <input type="search" id="action-ewo" placeholder="Filter EWO" aria-label="Filter action calendar EWO">
@@ -3150,6 +3155,7 @@ input,select,textarea{
 <script defer src="ready-input-coverage.js?v=2"></script>
 <script defer src="gantt-hover.js?v=3"></script>
 <script defer src="gantt-action-calendars.js?v=3"></script>
+<script defer src="gantt-daily-summary.js?v=1"></script>
 <dialog id="ewo-gantt-dialog" aria-label="EWO Gantt status">
   <div class="gt-modal-toolbar"><span data-slide-label="7" data-slide-label-suffix=" · Order Status"></span><span class="gt-toolbar-actions"><button id="ewo-gantt-copy" type="button" onclick="copyGanttPopupImage()" title="Copy entire popup as image">Copy snapshot</button><button type="button" class="gt-modal-close" onclick="closeGanttPopup()" aria-label="Close EWO status">×</button></span></div>
   <div class="gt-modal-content" id="ewo-gantt-content"></div>

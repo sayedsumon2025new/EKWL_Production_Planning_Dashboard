@@ -33,6 +33,7 @@ jobs:
         run: |
           python3 -m pip install playwright==1.58.0
           python3 tests/size-set-performance.py
+          python3 tests/gantt-daily-summary-browser.py
       - name: Run calculation, cache and API adapter regressions
         shell: bash
         run: |
