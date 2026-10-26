@@ -1,6 +1,6 @@
 /* Date-aligned planning totals. Existing Gantt coverage/popup calculations stay independent. */
 const GDS_STAGES=['Cutable WIP','Print WIP','Embroidery WIP','Sewing WIP'];
-let GDS_STATE={hidden:false,selected:new Set([0,1,2,3]),open:false,context:null,source:null,request:0};
+let GDS_STATE={hidden:true,selected:new Set([0,1,2,3]),open:false,context:null,source:null,request:0};
 const gdsKey=v=>String(v??'').trim().toUpperCase().replace(/\.0+$/,'');
 function gdsNumber(v){if(v==null||String(v).trim()==='')return null;const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?n:null;}
 function gdsSum(rows,get){if(!rows.length)return null;const values=rows.map(get);return values.some(v=>v===null)?null:values.reduce((a,b)=>a+b,0);}
@@ -121,7 +121,7 @@ function gdsToggleVisibility(){GDS_STATE.hidden=!GDS_STATE.hidden;GDS_STATE.open
 function gdsToggleMenu(){GDS_STATE.open=!GDS_STATE.open;const menu=document.getElementById('gds-filter-menu'),button=document.getElementById('gds-filter-button');if(menu)menu.hidden=!GDS_STATE.open;if(button)button.setAttribute('aria-expanded',String(GDS_STATE.open));}
 function gdsSelectStage(input){const value=Number(input.value);if(input.checked)GDS_STATE.selected.add(value);else GDS_STATE.selected.delete(value);const focus=input.value;paintGanttDailySummary();document.querySelector('#gds-filter-menu input[value="'+focus+'"]')?.focus();}
 function gdsSelectAll(all){GDS_STATE.selected=new Set(all?[0,1,2,3]:[]);paintGanttDailySummary();}
-function resetGanttDailySummary(){++GDS_STATE.request;GDS_STATE={...GDS_STATE,hidden:false,selected:new Set([0,1,2,3]),open:false,context:null,source:null};for(const id of ['gantt-daily-summary','gds-consumable-table','gds-note','gds-consumable-note']){const el=document.getElementById(id);if(el)el.textContent='';}}
+function resetGanttDailySummary(){++GDS_STATE.request;GDS_STATE={...GDS_STATE,hidden:true,selected:new Set([0,1,2,3]),open:false,context:null,source:null};for(const id of ['gantt-daily-summary','gds-consumable-table','gds-note','gds-consumable-note']){const el=document.getElementById(id);if(el)el.textContent='';}}
 if(typeof document!=='undefined'&&document.addEventListener){
  document.addEventListener('click',event=>{if(GDS_STATE.open&&!event.target.closest('.gds-picker'))gdsToggleMenu();});
  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&GDS_STATE.open){gdsToggleMenu();document.getElementById('gds-filter-button')?.focus();}});

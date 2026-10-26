@@ -1,0 +1,48 @@
+/* Approved compact Gantt presentation. Calculations and source data are unchanged. */
+@media screen{
+ #s11.slide.active{display:flex!important;flex-direction:column;padding:10px 12px!important;overflow:hidden!important}
+ #s11 .slide-header{margin:0 0 7px!important;min-height:36px;flex-shrink:0}
+ #s11 .s11-date-tools{gap:5px}#s11 .s11-date-tools input{width:117px;min-height:29px;font-size:11px;padding:4px 6px}
+ #s11 .pager-btns{gap:5px}#s11 .pg-btn{padding:5px 9px;font-size:11px}
+ #s11>.card{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);gap:6px 10px;min-height:0;flex:1;margin:0!important;padding:10px!important;overflow:hidden}
+ #s11>.card>.report-actions{grid-column:2;grid-row:1;align-self:center;margin:0!important;gap:5px;flex-wrap:nowrap}
+ #s11>.card>.report-actions button{font-size:10px;padding:6px 9px;white-space:nowrap}
+ #s11>.card>.gantt-tabs{grid-column:1;grid-row:1;align-self:center;min-width:0;margin:0!important;padding:0!important;gap:6px}
+ #s11 .gantt-tabs button{padding:6px 11px!important;border-radius:5px!important;font-size:11px}
+ #gantt-main-view:not([hidden]){grid-column:1/-1;grid-row:2;display:flex;flex-direction:column;min-height:0;overflow-y:auto;overflow-x:hidden}
+ #gantt-action-view:not([hidden]){grid-column:1/-1;grid-row:2;min-height:0;overflow:auto}
+ #gantt-main-view[hidden],#gantt-action-view[hidden]{display:none!important}
+ #gantt-main-view>.card-title{margin:0 0 6px!important;padding:5px 0!important;gap:8px;flex-shrink:0;min-height:34px;font-size:11px}
+ #s11 .ct-right{font-size:10px;margin-left:auto}
+ #s11 .gantt-filter-tools{gap:6px}#s11 .gantt-filter-tools input,#s11 .gantt-filter-tools select,#s11 .gantt-filter-tools button{min-height:29px!important;padding:4px 8px!important;font-size:11px!important}
+ #gantt-ewo-search{width:150px!important}#gantt-line-filter{width:116px!important}
+ #s11 .gantt-legend{display:none}
+ #s11 .gantt-coverage-legend{margin:0 0 5px!important;padding:5px 9px!important;gap:5px 14px!important;border-radius:5px!important;flex-shrink:0;font-size:10px!important}
+ #s11 .gantt-coverage-controls{width:auto!important;border-bottom:0!important;padding:0!important;gap:6px!important}
+ #s11 .gantt-coverage-controls select{padding:4px 6px!important;min-height:26px;font-size:10px}
+ #s11 .gantt-coverage-switch{font-size:11px}#s11 .gantt-coverage-legend>span{white-space:nowrap}
+ #s11 .gds-toolbar{margin:2px 0 5px!important;font-size:11px;min-height:27px;flex-shrink:0}
+ #s11 .gds-toolbar button{padding:5px 10px;font-size:10px}
+ #s11 .gds-note{margin:0 0 5px!important;font-size:10px;line-height:1.35;flex-shrink:0;max-width:none}
+ #s11 .gantt-wrap{flex:1;min-height:180px;max-height:none!important;margin:0!important;border-radius:4px}
+ #s11 .gantt{width:100%!important}#s11 .gantt th,#s11 .gantt td{padding:3px!important;height:27px}
+ #s11 .gantt .g-ewo{min-width:75px!important;min-height:21px!important;padding:2px 3px!important;font-size:10px!important}
+ #s11 .gantt .g-date,#s11 .gantt td.g-ewo-cell,#s11 .gantt td.g-empty{min-width:86px!important}
+ #s11 .gantt .sticky-team{min-width:52px!important;width:52px!important}
+ #s11 .gantt.gds-visible .sticky-team,#s11 #gantt-daily-summary .gds-metric th{min-width:145px!important;width:145px!important}
+ #s11 #gantt-daily-summary .gds-controls td{height:38px!important}
+ #s11 .gds-consumable{flex-shrink:0;margin-top:5px!important;padding:7px 9px!important;font-size:11px}
+ #s11 .gds-consumable[open]{max-height:170px;overflow:auto}#s11 .gds-consumable-wrap{margin-top:7px}
+ #s11 .gds-consumable th,#s11 .gds-consumable td{padding:4px 7px;font-size:10px}
+ @media(max-width:1100px){
+  #s11 .s11-date-tools{margin-left:0!important}#s11 .ct-right{width:100%;text-align:left!important;margin:0!important}
+  #s11>.card{gap:5px 6px}#s11>.card>.report-actions button{padding:5px 6px}
+  #s11 .gantt-coverage-legend{gap:5px 10px!important}
+ }
+ @media(max-width:620px){
+  #s11>.card{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr)}
+  #s11>.card>.report-actions{grid-column:1;grid-row:2;justify-content:flex-start;flex-wrap:wrap}
+  #gantt-main-view:not([hidden]),#gantt-action-view:not([hidden]){grid-row:3}
+  #s11 .gantt-filter-tools{flex-wrap:wrap}#s11 .slide-header{gap:7px}
+ }
+}
