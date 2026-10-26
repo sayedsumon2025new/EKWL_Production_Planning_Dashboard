@@ -4,6 +4,7 @@ let GDS_STATE={hidden:false,selected:new Set([0,1,2,3]),open:false,context:null,
 const gdsKey=v=>String(v??'').trim().toUpperCase().replace(/\.0+$/,'');
 function gdsNumber(v){if(v==null||String(v).trim()==='')return null;const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?n:null;}
 function gdsSum(rows,get){if(!rows.length)return null;const values=rows.map(get);return values.some(v=>v===null)?null:values.reduce((a,b)=>a+b,0);}
+function gdsReportSum(rows,get){const values=rows.map(get).filter(v=>v!==null);return {value:values.length?values.reduce((a,b)=>a+b,0):null,partial:values.length<rows.length};}
 function gdsUniqueDaily(rows){const seen=new Set();return rows.filter(row=>{if(row.record_id==null)return true;const key=row.record_id+'|'+row.date;if(seen.has(key))return false;seen.add(key);return true;});}
 function gdsGroup(rows,key){const map=new Map();for(const row of rows){const k=key(row);if(!map.has(k))map.set(k,[]);map.get(k).push(row);}return map;}
 function buildGanttDailySummary(input){
@@ -20,16 +21,16 @@ function buildGanttDailySummary(input){
   const nonnegative=v=>{if(v===null)return null;if(v<0)notes.add('Negative report WIP is displayed as zero.');return Math.max(0,v);};
   const notRequired=field=>data.length>0&&data.every(row=>['no','n','n/a','none','not applicable'].includes(String(row[field]??'').trim().toLowerCase()));
   function emWip(send,received,flag){
-   if(!em.length)return notRequired(flag)?0:null;
-   const sent=gdsSum(em,row=>gdsNumber(row[send])),recv=gdsSum(em,row=>gdsNumber(row[received]));
-   return sent===null||recv===null?null:nonnegative(sent-recv);
+   if(!em.length)return {value:notRequired(flag)?0:null,partial:false};
+   return gdsReportSum(em,row=>{const sent=gdsNumber(row[send]),recv=gdsNumber(row[received]);return sent===null||recv===null?null:sent-recv;});
   }
-  const stages=[nonnegative(gdsSum(fabric,row=>gdsNumber(row.cutable_qty))),
+  const reports=[gdsReportSum(fabric,row=>gdsNumber(row.cutable_qty)),
    emWip('Today Print Send Qty\n',' Today Print Receive Qty','print'),
    emWip('Today EMB Send Qty','Today EMB Receive Qty','emb'),
-   nonnegative(gdsSum(sewing,row=>gdsNumber(row.wip)))];
+   gdsReportSum(sewing,row=>gdsNumber(row.wip))];
+  const stages=reports.map(report=>nonnegative(report.value));
   const smvs=[...new Set(data.map(row=>gdsNumber(row.smv)).filter(v=>v!==null&&v>0))];
-  const result={stages,smv:smvs.length===1?smvs[0]:null};stockCache.set(cacheKey,result);return result;
+  const result={stages,stagePartial:reports.map(report=>report.partial),smv:smvs.length===1?smvs[0]:null};stockCache.set(cacheKey,result);return result;
  }
  const days=input.dates.map(date=>{
   const rows=byDate.get(date)||[],activeLines=new Set(rows.map(row=>Number(row.line))),ewoLines=new Map();
@@ -51,21 +52,34 @@ function buildGanttDailySummary(input){
   }
   if(!clockKnown){clock=null;notes.add('Some scheduled lines have no date-wise Clock Hour.');}
   if(!manpowerKnown){manpower=null;notes.add('Some scheduled lines have missing or conflicting Manpower.');}
-  let forecast=0,forecastSah=0;const stages=[0,0,0,0];let missing=0,missingSmv=0;
+  let forecast=0,forecastSah=0,selectedKnown=0,sahKnown=0,missingSmv=0;
+  const stages=[0,0,0,0],stageKnown=[0,0,0,0],stagePartial=[false,false,false,false];
+  let forecastPartial=false;
   for(const [ewo,lines] of ewoLines){
-   const item=stock(ewo,lines);let pcs=0,known=true;
-   item.stages.forEach((value,i)=>{if(value===null){stages[i]=null;if(selected.has(i))known=false;}else if(stages[i]!==null)stages[i]+=value;if(selected.has(i)&&value!==null)pcs+=value;});
-   if(!known){missing++;continue;}
+   const item=stock(ewo,lines);let pcs=0,known=0;
+   item.stages.forEach((value,i)=>{
+    if(value===null){stagePartial[i]=true;if(selected.has(i))forecastPartial=true;}
+    else {stages[i]+=value;stageKnown[i]++;if(item.stagePartial[i])stagePartial[i]=true;
+     if(selected.has(i)){pcs+=value;known++;selectedKnown++;if(item.stagePartial[i])forecastPartial=true;}}
+   });
    forecast+=pcs;
-   if(pcs>0&&item.smv===null)missingSmv++;else forecastSah+=pcs*(item.smv||0)/60;
+   if(known){if(pcs>0&&item.smv===null)missingSmv++;else {forecastSah+=pcs*(item.smv||0)/60;sahKnown++;}}
   }
-  if(missing){forecast=null;forecastSah=null;notes.add('Selected WIP is unavailable for some scheduled EWOs; incomplete totals show —.');}
-  else if(missingSmv){forecastSah=null;notes.add('Forecastable SAH needs one valid SMV per scheduled EWO; missing/conflicting SMV shows —.');}
-  return {date,values:[clock,sah,qty,forecast,forecastSah,clock>0&&sah!==null?sah/clock*100:null,manpower>0&&clock!==null?clock/manpower:null,manpower],stages,total:stages.some(v=>v===null)?null:stages.reduce((a,b)=>a+b,0)};
+  const hasEwos=ewoLines.size>0;
+  stages.forEach((_,i)=>{if(hasEwos&&!stageKnown[i])stages[i]=null;});
+  if(selected.size&&hasEwos&&!selectedKnown)forecast=null;
+  if(selected.size&&hasEwos&&!sahKnown)forecastSah=null;
+  const sahPartial=forecastPartial||missingSmv>0;
+  if(forecastPartial)notes.add('* Available WIP subtotal: some scheduled EWOs or report fields have no matched numeric data. No matched data shows —.');
+  if(missingSmv)notes.add('* Available SAH subtotal excludes WIP with missing/conflicting EWO SMV. No convertible data shows —.');
+  const knownStages=stages.filter(v=>v!==null);
+  return {date,values:[clock,sah,qty,forecast,forecastSah,clock>0&&sah!==null?sah/clock*100:null,manpower>0&&clock!==null?clock/manpower:null,manpower],partial:[false,false,false,forecastPartial,sahPartial,false,false,false],stages,stagePartial,total:knownStages.length?knownStages.reduce((a,b)=>a+b,0):null,totalPartial:stagePartial.some(Boolean)};
+
  });
  return {days,notes:[...notes]};
 }
 function gdsFormat(value,index){if(value===null)return '—';const text=Number(value).toLocaleString('en-US',{maximumFractionDigits:index===2||index===3||index===7?0:1});return text+(index===5?'%':'');}
+function gdsSubtotalMark(value,partial){return value!==null&&partial?' <sup class="gds-partial" title="Available data subtotal; some source values are unavailable" aria-label="Available data subtotal">*</sup>':'';}
 function gdsInput(context,embellishment){return {dates:context.dates,lines:context.lines,search:context.search,selected:[...GDS_STATE.selected],data:DATA,plan:DAILY_PLAN,sah:SAH_DAILY,clock:CLOCK_HOUR_DAILY,fabric:FABRIC_CUTTING_DATA,sewing:SEWING_IO_DATA,embellishment};}
 function paintGanttDailySummary(){
  const context=GDS_STATE.context,body=document.getElementById('gantt-daily-summary');if(!context||!body)return;
@@ -75,7 +89,7 @@ function paintGanttDailySummary(){
  body.innerHTML='<tr class="gds-controls"><td colspan="'+colspan+'"><div class="gds-control-row"><span>DAILY PLAN SUMMARY</span>'+picker+'</div></td></tr>';
  const labels=['Clock Hour','Plan SAH','Plan Pcs','Forecastable Pcs','Forecastable SAH','Plan Efficiency','Plan Working Hours','Plan Manpower'];
  const units=['h','h','pcs','pcs','h','%','h','people'];
- body.innerHTML+=labels.map((label,i)=>'<tr class="gds-metric '+([1,2,4].includes(i)?'gds-emphasis':'')+'"><th scope="row">'+label+'</th>'+result.days.map(day=>'<td>'+gdsFormat(day.values[i],i)+(day.values[i]===null||i===5?'':' <small>'+units[i]+'</small>')+'</td>').join('')+'</tr>').join('');
+ body.innerHTML+=labels.map((label,i)=>'<tr class="gds-metric '+([1,2,4].includes(i)?'gds-emphasis':'')+'"><th scope="row">'+label+'</th>'+result.days.map(day=>'<td>'+gdsFormat(day.values[i],i)+gdsSubtotalMark(day.values[i],day.partial[i])+(day.values[i]===null||i===5?'':' <small>'+units[i]+'</small>')+'</td>').join('')+'</tr>').join('');
  body.innerHTML+='<tr class="gds-divider"><th>Team / EWO</th>'+context.dates.map(date=>'<th>'+esc(date.slice(8)+'-'+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(date.slice(5,7))-1]+'-'+date.slice(2,4))+'</th>').join('')+'</tr>';
  body.hidden=GDS_STATE.hidden;
  const wrap=body.closest('.gantt-wrap'),controls=body.querySelector('.gds-control-row');
@@ -86,7 +100,7 @@ function paintGanttDailySummary(){
  const button=document.getElementById('gds-visibility');if(button){button.textContent=GDS_STATE.hidden?'Show summary ▾':'Hide summary ▴';button.setAttribute('aria-expanded',String(!GDS_STATE.hidden));}
  const note=document.getElementById('gds-note');if(note){note.hidden=GDS_STATE.hidden;note.textContent='Forecast: '+(count===4?'All consumable WIP':count?[...GDS_STATE.selected].map(i=>GDS_STAGES[i]).join(' + '):'None selected')+' · SAH = Σ(EWO consumable WIP × EWO SMV ÷ 60). WIP uses latest uploaded reports for the EWOs scheduled on each date; historical stock is not reconstructed.'+(GDS_STATE.source?.loading?' Loading Print/Embroidery WIP…':'')+(GDS_STATE.source?.error?' Print/Embroidery report could not load.':'')+(result.notes.length?' '+result.notes.join(' '):'');}
  const lower=document.getElementById('gds-consumable-table');if(lower){
-  lower.innerHTML='<thead><tr><th>Consumable WIP</th>'+context.dates.map(date=>'<th>'+esc(date.slice(8)+'-'+date.slice(5,7)+'-'+date.slice(2,4))+'</th>').join('')+'</tr></thead><tbody>'+GDS_STAGES.map((label,i)=>'<tr><th scope="row">'+label+'</th>'+result.days.map(day=>'<td>'+gdsFormat(day.stages[i],3)+'</td>').join('')+'</tr>').join('')+'<tr class="gds-lower-total"><th>Total Consumable WIP</th>'+result.days.map(day=>'<td>'+gdsFormat(day.total,3)+'</td>').join('')+'</tr></tbody>';
+  lower.innerHTML='<thead><tr><th>Consumable WIP</th>'+context.dates.map(date=>'<th>'+esc(date.slice(8)+'-'+date.slice(5,7)+'-'+date.slice(2,4))+'</th>').join('')+'</tr></thead><tbody>'+GDS_STAGES.map((label,i)=>'<tr><th scope="row">'+label+'</th>'+result.days.map(day=>'<td>'+gdsFormat(day.stages[i],3)+gdsSubtotalMark(day.stages[i],day.stagePartial[i])+'</td>').join('')+'</tr>').join('')+'<tr class="gds-lower-total"><th>Total Consumable WIP</th>'+result.days.map(day=>'<td>'+gdsFormat(day.total,3)+gdsSubtotalMark(day.total,day.totalPartial)+'</td>').join('')+'</tr></tbody>';
  }
  const lowerNote=document.getElementById('gds-consumable-note');if(lowerNote)lowerNote.textContent=count===4?'Total Consumable WIP = Forecastable Pcs above. Shared EWO stock is counted once per date.':'This table retains all WIP categories; the upper forecast uses only selected categories. Shared EWO stock is counted once per date.';
 }
@@ -96,7 +110,9 @@ function renderGanttDailySummary(context){
  GDS_STATE.source={loading:true,rows:[],error:false};paintGanttDailySummary();
  const ids=[...new Set(DAILY_PLAN.filter(row=>context.dates.includes(row.date)&&context.lines.includes(Number(row.line))&&(!context.search||gdsKey(row.ewo)===gdsKey(context.search))).map(row=>String(row.ewo)))];
  if(!ids.length){GDS_STATE.source={loading:false,rows:[],error:false};paintGanttDailySummary();return;}
- loadEwoSource('embellishment',ids.length<=500?ids:null).then(rows=>{
+ // Load the active report before local EWO normalization; exact text IN filters
+ // can omit source identifiers such as a numeric EWO saved with a .0 suffix.
+ loadEwoSource('embellishment').then(rows=>{
   if(request!==GDS_STATE.request||generation!==SITE_SESSION_GENERATION||owner!==SITE_AUTH_USER?.id)return;
   GDS_STATE.source={loading:false,rows,error:false};paintGanttDailySummary();
  }).catch(()=>{if(request!==GDS_STATE.request||generation!==SITE_SESSION_GENERATION||owner!==SITE_AUTH_USER?.id)return;GDS_STATE.source={loading:false,rows:[],error:true};paintGanttDailySummary();});
