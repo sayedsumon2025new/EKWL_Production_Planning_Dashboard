@@ -927,6 +927,7 @@ async function switchPlanningInstant(uploadId){
   ++SUPABASE_LOAD_TOKEN; // Invalidate any older load, including when this selection is cached.
   const upload=PLAN_UPLOAD_CATALOG.find(u=>String(u.id)===String(uploadId));
   if(upload)ACTIVE_PLAN_UPLOAD=upload;
+  if(typeof ssaReset==='function'){ssaReset();SSA_PLAN=String(ACTIVE_PLAN_UPLOAD?.id||'');SSA_PENDING=true;if(typeof renderSizeSetAndon==='function')renderSizeSetAndon();if(typeof renderSizeSetModule==='function')renderSizeSetModule();}
   if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
 
   // Previously opened versions are restored instantly with zero MySQL requests.
@@ -1315,6 +1316,7 @@ function applyFilter(){
   });
 }
 function renderAll(){
+ if(typeof renderSizeSetAndon==='function'){SSA_PENDING=false;renderSizeSetAndon();if(canAccessSlide(17)&&typeof renderSizeSetModule==='function')renderSizeSetModule();}
  const cfgName=document.getElementById('cfg-name');
  const factory=(cfgName?cfgName.value.trim():'')||'EKWL · HW';
  document.title=factory+' Production Planning Dashboard';

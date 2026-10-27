@@ -1,0 +1,30 @@
+/* Scope the viewport layout to the Andon tab; existing report layouts are retained. */
+#s17.ssa-active.active{display:flex;flex-direction:column;overflow:hidden;padding:10px;gap:8px}
+#s17.ssa-active>.slide-header{margin:0;flex-shrink:0}
+#s17.ssa-active>.slide-header .slide-subtitle,#s17.ssa-active .ssa-card>.card-title,#s17.ssa-active #ss-source,#s17.ssa-active .ssa-card>.ss-controls{display:none}
+#s17.ssa-active .ssa-card{display:flex;flex-direction:column;flex:1;min-height:0;margin-top:0!important;padding:10px;gap:9px}
+#s17.ssa-active .ss-tabs{margin:0;padding:0 0 8px;gap:6px;flex-shrink:0}
+#s17.ssa-active .ss-tabs button{padding:7px 11px;font-size:11px;border-radius:5px;border-bottom:1px solid var(--border)}
+#ss-andon-view{min-height:0;flex:1;display:flex;flex-direction:column;gap:9px}
+#ss-andon-view[hidden]{display:none}
+.ssa-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:7px;flex-shrink:0}
+#ss-andon-view select,#ss-andon-view input,#ss-andon-view .top-btn{height:32px;padding:5px 8px;font:11px 'Segoe UI',Arial,sans-serif;border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);min-width:0}
+.ssa-toolbar select{flex:1 1 120px;max-width:190px}.ssa-toolbar input[type=search]{flex:1.2 1 145px;max-width:220px}
+.ssa-dates{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;font-size:10px}
+.ssa-dates label{display:flex;align-items:center;gap:5px}#ss-andon-view .ssa-dates input{width:128px}
+.ssa-meta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;font-size:10px;color:var(--text2);flex-shrink:0}
+.ssa-legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.ssa-legend span{white-space:nowrap}.ssa-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.ssa-green{background:#075e3c!important;color:#fff!important}.ssa-amber{background:#d6a329!important;color:#24205f!important}.ssa-red{background:#bf3548!important;color:#fff!important}
+.ssa-grid-wrap{flex:1;min-height:0;width:100%;overflow:auto;border:1px solid #52667e;border-radius:5px;background:#f7faff}
+#ssa-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font:11px 'Segoe UI',Arial,sans-serif;color:#153956}
+#ssa-table th,#ssa-table td{border-right:1px solid #8495ad;border-bottom:1px solid #8495ad;padding:3px}
+#ssa-table thead th{position:sticky;top:0;z-index:3;background:linear-gradient(#264f6b,#1b354d);color:#e4effa;font-size:10px;height:29px;white-space:nowrap}
+#ssa-table th:first-child{width:50px}#ssa-table thead th:first-child{left:0;z-index:5}
+#ssa-table .ssa-line{position:sticky;left:0;z-index:2;background:#04aed9;color:#fff;text-align:center;font-weight:800;padding:9px 5px}
+#ssa-table td{background:#f7faff;vertical-align:top}.ssa-stack{display:flex;flex-direction:column;gap:3px;min-height:25px}
+#ssa-table .ssa-ewo{display:block;width:100%;min-height:25px;padding:4px 2px;font-size:11px;line-height:1.25;font-weight:800;border:1px solid #0002;border-radius:3px;cursor:pointer}
+#ssa-table .ssa-ewo:hover{filter:brightness(1.12)}#ssa-table .ssa-ewo:focus-visible{outline:2px solid #197fc2;outline-offset:1px}
+#ssa-empty{padding:35px;color:#526176;text-align:center}.ssa-hint{font-size:11px;line-height:1.7;color:var(--text2)}
+#ssa-dialog{width:min(620px,calc(100vw - 28px));max-height:85vh;overflow:auto;padding:22px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px}#ssa-dialog::backdrop{background:#031322b8}#ssa-close{float:right}.ssa-evidence{padding:10px;border:1px solid var(--border);border-radius:5px;margin:8px 0}.ssa-evidence div{display:flex;justify-content:space-between;gap:12px;font-size:12px}
+@media(max-width:1050px){.ssa-dates{margin-left:0}#s17.ssa-active .slide-title{font-size:18px}}
+@media(max-width:640px){#s17.ssa-active{padding:5px}#s17.ssa-active .ssa-card{padding:7px;gap:7px}.ssa-toolbar select{max-width:none;flex:1 1 28%}.ssa-toolbar input[type=search]{max-width:none;flex:1 1 45%}.ssa-dates{width:100%}.ssa-legend{gap:7px;font-size:9px}#s17.ssa-active .ss-tabs button{padding:6px 8px;font-size:10px}}

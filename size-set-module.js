@@ -26,6 +26,7 @@ const SS_TNA_STEPS=[
   ['Bulk Pattern','Bulk Pattern Plan','Bulk Pattern Actual']
 ];
 let SS_ROWS=[];
+let SS_SCOPE_PLAN='';
 let SS_FILTERED=[];
 let SS_PAGE=1;
 let SS_MODE='sql';
@@ -72,7 +73,9 @@ function clearSizeSetTNAFilters(){
 }
 
 function showSizeSetSub(which){
-  for(const name of ['raw','tna']){
+  document.getElementById('s17')?.classList.toggle('ssa-active',which==='andon');
+  if(which==='andon'&&typeof renderSizeSetAndon==='function')renderSizeSetAndon();
+  for(const name of ['raw','tna','andon']){
     const active=which===name;
     const tab=document.getElementById('ss-tab-'+name),view=document.getElementById('ss-'+name+'-view');
     if(tab){tab.setAttribute('aria-selected',String(active));tab.tabIndex=active?0:-1;}
@@ -94,7 +97,7 @@ function syncSizeSetPerformance(themeOnly=false,force=false){
   if(!frame?.getAttribute('src'))return;
   const message={type:'ekwl:size-tna',theme:document.documentElement.dataset.theme||'light'};
   if(!themeOnly){
-    const label=(SS_MODE==='preview'?'Local preview':'MySQL live')+' · '+SS_FILE_NAME;
+    const label=(SS_MODE==='preview'?'Local preview':'MySQL live')+' · '+SS_FILE_NAME+' · '+(typeof activePlanningLabel==='function'?activePlanningLabel():'No Planning Selected');
     if(!force&&SS_PERFORMANCE_SENT?.label===label&&SS_PERFORMANCE_SENT.rows.length===SS_FILTERED.length&&SS_FILTERED.every((row,i)=>row===SS_PERFORMANCE_SENT.rows[i]))return;
     message.rows=SS_FILTERED.map(row=>row.row_data);
     message.label=label;
@@ -188,12 +191,18 @@ async function previewSizeSetFile(){
   }catch(error){if(token===SS_FILE_TOKEN)ssMessage('ss-upload-msg','CSV preview failed: '+(error?.message||error));}
 }
 
+// Keep the full report snapshot for Andon evidence; scope report views by selected-plan EWO.
+function ssPlanScopeRows(){
+  if(typeof ACTIVE_PLAN_UPLOAD==='undefined'||!ACTIVE_PLAN_UPLOAD?.id||typeof ssaBuildPlan!=='function'||SSA_PENDING)return [];
+  const ewos=new Set(ssaBuildPlan(DAILY_PLAN,new Set([...getChassisMasterLines()].map(Number))).entries.map(r=>r.ewo));
+  return SS_ROWS.filter(row=>ewos.has(ssaKey(ssVal(row,'EWO'))));
+}
 function populateSizeSetFilters(){
   const columns=[['ss-year','__efd_year','All EFD Years'],['ss-line','Line','All Lines'],['ss-buyer','Buyer','All Buyers'],
     ['ss-product','Product Type','All Products'],['ss-action','Next Action to Do\n(What)','All Actions']];
   for(const [id,key,label] of columns){
     const select=document.getElementById(id);if(!select)continue;
-    const options=[...new Set(SS_ROWS.map(row=>ssFilterValue(row,key)).filter(Boolean))]
+    const options=[...new Set(ssPlanScopeRows().map(row=>ssFilterValue(row,key)).filter(Boolean))]
       .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
     select.innerHTML=`<option value="">${esc(label)}</option>`+
       options.map(value=>`<option value="${esc(value)}">${esc(value)}</option>`).join('');
@@ -215,6 +224,12 @@ function populateSizeSetFilters(){
 function renderSizeSetModule(){
   if(typeof recordDashboardRender==='function')recordDashboardRender('size-set');
   const table=document.getElementById('ss-table');if(!table)return;
+  const scopePlan=typeof ACTIVE_PLAN_UPLOAD==='undefined'?'':String(ACTIVE_PLAN_UPLOAD?.id||'');
+  if(SS_SCOPE_PLAN!==scopePlan){
+    SS_SCOPE_PLAN=scopePlan;SS_PAGE=1;
+    for(const id of ['ss-year','ss-line','ss-buyer','ss-product','ss-action','ss-search']){const el=document.getElementById(id);if(el)el.value='';}
+  }
+  const scoped=ssPlanScopeRows();
   const columns=[['year','__efd_year','All EFD Years'],['line','Line','All Lines'],['buyer','Buyer','All Buyers'],['product','Product Type','All Products'],['action','Next Action to Do\n(What)','All Actions']];
   const values=Object.fromEntries(columns.map(([name])=>[name,document.getElementById('ss-'+name)?.value||'']));
   const search=(document.getElementById('ss-search')?.value||'').trim().toLowerCase();
@@ -223,12 +238,12 @@ function renderSizeSetModule(){
   // Each selector reflects rows matching all other current selections.
   for(const [name,key,label] of columns){
     const select=document.getElementById('ss-'+name);if(!select)continue;
-    const options=[...new Set(SS_ROWS.filter(row=>matches(row,name)).map(row=>ssFilterValue(row,key)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    const options=[...new Set(scoped.filter(row=>matches(row,name)).map(row=>ssFilterValue(row,key)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
     const selected=values[name];
     select.innerHTML=`<option value="">${esc(label)}</option>`+options.map(value=>`<option value="${esc(value)}">${esc(value)}</option>`).join('');
     select.value=options.includes(selected)?selected:'';values[name]=select.value;
   }
-  SS_FILTERED=SS_ROWS.filter(row=>matches(row));
+  SS_FILTERED=scoped.filter(row=>matches(row));
   const valid=SS_FILTERED.filter(row=>ssVal(row,'Buyer').trim());
   const qty=valid.reduce((total,row)=>{
     const value=ssVal(row,'GMT Qty').replace(/,/g,'').trim();
@@ -238,13 +253,14 @@ function renderSizeSetModule(){
     const action=ssVal(row,'Next Action to Do\n(What)').trim();
     return action && action.toLowerCase()!=='closed';
   }).length;
-  const kpis=[['SOURCE ROWS',SS_ROWS.length,'Complete CSV snapshot'],
+  const kpis=[['PLAN REPORT ROWS',scoped.length,'Selected-plan EWOs'],
     ['ROWS WITH BUYER',valid.length,'Current filters'],['GMT QTY',qty,'Current filters · PCS'],
     ['OPEN ACTIONS',open,'Nonblank, excluding Closed']];
   document.getElementById('ss-kpis').innerHTML=kpis.map(([name,n,sub])=>
     `<div class="kpi"><div class="kpi-lbl">${name}</div><div class="kpi-val">${ssCount(n)}</div><div class="kpi-sub">${sub}</div></div>`).join('');
   renderSizeSetTNA(valid);
   syncSizeSetPerformance();
+  if(typeof renderSizeSetAndon==='function')renderSizeSetAndon();
   const pages=Math.max(1,Math.ceil(SS_FILTERED.length/SS_PAGE_SIZE));
   SS_PAGE=Math.min(SS_PAGE,pages);
   const start=(SS_PAGE-1)*SS_PAGE_SIZE;
@@ -258,10 +274,10 @@ function renderSizeSetModule(){
     <button class="pg-btn" type="button" ${SS_PAGE<=1?'disabled':''} onclick="sizeSetPage(${SS_PAGE-1})">← Previous</button>
     <span>Page ${SS_PAGE} / ${pages}</span>
     <button class="pg-btn" type="button" ${SS_PAGE>=pages?'disabled':''} onclick="sizeSetPage(${SS_PAGE+1})">Next →</button>`;
-  ssMessage('ss-msg',`${SS_MODE==='preview'?'LOCAL CSV PREVIEW':'SQL LIVE'} · ${ssCount(SS_FILTERED.length)} filtered / ${ssCount(SS_ROWS.length)} source rows`);
+  ssMessage('ss-msg',`${SS_MODE==='preview'?'LOCAL CSV PREVIEW':'SQL LIVE'} · ${ssCount(SS_FILTERED.length)} filtered / ${ssCount(scoped.length)} selected-plan rows`);
   ssMessage('ss-source',(SS_MODE==='preview'?'Local file':'Latest SQL file')+': '+SS_FILE_NAME+
     (SS_UPLOADED_AT?' · '+new Date(SS_UPLOADED_AT).toLocaleString():'')+
-    ' · All 49 named columns shown · EFD year read from source dates');
+    ' · '+(typeof activePlanningLabel==='function'?activePlanningLabel():'No Planning Selected')+' · '+ssCount(scoped.length)+' matching source rows · All 49 named columns shown');
 }
 
 function sizeSetPage(page){SS_PAGE=page;renderSizeSetModule();document.getElementById('ss-table')?.scrollTo({top:0,left:0});}
@@ -285,6 +301,7 @@ async function loadSizeSetModule(force=false){
     if(token!==SS_LOAD_TOKEN||session!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id)return;
     SS_ROWS=all;SS_MODE='sql';SS_PAGE=1;SS_FILE_NAME=all[0]?.file_name||'';SS_UPLOADED_AT=all[0]?.uploaded_at||'';
     populateSizeSetFilters();
+    if(typeof renderSizeSetAndon==='function')renderSizeSetAndon();
     if(!all.length){
       document.getElementById('ss-kpis').innerHTML='';
       document.getElementById('ss-tna-kpis').innerHTML='';
@@ -344,8 +361,9 @@ async function uploadSizeSetFile(){
 }
 
 function resetSizeSetModule(){
+  if(typeof ssaReset==='function')ssaReset();
   ++SS_LOAD_TOKEN;++SS_FILE_TOKEN;clearTimeout(SS_SEARCH_TIMER);
-  SS_ROWS=[];SS_FILTERED=[];SS_PAGE=1;SS_MODE='sql';SS_PREVIEW=null;SS_FILE_NAME='';SS_UPLOADED_AT='';
+  SS_SCOPE_PLAN='';SS_ROWS=[];SS_FILTERED=[];SS_PAGE=1;SS_MODE='sql';SS_PREVIEW=null;SS_FILE_NAME='';SS_UPLOADED_AT='';
   const performanceFrame=document.getElementById('ss-tna-performance');
   SS_PERFORMANCE_SENT=null;
   if(performanceFrame)performanceFrame.removeAttribute('src');
