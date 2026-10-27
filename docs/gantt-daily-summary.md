@@ -11,15 +11,16 @@ source responses. Existing Gantt calculations and payloads remain unchanged.
 
 ## Metric sources
 
-All Planning metrics use the selected completed Planning snapshot. Only lines
-with a positive Plan/Day entry for a date are included. Source record/date is
+All Planning metrics use the selected completed Planning snapshot. Planning KPIs sum each criterion's source records for all selected lines/dates,
+including zero-plan dates and signed adjustments; they are independent of
+positive-demand inventory eligibility. Source record/date is
 counted once; distinct PO/color records are retained.
 
 | Row | Method |
 | --- | --- |
-| Clock Hour | Sum the date's Clock Hour/Day records on scheduled selected lines; empty-EWO clock rows are a per-line fallback, not added again. |
+| Clock Hour | Sum the selected CSV's exact Clock Hour/Day records for selected lines/date, including signed corrections and lines without positive Plan/Day. EWO search uses a blank-EWO per-line fallback only when no exact EWO metric exists. |
 | Plan SAH | Sum SAH/Day; when absent, derive from each Plan/Day quantity × its SMV / 60 and label the fallback. |
-| Plan Pcs | Sum Plan/Day pieces. |
+| Plan Pcs | Sum the selected CSV’s signed Plan/Day records; never drop negative adjustments from planning totals. |
 | Forecastable Pcs | Sum that date’s allocated plan coverage from selected stages. Allocate all colors by Line + EWO, deduct prior allocations, and cap by daily demand. Full-plan allocation precedes date, line, EWO and category display filters; shared upstream stock cannot be replenished by filtering. |
 | Forecastable SAH | For each EWO, daily allocated covered pieces from selected stages × that EWO’s valid unique SMV on the line / 60, then sum unrounded results. Missing/conflicting SMV excludes only that contribution; available SAH is marked as a partial subtotal. If no contribution can be converted, SAH is unavailable. |
 | Plan Efficiency | Total Plan SAH / total Clock Hour × 100. |
@@ -45,7 +46,7 @@ forecast, not historical inventory. Without a cutoff, coverage remains unavailab
 The latest uploaded report stocks are assumed to describe that baseline; this
 projection does not reconstruct historical stock or infer replenishment.
 
-Walk the complete positive Plan/Day snapshot after the cutoff in date order.
+Net signed Plan/Day records by Line + EWO + date first, then walk positive net demand after the cutoff in date order.
 Deduplicate record/date once. Group demand by exact normalized Line + EWO,
 ignoring all garment colors and PO subdivisions. Consume Sewing first, then
 Embroidery, Print and Cutable. Each stage covers only the unmet plan after the
@@ -96,3 +97,16 @@ The active Embellishment snapshot is loaded before local EWO normalization. An
 exact SQL text-IN filter can omit source identifiers such as `00123.00` when the
 plan uses `00123`; loading the active snapshot preserves those matches. Existing
 permission-scoped paging/cache remains in effect.
+
+## Source reconciliation regression
+
+Planning metrics use EFF15_METRIC_DAILY criteria when hydrated, with the original
+DAILY_PLAN / SAH_DAILY / CLOCK_HOUR_DAILY as compatible fallback. Record/date
+identity deduplication preserves distinct PO/color rows. Efficiency is the ratio
+of summed SAH to summed Clock Hour, never an average of Effi/Day percentages.
+Counts and signed adjustment amounts accompany each computed summary date.
+An aggregate regression reproduces the reported 02-Nov delta (positive values
+minus adjustments): 51,729 − 1,962 = 49,767 pcs; 8,423 − 229 = 8,194 SAH;
+16,234 − 352 = 15,882 clock hours. This is a synthetic aggregate reproduction,
+not a recovered copy of the operator’s private CSV. Exact live source-row
+reconciliation still requires the authenticated planning source.

@@ -65,3 +65,15 @@ SAH by other report evidence. Unknown remainder stays Unassigned. Every date
 reconciles. Over-target surplus caps attributed loss to the target gap; source
 evidence still shows the uncapped WIP pcs/SAH. Forecast before the production
 cutoff remains unavailable, not historical zero.
+
+## Department distribution
+
+The restored SVG donut derives every department directly from the same daily
+reason buckets displayed in the loss table. Textile combines GSM and fabric
+shortage; Planning, Merchant, Store/Merchant, Washing, Print, Embroidery and
+Unassigned remain separate. No shared responsibility is counted twice. Chart
+SAH must reconcile to the header/table available total within numeric tolerance;
+a discrepancy is flagged. Missing/provisional dates are labelled as an available
+subtotal. Zero and unavailable are distinct empty states. Legend buttons support
+hover, focus and pinned selection, with textual SAH/percentage labels. Manual
+reclassification regenerates the distribution from the updated buckets.
