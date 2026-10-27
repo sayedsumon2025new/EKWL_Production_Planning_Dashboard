@@ -6,6 +6,7 @@ require dirname(__DIR__).'/backend/src/query.php';
 require dirname(__DIR__).'/backend/src/imports.php';
 require dirname(__DIR__).'/backend/src/archive.php';
 require dirname(__DIR__).'/backend/src/notes.php';
+require dirname(__DIR__).'/backend/src/load-analysis-loss.php';
 require dirname(__DIR__).'/backend/src/decimal.php';
 require dirname(__DIR__).'/backend/src/readiness-engine.php';
 require dirname(__DIR__).'/backend/src/derived.php';
@@ -35,7 +36,7 @@ try {
         jsonOut(['data'=>['path'=>$id],'error'=>null]);exit;
     }
     $b=body();
-    if((config()['maintenance']??false)&&!in_array($route,['query','archive','runtime','notes'],true)&&!($route==='rpc'&&($b['name']??'')==='get_ready_input_coverage'))throw new ApiError('Application writes paused for migration.',503);
+    if((config()['maintenance']??false)&&!in_array($route,['query','archive','runtime','notes','load-analysis-loss'],true)&&!($route==='rpc'&&($b['name']??'')==='get_ready_input_coverage'))throw new ApiError('Application writes paused for migration.',503);
     if($route==='query')$result=dataQuery($u,$b);
     elseif($route==='rpc')$result=rpc($u,$b);
     elseif($route==='users')$result=['data'=>adminUsers($u,$b)];
@@ -44,6 +45,7 @@ try {
         if((config()['maintenance']??false)&&($b['action']??'list')!=='list')throw new ApiError('Writes paused.',503);
         $result=['data'=>notesAction($u,$b)];
     }
+    elseif($route==='load-analysis-loss')$result=['data'=>Ekwl\loadAnalysisLossAction($u,$b)];
     elseif($route==='archive')$result=['data'=>archiveAction($u,$b)];
     elseif($route==='runtime'){
         requirePermission($u,'admin');
