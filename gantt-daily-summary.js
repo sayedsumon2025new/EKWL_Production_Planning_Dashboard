@@ -7,11 +7,32 @@ function gdsSum(rows,get){if(!rows.length)return null;const values=rows.map(get)
 function gdsReportSum(rows,get){const values=rows.map(get).filter(v=>v!==null);return {value:values.length?values.reduce((a,b)=>a+b,0):null,partial:values.length<rows.length};}
 function gdsUniqueDaily(rows){const seen=new Set();return rows.filter(row=>{if(row.record_id==null)return true;const key=row.record_id+'|'+row.date;if(seen.has(key))return false;seen.add(key);return true;});}
 function gdsGroup(rows,key){const map=new Map();for(const row of rows){const k=key(row);if(!map.has(k))map.set(k,[]);map.get(k).push(row);}return map;}
+// Planning KPIs reconcile to the selected CSV's own criteria rows, including
+// signed corrections and source metrics on dates without positive Plan/Day.
+// Inventory allocation below uses positive NET Line/EWO demand independently.
+function gdsPlanningTotals(input){
+ const lines=new Set(input.lines.map(Number)),dates=new Set(input.dates),search=gdsKey(input.search);
+ const exact=Array.isArray(input.metrics)&&input.metrics.some(row=>['Plan/Day','SAH/Day','Clock Hour/Day'].includes(String(row.criteria||'').trim()));
+ const source=criteria=>exact?input.metrics.filter(row=>String(row.criteria||'').trim()===criteria):criteria==='Plan/Day'?input.plan:criteria==='SAH/Day'?input.sah:input.clock;
+ const scoped=rows=>gdsUniqueDaily(rows).filter(row=>lines.has(Number(row.line))&&dates.has(row.date));
+ const plan=scoped(source('Plan/Day')).filter(row=>!search||gdsKey(row.ewo)===search);
+ function metric(criteria){const rows=scoped(source(criteria));if(!search)return rows;const matches=rows.filter(row=>gdsKey(row.ewo)===search),planned=new Set(plan.map(row=>JSON.stringify([row.date,Number(row.line)]))),matched=new Set(matches.map(row=>JSON.stringify([row.date,Number(row.line)])));
+  return [...matches,...rows.filter(row=>!gdsKey(row.ewo)&&planned.has(JSON.stringify([row.date,Number(row.line)]))&&!matched.has(JSON.stringify([row.date,Number(row.line)])))];
+ }
+ const sah=metric('SAH/Day'),clock=metric('Clock Hour/Day');
+ return new Map(input.dates.map(date=>{const p=plan.filter(row=>row.date===date),a=sah.filter(row=>row.date===date),c=clock.filter(row=>row.date===date),qty=p.length?gdsSum(p,row=>gdsNumber(row.value)):0;
+  let planSah=a.length?gdsSum(a,row=>gdsNumber(row.value)):qty===0?0:null,derived=false;
+  if(!a.length&&p.length&&!exact){planSah=gdsSum(p,row=>gdsNumber(row.smv)>0?gdsNumber(row.value)*gdsNumber(row.smv)/60:null);derived=planSah!==null;}
+  return [date,{qty,sah:planSah,clock:c.length?gdsSum(c,row=>gdsNumber(row.value)):qty===0?0:null,derived,counts:[p.length,a.length,c.length],signedPlanAdjustment:p.reduce((n,row)=>n+Math.min(0,gdsNumber(row.value)||0),0)}];
+ }));
+}
 // Allocate the full snapshot before applying display filters. Sewing is line/EWO
 // stock; upstream stock is shared by EWO. Colors never participate in allocation.
 function gdsAllocate(input,notes){
  const master=input.masterLines?new Set(input.masterLines.map(Number)):null;
- const plan=gdsUniqueDaily(input.plan).filter(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&Number(row.line)>0&&Number(row.line)!==46&&(!master||master.has(Number(row.line)))&&gdsKey(row.ewo)&&gdsNumber(row.value)>0);
+ const sourcePlan=gdsUniqueDaily(input.plan).filter(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&Number(row.line)>0&&Number(row.line)!==46&&(!master||master.has(Number(row.line)))&&gdsKey(row.ewo)&&gdsNumber(row.value)!==null);
+ const net=gdsGroup(sourcePlan,row=>JSON.stringify([row.date,Number(row.line),gdsKey(row.ewo)]));
+ const plan=[...net.values()].map(rows=>({...rows[0],value:rows.reduce((n,row)=>n+gdsNumber(row.value),0)})).filter(row=>row.value>0);
  const cutoff=(input.production||[]).map(row=>String(row.output_date||'').slice(0,10)).filter(date=>/^\d{4}-\d{2}-\d{2}$/.test(date)).sort().at(-1)||'';
  const fabric=gdsGroup(input.fabric,row=>gdsKey(row.ewo)),em=gdsGroup(input.embellishment||[],row=>gdsKey(row['EWO No'])),data=gdsGroup(input.data,row=>gdsKey(row.ewo));
  const sewing=gdsGroup(input.sewing,row=>JSON.stringify([Number(row.line_no),gdsKey(row.ewo)]));
@@ -62,28 +83,20 @@ function gdsAllocate(input,notes){
 }
 function buildGanttDailySummary(input){
  const selected=new Set(input.selected),lineSet=new Set(input.lines.map(Number)),dateSet=new Set(input.dates),search=gdsKey(input.search),notes=new Set();
- const allocation=gdsAllocate(input,notes);
+ const allocation=gdsAllocate(input,notes),planning=gdsPlanningTotals(input);
  const plan=allocation.plan.filter(row=>dateSet.has(row.date)&&lineSet.has(Number(row.line))&&(!search||gdsKey(row.ewo)===search));
  const byDate=gdsGroup(plan,row=>row.date),dataByLine=gdsGroup(input.data,row=>Number(row.line));
- const sahByDate=gdsGroup(gdsUniqueDaily(input.sah),row=>row.date),clockByDate=gdsGroup(gdsUniqueDaily(input.clock),row=>row.date);
  const days=input.dates.map(date=>{
   const rows=byDate.get(date)||[],activeLines=new Set(rows.map(row=>Number(row.line)));
-  const qty=rows.reduce((n,row)=>n+gdsNumber(row.value),0);
-  const matches=row=>activeLines.has(Number(row.line))&&(!search||!gdsKey(row.ewo)||gdsKey(row.ewo)===search);
-  const sahRows=(sahByDate.get(date)||[]).filter(matches);
-  let sah=gdsSum(sahRows,row=>gdsNumber(row.value));
-  if(!sahRows.length&&rows.length){sah=gdsSum(rows,row=>{const smv=gdsNumber(row.smv);return smv>0?gdsNumber(row.value)*smv/60:null;});if(sah!==null)notes.add('Some Plan SAH values are derived from Plan Pcs × SMV ÷ 60.');}
-  if(!rows.length)sah=0;
-  let clock=0,clockKnown=true,manpower=0,manpowerKnown=true;
+  const source=planning.get(date),qty=source.qty,sah=source.sah,clock=source.clock;
+  if(source.derived)notes.add('Some Plan SAH values are derived from Plan Pcs × SMV ÷ 60.');
+  if(source.signedPlanAdjustment<0)notes.add('Planning totals include signed CSV adjustments; WIP follows positive net Line/EWO demand.');
+  let manpower=0,manpowerKnown=true;
   for(const line of activeLines){
-   const daily=(clockByDate.get(date)||[]).filter(row=>Number(row.line)===line);
-   const scoped=daily.filter(row=>gdsKey(row.ewo)&&(!search||gdsKey(row.ewo)===search));
-   const lineClock=gdsSum(scoped.length?scoped:daily.filter(row=>!gdsKey(row.ewo)),row=>gdsNumber(row.value));
-   if(lineClock===null)clockKnown=false;else clock+=lineClock;
    const mps=[...new Set((dataByLine.get(line)||[]).map(row=>gdsNumber(row.manpower)).filter(v=>v!==null&&v>0))];
    if(mps.length!==1)manpowerKnown=false;else manpower+=mps[0];
   }
-  if(!clockKnown){clock=null;notes.add('Some scheduled lines have no date-wise Clock Hour.');}
+  if(clock===null)notes.add('Some source dates have no Clock Hour/Day.');
   if(!manpowerKnown){manpower=null;notes.add('Some scheduled lines have missing or conflicting Manpower.');}
   let forecast=0,forecastSah=0,selectedKnown=0,sahKnown=0,missingSmv=0;
   const stages=[0,0,0,0],stageKnown=[0,0,0,0],stagePartial=[false,false,false,false];
@@ -108,13 +121,13 @@ function buildGanttDailySummary(input){
   if(forecastPartial)notes.add('* Available WIP subtotal: some report fields are missing; allocation uses known stock only and stage attribution may be incomplete. No matched data shows —.');
   if(missingSmv)notes.add('* Available SAH subtotal excludes covered pieces with missing/conflicting EWO SMV. No convertible data shows —.');
   const knownStages=stages.filter(v=>v!==null);
-  return {date,values:[clock,sah,qty,forecast,forecastSah,clock>0&&sah!==null?sah/clock*100:null,manpower>0&&clock!==null?clock/manpower:null,manpower],partial:[false,false,false,forecastPartial,sahPartial,false,false,false],stages,stagePartial,total:knownStages.length?knownStages.reduce((a,b)=>a+b,0):null,totalPartial:stagePartial.some(Boolean)};
+  return {date,sourceRecordCounts:source.counts,signedPlanAdjustment:source.signedPlanAdjustment,values:[clock,sah,qty,forecast,forecastSah,clock>0&&sah!==null?sah/clock*100:null,manpower>0&&clock!==null?clock/manpower:null,manpower],partial:[false,false,false,forecastPartial,sahPartial,false,false,false],stages,stagePartial,total:knownStages.length?knownStages.reduce((a,b)=>a+b,0):null,totalPartial:stagePartial.some(Boolean)};
  });
  return {days,notes:[...notes],cutoff:allocation.cutoff};
 }
 function gdsFormat(value,index){if(value===null)return '—';const text=Number(value).toLocaleString('en-US',{maximumFractionDigits:index===2||index===3||index===7?0:1});return text+(index===5?'%':'');}
 function gdsSubtotalMark(value,partial){return value!==null&&partial?' <sup class="gds-partial" title="Available data subtotal; some source values are unavailable" aria-label="Available data subtotal">*</sup>':'';}
-function gdsInput(context,embellishment){return {dates:context.dates,lines:context.lines,search:context.search,selected:[...GDS_STATE.selected],data:DATA,plan:DAILY_PLAN,sah:SAH_DAILY,clock:CLOCK_HOUR_DAILY,fabric:FABRIC_CUTTING_DATA,sewing:SEWING_IO_DATA,embellishment,production:DATE_WISE_PRODUCTION_DATA,masterLines:[...getChassisMasterLines()]};}
+function gdsInput(context,embellishment){return {dates:context.dates,lines:context.lines,search:context.search,selected:[...GDS_STATE.selected],data:DATA,plan:DAILY_PLAN,sah:SAH_DAILY,clock:CLOCK_HOUR_DAILY,fabric:FABRIC_CUTTING_DATA,sewing:SEWING_IO_DATA,embellishment,metrics:typeof EFF15_METRIC_DAILY==='undefined'?undefined:EFF15_METRIC_DAILY,production:DATE_WISE_PRODUCTION_DATA,masterLines:[...getChassisMasterLines()]};}
 function paintGanttDailySummary(){
  const context=GDS_STATE.context,body=document.getElementById('gantt-daily-summary');if(!context||!body)return;
  const result=buildGanttDailySummary(gdsInput(context,GDS_STATE.source?.rows||[]));

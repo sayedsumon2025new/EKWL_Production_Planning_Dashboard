@@ -21,3 +21,12 @@ f=fixture();f.dailyCapacity=null;r=build(f);assert.equal(r.days[0].forecast,60);
 for(const day of build(fixture()).days)assert.ok(Math.abs(Object.values(day.buckets).reduce((a,b)=>a+b,0)-day.loss)<1e-9);
 f=fixture();f.dailyCapacity=10;f.planTotals=Object.fromEntries(f.dates.map(d=>[d,10]));f.plan.forEach(r=>r.value=100);f.sah.forEach(r=>r.value=10);f.sewing[0].wip=80;f.embellishment=[{'EWO No':'272718','Today Print Send Qty\n':20,' Today Print Receive Qty':0,'Today EMB Send Qty':0,'Today EMB Receive Qty':0}];f.sources.embellishment=f.embellishment;r=build(f);assert.equal(r.days[0].ganttForecast,10);assert.equal(r.days[0].forecast,8);assert.equal(r.days[0].buckets.print,2);assert.equal(r.days[0].loss,2);assert.equal(r.days[1].buckets.print,0);
 console.log('PASS Gantt forecast derivation and agreed 10→8+2 quantity example, status evidence/priority, positive Print/EMB WIP delay rule, no duplicate attribution, target-plan split/cap, unknown data and manual reclassification');
+
+const departments=days=>JSON.parse(JSON.stringify(c.buildLoadAnalysisDepartmentTotals(days)));
+let chart=departments([{loss:100,partial:false,buckets:{planning:10,sample:5,accessories:10,gsm:15,fabric:20,wash:5,print:10,emb:5,unknown:20}}]);
+assert.equal(chart.total,100);assert.equal(chart.expected,100);assert.equal(chart.reconciled,true);assert.equal(chart.series.find(r=>r.id==='textile').value,35);assert.equal(chart.series.find(r=>r.id==='unassigned').value,20);assert.ok(Math.abs(chart.series.reduce((n,r)=>n+r.percent,0)-100)<1e-9);
+chart=departments([{loss:null,buckets:{}}]);assert.equal(chart.total,null);assert.equal(chart.knownDates,0);
+chart=departments([{loss:0,buckets:Object.fromEntries(chart.series.flatMap(r=>r.keys).map(k=>[k,0]))}]);assert.equal(chart.total,0);assert.ok(chart.series.every(r=>r.percent===0));
+chart=departments([{loss:100,buckets:{planning:10,sample:5,accessories:10,gsm:15,fabric:20,wash:5,print:10,emb:5,unknown:10}}]);assert.equal(chart.reconciled,false);
+for(const day of build(fixture()).days){const chart=departments([day]);assert.equal(chart.total,day.loss);assert.equal(chart.reconciled,true);}
+console.log('PASS department/table/header conservation, Textile grouping, Unassigned, exact percentages, missing/zero data and mismatch detection');

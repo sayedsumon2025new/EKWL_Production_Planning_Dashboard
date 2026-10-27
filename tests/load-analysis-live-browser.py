@@ -15,7 +15,7 @@ with sync_playwright() as p:
   path=r.request.url.split('?')[0].split('/')[-1]
   if path=='host':r.fulfill(content_type='text/html',body='<iframe id="load-analysis-workspace" src="/load-analysis.html" style="width:100%;height:940px;border:0"></iframe>')
   elif path=='load-analysis.html':r.fulfill(content_type='text/html',body=html)
-  elif path=='load-analysis-plan-row.js':r.fulfill(content_type='application/javascript',body=(ROOT/path).read_text())
+  elif path in ['load-analysis-plan-row.js','load-analysis-loss.js']:r.fulfill(content_type='application/javascript',body=(ROOT/path).read_text())
   else:r.fulfill(status=404,body='')
  page.route('https://ekwl.test/**',route)
  page.goto('https://ekwl.test/host')
@@ -35,6 +35,11 @@ with sync_playwright() as p:
  page.wait_for_function('LOAD_ANALYSIS_MODEL!==null')
  def forecast():return frame.locator('#load-analysis-summary-table .source-row td').all_text_contents()[1:3]
  assert forecast()==['60','0'],forecast()
+ assert frame.locator('.la-donut').count()==1
+ assert frame.locator('[data-dept]').count()==4
+ assert frame.locator('#la-donut-value').text_content()=='180'
+ assert frame.locator('#la-department-note').inner_text().endswith('Total: 180 SAH · Loss table: 180 SAH.')
+ frame.locator('.la-department-panel').screenshot(path='/tmp/load-analysis-department-multicolor.png')
  assert page.evaluate('LOAD_ANALYSIS_MODEL.model.days.map(d=>d.forecast)')==[60,0]
  # Both flags preserved; Print receives the uncovered SAH once by priority.
  assert page.evaluate("LOAD_ANALYSIS_MODEL.model.records[0].evidence.map(x=>x.reason)")==['print','emb']
@@ -46,6 +51,11 @@ with sync_playwright() as p:
  page.wait_for_function("LOAD_ANALYSIS_MODEL?.model.records[0]?.manual?.reason==='fabric'")
  assert forecast()==['60','0']
  assert page.evaluate('LOAD_ANALYSIS_MODEL.model.days[0].buckets.fabric')==35
+ frame.locator('[data-dept="textile"]').click()
+ assert frame.locator('#la-donut-value').text_content()=='35'
+ assert frame.locator('#la-donut-label').text_content()=='TEXTILE'
+ assert frame.locator('#la-department-note').inner_text().endswith('Total: 180 SAH · Loss table: 180 SAH.')
+ frame.locator('[data-dept="textile"]').click()
  assert page.evaluate('requests.filter(r=>r.action===\'save\').length')==1
  # Failure does not invent a saved correction.
  page.evaluate('deny=true')
@@ -61,6 +71,8 @@ with sync_playwright() as p:
  # Sign-out clears the iframe and ignores all late reads.
  page.evaluate('hold={};refreshLoadAnalysisPlan();SITE_SESSION_GENERATION++;SITE_AUTH_USER=null;refreshLoadAnalysisPlan();hold.resolve?.()')
  frame.locator('#load-analysis-summary-table .source-row td').nth(1).filter(has_text='—').wait_for()
+ assert frame.locator('#la-donut-value').text_content()=='—'
+ assert frame.locator('[data-dept]').count()==0
  page.evaluate("hold=null;SITE_AUTH_USER={id:'account-b'};overrides={};refreshLoadAnalysisPlan()")
  page.wait_for_function('LOAD_ANALYSIS_MODEL!==null')
  assert forecast()==['60','0']
@@ -91,6 +103,7 @@ with sync_playwright() as p:
   assert metrics['transform']=='none' and not metrics['overlap'],metrics
   if viewport['width']==1910:assert metrics['table']<=metrics['wrap']+1,metrics
   page.screenshot(path='/tmp/load-analysis-fit-'+str(viewport['width'])+'.png',full_page=True)
+  frame.locator('.la-department-panel').screenshot(path='/tmp/load-analysis-department-'+str(viewport['width'])+'.png')
  assert not errors,errors
  b.close()
 print('PASS real Load Analysis iframe/parent, Gantt forecast, positive-WIP delay evidence, primary-reason conservation, API corrections/error/reset, sign-out/stale-owner guards and responsive tables')

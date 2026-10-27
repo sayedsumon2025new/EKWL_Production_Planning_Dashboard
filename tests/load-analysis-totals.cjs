@@ -40,3 +40,12 @@ allowed=true;locked=true;context.refreshLoadAnalysisPlan();assert.equal(sent.pay
 locked=false;context.SITE_AUTH_USER=null;context.refreshLoadAnalysisPlan();assert.equal(sent.payload.ready,false);
 console.log('PASS Load Analysis selected SAH sums, duplicate protection, date ranges, stale snapshots and auth guards');
 
+
+// Cross-slide invariant: Gantt planning SAH and Load Analysis Plan SAH must
+// reconcile to the same exact selected-file criteria records.
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../gantt-daily-summary.js'),'utf8'),context);
+const typed=rows.map(r=>({...r,line:1,ewo:'A'}));
+const source=context.gdsPlanningTotals({dates:['2026-10-03','2026-10-04'],lines:[1],search:'',metrics:typed,plan:[],sah:[],clock:[]});
+const load=context.buildLoadAnalysisPlanTotals(typed);
+assert.equal(source.get('2026-10-03').sah,load['2026-10-03']);assert.equal(source.get('2026-10-04').sah,load['2026-10-04']);
+console.log('PASS Gantt/Load Analysis selected-criteria SAH parity');

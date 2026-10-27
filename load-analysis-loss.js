@@ -72,3 +72,23 @@ function buildLoadAnalysisLoss(input){
  });
  return {days,records,cutoff:summary.cutoff,notes:summary.notes};
 }
+
+// The distribution is derived from the same displayed reason buckets, including
+// Unassigned. It never reclassifies evidence or counts a shared department twice.
+const LA_DEPARTMENTS=[
+ ['planning','Planning','#2563a6',['planning']],['merchant','Merchant','#7056b8',['sample']],
+ ['store','Store / Merchant','#26899b',['accessories']],['textile','Textile','#198a76',['gsm','fabric']],
+ ['washing','Washing','#c58b2d',['wash']],['print','Print','#cc6573',['print']],
+ ['embroidery','Embroidery','#8b66a8',['emb']],['unassigned','Unassigned','#7c8fa3',['unknown']]
+];
+function buildLoadAnalysisDepartmentTotals(days){
+ let partial=false,known=0,expected=0;
+ const series=LA_DEPARTMENTS.map(([id,label,color,keys])=>({id,label,color,keys,value:0}));
+ for(const day of days||[]){
+  if(day.loss===null||day.loss===undefined||!Number.isFinite(Number(day.loss))){partial=true;continue;}
+  known++;expected+=Number(day.loss);if(day.partial)partial=true;
+  for(const item of series)for(const key of item.keys){const value=day.buckets?.[key];if(value===null||value===undefined||!Number.isFinite(Number(value))||Number(value)<0){partial=true;continue;}item.value+=Number(value);}
+ }
+ const total=series.reduce((n,item)=>n+item.value,0),reconciled=!known||Math.abs(total-expected)<=Math.max(1e-8,Math.abs(expected)*1e-10);
+ return {series:series.map(item=>({...item,percent:total>0?item.value/total*100:0})),total:known?total:null,expected:known?expected:null,partial,reconciled,knownDates:known};
+}

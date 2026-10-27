@@ -1,7 +1,7 @@
 /* Same-origin parent supplies the selected snapshot and source-backed model. */
 (()=>{
- const reasons=[['planning','Planning / Loading Gap','Planning'],['sample','Sample Pending','Merchant'],['accessories','Accessories Shortage','Store / Merchant'],['gsm','Fabric low GSM issue','Textile'],['fabric','Fabric balance shortage','Textile'],['wash','Panel wash challenge','Washing'],['print','Print Delayed','Print'],['emb','Embroidery Delayed','Embroidery'],['unknown','Unassigned Loss','Review required']];
- let state={ready:false},sourceDate='',editing=null,busy=false,status='';
+ const reasons=LA_REASONS;
+ let state={ready:false},sourceDate='',editing=null,busy=false,status='',departmentPinned=null;
  const byId=id=>document.getElementById(({summary:'load-analysis-summary-table','loss-table':'load-analysis-loss-table'})[id]||id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const label=d=>Number(d.slice(8))+'-'+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(d.slice(5,7))-1];
  const number=v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))?Number(v):null;
@@ -27,6 +27,22 @@
    wrap.style.height='auto';wrap.style.overflowX='auto';wrap.style.overflowY='hidden';
   }
  }
+ function renderDepartments(days){
+  const report=buildLoadAnalysisDepartmentTotals(days),items=report.series.filter(item=>item.value>0),partial=report.partial;
+  const percentage=value=>value>0&&value<.1?'<0.1%':value.toFixed(1)+'%';
+  const suffix=partial&&report.total!==null?'*':'';let offset=0;
+  const point=angle=>[180+150*Math.cos(angle),180+150*Math.sin(angle)].map(value=>value.toFixed(4)).join(' ');
+  const arcs=items.map(item=>{const start=(offset/100*360-90)*Math.PI/180;offset+=item.percent;const end=(offset/100*360-90)*Math.PI/180;
+   const shape=item.percent>99.999999?'<circle cx="180" cy="180" r="150"':'<path d="M 180 180 L '+point(start)+' A 150 150 0 '+(item.percent>50?1:0)+' 1 '+point(end)+' Z"';
+   return shape+' data-dept-segment="'+item.id+'" fill="'+item.color+'"><title>'+esc(item.label+': '+fmt(item.value)+' SAH · '+percentage(item.percent))+'</title></'+(item.percent>99.999999?'circle':'path')+'>';
+  }).join('');
+  byId('la-department-chart').innerHTML='<div><svg class="la-donut" viewBox="0 0 360 360" role="img" aria-label="Department shares of '+esc(fmt(report.total))+' SAH loss"><circle cx="180" cy="180" r="150" fill="#eaf0f5"/>'+arcs+'<circle cx="180" cy="180" r="102" fill="#ffffff"/><text x="180" y="153" text-anchor="middle" class="la-donut-caption" id="la-donut-label">TOTAL LOSS</text><text x="180" y="190" text-anchor="middle" class="la-donut-total" id="la-donut-value">'+esc(fmt(report.total)+suffix)+'</text><text x="180" y="215" text-anchor="middle" class="la-donut-unit" id="la-donut-share">SAH · '+report.knownDates+' dates</text></svg><div class="la-chart-footer">Hover or select a department to inspect its share</div></div>'+(items.length?'<ul class="la-department-legend">'+items.map(item=>'<li><button type="button" data-dept="'+item.id+'" aria-pressed="false" aria-label="'+esc(item.label+': '+fmt(item.value)+' SAH, '+percentage(item.percent))+'"><span class="la-dot" style="background:'+item.color+'"></span><span>'+esc(item.label)+'</span><strong>'+esc(fmt(item.value)+suffix)+'</strong><small>'+percentage(item.percent)+'</small></button></li>').join('')+'</ul>':'<p class="la-department-empty">'+(report.total===null?'Loss data is unavailable until the source reports load.':'No SAH loss in the available dates.')+'</p>');
+  const badge=byId('la-department-status');badge.textContent=report.total===null?'Awaiting data':!report.reconciled?'Reconciliation required':partial?'Available subtotal *':'Reconciled with loss table';badge.classList.toggle('la-chart-error',!report.reconciled);
+  byId('la-department-note').textContent='Department SAH is summed from the Responsible column’s reason groups. Textile combines GSM and fabric balance issues; Unassigned stays visible. '+(partial?'* Available/provisional subtotal; some source values or dates are missing. ':'')+'Total: '+fmt(report.total)+' SAH · Loss table: '+fmt(report.expected)+' SAH.';
+  if(!items.some(item=>item.id===departmentPinned))departmentPinned=null;
+  const activate=id=>{const active=items.find(item=>item.id===id);byId('la-donut-label').textContent=active?active.label.toUpperCase():'TOTAL LOSS';byId('la-donut-value').textContent=fmt(active?active.value:report.total)+suffix;byId('la-donut-share').textContent=active?'SAH · '+percentage(active.percent):'SAH · '+report.knownDates+' dates';document.querySelectorAll('[data-dept-segment]').forEach(node=>node.style.opacity=!active||node.dataset.deptSegment===active.id?'1':'.28');document.querySelectorAll('[data-dept]').forEach(node=>node.setAttribute('aria-pressed',String(node.dataset.dept===departmentPinned)));};
+  document.querySelectorAll('[data-dept]').forEach(node=>{node.onmouseenter=()=>activate(node.dataset.dept);node.onmouseleave=()=>activate(departmentPinned);node.onfocus=()=>activate(node.dataset.dept);node.onblur=()=>activate(departmentPinned);node.onclick=()=>{departmentPinned=departmentPinned===node.dataset.dept?null:node.dataset.dept;activate(departmentPinned);};});activate(departmentPinned);
+ }
  function render(){
   const dates=state.ready&&Array.isArray(state.dates)?state.dates:[];state.dates=dates;
   const days=dates.map(date=>state.model?.days.find(day=>day.date===date)||{date,target:number(state.dailyCapacity),plan:number(state.totals?.[date]),forecast:null,loss:null,buckets:Object.fromEntries(reasons.map(r=>[r[0],null])),partial:false});
@@ -49,6 +65,7 @@
   document.querySelectorAll('[data-date]').forEach(b=>b.onclick=()=>{sourceDate=b.dataset.date;render();byId('sources').open=true;byId('sources').scrollIntoView({behavior:'smooth'});});
   document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(b.dataset.edit));
   const maximum=Math.max(1,...days.map(d=>d.loss||0));byId('chart').innerHTML=days.map(d=>'<div class="bar-col"><span class="la-coverage">'+(d.target>0&&d.forecast!==null?fmt(d.forecast/d.target*100)+'%':'—')+'</span><strong>'+mark(d.loss,d.partial)+'</strong><div class="bar" style="height:'+(d.loss===null?0:d.loss/maximum*70)+'px"></div><span>'+label(d.date)+'</span></div>').join('');
+  renderDepartments(days);
   fit();
  }
  function send(data){if(parent!==window)parent.postMessage(data,location.origin);}

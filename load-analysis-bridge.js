@@ -44,7 +44,7 @@ async function refreshLoadAnalysisPlan(){
  if(result[0].status==='rejected'){post({ready:true,dates,totals,dailyCapacity,label,error:messages.join('. ')});return;}
  const rows=i=>result[i].status==='fulfilled'?result[i].value:[];
  const lines=[...getChassisMasterLines()].map(Number).filter(n=>n>0&&n!==46);
- const model=buildLoadAnalysisLoss({dates,lines,masterLines:lines,search:'',selected:[0,1,2,3],data:DATA,plan:DAILY_PLAN,sah:SAH_DAILY,clock:CLOCK_HOUR_DAILY,fabric:FABRIC_CUTTING_DATA,sewing:SEWING_IO_DATA,production:DATE_WISE_PRODUCTION_DATA,embellishment:rows(3),sources:{fabric:FABRIC_CUTTING_DATA,size:rows(1),accessories:rows(2),embellishment:rows(3)},overrides:corrections?.data?.overrides||{},dailyCapacity,planTotals:totals});
+ const model=buildLoadAnalysisLoss({dates,lines,masterLines:lines,search:'',selected:[0,1,2,3],data:DATA,plan:DAILY_PLAN,metrics:EFF15_METRIC_DAILY,sah:SAH_DAILY,clock:CLOCK_HOUR_DAILY,fabric:FABRIC_CUTTING_DATA,sewing:SEWING_IO_DATA,production:DATE_WISE_PRODUCTION_DATA,embellishment:rows(3),sources:{fabric:FABRIC_CUTTING_DATA,size:rows(1),accessories:rows(2),embellishment:rows(3)},overrides:corrections?.data?.overrides||{},dailyCapacity,planTotals:totals});
  LOAD_ANALYSIS_MODEL={uploadId,model};
  post({ready:true,dates,totals,dailyCapacity,label,model,messages,canCorrect:!!corrections&&!corrections.error});
 }
