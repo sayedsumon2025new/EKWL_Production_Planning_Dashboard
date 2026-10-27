@@ -68,6 +68,29 @@ with sync_playwright() as p:
  assert frame.locator('body').evaluate('document.documentElement.scrollWidth<=innerWidth')
  frame.locator('#sources').evaluate('(node)=>node.open=false')
  page.screenshot(path='/tmp/load-analysis-production-integration.png',full_page=True)
+ # Reproduce the operator's 16-day report with large totals and partial markers.
+ # Every numeric column stays readable; wide screens use the whole viewport.
+ page.evaluate("""()=>{
+  const dates=Array.from({length:16},(_,i)=>new Date(Date.UTC(2026,9,26+i)).toISOString().slice(0,10));
+  const model=structuredClone(LOAD_ANALYSIS_MODEL.model);
+  model.days=dates.map(date=>({...model.days[0],date,target:10133,plan:9742,ganttForecast:8045.3,printSah:1786.9,embSah:0,forecast:6258.5,loss:3874.5,partial:true,buckets:Object.fromEntries(Object.keys(model.days[0].buckets).map(key=>[key,key==='unknown'?3874.5:0]))}));
+  model.records=[];
+  document.getElementById('load-analysis-workspace').contentWindow.postMessage({type:'ekwl-load-analysis-plan',ready:true,uploadId:ACTIVE_PLAN_UPLOAD.id,dates,totals:Object.fromEntries(dates.map(date=>[date,9742])),dailyCapacity:10133,label:'Wide-range layout fixture',model,canCorrect:false},location.origin);
+ }""")
+ frame.locator('#load-analysis-loss-table thead tr').nth(1).locator('th').nth(17).wait_for()
+ for viewport in [{'width':1910,'height':970},{'width':1464,'height':884},{'width':1020,'height':884}]:
+  page.set_viewport_size(viewport)
+  page.wait_for_timeout(100)
+  metrics=frame.locator('body').evaluate("""()=>{
+   const table=document.getElementById('load-analysis-loss-table'),row=table.tBodies[0].rows[0];
+   return {viewport:innerWidth,page:document.querySelector('.page').getBoundingClientRect().width,document:document.documentElement.scrollWidth,day:row.cells[2].getBoundingClientRect().width,transform:getComputedStyle(table).transform,overlap:[...table.tBodies[0].rows].some(r=>[...r.cells].some(c=>c.scrollWidth>c.clientWidth+2)),total:row.cells[row.cells.length-2].getBoundingClientRect().width,wrap:table.parentElement.clientWidth,table:table.getBoundingClientRect().width};
+  }""")
+  assert metrics['document']<=metrics['viewport'],metrics
+  assert metrics['page']>=metrics['viewport']-30,metrics
+  assert metrics['day']>=75 and metrics['total']>=99,metrics
+  assert metrics['transform']=='none' and not metrics['overlap'],metrics
+  if viewport['width']==1910:assert metrics['table']<=metrics['wrap']+1,metrics
+  page.screenshot(path='/tmp/load-analysis-fit-'+str(viewport['width'])+'.png',full_page=True)
  assert not errors,errors
  b.close()
 print('PASS real Load Analysis iframe/parent, Gantt forecast, positive-WIP delay evidence, primary-reason conservation, API corrections/error/reset, sign-out/stale-owner guards and responsive tables')

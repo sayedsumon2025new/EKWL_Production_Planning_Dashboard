@@ -14,7 +14,19 @@
   const a=aggregate(values),partial=a.partial||partials.some(Boolean);if(name==='Day-wise plan SAH:'){const active=values.filter(v=>v!==null&&v>0).length;a.avg=active?a.total/active:null;}
   return '<tr class="'+cls+'"><td class="label-col">'+esc(name)+'</td>'+prefix+cells(values,partials,!!prefix)+'<td><strong>'+mark(a.total,partial)+'</strong></td><td>'+mark(a.avg,partial)+'</td></tr>';
  }
- function fit(){for(const id of ['summary','loss-table']){const t=byId(id),wrap=t.parentElement,w=wrap.clientWidth;if(!w)continue;t.style.transform='none';t.style.width=Math.max(w,(state.dates?.length||0)*48+(id==='summary'?320:430))+'px';const scale=Math.min(1,w/t.offsetWidth);t.style.transformOrigin='top left';t.style.transform='scale('+scale+')';wrap.style.height=Math.ceil(t.offsetHeight*scale)+'px';}}
+ function fit(){
+  const count=state.dates?.length||0;
+  for(const id of ['summary','loss-table']){
+   const table=byId(id),wrap=table.parentElement,available=wrap.clientWidth;if(!available)continue;
+   const leading=id==='summary'?[220]:[220,130],trailing=[100,100];
+   const fixed=[...leading,...trailing].reduce((a,b)=>a+b,0),minimum=fixed+count*76,width=Math.max(available,minimum);
+   const daily=count?(width-fixed)/count:0;
+   let group=table.querySelector('colgroup');if(!group){group=document.createElement('colgroup');table.prepend(group);}
+   group.innerHTML=[...leading,...Array(count).fill(daily),...trailing].map(value=>'<col style="width:'+value+'px">').join('');
+   table.style.tableLayout='fixed';table.style.transform='none';table.style.width=width+'px';table.style.minWidth=minimum+'px';
+   wrap.style.height='auto';wrap.style.overflowX='auto';wrap.style.overflowY='hidden';
+  }
+ }
  function render(){
   const dates=state.ready&&Array.isArray(state.dates)?state.dates:[];state.dates=dates;
   const days=dates.map(date=>state.model?.days.find(day=>day.date===date)||{date,target:number(state.dailyCapacity),plan:number(state.totals?.[date]),forecast:null,loss:null,buckets:Object.fromEntries(reasons.map(r=>[r[0],null])),partial:false});
@@ -25,8 +37,6 @@
   document.querySelector('#load-analysis-summary-table tbody').innerHTML=row('CP Avg. SAH target/day:',dates.map(()=>number(state.dailyCapacity)))+row('Day-wise plan SAH:',dates.map(d=>number(state.totals?.[d])))+row('Gantt Forecastable SAH (source):',days.map(d=>d.ganttForecast??null),partial)+row('Less: Print + Embroidery WIP SAH:',days.map(d=>d.ganttForecast==null?null:(d.printSah||0)+(d.embSah||0)),partial)+row('Forecast achievable SAH:',days.map(d=>d.forecast),partial,'source-row')+row('SAH gap (Target − Forecast):',days.map(d=>d.loss),partial);
   document.querySelector('#load-analysis-loss-table thead').innerHTML='<tr><th colspan="'+(dates.length+4)+'" class="section-header">SAH Loss Reason Details · Automatic suggestions</th></tr><tr class="loss-header"><th>Loss reason</th><th>Responsible</th>'+dates.map(d=>'<th>'+label(d)+'</th>').join('')+'<th>Total</th><th>Average</th></tr>';
   document.querySelector('#load-analysis-loss-table tbody').innerHTML=reasons.map(([key,name,team])=>row(name,days.map(d=>d.buckets[key]),partial,key==='unknown'?'unassigned':key==='planning'?'planning':'','<td>'+esc(team)+'</td>')).join('')+row('Total assigned + unassigned',days.map(d=>d.loss),partial,'total-row','<td>Reconciled</td>');
-  // Keep an explicit colgroup sized for the current date range.
-  byId('loss-table').querySelector('colgroup').innerHTML='<col style="width:230px"><col style="width:120px"><col span="'+(dates.length+2)+'">';
   for(const [id,values,type] of [['target-avg',dates.map(()=>number(state.dailyCapacity)),'avg'],['forecast-avg',days.map(d=>d.forecast),'avg'],['variance-avg',days.map(d=>d.loss),'avg'],['total-loss',days.map(d=>d.loss),'total']]){const a=aggregate(values),p=a.partial||(id==='target-avg'?false:partial.some(Boolean));byId(id).innerHTML=mark(a[type],p);}
   byId('status-message').textContent=state.loading?'Loading WIP reports, evidence and saved corrections…':state.error||[status,...(state.messages||[]),...(state.model?.notes||[])].filter(Boolean).join(' · ');
   byId('manual-count').textContent='· '+records.filter(r=>r.manual).length+' saved correction(s) · private to your account';
