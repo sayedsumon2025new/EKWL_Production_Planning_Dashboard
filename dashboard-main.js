@@ -4146,6 +4146,7 @@ async function refreshDashboardAfterSuccessfulUpload(source,options={}){
     if(dep.readiness)await loadEWOReadinessBoard(dep.coverage===true);
     else if(dep.coverage)await loadReadyInputCoverage();
   }else if((dep.reports||source==='embellishment')&&[7,11].includes(CURRENT_SLIDE)&&canAccessSlide(CURRENT_SLIDE))renderSlide(CURRENT_SLIDE);
+  if(CURRENT_SLIDE===20&&typeof refreshLoadAnalysisPlan==='function')await refreshLoadAnalysisPlan();
   setSupabaseLiveBadge('ok','MySQL Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
 }
 

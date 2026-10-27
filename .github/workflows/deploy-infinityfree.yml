@@ -28,12 +28,15 @@ jobs:
       - name: Verify deployment isolation
         run: python3 tests/mysql/deploy-package.py
       - name: Verify report JSON EWO filters
-        run: php tests/mysql/json-ewo-filter.php
+        run: |
+          php tests/mysql/json-ewo-filter.php
+          php tests/mysql/load-analysis-loss.php
       - name: Verify Size Set performance in Chrome
         run: |
           python3 -m pip install playwright==1.58.0
           python3 tests/size-set-performance.py
           python3 tests/gantt-daily-summary-browser.py
+          python3 tests/load-analysis-live-browser.py
       - name: Run calculation, cache and API adapter regressions
         shell: bash
         run: |

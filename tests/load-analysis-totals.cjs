@@ -4,9 +4,9 @@ const frame={contentWindow:{postMessage(payload,origin){sent={payload,origin};}}
 const context={window:{addEventListener(){}},document:{addEventListener(){},getElementById(){return frame;},body:{classList:{contains(){return locked;}}}},
   ABP_TARGET_CACHE:null, DEFAULT_ABP_TARGET:{metrics:[['Daily Capacity','10,133 Hour']]},
   getABPTarget:()=>context.ABP_TARGET_CACHE||context.DEFAULT_ABP_TARGET,
-  location:{origin:'https://example.test'},SITE_AUTH_USER:{id:'test-user'},CURRENT_SLIDE:20,
+  location:{origin:'https://example.test'},SITE_SESSION_GENERATION:1,ensureSharedReports:()=>Promise.resolve(),loadEwoSource:()=>Promise.resolve([]),SB:{request:()=>Promise.resolve({data:{overrides:{}}})},SITE_AUTH_USER:{id:'test-user'},CURRENT_SLIDE:20,
   ACTIVE_PLAN_UPLOAD:{id:'selected'},EFF15_METRIC_UPLOAD_ID:'selected',
-  canAccessSlide(){return allowed;},activePlanningLabel(){return 'Selected fixture';}};
+  getChassisMasterLines:()=>new Set([1]),DATA:[],DAILY_PLAN:[],SAH_DAILY:[],CLOCK_HOUR_DAILY:[],FABRIC_CUTTING_DATA:[],SEWING_IO_DATA:[],DATE_WISE_PRODUCTION_DATA:[],buildLoadAnalysisLoss:()=>({days:[],records:[]}),canAccessSlide(){return allowed;},activePlanningLabel(){return 'Selected fixture';}};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../load-analysis-bridge.js'),'utf8'),context);
 const rows=[

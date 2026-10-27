@@ -43,11 +43,13 @@ return array_replace($c,[
     'allow_archive_cleanup'=>false,
 ]);
 ''', encoding='utf-8')
-index = site / 'index.html'
-# Root URLs previously served the Supabase frontend. Force fresh runtime assets.
-html = index.read_text(encoding='utf-8')
-html = re.sub(r'((?:src|href)=["\'])([^"\'?#]+\.(?:js|css))(?:\?[^"\']*)?(["\'])', lambda m: m[1]+m[2]+'?v='+a.asset_version+m[3], html)
-index.write_text(html, encoding='utf-8')
+# Refresh assets in every HTML document, including the embedded workspace.
+# Version local iframe targets too, so a dashboard reload cannot retain old UI.
+for document in site.glob('*.html'):
+    html = document.read_text(encoding='utf-8')
+    html = re.sub(r'((?:src|href)=["\'])([^"\'?#]+\.(?:js|css))(?:\?[^"\']*)?(["\'])', lambda m: m[1]+m[2]+'?v='+a.asset_version+m[3], html)
+    html = re.sub(r'(src=["\'])(load-analysis\.html)(?:\?[^"\']*)?(["\'])', lambda m: m[1]+m[2]+'?v='+a.asset_version+m[3], html)
+    document.write_text(html, encoding='utf-8')
 (site / '.htaccess').write_text('''Options -Indexes
 DirectoryIndex index.html index.php
 <IfModule mod_headers.c>
