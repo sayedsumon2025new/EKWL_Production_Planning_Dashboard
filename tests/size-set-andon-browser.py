@@ -14,7 +14,7 @@ const dataCacheEntry=()=>null,siteIsAdmin=()=>true;
 harness='<!doctype html><html data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+styles+'<link rel="stylesheet" href="size-set-andon.css"></head><body><div id="slides-wrap">'+html[start:end].replace('class="slide"','class="slide active"',1)+'</div>'+boot+'<script defer src="size-set-module.js"></script><script defer src="size-set-andon.js"></script></body></html>'
 with sync_playwright() as p:
  b=p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),args=['--no-sandbox'])
- page=b.new_page(viewport={'width':1464,'height':884});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+ page=b.new_page(viewport={'width':1464,'height':884});page.set_default_timeout(7000);errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  def route(r):
   name=r.request.url.split('/')[-1].split('?')[0]
   if name in ['size-set-module.js','size-set-andon.js','size-set-andon.css','size-set-tna.html']:
@@ -25,9 +25,9 @@ with sync_playwright() as p:
  page.evaluate('''()=>{
  const plan=(id,line,ewo,date,value,buyer='Buyer A')=>({record_id:id,line,ewo,date,value,buyer});
  DAILY_PLAN=[plan(1,1,'A','2026-10-26',10),plan(1,1,'A','2026-10-27',20),plan(2,1,'B','2026-10-28',30),plan(3,2,'A','2026-10-27',40,'Buyer B'),plan(4,2,'C','2026-10-26',5),plan(5,2,'D','2026-10-29',5),plan(6,3,'MISSING','2026-10-26',8),plan(7,46,'INVALID','2026-10-26',8)];
- const row=(EWO,action,When='')=>({row_data:{EWO,Color:'Black','Next Action to Do\\n(What)':action,When}});
+ const row=(EWO,action,When='')=>({row_data:{EWO,Color:'Black','Next Action to Do\\n(What)':action,When,'Bulk Pattern Actual':'24-Oct-26',Who:'Pattern Master',Remarks:'Source remarks for '+EWO}});
  DATA=DAILY_PLAN.map(r=>({...r,startdate:r.date,planqty:r.value,color:'Black'}));
- SS_ROWS=[row('A','Closed'),row('B','Bulk Pattern','28-Oct-26'),row('C','Bulk Pattern','31-Feb-26'),row('D','SS Fabric','29-Oct'),row('REPORT_ONLY','Closed')];
+ SS_ROWS=[row('A','Closed','25-Oct-26'),row('A','Closed','25-Oct-26'),row('B','Bulk Pattern','28-Oct-26'),row('C','Bulk Pattern','31-Feb-26'),row('D','SS Fabric','29-Oct'),row('REPORT_ONLY','Closed')];
  showSizeSetSub('andon');
  }''')
  assert page.locator('#ss-tab-andon').get_attribute('aria-selected')=='true'
@@ -36,6 +36,54 @@ with sync_playwright() as p:
  assert page.locator('.ssa-ewo.ssa-amber').count()==1
  assert page.locator('.ssa-ewo.ssa-red').count()==3
  assert page.evaluate("SSA_VISIBLE.every(r=>r.ewo!=='REPORT_ONLY'&&r.line!==46)")
+ # Real source follow-up: completion dates, four columns, bold text, hover and keyboard behavior.
+ source=page.locator('.ssa-ewo.ssa-green').first
+ source.hover();page.locator('#ssa-followup').wait_for(state='visible')
+ assert page.locator('#ssa-followup th').all_text_contents()==['Next Action to Do (What)','When','Who','Remarks']
+ assert page.locator('#ssa-followup tbody tr').count()==2
+ assert '24-Oct-26' in page.locator('#ssa-followup-content').inner_text()
+ assert '25-Oct-26' not in page.locator('#ssa-followup-content').inner_text()
+ assert 'Pattern Master' in page.locator('#ssa-followup-content').inner_text()
+ assert 'Source remarks for A' in page.locator('#ssa-followup-content').inner_text()
+ assert page.locator('#ssa-followup td').evaluate_all('els=>els.every(e=>Number(getComputedStyle(e).fontWeight)>=700)')
+ assert source.locator('small').evaluate('e=>Number(getComputedStyle(e).fontWeight)>=700')
+ page.locator('#ssa-followup td').first.hover();page.wait_for_timeout(350)
+ assert page.locator('#ssa-followup').is_visible()
+ page.mouse.move(2,2);page.wait_for_timeout(400);assert page.locator('#ssa-followup').is_hidden()
+ source.focus();assert page.locator('#ssa-followup').is_visible()
+ page.keyboard.press('Escape');assert page.locator('#ssa-followup').is_hidden()
+ values=page.evaluate("""()=>{
+ const row=(action,actual,When)=>({row_data:{[SSA_ACTION]:action,'Bulk Pattern Actual':actual,When}});
+ return [ssaFollowupWhen(row('Closed','24-Oct-26','25-Oct-26')),ssaFollowupWhen(row(' close ','24-Oct-26','25-Oct-26')),ssaFollowupWhen(row('Closed','','25-Oct-26')),ssaFollowupWhen(row('Closed',null,'25-Oct-26')),ssaFollowupWhen(row('Bulk Pattern','23-Oct-26','28-Oct-26')),ssaFollowupWhen(row('SS Fabric','23-Oct-26','29-Oct-26'))];
+ }""")
+ assert values==['24-Oct-26','24-Oct-26','—','—','28-Oct-26','29-Oct-26'],values
+ # Position stays within viewport at all edges; scrolling and navigation clear stale evidence.
+ for width in [1910,1464,926,640]:
+  page.set_viewport_size({'width':width,'height':884});source.scroll_into_view_if_needed();page.mouse.move(2,2);page.wait_for_timeout(100);source.hover();page.locator('#ssa-followup').wait_for(state='visible')
+  box=page.locator('#ssa-followup').bounding_box()
+  assert box['x']>=0 and box['x']+box['width']<=width+1 and box['y']>=0 and box['y']+box['height']<=884+1,box
+  page.wait_for_timeout(200);page.screenshot(path=f'/tmp/andon-followup-{width}.png')
+  page.keyboard.press('Escape')
+ page.set_viewport_size({'width':1464,'height':884});page.wait_for_timeout(150)
+ page.evaluate("const source=document.querySelector('.ssa-ewo');source.style.position='fixed';source.style.bottom='5px';source.style.right='5px';source.style.width='80px';ssaShowFollowup(source)")
+ box=page.locator('#ssa-followup').bounding_box();assert box['x']>=0 and box['y']>=0 and box['x']+box['width']<=1464 and box['y']+box['height']<=884
+ page.evaluate("document.querySelector('.ssa-ewo').removeAttribute('style');ssaHideFollowup()")
+ source.click();assert '24-Oct-26' in page.locator('#ssa-detail').inner_text()
+ assert '25-Oct-26' not in page.locator('#ssa-detail').inner_text()
+ assert page.locator('#ssa-followup').is_hidden();page.locator('#ssa-close').click()
+ page.evaluate("ssaShowFollowup(document.querySelector('.ssa-ewo'));showSizeSetSub('raw')")
+ page.wait_for_timeout(30);assert page.locator('#ssa-followup').is_hidden()
+ page.evaluate("showSizeSetSub('andon');ssaShowFollowup(document.querySelector('.ssa-ewo'));document.getElementById('s17').classList.remove('active')")
+ page.wait_for_timeout(30);assert page.locator('#ssa-followup').is_hidden()
+ page.evaluate("document.getElementById('s17').classList.add('active')")
+ page.evaluate("SS_ROWS[0].row_data.Remarks='<img src=x onerror=alert(1)>';renderSizeSetAndon();ssaShowFollowup(document.querySelector('.ssa-ewo'))")
+ assert page.locator('#ssa-followup img').count()==0
+ assert '<img src=x onerror=alert(1)>' in page.locator('#ssa-followup-content').inner_text()
+ page.locator('#ssa-search').fill('B');assert page.locator('#ssa-followup').is_hidden()
+ page.locator('.ssa-ewo').first.hover();page.locator('#ssa-followup').wait_for(state='visible')
+ assert '28-Oct-26' in page.locator('#ssa-followup-content').inner_text()
+ assert '24-Oct-26' not in page.locator('#ssa-followup-content').inner_text()
+ page.locator('#ssa-clear').click()
  # Signed/duplicate source rows and color aggregation are resolved before first-date selection.
  assert page.evaluate("ssaBuildPlan([{record_id:1,line:1,ewo:'123.0',date:'2026-10-26',value:8},{record_id:1,line:1,ewo:'123.0',date:'2026-10-26',value:8},{record_id:2,line:1,ewo:'123',date:'2026-10-26',value:-8},{record_id:1,line:1,ewo:'123',date:'2026-10-27',value:5}],new Set([1])).entries[0].date==='2026-10-27'")
  assert page.evaluate("ssaStatus([{row_data:{[SSA_ACTION]:'close'}},{row_data:{[SSA_ACTION]:'Bulk Pattern',When:'28-Oct'}}]).color==='amber'")
@@ -115,6 +163,7 @@ with sync_playwright() as p:
  assert page.locator('.ssa-ewo').count()==0 and 'Loading' in page.locator('#ssa-empty').inner_text()
  page.evaluate("SSA_PENDING=false;renderSizeSetAndon();resetSizeSetModule()")
  assert page.locator('.ssa-ewo').count()==0 and not page.locator('#ssa-detail').inner_text()
+ assert page.locator('#ssa-followup').is_hidden() and not page.locator('#ssa-followup-content').inner_text()
  assert not errors,errors
  b.close()
 print('PASS color-wise source PSD, same-EWO color status isolation, blank/missing colors, missing PSD, literal color text, record de-duplication; Andon scope, statuses, real report join, filters, popup, signed/duplicate quantities, responsive viewport, existing tabs, plan switches and logout clearing')
