@@ -74,6 +74,7 @@ function clearSizeSetTNAFilters(){
 
 function showSizeSetSub(which){
   document.getElementById('s17')?.classList.toggle('ssa-active',which==='andon');
+  document.getElementById('s17')?.classList.toggle('sst-active',which==='tna');
   if(which==='andon'&&typeof renderSizeSetAndon==='function')renderSizeSetAndon();
   for(const name of ['raw','tna','andon']){
     const active=which===name;
@@ -97,11 +98,13 @@ function syncSizeSetPerformance(themeOnly=false,force=false){
   if(!frame?.getAttribute('src'))return;
   const message={type:'ekwl:size-tna',theme:document.documentElement.dataset.theme||'light'};
   if(!themeOnly){
-    const label=(SS_MODE==='preview'?'Local preview':'MySQL live')+' · '+SS_FILE_NAME+' · '+(typeof activePlanningLabel==='function'?activePlanningLabel():'No Planning Selected');
-    if(!force&&SS_PERFORMANCE_SENT?.label===label&&SS_PERFORMANCE_SENT.rows.length===SS_FILTERED.length&&SS_FILTERED.every((row,i)=>row===SS_PERFORMANCE_SENT.rows[i]))return;
-    message.rows=SS_FILTERED.map(row=>row.row_data);
+    const tnaRows=ssPlanScopeRows();
+    const label=(SS_MODE==='preview'?'Local preview · ':'')+SS_FILE_NAME+' · '+(typeof activePlanningLabel==='function'?activePlanningLabel():'No Planning Selected');
+    if(!force&&SS_PERFORMANCE_SENT?.label===label&&SS_PERFORMANCE_SENT.rows.length===tnaRows.length&&tnaRows.every((row,i)=>row===SS_PERFORMANCE_SENT.rows[i]))return;
+    message.rows=tnaRows.map(row=>row.row_data);
+    message.planId=typeof ACTIVE_PLAN_UPLOAD==='undefined'?'':String(ACTIVE_PLAN_UPLOAD?.id||'');
     message.label=label;
-    SS_PERFORMANCE_SENT={label,rows:SS_FILTERED.slice()};
+    SS_PERFORMANCE_SENT={label,rows:tnaRows.slice()};
   }
   frame.contentWindow?.postMessage(message,location.origin);
 }
@@ -109,6 +112,15 @@ if(typeof window!=='undefined'){
   window.addEventListener('message',event=>{
     const frame=document.getElementById('ss-tna-performance');
     if(event.origin===location.origin&&event.source===frame?.contentWindow&&event.data?.type==='ekwl:size-tna-ready')syncSizeSetPerformance(false,true);
+    if(event.origin===location.origin&&event.source===frame?.contentWindow&&event.data?.type==='ekwl:size-tna-refresh'){
+      if(typeof canAccessSlide==='function'&&!canAccessSlide(17))return;
+      const generation=typeof SITE_SESSION_GENERATION==='undefined'?null:SITE_SESSION_GENERATION;
+      loadSizeSetModule(true).then(()=>{
+        if(generation!==(typeof SITE_SESSION_GENERATION==='undefined'?null:SITE_SESSION_GENERATION)||frame!==document.getElementById('ss-tna-performance')||!frame.getAttribute('src'))return;
+        syncSizeSetPerformance(false,true);
+        if(document.getElementById('ss-msg')?.textContent==='SQL load failed')frame.contentWindow?.postMessage({type:'ekwl:size-tna',error:true,theme:document.documentElement.dataset.theme||'light'},location.origin);
+      });
+    }
   });
   new MutationObserver(()=>syncSizeSetPerformance(true)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 }
@@ -303,6 +315,7 @@ async function loadSizeSetModule(force=false){
     populateSizeSetFilters();
     if(typeof renderSizeSetAndon==='function')renderSizeSetAndon();
     if(!all.length){
+      SS_FILTERED=[];syncSizeSetPerformance(false,true);
       document.getElementById('ss-kpis').innerHTML='';
       document.getElementById('ss-tna-kpis').innerHTML='';
       document.getElementById('ss-tna-table').innerHTML='<div class="modal-msg">No completed Size Set SQL snapshot yet.</div>';
