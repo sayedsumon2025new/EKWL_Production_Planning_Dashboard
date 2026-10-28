@@ -63,6 +63,7 @@ function ssaClear(allDatesOnly=false){
   ssaEl('from').value='';ssaEl('to').value='';renderSizeSetAndon();
 }
 function ssaReset(){
+  ssaHideFollowup();
   SSA_PLAN='';SSA_PENDING=false;SSA_VISIBLE=[];SSA_REPORT.clear();
   ssaEl('dialog')?.close();if(ssaEl('detail'))ssaEl('detail').innerHTML='';
   if(ssaEl('table'))ssaEl('table').innerHTML='';
@@ -70,6 +71,7 @@ function ssaReset(){
   if(ssaEl('count'))ssaEl('count').textContent='';
 }
 function renderSizeSetAndon(){
+  ssaHideFollowup();
   if(!ssaEl('table'))return;
   if(typeof canAccessSlide==='function'&&!canAccessSlide(17)){ssaReset();return;}
   const id=String(ACTIVE_PLAN_UPLOAD?.id||'');
@@ -93,14 +95,81 @@ function renderSizeSetAndon(){
   ssaEl('empty').textContent=SSA_PENDING?'Loading selected planning upload…':!id?'Select a planning upload above.':'No matching first PSD dates. Use All dates or Clear.';
   ssaEl('table').style.minWidth=Math.max(600,50+displayDates.length*76)+'px';
   ssaEl('table').innerHTML='<thead><tr><th scope="col">Line</th>'+displayDates.map(d=>`<th scope="col">${fmt(d)}</th>`).join('')+'</tr></thead><tbody>'+lines.map(ln=>`<tr><th scope="row" class="ssa-line">${ln}</th>`+displayDates.map(d=>'<td><div class="ssa-stack">'+(cells.get(ln+'|'+d)||[]).map(({r,i})=>{const s=statuses.get(ssaMatchKey(r.ewo,r.color));return `<button type="button" class="ssa-ewo ssa-${s.color}" data-ssa-cell="${i}" title="${esc(r.ewo+' · '+(r.color||'Color missing')+' · '+s.label+' · '+r.qty+' pcs')}" aria-label="${esc('EWO '+r.ewo+', Color '+(r.color||'missing')+', Line '+r.line+', '+fmt(r.date)+', '+s.label)}">${esc(r.ewo)}<small>${esc(r.color||'Color missing')}</small></button>`;}).join('')+'</div></td>').join('')+'</tr>').join('')+'</tbody>';
-  ssaEl('table').querySelectorAll('[data-ssa-cell]').forEach(b=>b.onclick=()=>ssaOpen(SSA_VISIBLE[Number(b.dataset.ssaCell)]));
+  ssaEl('table').querySelectorAll('[data-ssa-cell]').forEach(b=>{b.removeAttribute('title');ssaBindFollowup(b);b.onclick=()=>{ssaHideFollowup();ssaOpen(SSA_VISIBLE[Number(b.dataset.ssaCell)]);};});
 }
 function ssaOpen(r){
   const rows=SSA_REPORT.get(ssaMatchKey(r.ewo,r.color))||[],s=ssaStatus(rows);
-  ssaEl('detail').innerHTML=`<h2>EWO ${esc(r.ewo)}</h2><p>Line ${r.line} · First PSD date: ${esc(r.date)} · Color: ${esc(r.color||'missing')} · ${esc([...r.buyers].join(', '))}</p><p><strong>${esc(s.label)}</strong> · ${esc(activePlanningLabel())}</p><p>Selected-plan quantity for this Line/EWO/Color: ${r.qty.toLocaleString('en-US')} pcs</p>`+rows.map(row=>`<div class="ssa-evidence"><div><b>Color</b><span>${esc(ssVal(row,'Color')||'—')}</span></div><div><b>Next Action to Do (What)</b><span>${esc(ssVal(row,SSA_ACTION)||'—')}</span></div><div><b>When</b><span>${esc(ssVal(row,'When')||'—')}</span></div></div>`).join('')+`<p class="ssa-hint">${rows.length?'Only matching EWO + Color report rows are checked. All closed → green; remaining open rows all Bulk Pattern + valid When → yellow; otherwise red.':'No matching EWO + Color in the current Size Set snapshot; other colors are not used.'}</p>`;
+  ssaEl('detail').innerHTML=`<h2>EWO ${esc(r.ewo)}</h2><p>Line ${r.line} · First PSD date: ${esc(r.date)} · Color: ${esc(r.color||'missing')} · ${esc([...r.buyers].join(', '))}</p><p><strong>${esc(s.label)}</strong> · ${esc(activePlanningLabel())}</p><p>Selected-plan quantity for this Line/EWO/Color: ${r.qty.toLocaleString('en-US')} pcs</p>`+ssaFollowupTable(rows)+`<p class="ssa-hint">${rows.length?'Only matching EWO + Color report rows are checked. All closed → green; remaining open rows all Bulk Pattern + valid When → yellow; otherwise red.':'No matching EWO + Color in the current Size Set snapshot; other colors are not used.'}</p>`;
   ssaEl('dialog').showModal();
 }
+
+// Source-based completion date: missing Bulk Pattern Actual never falls back to planned When.
+function ssaFollowupWhen(row){
+  return (['close','closed'].includes(ssaNorm(ssVal(row,SSA_ACTION)))?ssVal(row,'Bulk Pattern Actual'):ssVal(row,'When')).trim()||'—';
+}
+function ssaFollowupTable(rows){
+  if(!rows.length)return '<div class="ssa-followup-empty">No matching Size Set report for this EWO + Color.</div>';
+  return '<div class="ssa-followup-table-wrap"><table class="ssa-followup-table"><colgroup><col style="width:21%"><col style="width:15%"><col style="width:22%"><col style="width:42%"></colgroup><thead><tr><th scope="col">Next Action to Do (What)</th><th scope="col">When</th><th scope="col">Who</th><th scope="col">Remarks</th></tr></thead><tbody>'+rows.map(row=>'<tr>'+[SSA_ACTION,'When','Who','Remarks'].map(field=>'<td>'+esc(field==='When'?ssaFollowupWhen(row):ssVal(row,field).trim()||'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+}
+let SSA_HOVER_ANCHOR=null,SSA_HOVER_OPEN=0,SSA_HOVER_CLOSE=0,SSA_HOVER_DISMISSED=null;
+function ssaHideFollowup(){
+  clearTimeout(SSA_HOVER_OPEN);clearTimeout(SSA_HOVER_CLOSE);SSA_HOVER_OPEN=0;
+  if(SSA_HOVER_ANCHOR)SSA_HOVER_ANCHOR.setAttribute('aria-expanded','false');
+  const card=ssaEl('followup');if(card){card.hidden=true;ssaEl('followup-content').innerHTML='';}SSA_HOVER_ANCHOR=null;
+}
+function ssaHoldFollowup(){clearTimeout(SSA_HOVER_CLOSE);}
+function ssaDeferFollowup(){
+  clearTimeout(SSA_HOVER_OPEN);SSA_HOVER_OPEN=0;clearTimeout(SSA_HOVER_CLOSE);
+  SSA_HOVER_CLOSE=setTimeout(()=>{const card=ssaEl('followup');if(!card?.matches(':hover')&&!SSA_HOVER_ANCHOR?.matches(':hover')&&!card?.contains(document.activeElement)&&document.activeElement!==SSA_HOVER_ANCHOR)ssaHideFollowup();},240);
+}
+function ssaEnsureFollowup(){
+  let card=ssaEl('followup');if(card)return card;
+  card=document.createElement('aside');card.id='ssa-followup';card.hidden=true;card.setAttribute('role','dialog');card.setAttribute('aria-label','Size Set follow-up details');
+  card.innerHTML='<button id="ssa-followup-close" class="ssa-followup-close" type="button" aria-label="Close follow-up">×</button><div id="ssa-followup-content"></div>';
+  document.body.appendChild(card);
+  card.addEventListener('mouseenter',ssaHoldFollowup);card.addEventListener('mouseleave',ssaDeferFollowup);card.addEventListener('focusin',ssaHoldFollowup);card.addEventListener('focusout',ssaDeferFollowup);
+  ssaEl('followup-close').onclick=()=>{SSA_HOVER_DISMISSED=SSA_HOVER_ANCHOR;ssaHideFollowup();};
+  return card;
+}
+function ssaPositionFollowup(){
+  const card=ssaEl('followup');if(!card||card.hidden||!SSA_HOVER_ANCHOR)return;
+  const a=SSA_HOVER_ANCHOR.getBoundingClientRect(),pad=12,gap=12;
+  card.style.left='0px';card.style.top='0px';const h=card.offsetHeight,w=card.offsetWidth;
+  let x=Math.max(pad,Math.min(a.left-8,innerWidth-w-pad)),y=a.bottom+gap;
+  if(y+h>innerHeight-pad)y=a.top-h-gap;if(y<pad)y=Math.max(pad,Math.min(a.top,innerHeight-h-pad));
+  card.style.left=x+'px';card.style.top=y+'px';
+}
+function ssaShowFollowup(anchor){
+  clearTimeout(SSA_HOVER_OPEN);SSA_HOVER_OPEN=0;ssaHoldFollowup();
+  if(!anchor?.isConnected||!anchor.getClientRects().length||document.getElementById('ss-andon-view')?.hidden)return;
+  if(typeof canAccessSlide==='function'&&!canAccessSlide(17))return;
+  const r=SSA_VISIBLE[Number(anchor.dataset.ssaCell)];if(!r)return;
+  const card=ssaEnsureFollowup(),rows=SSA_REPORT.get(ssaMatchKey(r.ewo,r.color))||[],status=ssaStatus(rows);
+  if(SSA_HOVER_ANCHOR&&SSA_HOVER_ANCHOR!==anchor)SSA_HOVER_ANCHOR.setAttribute('aria-expanded','false');
+  SSA_HOVER_ANCHOR=anchor;card.setAttribute('aria-label','Size Set follow-up · EWO '+r.ewo+' · '+(r.color||'Color missing'));
+  ssaEl('followup-content').innerHTML='<div class="ssa-followup-title"><div><span class="ssa-followup-eyebrow">SIZE SET FOLLOW-UP</span><h2>EWO '+esc(r.ewo)+' <span class="ssa-followup-color">'+esc(r.color||'Color missing')+'</span></h2><p>Line '+r.line+' <span>·</span> First PSD '+esc(r.date)+' <span>·</span> '+esc([...r.buyers].join(', '))+'</p></div><span class="ssa-followup-status state-'+status.color+'">'+esc(status.label)+'</span></div>'+ssaFollowupTable(rows)+'<div class="ssa-followup-footer"><span><i></i> '+rows.length+' matching report '+(rows.length===1?'row':'rows')+' · EWO + Color</span><span>Size Set report</span></div>';
+  card.hidden=false;anchor.setAttribute('aria-expanded','true');ssaPositionFollowup();
+}
+function ssaQueueFollowup(anchor){
+  ssaHoldFollowup();if(SSA_HOVER_DISMISSED===anchor)return;
+  clearTimeout(SSA_HOVER_OPEN);SSA_HOVER_OPEN=setTimeout(()=>ssaShowFollowup(anchor),130);
+}
+function ssaBindFollowup(anchor){
+  anchor.setAttribute('aria-haspopup','dialog');anchor.setAttribute('aria-controls','ssa-followup');anchor.setAttribute('aria-expanded','false');
+  anchor.addEventListener('mouseenter',()=>{SSA_HOVER_DISMISSED=null;ssaQueueFollowup(anchor);});
+  anchor.addEventListener('mousemove',()=>{if(ssaEl('followup')?.hidden!==false&&!SSA_HOVER_OPEN)ssaQueueFollowup(anchor);});
+  anchor.addEventListener('mouseleave',ssaDeferFollowup);
+  anchor.addEventListener('focus',()=>{SSA_HOVER_DISMISSED=null;ssaShowFollowup(anchor);});anchor.addEventListener('blur',ssaDeferFollowup);
+}
+
 if(typeof window!=='undefined')window.addEventListener('DOMContentLoaded',()=>{
+  ssaEnsureFollowup();
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){SSA_HOVER_DISMISSED=SSA_HOVER_ANCHOR;ssaHideFollowup();}});
+  document.addEventListener('pointerdown',e=>{if(!ssaEl('followup')?.contains(e.target)&&!e.target.closest('[data-ssa-cell]'))ssaHideFollowup();});
+  document.querySelector('#ss-andon-view .ssa-grid-wrap')?.addEventListener('scroll',ssaHideFollowup);
+  window.addEventListener('resize',ssaHideFollowup);
+  const slide=document.getElementById('s17'),view=document.getElementById('ss-andon-view');
+  if(slide&&view){const observer=new MutationObserver(()=>{if(!slide.classList.contains('active')||view.hidden)ssaHideFollowup();});observer.observe(slide,{attributes:true,attributeFilter:['class']});observer.observe(view,{attributes:true,attributeFilter:['hidden']});}
   for(const name of ['event','buyer','line','from','to'])ssaEl(name)?.addEventListener('change',renderSizeSetAndon);
   ssaEl('search')?.addEventListener('input',renderSizeSetAndon);
   ssaEl('clear')?.addEventListener('click',()=>ssaClear());ssaEl('all-dates')?.addEventListener('click',()=>ssaClear(true));
