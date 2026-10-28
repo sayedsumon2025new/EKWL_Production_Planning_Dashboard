@@ -28,3 +28,5 @@
 #ssa-dialog{width:min(620px,calc(100vw - 28px));max-height:85vh;overflow:auto;padding:22px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px}#ssa-dialog::backdrop{background:#031322b8}#ssa-close{float:right}.ssa-evidence{padding:10px;border:1px solid var(--border);border-radius:5px;margin:8px 0}.ssa-evidence div{display:flex;justify-content:space-between;gap:12px;font-size:12px}
 @media(max-width:1050px){.ssa-dates{margin-left:0}#s17.ssa-active .slide-title{font-size:18px}}
 @media(max-width:640px){#s17.ssa-active{padding:5px}#s17.ssa-active .ssa-card{padding:7px;gap:7px}.ssa-toolbar select{max-width:none;flex:1 1 28%}.ssa-toolbar input[type=search]{max-width:none;flex:1 1 45%}.ssa-dates{width:100%}.ssa-legend{gap:7px;font-size:9px}#s17.ssa-active .ss-tabs button{padding:6px 8px;font-size:10px}}
+
+#ssa-table .ssa-ewo small{display:block;font-size:9px;font-weight:500;line-height:1.3;margin-top:2px;white-space:normal;overflow-wrap:anywhere}#ssa-table .ssa-ewo{min-height:36px}#ssa-table .ssa-stack{min-height:36px}
