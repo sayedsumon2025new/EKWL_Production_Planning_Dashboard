@@ -7,7 +7,7 @@ html=(ROOT/'index.html').read_text();start=html.index('<div class="slide" id="s1
 styles=''.join(re.findall(r'<style[^>]*>.*?</style>',html,flags=re.S))
 boot='''<script>
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let ACTIVE_PLAN_UPLOAD={id:'p1'},DAILY_PLAN=[],SITE_SESSION_GENERATION=1,SITE_AUTH_USER={id:'u1'};
+let ACTIVE_PLAN_UPLOAD={id:'p1'},DAILY_PLAN=[],DATA=[],SITE_SESSION_GENERATION=1,SITE_AUTH_USER={id:'u1'};
 const getChassisMasterLines=()=>new Set([1,2,3]),canAccessSlide=()=>true,activePlanningLabel=()=>ACTIVE_PLAN_UPLOAD.id;
 const dataCacheEntry=()=>null,siteIsAdmin=()=>true;
 </script>'''
@@ -25,7 +25,8 @@ with sync_playwright() as p:
  page.evaluate('''()=>{
  const plan=(id,line,ewo,date,value,buyer='Buyer A')=>({record_id:id,line,ewo,date,value,buyer});
  DAILY_PLAN=[plan(1,1,'A','2026-10-26',10),plan(1,1,'A','2026-10-27',20),plan(2,1,'B','2026-10-28',30),plan(3,2,'A','2026-10-27',40,'Buyer B'),plan(4,2,'C','2026-10-26',5),plan(5,2,'D','2026-10-29',5),plan(6,3,'MISSING','2026-10-26',8),plan(7,46,'INVALID','2026-10-26',8)];
- const row=(EWO,action,When='')=>({row_data:{EWO,'Next Action to Do\\n(What)':action,When}});
+ const row=(EWO,action,When='')=>({row_data:{EWO,Color:'Black','Next Action to Do\\n(What)':action,When}});
+ DATA=DAILY_PLAN.map(r=>({...r,startdate:r.date,planqty:r.value,color:'Black'}));
  SS_ROWS=[row('A','Closed'),row('B','Bulk Pattern','28-Oct-26'),row('C','Bulk Pattern','31-Feb-26'),row('D','SS Fabric','29-Oct'),row('REPORT_ONLY','Closed')];
  showSizeSetSub('andon');
  }''')
@@ -71,16 +72,49 @@ with sync_playwright() as p:
  assert 'REPORT_ONLY' not in page.locator('#ss-table').inner_text()
  assert not page.locator('#s17').evaluate("e=>e.classList.contains('ssa-active')")
  page.evaluate("showSizeSetSub('tna')");assert page.locator('#ss-tna-performance').get_attribute('src')
- page.evaluate("showSizeSetSub('andon');ACTIVE_PLAN_UPLOAD={id:'p2'};DAILY_PLAN=[{line:3,ewo:'NEW',date:'2026-11-02',value:10,buyer:'New Buyer'}];renderSizeSetAndon()")
- assert page.locator('.ssa-ewo').inner_text()=='NEW'
+ page.evaluate("showSizeSetSub('andon');ACTIVE_PLAN_UPLOAD={id:'p2'};DAILY_PLAN=[{line:3,ewo:'NEW',date:'2026-11-02',value:10,buyer:'New Buyer'}];DATA=[{line:3,ewo:'NEW',startdate:'2026-11-02',planqty:10,buyer:'New Buyer',color:'Black'}];renderSizeSetAndon()")
+ assert page.evaluate("SSA_VISIBLE.length===1&&SSA_VISIBLE[0].ewo==='NEW'")
+ assert page.locator('.ssa-ewo small').inner_text()=='Black'
  page.evaluate("renderSizeSetModule()")
  assert page.evaluate('SS_FILTERED.length===0')
  page.evaluate("SS_ROWS.push({row_data:{EWO:'NEW',Buyer:'New Buyer',Line:'3',[SSA_ACTION]:'Closed'}});renderSizeSetModule()")
  assert page.evaluate("SS_FILTERED.length===1&&ssVal(SS_FILTERED[0],'EWO')==='NEW'")
+ # Source PSD and color matching are independent of later daily plan dates.
+ page.evaluate("""()=>{
+ ACTIVE_PLAN_UPLOAD={id:'color-plan'};
+ const rec=(id,line,color,startdate,planqty=10)=>({record_id:id,line,ewo:'X',color,startdate,planqty,buyer:'Buyer A'});
+ DATA=[rec(1,1,'White','2026-10-26'),rec(2,1,'Black','2026-10-28'),rec(3,1,'Navy','2026-10-29'),rec(4,1,' white ','2026-10-30',20),rec(5,2,'White','2026-10-27'),rec(6,1,'Red','2026-10-28'),rec(7,1,'','2026-10-28'),rec(8,1,'<img src=x onerror=alert(1)>','2026-10-28'),rec(9,1,'Bad PSD','2026-02-31')];
+ DATA.push({...DATA[0]});
+ DAILY_PLAN=DATA.map(r=>({record_id:r.record_id,line:r.line,ewo:r.ewo,color:r.color,date:'2026-11-02',value:r.planqty,buyer:r.buyer}));
+ const row=(Color,action,When='')=>({row_data:{EWO:'X',Color,[SSA_ACTION]:action,When}});
+ SS_ROWS=[row(' WHITE ','Closed'),row('Black','Bulk Pattern','28-Oct-26'),row('Navy','SS Fabric','29-Oct'),row('','Closed')];
+ renderSizeSetAndon();renderSizeSetModule();
+ }""")
+ assert page.locator('.ssa-ewo').count()==7
+ assert page.locator('.ssa-ewo.ssa-green').count()==2
+ assert page.locator('.ssa-ewo.ssa-amber').count()==1
+ assert page.locator('.ssa-ewo.ssa-red').count()==4
+ assert page.evaluate("SSA_VISIBLE.find(r=>r.line===1&&ssaColor(r.color)==='WHITE').date==='2026-10-26'&&SSA_VISIBLE.find(r=>r.line===1&&ssaColor(r.color)==='WHITE').qty===30")
+ assert page.evaluate("SSA_VISIBLE.every(r=>r.date!=='2026-11-02')")
+ assert '1 source rows missing valid PSD' in page.locator('#ssa-count').inner_text()
+ assert page.locator('#ssa-table img').count()==0
+ page.locator('.ssa-ewo.ssa-amber').click()
+ detail=page.locator('#ssa-detail').inner_text()
+ assert 'First PSD date: 2026-10-28' in detail and 'Black' in detail and 'WHITE' not in detail and 'Navy' not in detail
+ page.locator('#ssa-close').click()
+ page.locator('#ssa-from').fill('2026-10-28');page.locator('#ssa-from').dispatch_event('change')
+ assert page.evaluate("!SSA_VISIBLE.some(r=>ssaColor(r.color)==='WHITE')")
+ page.locator('#ssa-all-dates').click();page.locator('#ssa-event').select_option('Closed')
+ assert page.locator('.ssa-ewo').count()==2
+ page.locator('#ssa-clear').click()
+ for width in [1464,640]:
+  page.set_viewport_size({'width':width,'height':884})
+  assert page.evaluate("document.getElementById('s17').scrollHeight<=document.getElementById('s17').clientHeight")
+  page.screenshot(path=f'/tmp/andon-color-psd-{width}.png')
  page.evaluate("ssaReset();SSA_PLAN=String(ACTIVE_PLAN_UPLOAD.id);SSA_PENDING=true;renderSizeSetAndon()")
  assert page.locator('.ssa-ewo').count()==0 and 'Loading' in page.locator('#ssa-empty').inner_text()
  page.evaluate("SSA_PENDING=false;renderSizeSetAndon();resetSizeSetModule()")
  assert page.locator('.ssa-ewo').count()==0 and not page.locator('#ssa-detail').inner_text()
  assert not errors,errors
  b.close()
-print('PASS Andon first-date scope, statuses, real report join, filters, popup, signed/duplicate quantities, responsive viewport, existing tabs, plan switches and logout clearing')
+print('PASS color-wise source PSD, same-EWO color status isolation, blank/missing colors, missing PSD, literal color text, record de-duplication; Andon scope, statuses, real report join, filters, popup, signed/duplicate quantities, responsive viewport, existing tabs, plan switches and logout clearing')
