@@ -6,7 +6,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2713%27 fill=%27%230d2843%27/%3E%3Cpath d=%27M12 46V20h7v26m8 0V12h7v34m8 0V27h7v19%27 stroke=%27%23efa82c%27 stroke-width=%275%27 fill=%27none%27/%3E%3C/svg%3E">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="dashboard-theme.js?v=3"></script>
+<script src="dashboard-theme.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
 <title>EKWL · HW Production Planning Dashboard</title>
 <!-- Slide15 permanent source: exact selected-plan Plan/Day, SAH/Day, Effi/Day, Clock Hour/Day by Line+Product+Date; calc=SAH/Clock*100 -->
 <!-- Permanent zero-eff fix: Clock matched by EWO first, then Product, then blank-EWO line clock; no clock => N/A, never false 0% -->\n<!-- Zero-efficiency root fix: source SAH/Day > 0 else selected-plan Plan/Day*SMV/60 fallback; clock-only keys are not rendered -->
@@ -2098,13 +2098,13 @@ input,select,textarea{
 @media(max-width:680px){#s0 .home-head{min-height:190px;padding:22px}#s0 .home-head .home-title{font-size:24px!important}#s0 .home-head .home-actions .top-btn{font-size:11px;padding:7px 9px}}
 @media(prefers-reduced-motion:reduce){#s0 .home-grid .home-card,#s0 .home-grid .home-icon,#s0 .home-head .home-actions .top-btn,#s0 #home-live-kpis .home-quick-box,#slide-tabs .stab,#slide-tabs .stab::after{transition:none!important}#s0 .home-mini-fill,#s0 .home-hit-pie,.bar-chart .bar-fill,.slide.active:not(#s0)>.slide-header,.slide.active:not(#s0)>.kpi-row{animation:none!important}#s0 .load-fill.loading::after{animation:none!important}}
 </style>
-<link rel="stylesheet" href="dashboard-theme.css?v=5">
+<link rel="stylesheet" href="dashboard-theme.css?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30">
 
-<link rel="stylesheet" href="table-visuals.css?v=1">
-<link rel="stylesheet" href="ewo-readiness.css?v=2">
-<link rel="stylesheet" href="gantt-daily-summary.css?v=1">
-<link rel="stylesheet" href="size-set-andon.css?v=1">
-<link rel="stylesheet" href="gantt-layout.css?v=1">
+<link rel="stylesheet" href="table-visuals.css?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30">
+<link rel="stylesheet" href="ewo-readiness.css?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30">
+<link rel="stylesheet" href="gantt-daily-summary.css?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30">
+<link rel="stylesheet" href="size-set-andon.css?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30">
+<link rel="stylesheet" href="gantt-layout.css?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30">
 </head>
 <body class="site-locked">
 <div id="supabase-live-badge">MySQL · waiting</div>
@@ -3146,7 +3146,7 @@ input,select,textarea{
     <div class="slide-title"></div>
     <div class="pager-btns"><button class="pg-btn" type="button" onclick="goSlide(0)">🏠 Home</button></div>
   </div>
-  <iframe id="load-analysis-workspace" title="EKWL-HW Load Analysis report" src="load-analysis.html?v=20261022-abp2" loading="lazy" sandbox="allow-scripts allow-downloads allow-same-origin" style="display:block;width:100%;height:calc(100vh - 130px);min-height:0;margin-top:14px;border:0;border-radius:12px;background:#e6ecf2"></iframe>
+  <iframe id="load-analysis-workspace" title="EKWL-HW Load Analysis report" src="load-analysis.html?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30" loading="lazy" sandbox="allow-scripts allow-downloads allow-same-origin" style="display:block;width:100%;height:calc(100vh - 130px);min-height:0;margin-top:14px;border:0;border-radius:12px;background:#e6ecf2"></iframe>
 </div>
 
 <dialog id="rd-detail-dialog" aria-labelledby="rd-detail-title">
@@ -3154,26 +3154,26 @@ input,select,textarea{
   <div id="rd-detail-body"></div>
 </dialog>
 
-<script defer src="mysql-api-client.js?v=1"></script>
-<script defer src="slides-config.js"></script>
-<script defer src="shared-report-loader.js?v=2"></script>
-<script defer src="frontend-runtime.js?v=2"></script>
-<script defer src="data-cache.js?v=3"></script>
-<script defer src="dashboard-main.js?v=mysql-staging-1"></script>
-<script defer src="dashboard-effects.js?v=2"></script>
-<script defer src="mysql-management.js?v=1"></script>
-<script defer src="order-execution-bridge.js?v=3"></script>
-<script defer src="load-analysis-bridge.js?v=20261022-abp2"></script>
-<script defer src="load-analysis-loss.js?v=1"></script>
-<script defer src="size-set-module.js?v=3"></script>
-<script defer src="size-set-andon.js?v=1"></script>
-<script defer src="accessories-module.js?v=3"></script>
-<script defer src="embellishment-module.js?v=3"></script>
-<script defer src="ewo-readiness.js?v=4"></script>
-<script defer src="ready-input-coverage.js?v=2"></script>
-<script defer src="gantt-hover.js?v=3"></script>
-<script defer src="gantt-action-calendars.js?v=3"></script>
-<script defer src="gantt-daily-summary.js?v=1"></script>
+<script defer src="mysql-api-client.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="slides-config.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="shared-report-loader.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="frontend-runtime.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="data-cache.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="dashboard-main.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="dashboard-effects.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="mysql-management.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="order-execution-bridge.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="load-analysis-bridge.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="load-analysis-loss.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="size-set-module.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="size-set-andon.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="accessories-module.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="embellishment-module.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="ewo-readiness.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="ready-input-coverage.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="gantt-hover.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="gantt-action-calendars.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
+<script defer src="gantt-daily-summary.js?v=4dde978b71742c9c9cb503d418f2d4adfccb1f30"></script>
 <dialog id="ewo-gantt-dialog" aria-label="EWO Gantt status">
   <div class="gt-modal-toolbar"><span data-slide-label="7" data-slide-label-suffix=" · Order Status"></span><span class="gt-toolbar-actions"><button id="ewo-gantt-copy" type="button" onclick="copyGanttPopupImage()" title="Copy entire popup as image">Copy snapshot</button><button type="button" class="gt-modal-close" onclick="closeGanttPopup()" aria-label="Close EWO status">×</button></span></div>
   <div class="gt-modal-content" id="ewo-gantt-content"></div>
