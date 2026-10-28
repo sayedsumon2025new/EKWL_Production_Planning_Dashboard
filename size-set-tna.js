@@ -36,6 +36,7 @@ function aggregate(events,cutoff){const m={plan:events.length,actual:0,on:0,late
 function bar(m){const w=n=>m.plan?100*n/m.plan:0;return '<div class="status-bar" aria-label="'+esc(m.on+' on time, '+m.late+' late completed, '+m.over+' overdue, '+m.pending+' upcoming or due today')+'">'+[['on',m.on],['late',m.late],['over',m.over],['pending',m.pending]].map(([k,v])=>'<i style="width:'+w(v)+'%;background:'+colors[k]+'"></i>').join('')+'</div>';}
 function setView(view,status){VIEW=view;if(status)STATUS=status;PAGE=0;render();}
 function render(){
+ if(STATUS==='Size sets complete'&&$('event').value!=='Bulk Pattern')STATUS='All';
  const buyer=$('buyer').value,line=+$('line').value,event=$('event').value,q=$('search').value.trim().toLowerCase(),cutoff=$('asof').value||dhakaDate();
  ORDERS=TNA_ORDERS.map((r,id)=>({...r,id})).filter(r=>(!buyer||r.buyer===buyer)&&(!line||r.line===line)&&(!q||(r.ewo+' '+r.color).toLowerCase().includes(q)));
  EVENTS=ORDERS.flatMap(r=>r.events.filter(x=>x.plan&&(!event||x.event===event)).map(x=>({...x,order:r,status:classify(x,cutoff)})));
@@ -79,7 +80,7 @@ function openOrder(id){const r=TNA_ORDERS[id],cutoff=$('asof').value||dhakaDate(
  $('detail-content').innerHTML='<div class="dialog-head"><span class="eyebrow">EWO / Color · Milestone timeline</span><h2>'+esc(r.ewo)+' <span style="font-weight:500;font-size:14px">'+esc(r.color)+'</span></h2><p>'+esc(r.buyer)+' · Line '+r.line+' · PCD '+short(r.pcd)+' · EFD '+short(r.efd)+' · '+fmt(r.qty)+' garment pcs</p></div><div class="timeline-scroll"><div class="timeline">'+r.events.map((e,i)=>{const s=classify(e,cutoff);return '<div class="timeline-item"><span class="step">'+String(i+1).padStart(2,'0')+'</span><div><b>'+esc(e.event)+'</b><small>'+esc(e.owner)+'</small></div><div><small>PLAN</small>'+short(e.plan)+'</div><div><small>ACTUAL</small>'+(e.actual&&e.actual<=cutoff?short(e.actual):'—')+'</div><span class="pill '+(['On time','Completed'].includes(s)?'on-time':s==='Late'?'late':s==='Overdue'?'overdue':s==='Due today'?'today':'pending')+'">'+s+'</span></div>';}).join('')+'</div></div><div class="timeline-note"><b>Next action:</b> '+esc(r.next||'—')+'<br><b>When:</b> '+esc(r.when||'—')+'<br><b>Who:</b> '+esc(r.who||'—')+'<br><b>Remarks:</b> '+esc(r.remarks||'—')+'</div>';
  $('detail').showModal();
 }
-for(const id of ['buyer','line','event','asof'])$(id).onchange=()=>{PAGE=0;render();};$('search').oninput=()=>{PAGE=0;render();};
+for(const id of ['buyer','line','event','asof'])$(id).onchange=()=>{if(id==='event'&&STATUS==='Size sets complete'&&$('event').value!=='Bulk Pattern')STATUS='All';PAGE=0;render();};$('search').oninput=()=>{PAGE=0;render();};
 $('clear').onclick=()=>{for(const id of ['buyer','line','event','search'])$(id).value='';$('asof').value=dhakaDate();STATUS='All';PAGE=0;render();};
 $('overview-tab').onclick=()=>setView('overview');$('tracker-tab').onclick=()=>setView('tracker');
 $('kpi-otd').onclick=()=>setView('tracker','On time');$('kpi-due').onclick=()=>setView('tracker','Due');$('kpi-overdue').onclick=()=>setView('tracker','Overdue');$('all-actions').onclick=()=>setView('tracker','Overdue');

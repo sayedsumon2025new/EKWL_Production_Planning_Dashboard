@@ -56,6 +56,7 @@ with sync_playwright() as p:
  assert child.evaluate("normalizeTnaRows([{'Buyer':'A','EWO':'Z','Pattern Master Name':'Pattern owner','PP comment Plan':'2026-10-20','SS Pattern Plan':'2026-10-20'}],'nearest').orders[0].events[0].owner==='—'")
  # Parent theme updates preserve interactive choices. Shared Source Table filters do not narrow TNA.
  frame.locator('#buyer').select_option('Buyer A');frame.locator('#event').select_option('PP Comment')
+ assert child.evaluate("STATUS==='All'&&ACTION_ROWS.every(e=>e.event==='PP Comment')")
  page.evaluate("document.documentElement.dataset.theme='dark'")
  child.wait_for_function("document.documentElement.dataset.theme==='dark'")
  assert frame.locator('#buyer').input_value()=='Buyer A' and frame.locator('#event').input_value()=='PP Comment'
