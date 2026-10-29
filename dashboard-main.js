@@ -1589,10 +1589,6 @@ function renderS12(changed=''){
   const embellishmentByKey=s12EmbellishmentTotals(S12_EM_ROWS);
   const embellishmentTotal=(keys,field)=>S12_EM_ROWS===null?'—':fmt([...keys].reduce((sum,key)=>sum+(embellishmentByKey.get(key)?.[field]||0),0));
   const dateKeySet=new Set(scopedDaily.map(d=>fabricEwoColorKey(d.ewo,d.color)).filter(Boolean));
-  const planPcsByKey=new Map();
-  scopedDaily.forEach(d=>{
-    const key=fabricEwoColorKey(d.ewo,d.color);if(key)planPcsByKey.set(key,(planPcsByKey.get(key)||0)+N(d.value));
-  });
   document.getElementById('s12-date-note').textContent=planMatch==='nomatch'
     ?'Not in Plan: date range does not apply'
     :fmt(dateKeySet.size)+' planned EWO / Color pairs in selected dates';
@@ -1626,14 +1622,12 @@ function renderS12(changed=''){
   ];
   document.getElementById('s12-kpi').innerHTML=kpis.map(x=>'<div class="kpi"><div class="kpi-val">'+x[1]+'</div><div class="kpi-label">'+x[0]+'</div><div class="kpi-sub">'+x[2]+'</div></div>').join('');
 
-  const plannedLinesByEwo=new Map(),plannedLinesByEwoColor=new Map();
+  const plannedLinesByEwoColor=new Map();
   const ewoColorKey=fabricEwoColorKey;
   const scopedPlanRecords=new Set(scopedDaily.map(d=>String(d.record_id)));
   (DATA||[]).filter(r=>!r.is_summary_row&&scopedPlanRecords.has(String(r.record_id))).forEach(r=>{
     const ewo=ewoKey(r.ewo),line=String(r.line??'').trim();
     if(!ewo||!line||line==='0')return;
-    if(!plannedLinesByEwo.has(ewo))plannedLinesByEwo.set(ewo,new Set());
-    plannedLinesByEwo.get(ewo).add(line);
     if(String(r.color??'').trim()){
       const key=ewoColorKey(ewo,r.color);
       if(!plannedLinesByEwoColor.has(key))plannedLinesByEwoColor.set(key,new Set());
@@ -1660,43 +1654,6 @@ function renderS12(changed=''){
     const m=sewingByKey.get(key);if(m){sum.input+=m.input;sum.output+=m.output;sum.wip+=m.wip}
     return sum;
   },{input:0,output:0,wip:0});
-  const prod={},filteredKeys=new Set();
-  rows.forEach(r=>{const k=r.item_product_type||'Other',key=fabricEwoColorKey(r.ewo,r.color_name);
-    if(!prod[k])prod[k]={o:0,c:0,f:0,lines:new Set(),keys:new Set()};
-    prod[k].o+=N(r.color_order_qty);prod[k].c+=N(r.total_cut_qty);prod[k].f+=N(r.fabric_balance);
-    if(key){prod[k].keys.add(key);filteredKeys.add(key)}
-    (plannedLinesByEwoColor.get(key)||[]).forEach(line=>prod[k].lines.add(line));
-  });
-  const productTotals=Object.entries(prod).sort((a,b)=>b[1].c-a[1].c);
-  document.getElementById('s12-product-summary').innerHTML=productTotals.map(([name,v])=>{
-    const sewing=sewingTotals(v.keys);
-    const planPcs=[...v.keys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
-    return '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'printSend'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'printReceive'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'embSend'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'embReceive'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'emb'))+'</td><td class="num">'+cuttingWipTotal(v.keys)+'</td><td class="num">'+fmt(sewing.input)+'</td><td class="num">'+fmt(sewing.output)+'</td><td class="num">'+fmt(sewing.wip)+'</td><td class="num">'+fmt(planPcs)+'</td><td class="num">'+fmt(sewing.wip-planPcs)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>';
-  }).join('')||'<tr><td colspan="18">No data</td></tr>';
-  const sewingTotal=sewingTotals(filteredKeys);
-  const planPcsTotal=[...filteredKeys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
-  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'emb'))+'</td><td class="num">'+cuttingWipTotal(filteredKeys)+'</td><td class="num">'+fmt(sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.output)+'</td><td class="num">'+fmt(sewingTotal.wip)+'</td><td class="num">'+fmt(planPcsTotal)+'</td><td class="num">'+fmt(sewingTotal.wip-planPcsTotal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
-
-  const dm={},difficultyEwos=new Map(),difficultyLines=new Map();
-  rows.forEach(r=>{
-    const k=String(r.cutting_difficulties||'').trim(),ewo=ewoKey(r.ewo);
-    if(!k||/^no difficulty$/i.test(k))return;
-    dm[k]=(dm[k]||0)+1;
-    if(!difficultyEwos.has(k)){difficultyEwos.set(k,new Set());difficultyLines.set(k,new Set())}
-    if(ewo)difficultyEwos.get(k).add(ewo);
-    (plannedLinesByEwoColor.get(fabricEwoColorKey(r.ewo,r.color_name))||[]).forEach(line=>difficultyLines.get(k).add(line));
-  });
-  const difficultyRows=Object.entries(dm).sort((a,b)=>b[1]-a[1]);
-  const difficultyTotal=difficultyRows.reduce((sum,[,count])=>sum+count,0);
-  const listCell=(items,limit)=>{
-    const all=items.map(esc),head=all.slice(0,limit).join(', ');
-    return head+(all.length>limit?'<details><summary>Show all '+fmt(all.length)+'</summary>'+all.join(', ')+'</details>':'')||'—';
-  };
-  document.getElementById('s12-diff-summary').innerHTML=difficultyRows.map(([name,count])=>
-    '<tr><td>'+esc(name)+'</td><td class="s12-list-cell">'+listCell([...difficultyLines.get(name)].sort((a,b)=>Number(a)-Number(b)).map(x=>x.padStart(2,'0')),10)+'</td><td class="s12-list-cell">'+listCell([...difficultyEwos.get(name)].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})),8)+'</td><td class="num">'+fmt(count)+'</td><td class="num">'+(difficultyTotal?count/difficultyTotal*100:0).toFixed(1)+'%</td></tr>'
-  ).join('')||'<tr><td colspan="5">No data</td></tr>';
-  document.getElementById('s12-diff-total').innerHTML='<td>Total</td><td>—</td><td>—</td><td class="num">'+fmt(difficultyTotal)+'</td><td class="num">'+(difficultyTotal?'100.0':'0.0')+'%</td>';
-
   const detailSearch=document.getElementById('s12-detail-ewo').value.trim().toLowerCase();
   const detailStatus=document.getElementById('s12-detail-status').value;
   const detailLineEl=document.getElementById('s12-detail-line');
