@@ -1510,7 +1510,7 @@ async function loadS12Embellishment(){
   }catch(e){if(current())S12_EM_ERROR='Embellishment data unavailable';}
   finally{if(current()){S12_EM_LOADING=false;if(CURRENT_SLIDE===11)renderS12();}}
 }
-function s12CuttingWipMetric(keys,cutByKey,sewingByKey,processByKey,embellishmentByKey){
+function s12CuttingWipMetric(keys,cutByKey,sewingByKey,processByKey,embellishmentByKey,embellishmentAvailable=S12_EM_ROWS!==null){
   // Stock belongs to one EWO/color, regardless of its product/line presentation.
   // A received piece can cross more than one process: never add process receipts.
   let total=0;const warnings=[];
@@ -1518,9 +1518,10 @@ function s12CuttingWipMetric(keys,cutByKey,sewingByKey,processByKey,embellishmen
     const movement=embellishmentByKey.get(key),process=processByKey.get(key)||{};
     const print=process.print||!!(movement&&(N(movement.printSend)!==0||N(movement.printReceive)!==0));
     const emb=process.emb||!!(movement&&(N(movement.embSend)!==0||N(movement.embReceive)!==0));
-    if(S12_EM_ROWS===null)return {value:null,reason:'Embellishment report is not available.'};
+    if(!embellishmentAvailable)return {value:null,reason:'Embellishment report is not available.'};
     if(print&&emb)return {value:null,reason:'Both Print and Embroidery apply. Final process must be confirmed; receipts are not added.'};
     if((print||emb)&&!movement)return {value:null,reason:'Required process report has no matching EWO + Color.'};
+    if(!print&&!emb&&!cutByKey.has(key))return {value:null,reason:'Cutting report has no matching EWO + Color quantity.'};
     const base=print?N(movement.printReceive):emb?N(movement.embReceive):N(cutByKey.get(key));
     const input=N(sewingByKey.get(key)?.input),value=base-input;
     if(value<0)warnings.push('Sewing Input exceeds '+(print?'Print Receive':emb?'Embroidery Receive':'Total Cutting')+'. Check report quantities and update dates.');
