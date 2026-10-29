@@ -109,9 +109,9 @@ function gdsAllocate(input,notes){
  if(!cutoff)notes.add('Upload Date Wise Actual Production Report to establish the stock baseline; forecast coverage shows — until a production cutoff is available.');
  return {plan,cutoff,allocations};
 }
-function buildGanttDailySummary(input){
- const selected=new Set(input.selected),lineSet=new Set(input.lines.map(Number)),dateSet=new Set(input.dates),search=gdsKey(input.search),notes=new Set();
- const allocation=gdsAllocate(input,notes),planning=gdsPlanningTotals(input);
+function buildGanttDailySummary(input,precomputed){
+ const selected=new Set(input.selected),lineSet=new Set(input.lines.map(Number)),dateSet=new Set(input.dates),search=gdsKey(input.search),notes=new Set(precomputed?.notes||[]);
+ const allocation=precomputed?.allocation||gdsAllocate(input,notes),planning=gdsPlanningTotals(input);
  const plan=allocation.plan.filter(row=>dateSet.has(row.date)&&lineSet.has(Number(row.line))&&(!search||gdsKey(row.ewo)===search));
  const byDate=gdsGroup(plan,row=>row.date),dataByLine=gdsGroup(input.data,row=>Number(row.line));
  const days=input.dates.map(date=>{
@@ -127,7 +127,7 @@ function buildGanttDailySummary(input){
   if(clock===null)notes.add('Some source dates have no Clock Hour/Day.');
   if(!manpowerKnown){manpower=null;notes.add('Some scheduled lines have missing or conflicting Manpower.');}
   let forecast=0,forecastSah=0,selectedKnown=0,sahKnown=0,missingSmv=0;
-  const stages=GDS_STAGES.map(()=>0),stageKnown=GDS_STAGES.map(()=>0),stagePartial=GDS_STAGES.map(()=>false);
+  const stages=GDS_STAGES.map(()=>0),stageKnown=GDS_STAGES.map(()=>0),stagePartial=GDS_STAGES.map(()=>false),stageSah=GDS_STAGES.map(()=>0),stageSahKnown=GDS_STAGES.map(()=>0),stageSahPartial=GDS_STAGES.map(()=>false);
   let forecastPartial=false;
   const keys=new Set(rows.map(row=>JSON.stringify([date,Number(row.line),gdsKey(row.ewo)])));
   for(const key of keys){
@@ -136,20 +136,21 @@ function buildGanttDailySummary(input){
    item.stages.forEach((value,i)=>{
     if(value===null){stagePartial[i]=true;if(selected.has(i))forecastPartial=true;}
     else {stages[i]+=value;stageKnown[i]++;if(item.stagePartial[i])stagePartial[i]=true;
+     if(value===0||item.smv!==null){stageSah[i]+=value*(item.smv||0)/60;stageSahKnown[i]++;}else stageSahPartial[i]=true;
      if(selected.has(i)){pcs+=value;known++;selectedKnown++;if(item.stagePartial[i])forecastPartial=true;}}
    });
    forecast+=pcs;
    if(known){if(pcs>0&&item.smv===null)missingSmv++;else {forecastSah+=pcs*(item.smv||0)/60;sahKnown++;}}
   }
   const hasEwos=keys.size>0,beforeBaseline=!allocation.cutoff||date<=allocation.cutoff;
-  stages.forEach((_,i)=>{if((hasEwos&&!stageKnown[i])||beforeBaseline)stages[i]=null;});
+  stages.forEach((_,i)=>{if((hasEwos&&!stageKnown[i])||beforeBaseline)stages[i]=null;if((hasEwos&&!stageSahKnown[i])||beforeBaseline)stageSah[i]=null;stageSahPartial[i]||=stagePartial[i];});
   if(beforeBaseline||(selected.size&&hasEwos&&!selectedKnown))forecast=null;
   if(beforeBaseline||(selected.size&&hasEwos&&!sahKnown))forecastSah=null;
   const sahPartial=forecastPartial||missingSmv>0;
   if(forecastPartial)notes.add('* Available WIP subtotal: some report fields are missing; allocation uses known stock only and stage attribution may be incomplete. No matched data shows —.');
   if(missingSmv)notes.add('* Available SAH subtotal excludes covered pieces with missing/conflicting EWO SMV. No convertible data shows —.');
   const knownStages=stages.filter(v=>v!==null);
-  return {date,sourceRecordCounts:source.counts,signedPlanAdjustment:source.signedPlanAdjustment,values:[clock,sah,qty,forecast,forecastSah,clock>0&&sah!==null?sah/clock*100:null,manpower>0&&clock!==null?clock/manpower:null,manpower],partial:[false,false,false,forecastPartial,sahPartial,false,false,false],stages,stagePartial,total:knownStages.length?knownStages.reduce((a,b)=>a+b,0):null,totalPartial:stagePartial.some(Boolean)};
+  return {date,sourceRecordCounts:source.counts,signedPlanAdjustment:source.signedPlanAdjustment,values:[clock,sah,qty,forecast,forecastSah,clock>0&&sah!==null?sah/clock*100:null,manpower>0&&clock!==null?clock/manpower:null,manpower],partial:[false,false,false,forecastPartial,sahPartial,false,false,false],stages,stagePartial,stageSah,stageSahPartial,total:knownStages.length?knownStages.reduce((a,b)=>a+b,0):null,totalPartial:stagePartial.some(Boolean)};
  });
  return {days,notes:[...notes],cutoff:allocation.cutoff};
 }
