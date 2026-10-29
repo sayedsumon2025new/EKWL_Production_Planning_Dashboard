@@ -2740,18 +2740,8 @@ input,select,textarea{
       <select id="s12-difficulty" onchange="renderS12('difficulty')"><option value="">All Cutting Difficulty</option></select>
     </div>
   </div>
-  <div class="two-col">
-    <div class="card">
-      <div class="card-title">📊 Cutting Progress by Product · Summary <span id="s12-em-msg" class="ct-right"></span></div>
-      <div class="tbl-wrap s12-summary-table s12-product-fit"><table class="dt"><colgroup><col style="width:8%"><col style="width:14%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"><col style="width:4.875%"></colgroup><thead><tr><th>Product</th><th>Planned Line No.</th><th class="num">Order Qty · pcs</th><th class="num">Cut Qty · pcs</th><th class="num">Print Total Send · pcs</th><th class="num">Print Total Receive · pcs</th><th class="num">Print WIP · pcs</th><th class="num">Embroidery Total Send · pcs</th><th class="num">Embroidery Total Receive · pcs</th><th class="num">Embroidery WIP · pcs</th><th class="num">Cutting WIP · pcs</th><th class="num">Total Input · pcs</th><th class="num">Total Output · pcs</th><th class="num">Sewing WIP · pcs</th><th class="num">Plan Pcs · Plan/Day</th><th class="num">Plan Behind Pcs</th><th class="num">Cutting %</th><th class="num">Fabrics Balance · kg</th></tr></thead><tbody id="s12-product-summary"></tbody><tfoot><tr id="s12-product-total"></tr></tfoot></table></div>
-    </div>
-    <div class="card">
-      <div class="card-title">⚠️ Cutting Difficulties · Summary</div>
-      <div class="tbl-wrap s12-summary-table"><table class="dt"><thead><tr><th>Cutting Difficulty</th><th>Planned Line No.</th><th>EWO</th><th class="num">Rows</th><th class="num">Share</th></tr></thead><tbody id="s12-diff-summary"></tbody><tfoot><tr id="s12-diff-total"></tr></tfoot></table></div>
-    </div>
-  </div>
   <div class="card">
-    <div class="card-title">✂️ EWO + Color Fabric &amp; Cutting Detail</div>
+    <div class="card-title">✂️ EWO + Color Fabric &amp; Cutting Detail <span id="s12-em-msg" class="ct-right"></span></div>
     <div class="filter-row" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
       <label>EWO search <input id="s12-detail-ewo" type="search" placeholder="Search EWO…"></label>
       <label>Planned Line <select id="s12-detail-line" onchange="renderS12()"><option value="">All Lines</option></select></label>

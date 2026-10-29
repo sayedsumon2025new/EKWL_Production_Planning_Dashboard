@@ -288,7 +288,7 @@ class ThemeVisualTests(unittest.TestCase):
             self.assert_readable('#s12-kpi .kpi-label, #s12-kpi .kpi-val, #s12 table thead th, #s12-tbl .status-filter-link')
             if OPTIONS.artifacts:
                 self.page.locator('#s12-kpi').screenshot(path=str(OPTIONS.artifacts / ('fabric-kpis-' + theme + '.png')))
-                self.page.locator('#s12 .s12-product-fit table').screenshot(path=str(OPTIONS.artifacts / ('fabric-table-' + theme + '.png')))
+                self.page.locator('#s12-tbl').screenshot(path=str(OPTIONS.artifacts / ('fabric-table-' + theme + '.png')))
             self.page.locator('#s12-buyer').select_option('Buyer A')
             self.assertEqual(self.page.locator('#s12-kpi .kpi-val').all_text_contents(),
                              ['1', '3,000', '300', '200', '1,500', '1,200', '-1,800', '40.0%'])

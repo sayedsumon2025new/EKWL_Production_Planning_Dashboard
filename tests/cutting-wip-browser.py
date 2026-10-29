@@ -26,7 +26,9 @@ with sync_playwright() as p:
  assert page.locator('#s12-body .s12-cutting-wip').all_text_contents()==['2,000','2,000','1,000']
  assert page.locator('#s12-foot .s12-cutting-wip').inner_text()=='5,000'
  assert page.locator('#s12-top-total .s12-cutting-wip').inner_text()=='5,000'
- assert page.locator('#s12-product-total td').nth(10).inner_text()=='5,000'
+ assert page.locator('#s12-product-summary,#s12-diff-summary').count()==0
+ assert page.locator('#s12-kpi .kpi').count()==8
+ assert page.locator('#s12-em-msg').is_visible()
  assert page.locator('#s12-body tr').first.locator('td').count()==len(headers)==27
  assert page.locator('#s12-body tr').first.locator('td').nth(22).inner_text()=='-1,000'
  # Detail EWO filter: total follows visible EWO/color pairs and does not double-count lines.
