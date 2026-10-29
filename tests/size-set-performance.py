@@ -12,14 +12,14 @@ const getChassisMasterLines=()=>new Set([1,2]),canAccessSlide=()=>true,siteIsAdm
 const activePlanningLabel=()=>ACTIVE_PLAN_UPLOAD?.id||'No Planning Selected';
 const loadActiveModuleRows=async()=>{REFRESH_COUNT++;return REFRESH_ROWS.map((row_data,i)=>({row_data,source_row_no:i+2}));};
 </script>'''
-harness='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+styles+'<link rel="stylesheet" href="size-set-andon.css"></head><body><div id="slides-wrap">'+html[start:end].replace('class="slide"','class="slide active"',1)+'</div>'+boot+'<script src="size-set-module.js?v=test"></script><script src="size-set-andon.js?v=test"></script></body></html>'
+harness='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+styles+'<link rel="stylesheet" href="dashboard-theme.css"><link rel="stylesheet" href="size-set-andon.css"></head><body><nav id="topnav"><div class="brand">EKWL · Production Planning</div></nav><div id="slides-wrap"></div>'+html[start:end].replace('class="slide"','class="slide active"',1)+boot+'<script src="size-set-module.js?v=test"></script><script src="size-set-andon.js?v=test"></script></body></html>'
 with sync_playwright() as p:
  browser=p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),args=['--no-sandbox'])
  page=browser.new_page(viewport={'width':1464,'height':1000},timezone_id='Asia/Dhaka');page.set_default_timeout(7000)
  errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  def route(r):
   name=r.request.url.split('/')[-1].split('?')[0]
-  if name in ['size-set-module.js','size-set-andon.js','size-set-andon.css','size-set-tna.html','size-set-tna.js','size-set-tna.css']:
+  if name in ['dashboard-theme.css','size-set-module.js','size-set-andon.js','size-set-andon.css','size-set-tna.html','size-set-tna.js','size-set-tna.css']:
    r.fulfill(path=str(ROOT/name),content_type='text/css' if name.endswith('.css') else 'text/html' if name.endswith('.html') else 'text/javascript')
   elif r.request.url=='http://ekwl.test/':r.fulfill(body=harness,content_type='text/html')
   else:r.abort()
@@ -64,14 +64,20 @@ with sync_playwright() as p:
  assert page.evaluate('SS_FILTERED.length===1') and child.evaluate('TNA_ORDERS.length===6')
  page.evaluate("showSizeSetSub('raw');showSizeSetSub('tna');renderSizeSetModule()")
  assert frame.locator('#event').input_value()=='PP Comment'
+ # Switching from a scrolled Source Table must not retain a hidden outer scroll offset.
+ page.evaluate("showSizeSetSub('raw');document.getElementById('ss-raw-view').style.minHeight='1600px';document.getElementById('s17').scrollTop=80")
+ assert page.evaluate("document.getElementById('s17').scrollTop>0")
+ page.evaluate("showSizeSetSub('tna')")
+ assert page.evaluate("document.getElementById('s17').scrollTop===0"), 'TNA retains Source Table scroll offset'
  # Parent export/source controls are hidden in TNA only. The iframe occupies the remaining viewport.
  assert page.locator('.ss-controls').is_hidden() and page.locator('#ss-source').is_hidden()
  assert page.locator('#s17>.slide-header').is_hidden()
- for width in [1910,1464,926,784,640,420]:
+ for width in [1910,1464,1401,1400,926,784,640,420]:
   page.set_viewport_size({'width':width,'height':1000})
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
   assert page.evaluate("document.getElementById('s17').scrollHeight<=document.getElementById('s17').clientHeight"),width
   assert child.evaluate('document.documentElement.scrollWidth<=innerWidth'),width
+  assert page.evaluate("(()=>{const tabs=document.querySelector('#s17 .ss-tabs').getBoundingClientRect(),nav=document.getElementById('topnav').getBoundingClientRect();return tabs.top>=nav.bottom&&document.elementFromPoint(tabs.left+10,tabs.top+10).closest('.ss-tabs')!==null})()"),width
   box=page.locator('#ss-tna-performance').bounding_box();assert box['height']>600 and box['y']+box['height']<=1000,width
   page.screenshot(path=f'/tmp/tna-kpi-production-{width}.png')
  frame.locator('#kpi-overdue').click();assert child.evaluate("ACTION_ROWS.every(e=>e.status==='Overdue')")

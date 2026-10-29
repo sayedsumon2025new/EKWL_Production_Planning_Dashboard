@@ -1,3 +1,7 @@
+/* Size Set is outside #slides-wrap in the page DOM. Reserve the fixed header
+   explicitly for all three views, including the viewport-filling TNA iframe. */
+@media screen{#s17.slide{position:fixed;top:48px;right:0;bottom:0;left:0}}
+@media screen and (max-width:1400px){#s17.slide{top:92px}}
 /* Scope the viewport layout to the Andon tab; existing report layouts are retained. */
 #s17.ssa-active.active{display:flex;flex-direction:column;overflow:hidden;padding:10px;gap:8px}
 #s17.ssa-active>.slide-header{margin:0;flex-shrink:0}
