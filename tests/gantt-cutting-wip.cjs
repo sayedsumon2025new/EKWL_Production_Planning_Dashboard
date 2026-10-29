@@ -1,0 +1,32 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const main=fs.readFileSync(__dirname+'/../dashboard-main.js','utf8'),hover=fs.readFileSync(__dirname+'/../gantt-hover.js','utf8');
+const c={document:{addEventListener(){}},N:v=>Number(v)||0,S12_EM_ROWS:null,DATA:[],SEWING_IO_DATA:[],FABRIC_CUTTING_DATA:[],SAH_DATA:[],SAH_DAILY:[],esc:String,EWO_SOURCE_TTL:60000,loadVersionedData:(_,loader)=>loader()};vm.createContext(c);
+vm.runInContext(main.slice(main.indexOf('function fabricEwoColorKey('),main.indexOf('function fabricCuttingCascade('))+main.slice(main.indexOf('function s12CuttingWipMetric('),main.indexOf('function renderS12(')),c);
+vm.runInContext(hover,c);
+const key=color=>c.fabricEwoColorKey('271444',color);
+c.DATA=[{ewo:'271444',color:'White',line:1,print:'Yes',emb:'No'},{ewo:'271444',color:'Navy',line:1,print:'No',emb:'No'}];
+c.FABRIC_CUTTING_DATA=[{ewo:'271444',color_name:' White ',total_cut_qty:10000},{ewo:'271444',color_name:'Navy',total_cut_qty:10000},{ewo:'other',color_name:'White',total_cut_qty:99000}];
+c.SEWING_IO_DATA=[{ewo:'271444',color:'white',line_no:1,input:1000,wip:751},{ewo:'271444.0',color:' White ',line_no:2,input:3000},{ewo:'271444',color:'Navy',line_no:1,input:8000},{ewo:'other',color:'White',line_no:1,input:99999}];
+const w={ewo:'271444',line:1,date:'2026-11-01',color:'White',selectedColors:['White'],qty:100,planColors:[{color:'White',qty:100},{color:'Navy',qty:100}]};
+const source={errors:[],embellishment_rows:1,print_send:8000,print_receive:6000,embroidery_send:0,embroidery_receive:0,embellishment_by_color:[[key('White'),{printSend:8000,printReceive:6000,embSend:0,embReceive:0}]]};
+assert.equal(c.ganttPopupCuttingWip(w,source).value,2000); // Includes sewing on another line without visiting Fabric/Cutting first.
+assert.equal(c.ganttPopupCuttingWip({...w,selectedColors:['Navy']},source).value,2000);
+assert.equal(c.ganttPopupCuttingWip({...w,selectedColors:['White','Navy','white']},source).value,4000);
+assert.equal(c.ganttPopupCuttingWip(w,{...source,embellishment_by_color:null,errors:['Embellishment']}).value,null);
+assert.equal(c.ganttPopupCuttingWip(w,null).value,null);
+const zero={...source,embellishment_by_color:[[key('White'),{printSend:8000,printReceive:0}]]};assert.equal(c.ganttPopupCuttingWip(w,zero).value,-4000);
+let html=c.ganttHoverHtml(w,source),card=html.slice(html.indexOf('<section class="gt-card gt-wip">'));
+assert.ok(card.indexOf('Cutable WIP')<card.indexOf('Cutting WIP')&&card.indexOf('Cutting WIP')<card.indexOf('Print'));
+assert.match(card,/Cutting WIP<\/span><strong[^>]*>2,000<\/strong>/);assert.match(card,/across all lines/);
+c.DATA[0].emb='Yes';assert.equal(c.ganttPopupCuttingWip(w,source).value,null);c.DATA[0].emb='No';
+const legacy={...source};delete legacy.embellishment_by_color;assert.equal(c.ganttPopupCuttingWip(w,legacy).value,2000);
+assert.equal(c.ganttPopupCuttingWip({...w,selectedColors:['White','Navy']},legacy).value,null);
+(async()=>{
+ c.loadEwoSource=async kind=>kind==='embellishment'?[{'EWO No':'271444',Color:'White','Today Print Send Qty\n':'8,000',' Today Print Receive Qty':'6,000'},{'EWO No':'271444',Color:'Navy','Today EMB Send Qty':100,'Today EMB Receive Qty':50},{'EWO No':'271444',Color:'Other','Today Print Send Qty\n':99999}]:[];
+ const loaded=await c.ganttHoverSources('271444','White',['White','Navy']);
+ assert.equal(loaded.embellishment_by_color.length,2);
+ assert.equal(new Map(loaded.embellishment_by_color).get(key('White')).printReceive,6000);
+ assert.equal(c.ganttPopupCuttingWip(w,loaded).value,2000);
+ c.FABRIC_CUTTING_DATA=[];assert.equal(c.ganttPopupCuttingWip({...w,selectedColors:['Navy']},{errors:[],embellishment_rows:0,embellishment_by_color:[]}).value,null);
+ console.log('PASS Gantt Cutting WIP: shared approved formula, per-color receipts, all-line inputs, mixed/unique colors, placement, missing/zero reports, ambiguous routing, legacy cache and lazy source loader');
+})().catch(e=>{console.error(e);process.exitCode=1});

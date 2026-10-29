@@ -35,6 +35,7 @@ async function ganttHoverSources(ewo,color,colors){
       order_bank_rows:available(3)?orderBank.length:0,
       order_qty:available(3)&&orderBank.length?orderBank.reduce((total,row)=>total+qty(row,'OrderQty'),0):null,
       embellishment_rows:available(2)?embellishment.length:0,
+      embellishment_by_color:available(2)?[...s12EmbellishmentTotals(embellishment).entries()]:null,
       print_send:sum('Today Print Send Qty\n'),
       print_receive:sum(' Today Print Receive Qty'),
       embroidery_send:sum('Today EMB Send Qty'),
@@ -119,10 +120,42 @@ function ganttPopupHeader(w){
     `</select><span>${options.length} planned color${options.length===1?'':'s'}</span></div>`;
 }
 
+function ganttPopupCuttingWip(w,source){
+  if(!source||typeof s12CuttingWipMetric!=='function'||typeof fabricEwoColorKey!=='function')return {value:null,reason:'Cutting WIP reports are not available.'};
+  const keys=new Set(w.selectedColors.map(color=>fabricEwoColorKey(w.ewo,color)).filter(Boolean));
+  if(!keys.size)return {value:null,reason:'Select an EWO + Color.'};
+  const cutByKey=new Map(),sewingByKey=new Map(),processByKey=new Map();
+  for(const r of FABRIC_CUTTING_DATA){
+    const key=fabricEwoColorKey(r.ewo,r.color_name);if(!keys.has(key))continue;
+    if(r.total_cut_qty==null||String(r.total_cut_qty).trim()===''||!Number.isFinite(Number(r.total_cut_qty)))continue;
+    cutByKey.set(key,(cutByKey.get(key)||0)+Number(r.total_cut_qty));
+  }
+  // Cutting stock is shared across lines for the same EWO/color, just as in S12.
+  for(const r of SEWING_IO_DATA){
+    const key=fabricEwoColorKey(r.ewo,r.color);if(!keys.has(key))continue;
+    sewingByKey.set(key,{input:(sewingByKey.get(key)?.input||0)+ganttQty(r.input)});
+  }
+  const required=v=>!['','no','n','0','false','n/a','na','none','-','—'].includes(String(v??'').trim().toLowerCase());
+  for(const r of DATA){
+    if(r.is_summary_row)continue;
+    const key=fabricEwoColorKey(r.ewo,r.color);if(!keys.has(key))continue;
+    const flags=processByKey.get(key)||{print:false,emb:false};
+    flags.print||=required(r.print);flags.emb||=required(r.emb);processByKey.set(key,flags);
+  }
+  if(!source.embellishment_by_color&&keys.size>1&&source.embellishment_rows>0)return {value:null,reason:'Reload the report to obtain per-color process receipts.'};
+  const movements=new Map(source.embellishment_by_color||[]);
+  // Backward-compatible single-color cache records can still use their exact receipt.
+  if(!source.embellishment_by_color&&keys.size===1&&source.embellishment_rows>0){
+    movements.set([...keys][0],{printSend:source.print_send,printReceive:source.print_receive,embSend:source.embroidery_send,embReceive:source.embroidery_receive});
+  }
+  const available=source.embellishment_by_color!==null&&!source.errors?.includes('Embellishment');
+  return s12CuttingWipMetric(keys,cutByKey,sewingByKey,processByKey,movements,available);
+}
+
 function ganttHoverHtml(w,source){
   const fmt=v=>v==null?'—':Number(v).toLocaleString('en-US');
   const safe=v=>esc(v==null||v===''?'—':v);
-  const row=(n,label,value)=>`<div class="gt-row"><span class="gt-row-label">${n?`<small>${esc(n)}</small>`:''}${esc(label)}</span><strong class="${value==null?'gt-no-data':Number(String(value).replace(/,/g,''))<0?'gt-negative':''}">${safe(value)}</strong></div>`;
+  const row=(n,label,value,title='')=>`<div class="gt-row"><span class="gt-row-label">${n?`<small>${esc(n)}</small>`:''}${esc(label)}</span><strong class="${value==null?'gt-no-data':Number(String(value).replace(/,/g,''))<0?'gt-negative':''}"${title?` title="${esc(title)}"`:''}>${safe(value)}</strong></div>`;
   const card=(title,kind,body)=>`<section class="gt-card gt-${kind}"><h3>${esc(title)}</h3><div class="gt-card-body">${body}</div></section>`;
   const allowed=new Set(w.selectedColors.map(ganttColorKey));
   const plan=ganttHoverPlan(w),sewing=ganttHoverSewing(w.line,w.ewo,w.selectedColors);
@@ -132,6 +165,7 @@ function ganttHoverHtml(w,source){
     return values.length?values.reduce((sum,value)=>sum+Number(value),0):null;
   };
   const cutable=cutSum('cutable_qty'),cutQty=cutSum('total_cut_qty');
+  const cuttingWip=ganttPopupCuttingWip(w,source);
   const em=Number(source?.embellishment_rows)>0;
   const send=em?Number(source.print_send):null,recv=em?Number(source.print_receive):null;
   const embSend=em?Number(source.embroidery_send):null,embRecv=em?Number(source.embroidery_receive):null;
@@ -174,9 +208,10 @@ function ganttHoverHtml(w,source){
       row('4','Total WIP Qty',selectedSewing.wip==null?null:fmt(selectedSewing.wip)))+
     card('Consumable WIP','wip',
       row('1','Cutable WIP',cutable==null?null:fmt(cutable))+
-      row('2','Print',send==null?null:fmt(send-recv))+
-      row('3','Embroidery',embSend==null?null:fmt(embSend-embRecv))+
-      row('4','Sewing WIP',selectedSewing.wip==null?null:fmt(selectedSewing.wip)))+
+      row('2','Cutting WIP',cuttingWip.value==null?null:fmt(cuttingWip.value),'EWO + Color across all lines · '+(cuttingWip.reason||'Print Receive − Sewing Input; Embroidery Receive − Sewing Input; no process: Total Cutting − Sewing Input.'))+
+      row('3','Print',send==null?null:fmt(send-recv))+
+      row('4','Embroidery',embSend==null?null:fmt(embSend-embRecv))+
+      row('5','Sewing WIP',selectedSewing.wip==null?null:fmt(selectedSewing.wip)))+
     '</div>';
 }
 
