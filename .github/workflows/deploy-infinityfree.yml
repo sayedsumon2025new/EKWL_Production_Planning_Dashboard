@@ -36,6 +36,7 @@ jobs:
           python3 -m pip install playwright==1.58.0
           python3 tests/size-set-performance.py
           python3 tests/size-set-andon-browser.py
+          python3 tests/cutting-wip-browser.py
           python3 tests/gantt-daily-summary-browser.py
           python3 tests/load-analysis-live-browser.py
       - name: Run calculation, cache and API adapter regressions

@@ -1,0 +1,11 @@
+# Fabric & Cutting: received Cutting WIP
+
+Cutting WIP is computed independently for each normalized EWO + Color, with sewing input summed across all lines. Print-only: Print Receive minus Sewing Input. Embroidery-only: Embroidery Receive minus Sewing Input. Neither process: Total Cutting minus Sewing Input. Unsent cutting and pieces still with a process are excluded for process orders. Sewing Output is not subtracted. Daily process movements retain the existing all-report-date aggregation.
+
+Plan Print/Emb flags identify required processes even before any movement is recorded. Actual process movements also identify a process for EWO/colors not found in plan metadata. Missing embellishment snapshots or required process rows show an em dash. A real zero receipt is zero, not a reason to use cutting quantity. Negative stock remains signed with a check-quantities tooltip; receipt greater than send is also flagged.
+
+The user confirmed Print/Embroidery order varies by order. Existing sources do not identify the final process. Pairs requiring both show an em dash with a final-process-required tooltip; never sum their receipts or choose an arbitrary process. A future explicit per-EWO/color route source is needed to compute these pairs. Totals with an unresolved pair also show an em dash, not an apparently complete subtotal.
+
+The new detail column follows Cutting Balance. Existing Cutting Balance values and other stock/forecast modules remain unchanged. Detail header/footer and product summary use the same per-pair calculation. Totals use distinct pair keys, not per-product subtotal addition, so shared stock is counted once. Cutting stock comes from the complete fabric snapshot, independent of display filters; visible keys determine the total scope.
+
+Checks: tests/cutting-wip.cjs and tests/cutting-wip-browser.py cover approved 10000/8000/6000/4000 -> 2000 example, no-process 10000/8000 -> 2000, mixed totals, color/line isolation, repeated keys, zero/missing receipts, ambiguous dual-process routes, signed anomalies, column alignment and detail filters.
