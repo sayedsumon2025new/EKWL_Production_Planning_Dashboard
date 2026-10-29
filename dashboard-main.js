@@ -1510,17 +1510,27 @@ async function loadS12Embellishment(){
   }catch(e){if(current())S12_EM_ERROR='Embellishment data unavailable';}
   finally{if(current()){S12_EM_LOADING=false;if(CURRENT_SLIDE===11)renderS12();}}
 }
-function s12CuttingWip(keys,cutByKey,sewingByKey,processKeys,embellishmentByKey){
-  // A summary with Print/EMB uses its complete receive total minus input.
-  const hasProcess=[...keys].some(key=>{const m=embellishmentByKey.get(key);return m&&(N(m.printSend)!==0||N(m.printReceive)!==0||N(m.embSend)!==0||N(m.embReceive)!==0);});
-  if(S12_EM_ROWS===null&&[...keys].some(key=>processKeys.has(key)))return null;
-  let available=0,input=0;
-  for(const key of keys){
-    const movement=embellishmentByKey.get(key);
-    available+=hasProcess?N(movement?.printReceive)+N(movement?.embReceive):N(cutByKey.get(key));
-    input+=N(sewingByKey.get(key)?.input);
+function s12CuttingWipMetric(keys,cutByKey,sewingByKey,processByKey,embellishmentByKey){
+  // Stock belongs to one EWO/color, regardless of its product/line presentation.
+  // A received piece can cross more than one process: never add process receipts.
+  let total=0;const warnings=[];
+  for(const key of new Set(keys)){
+    const movement=embellishmentByKey.get(key),process=processByKey.get(key)||{};
+    const print=process.print||!!(movement&&(N(movement.printSend)!==0||N(movement.printReceive)!==0));
+    const emb=process.emb||!!(movement&&(N(movement.embSend)!==0||N(movement.embReceive)!==0));
+    if(S12_EM_ROWS===null)return {value:null,reason:'Embellishment report is not available.'};
+    if(print&&emb)return {value:null,reason:'Both Print and Embroidery apply. Final process must be confirmed; receipts are not added.'};
+    if((print||emb)&&!movement)return {value:null,reason:'Required process report has no matching EWO + Color.'};
+    const base=print?N(movement.printReceive):emb?N(movement.embReceive):N(cutByKey.get(key));
+    const input=N(sewingByKey.get(key)?.input),value=base-input;
+    if(value<0)warnings.push('Sewing Input exceeds '+(print?'Print Receive':emb?'Embroidery Receive':'Total Cutting')+'. Check report quantities and update dates.');
+    if((print&&N(movement.printReceive)>N(movement.printSend))||(emb&&N(movement.embReceive)>N(movement.embSend)))warnings.push('Process Receive exceeds Send. Check report quantities.');
+    total+=value;
   }
-  return available-input;
+  return {value:total,reason:[...new Set(warnings)].join(' ')};
+}
+function s12CuttingWip(keys,cutByKey,sewingByKey,processByKey,embellishmentByKey){
+  return s12CuttingWipMetric(keys,cutByKey,sewingByKey,processByKey,embellishmentByKey).value;
 }
 function s12EmbellishmentTotals(rows){
   // Sum daily movements across all report dates by EWO and color.
@@ -1630,15 +1640,15 @@ function renderS12(changed=''){
       plannedLinesByEwoColor.get(key).add(line);
     }
   });
-  const processKeys=new Set();
+  const processByKey=new Map();
   const hasProcess=value=>!['','no','n','0','false','n/a','na','none','-','—'].includes(String(value??'').trim().toLowerCase());
   (DATA||[]).filter(r=>!r.is_summary_row).forEach(r=>{
     const key=fabricEwoColorKey(r.ewo,r.color);
-    if(key&&(hasProcess(r.print)||hasProcess(r.emb)))processKeys.add(key);
+    if(key){const flags=processByKey.get(key)||{print:false,emb:false};flags.print||=hasProcess(r.print);flags.emb||=hasProcess(r.emb);processByKey.set(key,flags);}
   });
   const cutByKey=new Map();
-  rows.forEach(r=>{const key=fabricEwoColorKey(r.ewo,r.color_name);if(key)cutByKey.set(key,(cutByKey.get(key)||0)+N(r.total_cut_qty));});
-  const cuttingWipTotal=keys=>{const value=s12CuttingWip(keys,cutByKey,sewingByKey,processKeys,embellishmentByKey);return value===null?'—':fmt(value);};
+  all.forEach(r=>{const key=fabricEwoColorKey(r.ewo,r.color_name);if(key)cutByKey.set(key,(cutByKey.get(key)||0)+N(r.total_cut_qty));});
+  const cuttingWipTotal=keys=>{const m=s12CuttingWipMetric(keys,cutByKey,sewingByKey,processByKey,embellishmentByKey);return '<span title="'+esc(m.reason||'Print Receive − Sewing Input; Embroidery Receive − Sewing Input; no process: Cutting − Sewing Input. EWO + Color totals across all lines.')+'">'+(m.value===null?'—':fmt(m.value))+(m.value!==null&&m.reason?' ⚠':'')+'</span>';};
   const sewingByKey=new Map();
   (SEWING_IO_DATA||[]).forEach(r=>{
     const key=fabricEwoColorKey(r.ewo,r.color);if(!key)return;
@@ -1662,10 +1672,10 @@ function renderS12(changed=''){
     const sewing=sewingTotals(v.keys);
     const planPcs=[...v.keys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
     return '<tr><td>'+esc(name)+'</td><td>'+([...v.lines].sort((a,b)=>Number(a)-Number(b)).map(x=>esc(x.padStart(2,'0'))).join(', ')||'—')+'</td><td class="num">'+fmt(v.o)+'</td><td class="num">'+fmt(v.c)+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'printSend'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'printReceive'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'embSend'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'embReceive'))+'</td><td class="num">'+esc(embellishmentTotal(v.keys,'emb'))+'</td><td class="num">'+cuttingWipTotal(v.keys)+'</td><td class="num">'+fmt(sewing.input)+'</td><td class="num">'+fmt(sewing.output)+'</td><td class="num">'+fmt(sewing.wip)+'</td><td class="num">'+fmt(planPcs)+'</td><td class="num">'+fmt(sewing.wip-planPcs)+'</td><td class="num">'+(v.o?v.c/v.o*100:0).toFixed(1)+'%</td><td class="num">'+fmt(v.f)+'</td></tr>';
-  }).join('')||'<tr><td colspan="14">No data</td></tr>';
+  }).join('')||'<tr><td colspan="18">No data</td></tr>';
   const sewingTotal=sewingTotals(filteredKeys);
   const planPcsTotal=[...filteredKeys].reduce((sum,key)=>sum+(planPcsByKey.get(key)||0),0);
-  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'emb'))+'</td><td class="num">'+(productTotals.some(([,v])=>s12CuttingWip(v.keys,cutByKey,sewingByKey,processKeys,embellishmentByKey)===null)?'—':fmt(productTotals.reduce((sum,[,v])=>sum+s12CuttingWip(v.keys,cutByKey,sewingByKey,processKeys,embellishmentByKey),0)))+'</td><td class="num">'+fmt(sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.output)+'</td><td class="num">'+fmt(sewingTotal.wip)+'</td><td class="num">'+fmt(planPcsTotal)+'</td><td class="num">'+fmt(sewingTotal.wip-planPcsTotal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
+  document.getElementById('s12-product-total').innerHTML='<td>Total</td><td>—</td><td class="num">'+fmt(order)+'</td><td class="num">'+fmt(cut)+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'printReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'print'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embSend'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'embReceive'))+'</td><td class="num">'+esc(embellishmentTotal(filteredKeys,'emb'))+'</td><td class="num">'+cuttingWipTotal(filteredKeys)+'</td><td class="num">'+fmt(sewingTotal.input)+'</td><td class="num">'+fmt(sewingTotal.output)+'</td><td class="num">'+fmt(sewingTotal.wip)+'</td><td class="num">'+fmt(planPcsTotal)+'</td><td class="num">'+fmt(sewingTotal.wip-planPcsTotal)+'</td><td class="num">'+cutPct.toFixed(1)+'%</td><td class="num">'+fmt(total('fabric_balance'))+'</td>';
 
   const dm={},difficultyEwos=new Map(),difficultyLines=new Map();
   rows.forEach(r=>{
@@ -1707,13 +1717,13 @@ function renderS12(changed=''){
     '<td class="num">'+fmt(N(r.color_order_qty))+'</td><td class="num">'+fmt(N(r.fabric_booking_qty))+'</td>'+
     '<td class="num">'+fmt(N(r.total_fabric_received))+'</td><td class="num">'+fmt(N(r.fabric_balance))+'</td>'+
     '<td class="num">'+fmt(N(r.fabric_stock_after_cut))+'</td><td class="num">'+fmt(N(r.cutable_qty))+'</td>'+
-    '<td class="num">'+fmt(N(r.total_cut_qty))+'</td>'+movementCells(new Set([ewoColorKey(r.ewo,r.color_name)]))+sewingCells(new Set([ewoColorKey(r.ewo,r.color_name)]))+'<td class="num">'+fmt(N(r.cutting_balance))+'</td>'+
+    '<td class="num">'+fmt(N(r.total_cut_qty))+'</td>'+movementCells(new Set([ewoColorKey(r.ewo,r.color_name)]))+sewingCells(new Set([ewoColorKey(r.ewo,r.color_name)]))+'<td class="num">'+fmt(N(r.cutting_balance))+'</td><td class="num s12-cutting-wip">'+cuttingWipTotal(new Set([ewoColorKey(r.ewo,r.color_name)]))+'</td>'+
     '<td class="num">'+N(r.cutting_percent).toFixed(1)+'%</td><td>'+esc(r.status||'')+'</td><td>'+esc(r.cutting_difficulties||'')+'</td></tr>').join('');
 
   document.getElementById('s12-foot').innerHTML='<td colspan="6">TOTAL</td><td class="num">'+fmt(detailTotal('color_order_qty'))+'</td>'+
     '<td class="num">'+fmt(detailTotal('fabric_booking_qty'))+'</td><td class="num">'+fmt(detailTotal('total_fabric_received'))+'</td><td class="num">'+fmt(detailTotal('fabric_balance'))+'</td>'+
     '<td class="num">'+fmt(detailTotal('fabric_stock_after_cut'))+'</td><td class="num">'+fmt(detailTotal('cutable_qty'))+'</td><td class="num">'+fmt(detailTotal('total_cut_qty'))+'</td>'+
-    movementCells(detailKeys)+sewingCells(detailKeys)+'<td class="num">'+fmt(detailTotal('cutting_balance'))+'</td><td class="num">'+(detailTotal('color_order_qty')?100*detailTotal('total_cut_qty')/detailTotal('color_order_qty'):0).toFixed(1)+'%</td><td colspan="2"></td>';
+    movementCells(detailKeys)+sewingCells(detailKeys)+'<td class="num">'+fmt(detailTotal('cutting_balance'))+'</td><td class="num s12-cutting-wip">'+cuttingWipTotal(detailKeys)+'</td><td class="num">'+(detailTotal('color_order_qty')?100*detailTotal('total_cut_qty')/detailTotal('color_order_qty'):0).toFixed(1)+'%</td><td colspan="2"></td>';
   document.getElementById('s12-top-total').innerHTML=document.getElementById('s12-foot').innerHTML;
 }
 
