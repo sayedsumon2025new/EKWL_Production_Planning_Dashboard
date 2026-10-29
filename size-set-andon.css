@@ -1,3 +1,7 @@
+/* Size Set is outside #slides-wrap in the page DOM. Reserve the fixed header
+   explicitly for all three views, including the viewport-filling TNA iframe. */
+@media screen{#s17.slide{position:fixed;top:48px;right:0;bottom:0;left:0}}
+@media screen and (max-width:1400px){#s17.slide{top:92px}}
 /* Scope the viewport layout to the Andon tab; existing report layouts are retained. */
 #s17.ssa-active.active{display:flex;flex-direction:column;overflow:hidden;padding:10px;gap:8px}
 #s17.ssa-active>.slide-header{margin:0;flex-shrink:0}
@@ -41,3 +45,13 @@
 :is(#ssa-followup,#ssa-dialog) .ssa-followup-table tr:nth-child(even) td{background:#203244!important}
 #ssa-followup h2{color:#f0f6fb!important}
 #ssa-table .ssa-ewo small{font-weight:700!important}
+
+/* TNA workspace: one filter set and one scrolling document, without source/export framing. */
+#s17.sst-active.active{display:flex;flex-direction:column;overflow:hidden;padding:10px;gap:8px}
+#s17.sst-active>.slide-header,#s17.sst-active .ssa-card>.card-title,#s17.sst-active #ss-source,#s17.sst-active .ssa-card>.ss-controls,#s17.sst-active .ssa-card>.report-actions{display:none!important}
+#s17.sst-active .ssa-card{display:flex;flex-direction:column;flex:1;min-height:0;margin-top:0!important;padding:10px;gap:9px}
+#s17.sst-active .ss-tabs{margin:0;padding:0 0 8px;gap:6px;flex-shrink:0}
+#s17.sst-active .ss-tabs button{padding:7px 11px;font-size:11px;border-radius:5px;border-bottom:1px solid var(--border)}
+#ss-tna-view:not([hidden]){display:flex;flex:1;min-height:0;overflow:hidden}
+#ss-tna-performance{flex:1;min-height:0}
+@media(max-width:640px){#s17.sst-active{padding:5px}#s17.sst-active .ssa-card{padding:7px}#s17.sst-active .ss-tabs button{padding:6px 8px;font-size:10px}}
