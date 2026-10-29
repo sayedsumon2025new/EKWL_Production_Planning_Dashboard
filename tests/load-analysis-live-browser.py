@@ -33,12 +33,12 @@ with sync_playwright() as p:
  page.add_script_tag(content=setup+'\n'+(ROOT/'gantt-daily-summary.js').read_text()+'\n'+(ROOT/'load-analysis-loss.js').read_text()+'\n'+(ROOT/'load-analysis-bridge.js').read_text()+'\nrefreshLoadAnalysisPlan();')
  frame=page.frame_locator('#load-analysis-workspace')
  page.wait_for_function('LOAD_ANALYSIS_MODEL!==null')
- def forecast():return frame.locator('#load-analysis-summary-table .source-row td').all_text_contents()[1:3]
+ def forecast():return [v.replace('*','') for v in frame.locator('#load-analysis-summary-table .source-row td').all_text_contents()[1:3]]
  assert forecast()==['60','0'],forecast()
  assert frame.locator('.la-donut').count()==1
  assert frame.locator('[data-dept]').count()==4
- assert frame.locator('#la-donut-value').text_content()=='180'
- assert frame.locator('#la-department-note').inner_text().endswith('Total: 180 SAH · Loss table: 180 SAH.')
+ assert frame.locator('#la-donut-value').text_content().replace('*','')=='180'
+ assert frame.locator('#la-department-note').inner_text().replace('*','').endswith('Total: 180 SAH · Loss table: 180 SAH.')
  frame.locator('.la-department-panel').screenshot(path='/tmp/load-analysis-department-multicolor.png')
  assert page.evaluate('LOAD_ANALYSIS_MODEL.model.days.map(d=>d.forecast)')==[60,0]
  # Both flags preserved; Print receives the uncovered SAH once by priority.
@@ -52,9 +52,9 @@ with sync_playwright() as p:
  assert forecast()==['60','0']
  assert page.evaluate('LOAD_ANALYSIS_MODEL.model.days[0].buckets.fabric')==35
  frame.locator('[data-dept="textile"]').click()
- assert frame.locator('#la-donut-value').text_content()=='35'
+ assert frame.locator('#la-donut-value').text_content().replace('*','')=='35'
  assert frame.locator('#la-donut-label').text_content()=='TEXTILE'
- assert frame.locator('#la-department-note').inner_text().endswith('Total: 180 SAH · Loss table: 180 SAH.')
+ assert frame.locator('#la-department-note').inner_text().replace('*','').endswith('Total: 180 SAH · Loss table: 180 SAH.')
  frame.locator('[data-dept="textile"]').click()
  assert page.evaluate('requests.filter(r=>r.action===\'save\').length')==1
  # Failure does not invent a saved correction.
@@ -71,7 +71,7 @@ with sync_playwright() as p:
  # Sign-out clears the iframe and ignores all late reads.
  page.evaluate('hold={};refreshLoadAnalysisPlan();SITE_SESSION_GENERATION++;SITE_AUTH_USER=null;refreshLoadAnalysisPlan();hold.resolve?.()')
  frame.locator('#load-analysis-summary-table .source-row td').nth(1).filter(has_text='—').wait_for()
- assert frame.locator('#la-donut-value').text_content()=='—'
+ assert frame.locator('#la-donut-value').text_content().replace('*','')=='—'
  assert frame.locator('[data-dept]').count()==0
  page.evaluate("hold=null;SITE_AUTH_USER={id:'account-b'};overrides={};refreshLoadAnalysisPlan()")
  page.wait_for_function('LOAD_ANALYSIS_MODEL!==null')

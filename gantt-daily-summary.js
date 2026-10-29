@@ -1,6 +1,8 @@
 /* Date-aligned planning totals. Existing Gantt coverage/popup calculations stay independent. */
-const GDS_STAGES=['Cutable WIP','Print WIP','Embroidery WIP','Sewing WIP'];
-let GDS_STATE={hidden:true,selected:new Set([0,1,2,3]),open:false,context:null,source:null,request:0};
+const GDS_STAGES=['Cutable WIP','Print WIP','Embroidery WIP','Sewing WIP','Cutting WIP'];
+// Stable indices preserve Print/Embroidery delay attribution in Load Analysis.
+const GDS_STAGE_ORDER=[0,4,1,2,3],GDS_PRIORITY=[3,4,2,1,0];
+let GDS_STATE={hidden:true,selected:new Set(GDS_STAGES.map((_,i)=>i)),open:false,context:null,source:null,request:0};
 const gdsKey=v=>String(v??'').trim().toUpperCase().replace(/\.0+$/,'');
 function gdsNumber(v){if(v==null||String(v).trim()==='')return null;const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?n:null;}
 function gdsSum(rows,get){if(!rows.length)return null;const values=rows.map(get);return values.some(v=>v===null)?null:values.reduce((a,b)=>a+b,0);}
@@ -26,6 +28,32 @@ function gdsPlanningTotals(input){
   return [date,{qty,sah:planSah,clock:c.length?gdsSum(c,row=>gdsNumber(row.value)):qty===0?0:null,derived,counts:[p.length,a.length,c.length],signedPlanAdjustment:p.reduce((n,row)=>n+Math.min(0,gdsNumber(row.value)||0),0)}];
  }));
 }
+// Compute the received cutting stock per color, then pool by EWO for the
+// approved color-independent planning allocation. Sewing input spans all lines.
+function gdsCuttingReports(input,notes){
+ const ids=new Set([...input.plan,...input.fabric,...input.data].map(r=>gdsKey(r.ewo)).filter(Boolean));
+ const missing=reason=>new Map([...ids].map(ewo=>[ewo,{value:null,partial:false,reason}]));
+ if(typeof s12CuttingWipMetric!=='function'||typeof fabricEwoColorKey!=='function'||typeof s12EmbellishmentTotals!=='function')return missing('Cutting WIP calculator unavailable.');
+ const pairKeys=new Map(),cuts=new Map(),sewing=new Map(),process=new Map();
+ const pair=(ewo,color)=>{const key=fabricEwoColorKey(ewo,color),id=gdsKey(ewo);if(key){if(!pairKeys.has(id))pairKeys.set(id,new Set());pairKeys.get(id).add(key);}return key;};
+ const required=v=>!['','no','n','0','false','n/a','na','none','-','—'].includes(String(v??'').trim().toLowerCase());
+ for(const r of input.fabric){const key=pair(r.ewo,r.color_name),qty=gdsNumber(r.total_cut_qty);if(key&&qty!==null)cuts.set(key,(cuts.get(key)||0)+qty);}
+ for(const r of input.sewing){const key=pair(r.ewo,r.color);if(key)sewing.set(key,{input:(sewing.get(key)?.input||0)+(gdsNumber(r.input)||0)});}
+ for(const r of input.data){if(r.is_summary_row)continue;const key=pair(r.ewo,r.color);if(!key)continue;const flags=process.get(key)||{print:false,emb:false};flags.print||=required(r.print);flags.emb||=required(r.emb);process.set(key,flags);}
+ for(const r of input.embellishment||[])pair(r['EWO No'],r.Color);
+ const moves=s12EmbellishmentTotals(input.embellishment||[]),reports=new Map();
+ for(const ewo of ids){
+  const keys=pairKeys.get(ewo)||new Set();let total=0,known=0,partial=false;
+  for(const key of keys){const metric=s12CuttingWipMetric([key],cuts,sewing,process,moves,input.embellishmentAvailable!==false);
+   if(metric.value===null){partial=true;if(metric.reason)notes.add('Cutting WIP: '+metric.reason);continue;}
+   if(metric.value<0)notes.add('Negative report WIP is displayed as zero.');
+   if(metric.reason)partial=true;
+   total+=Math.max(0,metric.value);known++;
+  }
+  reports.set(ewo,{value:known?total:null,partial});
+ }
+ return reports;
+}
 // Allocate the full snapshot before applying display filters. Sewing is line/EWO
 // stock; upstream stock is shared by EWO. Colors never participate in allocation.
 function gdsAllocate(input,notes){
@@ -36,14 +64,14 @@ function gdsAllocate(input,notes){
  const cutoff=(input.production||[]).map(row=>String(row.output_date||'').slice(0,10)).filter(date=>/^\d{4}-\d{2}-\d{2}$/.test(date)).sort().at(-1)||'';
  const fabric=gdsGroup(input.fabric,row=>gdsKey(row.ewo)),em=gdsGroup(input.embellishment||[],row=>gdsKey(row['EWO No'])),data=gdsGroup(input.data,row=>gdsKey(row.ewo));
  const sewing=gdsGroup(input.sewing,row=>JSON.stringify([Number(row.line_no),gdsKey(row.ewo)]));
- const shared=new Map(),lineStock=new Map(),allocations=new Map();
+ const shared=new Map(),lineStock=new Map(),allocations=new Map(),cutting=gdsCuttingReports(input,notes);
  const clean=report=>{if(report.value<0)notes.add('Negative report WIP is displayed as zero.');return {...report,value:report.value===null?null:Math.max(0,report.value)};};
  function upstream(ewo){
   if(shared.has(ewo))return shared.get(ewo);
   const rows=em.get(ewo)||[],meta=data.get(ewo)||[];
   const notRequired=field=>meta.length>0&&meta.every(row=>['no','n','n/a','none','not applicable'].includes(String(row[field]??'').trim().toLowerCase()));
   const difference=(send,receive,flag)=>!rows.length?{value:notRequired(flag)?0:null,partial:false}:gdsReportSum(rows,row=>{const a=gdsNumber(row[send]),b=gdsNumber(row[receive]);return a===null||b===null?null:a-b;});
-  const reports=[gdsReportSum(fabric.get(ewo)||[],row=>gdsNumber(row.cutable_qty)),difference('Today Print Send Qty\n',' Today Print Receive Qty','print'),difference('Today EMB Send Qty','Today EMB Receive Qty','emb')].map(clean);
+  const reports=[gdsReportSum(fabric.get(ewo)||[],row=>gdsNumber(row.cutable_qty)),difference('Today Print Send Qty\n',' Today Print Receive Qty','print'),difference('Today EMB Send Qty','Today EMB Receive Qty','emb'),cutting.get(ewo)||{value:null,partial:false}].map(clean);
   shared.set(ewo,reports);return reports;
  }
  const byDate=gdsGroup(plan,row=>row.date);
@@ -58,13 +86,13 @@ function gdsAllocate(input,notes){
     const source=lineStock.get(key),demand=entries.reduce((n,row)=>n+gdsNumber(row.value),0);
     const used=source.value===null?null:Math.min(source.value,demand);
     if(used!==null)source.value-=used;
-    const sources=[...reports,source],meta=(data.get(ewo)||[]).filter(row=>Number(row.line)===line);
+    const sources=[...reports.slice(0,3),source,reports[3]],meta=(data.get(ewo)||[]).filter(row=>Number(row.line)===line);
     const smvs=[...new Set(meta.map(row=>gdsNumber(row.smv)).filter(v=>v!==null&&v>0))];
-    const item={line,ewo,date,qty:demand,need:demand-(used||0),stages:[...reports.map(report=>report.value===null?null:0),used],stagePartial:sources.map((report,i)=>report.partial||sources.slice(i+1).some(prior=>prior.value===null||prior.partial)),smv:smvs.length===1?smvs[0]:null};
+    const item={line,ewo,date,qty:demand,need:demand-(used||0),stages:sources.map((report,i)=>i===3?used:report.value===null?null:0),stagePartial:sources.map((report,i)=>report.partial||GDS_PRIORITY.slice(0,GDS_PRIORITY.indexOf(i)).some(j=>sources[j].value===null||sources[j].partial)),smv:smvs.length===1?smvs[0]:null};
     allocations.set(JSON.stringify([date,line,ewo]),item);return item;
    });
-   for(const stage of [2,1,0]){
-    const report=reports[stage];if(report.value===null)continue;
+   for(const stage of [4,2,1,0]){
+    const report=reports[stage===4?3:stage];if(report.value===null)continue;
     const demand=cells.reduce((n,item)=>n+item.need,0),available=Math.min(report.value,demand);if(!demand)continue;
     // Same-date shared stock follows unmet demand proportions, independent of
     // selected line. Whole-piece quotas use largest remainders with line tie-break.
@@ -99,7 +127,7 @@ function buildGanttDailySummary(input){
   if(clock===null)notes.add('Some source dates have no Clock Hour/Day.');
   if(!manpowerKnown){manpower=null;notes.add('Some scheduled lines have missing or conflicting Manpower.');}
   let forecast=0,forecastSah=0,selectedKnown=0,sahKnown=0,missingSmv=0;
-  const stages=[0,0,0,0],stageKnown=[0,0,0,0],stagePartial=[false,false,false,false];
+  const stages=GDS_STAGES.map(()=>0),stageKnown=GDS_STAGES.map(()=>0),stagePartial=GDS_STAGES.map(()=>false);
   let forecastPartial=false;
   const keys=new Set(rows.map(row=>JSON.stringify([date,Number(row.line),gdsKey(row.ewo)])));
   for(const key of keys){
@@ -127,12 +155,12 @@ function buildGanttDailySummary(input){
 }
 function gdsFormat(value,index){if(value===null)return '—';const text=Number(value).toLocaleString('en-US',{maximumFractionDigits:index===2||index===3||index===7?0:1});return text+(index===5?'%':'');}
 function gdsSubtotalMark(value,partial){return value!==null&&partial?' <sup class="gds-partial" title="Available data subtotal; some source values are unavailable" aria-label="Available data subtotal">*</sup>':'';}
-function gdsInput(context,embellishment){return {dates:context.dates,lines:context.lines,search:context.search,selected:[...GDS_STATE.selected],data:DATA,plan:DAILY_PLAN,sah:SAH_DAILY,clock:CLOCK_HOUR_DAILY,fabric:FABRIC_CUTTING_DATA,sewing:SEWING_IO_DATA,embellishment,metrics:typeof EFF15_METRIC_DAILY==='undefined'?undefined:EFF15_METRIC_DAILY,production:DATE_WISE_PRODUCTION_DATA,masterLines:[...getChassisMasterLines()]};}
+function gdsInput(context,embellishment){return {embellishmentAvailable:!GDS_STATE.source?.loading&&!GDS_STATE.source?.error,dates:context.dates,lines:context.lines,search:context.search,selected:[...GDS_STATE.selected],data:DATA,plan:DAILY_PLAN,sah:SAH_DAILY,clock:CLOCK_HOUR_DAILY,fabric:FABRIC_CUTTING_DATA,sewing:SEWING_IO_DATA,embellishment,metrics:typeof EFF15_METRIC_DAILY==='undefined'?undefined:EFF15_METRIC_DAILY,production:DATE_WISE_PRODUCTION_DATA,masterLines:[...getChassisMasterLines()]};}
 function paintGanttDailySummary(){
  const context=GDS_STATE.context,body=document.getElementById('gantt-daily-summary');if(!context||!body)return;
  const result=buildGanttDailySummary(gdsInput(context,GDS_STATE.source?.rows||[]));
  const count=GDS_STATE.selected.size,colspan=context.dates.length+1;
- const picker='<div class="gds-picker"><button type="button" id="gds-filter-button" aria-expanded="'+GDS_STATE.open+'" aria-controls="gds-filter-menu" onclick="gdsToggleMenu()">Consumable WIP · '+(count===4?'All 4':count+' selected')+' ▾</button><div id="gds-filter-menu" class="gds-menu" role="group" aria-label="Select consumable WIP categories" '+(GDS_STATE.open?'':'hidden')+'>'+GDS_STAGES.map((name,i)=>'<label><input type="checkbox" value="'+i+'" '+(GDS_STATE.selected.has(i)?'checked':'')+' onchange="gdsSelectStage(this)">'+name+'</label>').join('')+'<div class="gds-menu-actions"><button type="button" onclick="gdsSelectAll(true)">Select all</button><button type="button" onclick="gdsSelectAll(false)">Clear</button></div></div></div>';
+ const picker='<div class="gds-picker"><button type="button" id="gds-filter-button" aria-expanded="'+GDS_STATE.open+'" aria-controls="gds-filter-menu" onclick="gdsToggleMenu()">Consumable WIP · '+(count===GDS_STAGES.length?'All '+GDS_STAGES.length:count+' selected')+' ▾</button><div id="gds-filter-menu" class="gds-menu" role="group" aria-label="Select consumable WIP categories" '+(GDS_STATE.open?'':'hidden')+'>'+GDS_STAGE_ORDER.map(i=>{const name=GDS_STAGES[i];return '<label><input type="checkbox" value="'+i+'" '+(GDS_STATE.selected.has(i)?'checked':'')+' onchange="gdsSelectStage(this)">'+name+'</label>'}).join('')+'<div class="gds-menu-actions"><button type="button" onclick="gdsSelectAll(true)">Select all</button><button type="button" onclick="gdsSelectAll(false)">Clear</button></div></div></div>';
  body.innerHTML='<tr class="gds-controls"><td colspan="'+colspan+'"><div class="gds-control-row"><span>DAILY PLAN SUMMARY</span>'+picker+'</div></td></tr>';
  const labels=['Clock Hour','Plan SAH','Plan Pcs','Forecastable Pcs','Forecastable SAH','Plan Efficiency','Plan Working Hours','Plan Manpower'];
  const units=['h','h','pcs','pcs','h','%','h','people'];
@@ -145,11 +173,11 @@ function paintGanttDailySummary(){
  const table=body.closest('table');table?.classList.toggle('gds-visible',!GDS_STATE.hidden);
  const head=document.querySelector('#s11-head th');if(head)head.textContent=GDS_STATE.hidden?'Team':'Planning metric';
  const button=document.getElementById('gds-visibility');if(button){button.textContent=GDS_STATE.hidden?'Show summary ▾':'Hide summary ▴';button.setAttribute('aria-expanded',String(!GDS_STATE.hidden));}
- const note=document.getElementById('gds-note');if(note){note.hidden=GDS_STATE.hidden;note.textContent='Forecast: '+(count===4?'All consumable WIP':count?[...GDS_STATE.selected].map(i=>GDS_STAGES[i]).join(' + '):'None selected')+' · Daily allocated plan coverage; Line + EWO, all colors. Sewing → Embroidery → Print → Cutable; used stock is deducted before later dates. Filter sums stage contributions without reallocating stock. SAH = Σ(covered EWO pcs × EWO SMV ÷ 60).'+(result.cutoff?' Stock baseline through '+result.cutoff+'; dates through baseline show —.':'')+(GDS_STATE.source?.loading?' Loading Print/Embroidery WIP…':'')+(GDS_STATE.source?.error?' Print/Embroidery report could not load.':'')+(result.notes.length?' '+result.notes.join(' '):'');}
+ const note=document.getElementById('gds-note');if(note){note.hidden=GDS_STATE.hidden;note.textContent='Forecast: '+(count===GDS_STAGES.length?'All consumable WIP':count?[...GDS_STATE.selected].map(i=>GDS_STAGES[i]).join(' + '):'None selected')+' · Daily allocated plan coverage; Line + EWO, all colors. Sewing → Cutting → Embroidery → Print → Cutable; used stock is deducted before later dates. Filter sums stage contributions without reallocating stock. SAH = Σ(covered EWO pcs × EWO SMV ÷ 60).'+(result.cutoff?' Stock baseline through '+result.cutoff+'; dates through baseline show —.':'')+(GDS_STATE.source?.loading?' Loading Print/Embroidery WIP…':'')+(GDS_STATE.source?.error?' Print/Embroidery report could not load.':'')+(result.notes.length?' '+result.notes.join(' '):'');}
  const lower=document.getElementById('gds-consumable-table');if(lower){
-  lower.innerHTML='<thead><tr><th>Consumable WIP</th>'+context.dates.map(date=>'<th>'+esc(date.slice(8)+'-'+date.slice(5,7)+'-'+date.slice(2,4))+'</th>').join('')+'</tr></thead><tbody>'+GDS_STAGES.map((label,i)=>'<tr><th scope="row">'+label+'</th>'+result.days.map(day=>'<td>'+gdsFormat(day.stages[i],3)+gdsSubtotalMark(day.stages[i],day.stagePartial[i])+'</td>').join('')+'</tr>').join('')+'<tr class="gds-lower-total"><th>Total → Daily cover</th>'+result.days.map(day=>'<td>'+gdsFormat(day.total,3)+gdsSubtotalMark(day.total,day.totalPartial)+'</td>').join('')+'</tr></tbody>';
+  lower.innerHTML='<thead><tr><th>Consumable WIP</th>'+context.dates.map(date=>'<th>'+esc(date.slice(8)+'-'+date.slice(5,7)+'-'+date.slice(2,4))+'</th>').join('')+'</tr></thead><tbody>'+GDS_STAGE_ORDER.map(i=>{const label=GDS_STAGES[i];return '<tr><th scope="row">'+label+'</th>'+result.days.map(day=>'<td>'+gdsFormat(day.stages[i],3)+gdsSubtotalMark(day.stages[i],day.stagePartial[i])+'</td>').join('')+'</tr>'}).join('')+'<tr class="gds-lower-total"><th>Total → Daily cover</th>'+result.days.map(day=>'<td>'+gdsFormat(day.total,3)+gdsSubtotalMark(day.total,day.totalPartial)+'</td>').join('')+'</tr></tbody>';
  }
- const lowerNote=document.getElementById('gds-consumable-note');if(lowerNote)lowerNote.textContent=count===4?'Total daily cover = Forecastable Pcs above. Balances carry forward; shared EWO stock is allocated once across all lines before filters.':'This table retains all stage allocations; the upper forecast sums selected contributions. Filter changes do not reassign stock or reset prior-day consumption.';
+ const lowerNote=document.getElementById('gds-consumable-note');if(lowerNote)lowerNote.textContent=count===GDS_STAGES.length?'Total daily cover = Forecastable Pcs above. Balances carry forward; shared EWO stock is allocated once across all lines before filters.':'This table retains all stage allocations; the upper forecast sums selected contributions. Filter changes do not reassign stock or reset prior-day consumption.';
 }
 function renderGanttDailySummary(context){
  if(!document.getElementById('gantt-daily-summary'))return;
@@ -167,8 +195,8 @@ function renderGanttDailySummary(context){
 function gdsToggleVisibility(){GDS_STATE.hidden=!GDS_STATE.hidden;GDS_STATE.open=false;paintGanttDailySummary();}
 function gdsToggleMenu(){GDS_STATE.open=!GDS_STATE.open;const menu=document.getElementById('gds-filter-menu'),button=document.getElementById('gds-filter-button');if(menu)menu.hidden=!GDS_STATE.open;if(button)button.setAttribute('aria-expanded',String(GDS_STATE.open));}
 function gdsSelectStage(input){const value=Number(input.value);if(input.checked)GDS_STATE.selected.add(value);else GDS_STATE.selected.delete(value);const focus=input.value;paintGanttDailySummary();document.querySelector('#gds-filter-menu input[value="'+focus+'"]')?.focus();}
-function gdsSelectAll(all){GDS_STATE.selected=new Set(all?[0,1,2,3]:[]);paintGanttDailySummary();}
-function resetGanttDailySummary(){++GDS_STATE.request;GDS_STATE={...GDS_STATE,hidden:true,selected:new Set([0,1,2,3]),open:false,context:null,source:null};for(const id of ['gantt-daily-summary','gds-consumable-table','gds-note','gds-consumable-note']){const el=document.getElementById(id);if(el)el.textContent='';}}
+function gdsSelectAll(all){GDS_STATE.selected=new Set(all?GDS_STAGES.map((_,i)=>i):[]);paintGanttDailySummary();}
+function resetGanttDailySummary(){++GDS_STATE.request;GDS_STATE={...GDS_STATE,hidden:true,selected:new Set(GDS_STAGES.map((_,i)=>i)),open:false,context:null,source:null};for(const id of ['gantt-daily-summary','gds-consumable-table','gds-note','gds-consumable-note']){const el=document.getElementById(id);if(el)el.textContent='';}}
 if(typeof document!=='undefined'&&document.addEventListener){
  document.addEventListener('click',event=>{if(GDS_STATE.open&&!event.target.closest('.gds-picker'))gdsToggleMenu();});
  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&GDS_STATE.open){gdsToggleMenu();document.getElementById('gds-filter-button')?.focus();}});
