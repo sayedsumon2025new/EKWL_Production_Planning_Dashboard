@@ -105,7 +105,7 @@ function loadSharedReport(name){
       if(name==='fabric')FABRIC_CUTTING_DATA=rows;
       if(name==='sewing')SEWING_IO_DATA=rows;
       if(name==='production')DATE_WISE_PRODUCTION_DATA=rows;
-      entry.loaded=true;
+      entry.loaded=true;entry.cached=false;
       setLoadChip('load-'+name,'ok',label+' ('+rows.length.toLocaleString()+')');
       finish({status:'loaded',requests,rows:rows.length});
       return rows;
@@ -114,7 +114,7 @@ function loadSharedReport(name){
       const fallback=SHARED_REPORT_FALLBACKS.get(name);
       if(wasCurrent&&fallback?.generation===generation&&fallback.userId===userId){
         // Preserve the previous cache fallback on a failed live read, never partial rows.
-        entry.loaded=true;
+        entry.loaded=true;entry.cached=true;
         setLoadChip('load-'+name,'err',label+' · cached data');
         setSupabaseLiveBadge('err','Supabase check failed · cached '+label);
         finish({status:'cached',requests,rows:fallback.rows.length});

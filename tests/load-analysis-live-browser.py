@@ -22,7 +22,7 @@ with sync_playwright() as p:
  setup='''
  let SITE_AUTH_USER={id:'account-a'},SITE_SESSION_GENERATION=1,CURRENT_SLIDE=20,ACTIVE_PLAN_UPLOAD={id:'11111111-1111-4111-8111-111111111111'},EFF15_METRIC_UPLOAD_ID=ACTIVE_PLAN_UPLOAD.id;
  const dates=['2026-10-25','2026-10-26'];
- const DATA=[{line:1,ewo:'272718',smv:6,manpower:31,print:'No',emb:'No'}],DAILY_PLAN=dates.map((date,i)=>({record_id:i+1,line:1,ewo:'272718',date,value:1000,smv:6})),SAH_DAILY=dates.map(date=>({record_id:99,line:1,ewo:'272718',date,value:100})),CLOCK_HOUR_DAILY=[],FABRIC_CUTTING_DATA=[{ewo:'272718',cutable_qty:0}],SEWING_IO_DATA=[{line_no:1,ewo:'272718',color:'White',wip:600}],DATE_WISE_PRODUCTION_DATA=[{output_date:'2026-10-24'}],EFF15_METRIC_DAILY=dates.map(date=>({record_id:99,line:1,ewo:'272718',date,value:100,criteria:'SAH/Day'}));
+ const DATA=[{line:1,ewo:'272718',smv:6,manpower:31,print:'No',emb:'No'}],DAILY_PLAN=dates.map((date,i)=>({record_id:i+1,line:1,ewo:'272718',date,value:1000,smv:6})),SAH_DAILY=dates.map(date=>({record_id:99,line:1,ewo:'272718',date,value:100})),CLOCK_HOUR_DAILY=[],FABRIC_CUTTING_DATA=[{ewo:'272718',cutable_qty:0,fabric_balance:-1,cutting_difficulties:'Panel wash challenge'}],SEWING_IO_DATA=[{line_no:1,ewo:'272718',color:'White',wip:600}],DATE_WISE_PRODUCTION_DATA=[{output_date:'2026-10-24'}],EFF15_METRIC_DAILY=dates.map(date=>({record_id:99,line:1,ewo:'272718',date,value:100,criteria:'SAH/Day'}));
  const canAccessSlide=()=>true,getChassisMasterLines=()=>new Set([1]),activePlanningLabel=()=> 'P02 fixture',getABPTarget=()=>({metrics:[['Daily Capacity','120 Hour']]}),ensureSharedReports=()=>Promise.resolve(),invalidateSharedReports=()=>{},invalidateEwoSources=()=>{};
  let hold=null,deny=false,overrides={},requests=[];
  const loadEwoSource=async type=>{if(hold)await new Promise(resolve=>hold.resolve=resolve);return type==='embellishment'?[{'EWO No':'272718','Today Print Send Qty\\n':30,' Today Print Receive Qty':0,'Today EMB Send Qty':20,'Today EMB Receive Qty':0}]:[];};
@@ -42,7 +42,7 @@ with sync_playwright() as p:
  frame.locator('.la-department-panel').screenshot(path='/tmp/load-analysis-department-multicolor.png')
  assert page.evaluate('LOAD_ANALYSIS_MODEL.model.days.map(d=>d.forecast)')==[60,0]
  # Both flags preserved; Print receives the uncovered SAH once by priority.
- assert page.evaluate("LOAD_ANALYSIS_MODEL.model.records[0].evidence.map(x=>x.reason)")==['print','emb']
+ assert page.evaluate("LOAD_ANALYSIS_MODEL.model.records[0].evidence.filter(x=>x.reason).map(x=>x.reason)")==['wash','fabric','print','emb']
  assert page.evaluate('LOAD_ANALYSIS_MODEL.model.days[0].buckets.print')==3
  frame.locator('#sources').evaluate('(node)=>node.open=true')
  frame.locator('[data-edit]').first.click()
@@ -63,11 +63,39 @@ with sync_playwright() as p:
  frame.locator('#edit-error').filter(has_text='Save unavailable').wait_for()
  assert frame.locator('#edit-dialog').is_visible()
  frame.locator('#cancel-edit').click();page.evaluate('deny=false')
+ frame.locator('.la-view-more summary').click()
  frame.locator('#clear-overrides').click()
  page.wait_for_function('LOAD_ANALYSIS_MODEL?.model.records[0]?.manual===null')
  # A forged message origin/source cannot overwrite state.
  page.evaluate("document.getElementById('load-analysis-workspace').contentWindow.postMessage({type:'wrong',model:{}},location.origin)")
  assert forecast()==['60','0']
+ # The approved nine-row filter operates on cached source facts, not a new report query.
+ assert frame.locator('#load-analysis-summary-table tbody tr').count()==9
+ assert frame.locator('#load-analysis-summary-table tbody .label-col').all_text_contents()==['ABP Day Wise Target SAH:','FR Day Wise Plan SAH:','Cut able WIP SAH:','Cutting WIP SAH:','Print WIP SAH:','Embroidery WIP SAH:','Sewing WIP SAH:','Final Forecast Achievable SAH:','SAH gap (Target − Forecast):']
+ beforeEvidence=page.evaluate('LOAD_ANALYSIS_MODEL.model.records.map(r=>r.evidence)')
+ reads=page.evaluate("requests.filter(r=>r.action==='list').length")
+ frame.locator('#la-view-wip-button').scroll_into_view_if_needed();page.wait_for_timeout(60)
+ frame.locator('#la-view-wip-button').click();frame.locator('#la-view-clear').click()
+ page.wait_for_function('LOAD_ANALYSIS_MODEL.model.selected.length===0')
+ frame.locator('#load-analysis-summary-table tbody tr').nth(3).filter(has_text='SAH gap').wait_for()
+ assert frame.locator('#load-analysis-summary-table tbody tr').count()==4
+ assert page.evaluate('LOAD_ANALYSIS_MODEL.model.days.every(d=>d.forecast===0&&d.loss===120)')
+ frame.locator('#la-view-wip-menu input[value="1"]').check()
+ page.wait_for_function('LOAD_ANALYSIS_MODEL.model.selected.length===1')
+ assert page.evaluate('LOAD_ANALYSIS_MODEL.model.days.every(d=>d.forecast===0)')
+ assert page.evaluate('LOAD_ANALYSIS_MODEL.model.records.map(r=>r.evidence)')==beforeEvidence
+ assert page.evaluate("requests.filter(r=>r.action==='list').length")==reads
+ frame.locator('#la-view-all').click();page.wait_for_function('LOAD_ANALYSIS_MODEL.model.selected.length===5')
+ frame.locator('#la-view-wip-button').press('Escape')
+ # A failed arithmetic check cannot be presented as a valid forecast or erase evidence.
+ page.evaluate("""()=>{const model=structuredClone(LOAD_ANALYSIS_MODEL.model);model.days[0].buckets.unknown+=1;document.getElementById('load-analysis-workspace').contentWindow.postMessage({type:'ekwl-load-analysis-plan',ready:true,uploadId:ACTIVE_PLAN_UPLOAD.id,dates,totals:LOAD_ANALYSIS_MODEL.payload.totals,dailyCapacity:120,label:'Audit failure fixture',selected:[0,1,2,3,4],model,canCorrect:true},location.origin)}""")
+ frame.locator('#reconcile').filter(has_text='Reconciliation failed').wait_for()
+ assert 'error-reconcile' in frame.locator('#reconcile').get_attribute('class')
+ assert frame.locator('#load-analysis-summary-table .source-row td').nth(1).inner_text()=='—'
+ assert frame.locator('#evidence tbody tr').count()==2
+ assert not frame.locator('[data-edit]').count()
+ page.evaluate('refreshLoadAnalysisPlan()');frame.locator('#reconcile').filter(has_text='Arithmetic matched').wait_for()
+ assert page.evaluate('LOAD_ANALYSIS_MODEL.model.reconciliation.ok')
  # Sign-out clears the iframe and ignores all late reads.
  page.evaluate('hold={};refreshLoadAnalysisPlan();SITE_SESSION_GENERATION++;SITE_AUTH_USER=null;refreshLoadAnalysisPlan();hold.resolve?.()')
  frame.locator('#load-analysis-summary-table .source-row td').nth(1).filter(has_text='—').wait_for()
@@ -85,11 +113,11 @@ with sync_playwright() as p:
  page.evaluate("""()=>{
   const dates=Array.from({length:16},(_,i)=>new Date(Date.UTC(2026,9,26+i)).toISOString().slice(0,10));
   const model=structuredClone(LOAD_ANALYSIS_MODEL.model);
-  model.days=dates.map(date=>({...model.days[0],date,target:10133,plan:9742,ganttForecast:8045.3,printSah:1786.9,embSah:0,forecast:6258.5,loss:3874.5,partial:true,buckets:Object.fromEntries(Object.keys(model.days[0].buckets).map(key=>[key,key==='unknown'?3874.5:0]))}));
+  model.days=dates.map(date=>({...model.days[0],date,target:10133,plan:9742,ganttForecast:8045.3,wipSah:[1000,1786.9,0,3000,2258.4],wipPartial:[true,true,true,true,true],printSah:1786.9,embSah:0,forecast:6258.4,loss:3874.6,partial:true,buckets:Object.fromEntries(Object.keys(model.days[0].buckets).map(key=>[key,key==='unknown'?3874.6:0]))}));
   model.records=[];
   document.getElementById('load-analysis-workspace').contentWindow.postMessage({type:'ekwl-load-analysis-plan',ready:true,uploadId:ACTIVE_PLAN_UPLOAD.id,dates,totals:Object.fromEntries(dates.map(date=>[date,9742])),dailyCapacity:10133,label:'Wide-range layout fixture',model,canCorrect:false},location.origin);
  }""")
- frame.locator('#load-analysis-loss-table thead tr').nth(1).locator('th').nth(17).wait_for()
+ frame.locator('#load-analysis-loss-table thead tr').last.locator('th').nth(17).wait_for()
  for viewport in [{'width':1910,'height':970},{'width':1464,'height':884},{'width':1020,'height':884}]:
   page.set_viewport_size(viewport)
   page.wait_for_timeout(100)
