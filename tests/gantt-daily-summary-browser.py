@@ -25,10 +25,13 @@ with sync_playwright() as p:
  page.evaluate("document.documentElement.dataset.theme='dark';document.getElementById('s11').style.display='block';document.getElementById('s11').classList.add('active')")
  page.add_script_tag(content=setup+renderer+'\n'+(ROOT/'gantt-daily-summary.js').read_text()+'\nrenderS11([]);gdsToggleVisibility();')
  page.wait_for_function("GDS_STATE.source?.loading===false")
- def first(name):return page.locator('#gantt-daily-summary .gds-metric').filter(has=page.locator('th',has_text=name)).locator('td').first.inner_text()
+ def first(name):return page.locator('#gantt-daily-summary .gds-metric').filter(has=page.locator('th',has_text=name)).locator('td').first.inner_text().replace(' *','')
+ assert page.locator('#gds-filter-menu input').count()==5
+ assert page.locator('#gds-filter-menu').get_by_text('Cutting WIP',exact=True).count()==1
+ assert 'All 5' in page.locator('#gds-filter-button').inner_text()
  assert first('Forecastable Pcs')=='300 pcs'
  assert first('Forecastable SAH')=='90 h'
- assert page.locator('#gantt-daily-summary .gds-metric').filter(has=page.locator('th',has_text='Forecastable Pcs')).locator('td').nth(1).inner_text()=='0 pcs'
+ assert page.locator('#gantt-daily-summary .gds-metric').filter(has=page.locator('th',has_text='Forecastable Pcs')).locator('td').nth(1).inner_text().replace(' *','')=='0 pcs'
  page.evaluate("S11_RANGE_FROM='2026-10-26';renderS11([])")
  page.wait_for_function('GDS_STATE.source?.loading===false')
  assert first('Forecastable Pcs')=='0 pcs'
@@ -37,7 +40,7 @@ with sync_playwright() as p:
  original=page.locator('#s11-body').inner_html()
  lower=page.locator('#gds-consumable-table').inner_text()
  page.locator('#gds-filter-button').click()
- page.locator('#gds-filter-menu input[value="0"]').uncheck();page.locator('#gds-filter-menu input[value="2"]').uncheck()
+ page.locator('#gds-filter-menu input[value="4"]').uncheck();page.locator('#gds-filter-menu input[value="0"]').uncheck();page.locator('#gds-filter-menu input[value="2"]').uncheck()
  assert first('Forecastable Pcs')=='170 pcs'
  assert first('Forecastable SAH')=='58 h'
  assert page.locator('#s11-body').inner_html()==original
@@ -105,6 +108,28 @@ with sync_playwright() as p:
  page.locator('#gds-filter-button').click();assert page.locator('#gds-filter-menu').is_visible()
  page.keyboard.press('Escape')
  page.screenshot(path='/tmp/gantt-compact-live-summary.png')
+ # Real received Cutting WIP, using the shared production calculator rather than a stub.
+ helpers=main[main.index('function fabricEwoColorKey('):main.index('function fabricCuttingCascade(')]+main[main.index('function s12CuttingWipMetric('):main.index('function renderS12(')]
+ page.add_script_tag(content=helpers)
+ page.evaluate("""()=>{
+ DATA.splice(0,DATA.length,{record_id:1,line:1,ewo:'CUT-DEMO',color:'White',smv:6,manpower:20,print:'No',emb:'No'});
+ DAILY_PLAN.splice(0,DAILY_PLAN.length,...['2026-10-25','2026-10-26'].map((date,i)=>({record_id:i+1,line:1,ewo:'CUT-DEMO',color:'Navy',date,value:1000,smv:6})));
+ FABRIC_CUTTING_DATA.splice(0,FABRIC_CUTTING_DATA.length,{ewo:'CUT-DEMO',color_name:'White',total_cut_qty:10000,cutable_qty:0});
+ SEWING_IO_DATA.splice(0,SEWING_IO_DATA.length,{line_no:1,ewo:'CUT-DEMO',color:'White',input:8000,wip:0});
+ f.embellishment.splice(0);GDS_STATE.selected=new Set([0,1,2,3,4]);S11_RANGE_PLAN_ID=null;GANTT_EWO_SEARCH='';renderS11([]);
+ }""")
+ page.wait_for_function('GDS_STATE.source?.loading===false')
+ assert first('Forecastable Pcs')=='1,000 pcs'
+ assert first('Forecastable SAH')=='100 h'
+ assert page.locator('#gds-consumable-table tbody tr').filter(has=page.locator('th',has_text='Cutting WIP')).locator('td').first.text_content()=='1,000'
+ page.evaluate('gdsSelectAll(false);GDS_STATE.open=true;paintGanttDailySummary()')
+ page.locator('#gds-filter-menu input[value="4"]').check()
+ assert first('Forecastable Pcs')=='1,000 pcs'
+ assert page.locator('#gds-filter-button').inner_text()=='Consumable WIP · 1 selected ▾'
+ page.locator('#gds-filter-menu').get_by_role('button',name='Select all',exact=True).click()
+ assert 'All 5' in page.locator('#gds-filter-button').inner_text()
+ page.set_viewport_size({'width':784,'height':884});page.locator('#gds-filter-button').scroll_into_view_if_needed()
+ page.screenshot(path='/tmp/gds-cutting-stage-five.png')
  assert not errors,errors
  b.close()
 print('PASS actual Gantt integration, WIP multi-select/SAH, unchanged Gantt and lower totals, hide/show persistence, optional source failure, stale-session guard and visible filter on wide dates')

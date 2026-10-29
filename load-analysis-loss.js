@@ -29,7 +29,7 @@ function laEvidence(sources){
  return map;
 }
 function buildLoadAnalysisLoss(input){
- const notes=new Set(),allocated=gdsAllocate(input,notes),summary=buildGanttDailySummary({...input,selected:[0,1,2,3]}),evidence=laEvidence(input.sources||{}),overrides=input.overrides||{};
+ const notes=new Set(),allocated=gdsAllocate(input,notes),summary=buildGanttDailySummary({...input,selected:[0,1,2,3,4]}),evidence=laEvidence(input.sources||{}),overrides=input.overrides||{};
  const plan=gdsGroup(allocated.plan,row=>JSON.stringify([row.date,Number(row.line),gdsKey(row.ewo)]));
  const records=[];
  for(const [key,rows] of plan){const [date,line,ewo]=JSON.parse(key);if(!input.dates.includes(date)||!input.lines.includes(line))continue;

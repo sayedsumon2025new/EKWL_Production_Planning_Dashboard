@@ -10,7 +10,7 @@ function fixture(){return {production:[{output_date:'2026-10-24',total_qty:0}],d
 const build=f=>JSON.parse(JSON.stringify(c.buildGanttDailySummary(f))),first=f=>build(f).days[0];
 let f=fixture(),r=build(f);
 assert.deepEqual(r.days[0].values,[400,110,400,300,90,27.500000000000004,10,40]);
-assert.deepEqual(r.days[0].stages,[100,20,30,150]);assert.equal(r.days[1].values[3],0);
+assert.deepEqual(r.days[0].stages,[100,20,30,150,null]);assert.equal(r.days[1].values[3],0);
 f.selected=[1,3];r=first(f);assert.equal(r.values[3],170);assert.equal(r.values[4],58);assert.equal(r.total,300);
 f.selected=[];assert.equal(first(f).values[3],0);assert.equal(first(f).values[4],0);
 // Display filters cannot replenish the shared EWO upstream stock or skip demand
@@ -49,7 +49,7 @@ f=incident();f.dates=['2026-10-25','2026-10-26','2026-10-27','2026-10-28','2026-
 f.plan=f.dates.map((date,i)=>({record_id:i+1,line:1,ewo:'272718',date,value:[389,400,300,200,300,200][i]}));
 f.fabric[0].cutable_qty=500;f.embellishment=[{'EWO No':'272718','Today Print Send Qty\n':200,' Today Print Receive Qty':0,'Today EMB Send Qty':150,'Today EMB Receive Qty':0}];
 r=build(f);assert.deepEqual(r.days.map(d=>d.values[3]),[389,400,300,200,173,0]);
-assert.deepEqual(r.days.map(d=>d.stages),[[0,0,0,389],[0,27,150,223],[127,173,0,0],[200,0,0,0],[173,0,0,0],[0,0,0,0]]);
+assert.deepEqual(r.days.map(d=>d.stages),[[0,0,0,389,null],[0,27,150,223,null],[127,173,0,0,null],[200,0,0,0,null],[173,0,0,0,null],[0,0,0,0,null]]);
 for(let i=0;i<4;i++)assert.equal(r.days.reduce((n,d)=>n+d.stages[i],0),[500,200,150,612][i]);
 f.selected=[3];const sewingOnly=build(f);assert.deepEqual(sewingOnly.days.map(d=>d.values[3]),[389,223,0,0,0,0]);assert.deepEqual(sewingOnly.days.map(d=>d.stages),r.days.map(d=>d.stages));
 // Same-date shared stock is assigned once across lines even when only one is
