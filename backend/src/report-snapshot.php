@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Ekwl;
-/** All pages see the same active report heads. Ordinary table permissions still apply. */
+/** A single cursor sees consistent active report heads; ordinary permissions apply. */
 function reportSnapshotSpec(string $kind): array {
     $specs=[
         'fabric'=>['fabric_cutting_info','id,buyer,ewo,color_name,item_product_type,style_embellishment_type,pattern_update,color_order_qty,fabric_booking_qty,total_fabric_received,fabric_balance,fabric_stock_after_cut,cutable_qty,total_cut_qty,cutting_balance,cutting_percent,status,cutting_difficulties,pattern_received_date,replacement_receive_commitment_date',[['id',true]],[]],
@@ -19,17 +19,22 @@ function reportSnapshotRead(array $u,array $b): void {
     $kind=(string)($b['kind']??'');$q=reportSnapshotSpec($kind);$pdo=db();
     $pdo->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');$pdo->beginTransaction();
     try {
-        $q['offset']=0;$page=dataQuery($u,$q)['data']; // Authenticate/authorize before response output.
+        $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY,false);
+        $read=dataQuery($u,$q,true);$cursor=$read['cursor']; // Authorize before response output.
         header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');header('X-Content-Type-Options: nosniff');
         if(function_exists('ob_gzhandler')&&!ini_get('zlib.output_compression')&&!headers_sent()&&str_contains($_SERVER['HTTP_ACCEPT_ENCODING']??'','gzip'))ob_start('ob_gzhandler',8192);
         echo '{"data":{"format":"report-rows-v1","kind":'.json_encode($kind,JSON_THROW_ON_ERROR).',"rows":[';
         $count=0;
-        while(true){
-            foreach($page as $row){if($count++)echo ',';echo json_encode($row,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE);}
-            if(count($page)<1000)break;
-            $q['offset']+=1000;$page=dataQuery($u,$q)['data'];
+        while($row=$cursor->fetch()){
+            if($count++)echo ',';
+            echo json_encode(hydrate($row,$read['catalog']),JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE);
         }
+        $cursor->closeCursor();$pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY,true);
         $pdo->commit();
         echo '],"integrity":{"complete":true,"row_count":'.$count.'}},"error":null}';
-    }catch(\Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+    }catch(\Throwable $e){
+        if(isset($cursor))$cursor->closeCursor();
+        $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY,true);
+        if($pdo->inTransaction())$pdo->rollBack();throw $e;
+    }
 }

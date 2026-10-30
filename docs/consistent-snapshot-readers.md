@@ -12,7 +12,7 @@ Daily values are streamed as `[record_id, plan_date, decimal_text]`, preserving 
 
 ## Other reports
 
-`POST reports/snapshot` accepts six fixed dataset names: fabric, sewing, production, size, accessories and embellishment. It delegates authorization, column selection and active-head filtering to the existing query policy. All internal pages share a repeatable-read transaction, so activation during the read cannot mix batches across pages. Headers, source rows and evidence fields selected previously are preserved.
+`POST reports/snapshot` accepts six fixed dataset names: fabric, sewing, production, size, accessories and embellishment. It delegates authorization, column selection and active-head filtering to the existing query policy. A single unbuffered SQL cursor runs in a repeatable-read transaction, so activation during the read cannot mix batches. This also avoids repeated OFFSET scans inside the server request. Headers, source rows and evidence fields selected previously are preserved.
 
 The client requires a complete row-count receipt. Live failure does not mark cached data ready for fresh calculations. Successful shared/module reads expire after 60 seconds on the next access. Owner/session guards and explicit upload invalidation remain in place. These caches are not push subscriptions; a view already open does not automatically observe another user's new upload.
 
@@ -25,3 +25,7 @@ Persisted report values are not shown before live verification on reload. Only a
 Synthetic MySQL tests compare 90,000 cells from the new one-request reader against all legacy query pages, preserving every value and order. They exercise gzip, counts, exact totals, authentication/CSRF, report permissions and a 1,201-row report across internal pages. A real PHP/MySQL browser test verifies cold boot, no plan-detail paging, error hiding, recovery and logout. These tests run in CI before automatic deployment, in an isolated database with generated test credentials.
 
 This proves consistency and the documented checks against database contents. It does not prove that an original report is factually correct, that two differently dated business reports describe the same physical stock, that a matching reason caused the SAH loss, or that hosting/network speed meets a universal latency guarantee. Private MySQL-to-original-report reconciliation remains pending access to matching original reports and the actual database export/session.
+
+## Progressive Gantt display
+
+The Gantt planning grid does not wait for the independent Fabric, Sewing and Production reads. Verified plan rows, dates and filters appear immediately. Coverage colors and stock-bearing popup buttons remain unavailable until those reports complete; forecast/stage totals stay unknown while required reports are pending or failed. A failed WIP read retains the planning grid and can be retried by reopening/filtering the view. Other report-dependent views retain their blocking validation behavior. Closed summary panels do not run full-plan allocation; opening the summary or lower stock details computes the same existing figures after source checks.

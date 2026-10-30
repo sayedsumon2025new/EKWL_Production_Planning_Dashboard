@@ -132,7 +132,9 @@ function selectPageLimit(string $table,array $q): int {
     }
     return 1000;
 }
-function dataQuery(array $u,array $q): array {
+// The stream switch is a PHP-only argument; request JSON cannot enable it.
+function dataQuery(array $u,array $q,bool $internalStream=false): array {
+    if($internalStream&&($q['op']??'select')!=='select')throw new ApiError('Snapshot cursors are read-only.',403);
     $name=(string)($q['table']??'');
     if($name==='ewo_readiness_board'){
         if(($q['op']??'select')!=='select')throw new ApiError('Derived reports are read-only.',403);
@@ -172,7 +174,9 @@ function dataQuery(array $u,array $q): array {
         foreach($c['pk'] as $pk)$orders[]=ident($pk).' ASC';
         $offset=(int)($q['offset']??0);$limit=(int)($q['limit']??1000);
         if($offset<0||$limit<1||$limit>selectPageLimit($table,$q)||$offset>5000000)throw new ApiError('Invalid pagination.');
-        $rows=run('SELECT '.implode(',',array_map(fn($key)=>columnSpec($key,$c).' AS '.ident($key),$keys)).$extra.' FROM '.ident('ekwl_'.$table).$condition.' ORDER BY '.implode(',',$orders).' LIMIT '.$limit.' OFFSET '.$offset,$args)->fetchAll();
+        $sql='SELECT '.implode(',',array_map(fn($key)=>columnSpec($key,$c).' AS '.ident($key),$keys)).$extra.' FROM '.ident('ekwl_'.$table).$condition.' ORDER BY '.implode(',',$orders);
+        if($internalStream)return ['cursor'=>run($sql,$args),'catalog'=>$c];
+        $rows=run($sql.' LIMIT '.$limit.' OFFSET '.$offset,$args)->fetchAll();
         $rows=array_map(fn($r)=>hydrate($r,$c),$rows);
         if(!empty($q['single'])){
             if(count($rows)>1||($q['single']==='required'&&!$rows))throw new ApiError('Expected one row.',409);
