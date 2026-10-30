@@ -30,6 +30,7 @@ jobs:
       - name: Verify report JSON EWO filters
         run: |
           php tests/mysql/json-ewo-filter.php
+          php tests/mysql/planning-page-limit.php
           php tests/mysql/load-analysis-loss.php
       - name: Verify Size Set performance in Chrome
         run: |

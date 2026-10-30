@@ -789,12 +789,13 @@ function restorePlanningState(c){
 }
 
 let PLAN_PREFETCH_RUNNING=false;
-async function sbPaged(queryFactory){
-  const out=[],size=1000;
+async function sbPaged(queryFactory,{size=1000,onPage=()=>{}}={}){
+  const out=[];
   for(let from=0;;from+=size){
     const {data,error}=await queryFactory().range(from,from+size-1);
     if(error)throw error;
     out.push(...(data||[]));
+    onPage(out.length);
     if(!data||data.length<size)break;
   }
   return out;
@@ -826,7 +827,7 @@ function canReusePlanningSnapshot(snapshot,upload){
   const fields=['DATA','DAILY_PLAN','SAH_DATA','SAH_DAILY','CLOCK_HOUR_DATA','CLOCK_HOUR_DAILY','BUYER_PLAN_DATA','MONTHS','EFF15_METRIC_DAILY'];
   return fields.every(key=>Array.isArray(snapshot[key])) && String(snapshot.EFF15_METRIC_UPLOAD_ID)===String(upload.id);
 }
-async function fetchPlanningSnapshot(upload){
+async function fetchPlanningSnapshot(upload,onProgress=()=>{}){
   const version=planningSnapshotVersion(upload);
   const [records,daily]=await Promise.all([
     sbPaged(()=>SB.from('plan_records')
@@ -837,7 +838,8 @@ async function fetchPlanningSnapshot(upload){
     // Download daily values once; both planning and clock-hour maps use this result.
     sbPaged(()=>SB.from('plan_daily').select('record_id,plan_date,value')
       .eq('upload_id',upload.id)
-      .order('plan_date',{ascending:true}).order('record_id',{ascending:true}))
+      .order('plan_date',{ascending:true}).order('record_id',{ascending:true}),
+      {size:10000,onPage:count=>onProgress(count,Number(upload.expected_daily_rows)||0)})
   ]);
   const valid=records.filter(r=>!r.is_summary_row&&isChassisMasterLine(r.line_no));
   const planRows=valid.filter(r=>r.criteria==='Plan/Day');
@@ -1194,7 +1196,12 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
     ACTIVE_PLAN_UPLOAD=upload;
     const cached=PLAN_VERSION_CACHE.get(String(upload.id));
     const reused=reuseCache&&canReusePlanningSnapshot(cached,upload);
-    const snapshot=reused?cached:await fetchPlanningSnapshot(upload);
+    setLoadProgress(10,'Planning selected · loading daily values…');
+    const snapshot=reused?cached:await fetchPlanningSnapshot(upload,(count,total)=>{
+      if(!current())return;
+      const percent=total>0?10+Math.min(80,80*count/total):20;
+      setLoadProgress(percent,'Planning daily values loaded: '+count.toLocaleString()+(total>0?' / '+total.toLocaleString():''));
+    });
     if(!current())return false;
     restorePlanningState(snapshot);
 
