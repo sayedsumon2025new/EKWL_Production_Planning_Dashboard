@@ -40,7 +40,7 @@ function setup(source,options={}){
   Object.assign(c,{EFF15_METRIC_DAILY:[],EFF15_METRIC_UPLOAD_ID:null,SITE_SESSION_GENERATION:0,SITE_AUTH_USER:{id:'test-admin'}});
   vm.createContext(c);
   c.PLANNING_CACHE_VALIDATION=null;c.getChassisMasterLines=()=>new Set([1,2,3]);
-  const names=['planningSnapshotVersion','canReusePlanningSnapshot','capturePlanningState','restorePlanningState','fetchPlanningSnapshot','loadFromSupabase'];
+  const names=['uploadMonthKey','planningSnapshotVersion','canReusePlanningSnapshot','capturePlanningState','restorePlanningState','fetchPlanningSnapshot','loadFromSupabase'];
   if(source.includes('async function sbPaged('))names.unshift('sbPaged');else names.unshift('sbAll');
   vm.runInContext(fs.readFileSync(__dirname+'/../frontend-runtime.js','utf8'),c);
   vm.runInContext(fs.readFileSync(__dirname+'/../shared-report-loader.js','utf8'),c);
@@ -67,6 +67,16 @@ function state(c){return JSON.parse(JSON.stringify({planning:c.capturePlanningSt
   assert.ok(next.maxActive()>=2);
   assert.equal(next.calls.filter(q=>['fabric_cutting_info','sewing_input_output','date_wise_production'].includes(q.table)).length,0);
   console.log('PASS Home boot performs zero raw shared-report reads');
+  const selection=setup(html);let selectedMonth;
+  selection.c.rebuildPlanningFilters=(month,id)=>{selectedMonth=month;};
+  assert.equal(await selection.c.loadFromSupabase(1,true,false),true);
+  assert.equal(selectedMonth,'2026-09','selected upload metadata must control the month, including cold-start preference');
+  const removed=setup(html);
+  removed.tables.plan_uploads.push({...removed.tables.plan_uploads[0],id:2,uploaded_at:'2026-10-01',planning_month:'2026-10-01'});
+  assert.equal(await removed.c.loadFromSupabase('removed-preference',true,false),true);
+  assert.equal(removed.c.ACTIVE_PLAN_UPLOAD.id,1,'missing preference must use the visible valid selector rather than an unrelated newest upload');
+  console.log('PASS restored selection uses its own planning month, not the current dropdown month');
+
   // A page refresh restores a serialized, owner-scoped complete snapshot.
   const saved=JSON.parse(JSON.stringify(next.c.capturePlanningState()));
   const refresh=setup(html);
