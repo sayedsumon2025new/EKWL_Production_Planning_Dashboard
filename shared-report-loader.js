@@ -35,7 +35,7 @@ function sharedReportsForSlide(n){
 function sharedReportsReady(names){
   return names.every(name=>{
     const entry=SHARED_REPORT_LOADS.get(name);
-    return entry?.loaded&&entry.generation===SITE_SESSION_GENERATION&&entry.userId===SITE_AUTH_USER?.id;
+    return entry?.loaded&&Date.now()-entry.at<60000&&entry.generation===SITE_SESSION_GENERATION&&entry.userId===SITE_AUTH_USER?.id;
   });
 }
 
@@ -65,7 +65,7 @@ function loadSharedReport(name){
   const generation=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   if(!userId)return Promise.reject(Error('Sign in before loading reports.'));
   const existing=SHARED_REPORT_LOADS.get(name);
-  if(existing?.generation===generation&&existing.userId===userId)return existing.promise;
+  if(existing?.generation===generation&&existing.userId===userId&&(!existing.loaded||Date.now()-existing.at<60000))return existing.promise;
   const entry={generation,userId,loaded:false,promise:null};
   SHARED_REPORT_LOADS.set(name,entry);
   const current=()=>generation===SITE_SESSION_GENERATION&&userId===SITE_AUTH_USER?.id&&SHARED_REPORT_LOADS.get(name)===entry;
@@ -74,7 +74,17 @@ function loadSharedReport(name){
   setLoadChip('load-'+name,'loading',label);
   entry.promise=(async()=>{
     try{
-      const paged=build=>sbPaged(()=>{requests++;return build();});
+      const paged=async build=>{
+        if(typeof SB.reportSnapshot==='function'){
+          requests++;const {data,error}=await SB.reportSnapshot(name);
+          if(error)throw error;
+          if(data?.format!=='report-rows-v1'||data.kind!==name||!Array.isArray(data.rows)
+              ||data.integrity?.complete!==true||data.integrity.row_count!==data.rows.length)
+            throw Error('Report snapshot integrity check failed.');
+          return data.rows;
+        }
+        return sbPaged(()=>{requests++;return build();});
+      };
       let rows;
       if(name==='fabric'){
         rows=await paged(()=>SB.from('fabric_cutting_info')
@@ -105,21 +115,14 @@ function loadSharedReport(name){
       if(name==='fabric')FABRIC_CUTTING_DATA=rows;
       if(name==='sewing')SEWING_IO_DATA=rows;
       if(name==='production')DATE_WISE_PRODUCTION_DATA=rows;
-      entry.loaded=true;entry.cached=false;
+      entry.loaded=true;entry.cached=false;entry.at=Date.now();
       setLoadChip('load-'+name,'ok',label+' ('+rows.length.toLocaleString()+')');
       finish({status:'loaded',requests,rows:rows.length});
       return rows;
     }catch(error){
       const wasCurrent=current();
-      const fallback=SHARED_REPORT_FALLBACKS.get(name);
-      if(wasCurrent&&fallback?.generation===generation&&fallback.userId===userId){
-        // Preserve the previous cache fallback on a failed live read, never partial rows.
-        entry.loaded=true;entry.cached=true;
-        setLoadChip('load-'+name,'err',label+' · cached data');
-        setSupabaseLiveBadge('err','Supabase check failed · cached '+label);
-        finish({status:'cached',requests,rows:fallback.rows.length});
-        return fallback.rows;
-      }
+      // Cached facts remain available as context, but a failed live read cannot
+      // mark the report ready or authorize fresh calculations from stale data.
       if(wasCurrent){
         SHARED_REPORT_LOADS.delete(name);
         setLoadChip('load-'+name,'err',label+' · load failed');
@@ -135,9 +138,17 @@ async function ensureSharedReports(names){
   await Promise.all(names.map(loadSharedReport));
 }
 
+function setSharedReportViewState(n,state,message=''){
+  if(typeof document.querySelector!=='function')return;
+  const slide=document.querySelector('.slide[data-logical-slide="'+Number(n)+'"]');
+  if(!slide)return;
+  slide.dataset.reportState=state;
+  slide.dataset.reportMessage=message||(state==='error'?'Live report could not be verified. Reopen this slide or refresh to retry.':'Loading a consistent live report snapshot…');
+}
+
 function prepareSharedReportView(n){
   const names=sharedReportsForSlide(n);
-  if(!names.length||sharedReportsReady(names))return true;
+  if(!names.length||sharedReportsReady(names)){setSharedReportViewState(n,'ready');return true;}
   if(!SITE_AUTH_USER||!canAccessSlide(n)||CURRENT_SLIDE!==n)return false;
   if(SHARED_REPORT_VIEWS.has(n))return false;
   const generation=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER.id;
@@ -145,6 +156,7 @@ function prepareSharedReportView(n){
   const current=()=>SHARED_REPORT_VIEWS.get(n)===entry&&generation===SITE_SESSION_GENERATION&&userId===SITE_AUTH_USER?.id&&CURRENT_SLIDE===n&&canAccessSlide(n);
   const body=document.getElementById(n===7?'s11-body':'s12-body');
   const columns=document.getElementById(n===7?'s11-head':'s12-tbl')?.querySelectorAll?.('th')?.length||1;
+  setSharedReportViewState(n,'loading');
   const loading=n===7?'Loading Gantt reports…':'Loading Fabrics & Cutting reports…';
   if(body)body.innerHTML=`<tr><td colspan="${columns}" class="cen">${loading}</td></tr>`;
   ensureSharedReports(names).then(()=>{
@@ -155,6 +167,7 @@ function prepareSharedReportView(n){
     }
   }).catch(error=>{
     if(!current())return;
+    setSharedReportViewState(n,'error');
     if(body)body.innerHTML=`<tr><td colspan="${columns}" class="cen">Report load failed. Reopen this slide or refresh to retry.</td></tr>`;
     setStatus(false,'Report load failed: '+(error?.message||error));
   }).finally(()=>{

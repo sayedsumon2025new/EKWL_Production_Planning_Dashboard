@@ -724,7 +724,19 @@ function setLoadChip(id,state,label){
   el.className='load-chip '+state;
   el.textContent=(state==='ok'?'✓ ':state==='loading'?'⟳ ':state==='err'?'✕ ':'')+label;
 }
+function setPlanningReadState(state,message=''){
+  if(!document.body)return;
+  document.body.dataset.planningState=state;
+  for(const slide of document.querySelectorAll('.slide[data-logical-slide]')){
+    const number=Number(slide.dataset.logicalSlide);
+    if([0,12,13,14].includes(number))continue;
+    slide.classList.add('planning-dependent');
+    slide.setAttribute('aria-busy',String(state==='loading'));
+    slide.dataset.planningMessage=message||(state==='error'?'Planning could not be verified. Refresh or select a valid report.':'Loading and verifying the selected planning report…');
+  }
+}
 function resetLoadUI(){
+  setPlanningReadState('loading');
   setLoadProgress(3,'MySQL reports load শুরু হচ্ছে...');
   setLoadChip('load-plan','loading','Planning');
   setLoadChip('load-fabric','','Fabrics & Cutting');
@@ -815,7 +827,7 @@ async function sbAll(table,select,filters=[]){
 // Completed app uploads are snapshots; new uploads receive a new ID.
 // Bound reuse because direct SQL edits may not update upload metadata.
 function planningSnapshotVersion(upload){
-  return JSON.stringify({schema:1,owner:SITE_AUTH_USER?.id||'',
+  return JSON.stringify({schema:2,owner:SITE_AUTH_USER?.id||'',
     upload:Object.keys(upload||{}).sort().map(key=>[key,upload[key]]),
     lines:[...getChassisMasterLines()].sort((a,b)=>a-b)});
 }
@@ -823,13 +835,28 @@ function canReusePlanningSnapshot(snapshot,upload){
   const stamp=snapshot?.cacheValidation;
   if(!stamp || stamp.version!==planningSnapshotVersion(upload))return false;
   const age=Date.now()-stamp.fetchedAt;
-  if(!Number.isFinite(age)||age<0||age>=15*60*1000)return false;
+  if(!Number.isFinite(age)||age<0||age>=60*1000)return false;
   const fields=['DATA','DAILY_PLAN','SAH_DATA','SAH_DAILY','CLOCK_HOUR_DATA','CLOCK_HOUR_DAILY','BUYER_PLAN_DATA','MONTHS','EFF15_METRIC_DAILY'];
   return fields.every(key=>Array.isArray(snapshot[key])) && String(snapshot.EFF15_METRIC_UPLOAD_ID)===String(upload.id);
 }
 async function fetchPlanningSnapshot(upload,onProgress=()=>{}){
   const version=planningSnapshotVersion(upload);
-  const [records,daily]=await Promise.all([
+  let records,daily;
+  if(typeof SB.planningSnapshot==='function'){
+    const {data,error}=await SB.planningSnapshot(upload.id);
+    if(error)throw error;
+    const proof=data?.integrity;
+    if(data?.format!=='planning-tuples-v1'||!Array.isArray(data.records)||!Array.isArray(data.daily)
+        ||proof?.complete!==true||proof.totals_reconciled!==true||String(proof.upload_id)!==String(upload.id)
+        ||String(data.upload?.id)!==String(upload.id)||String(proof.revision)!==String(upload.revision)
+        ||String(data.upload?.revision)!==String(upload.revision)
+        ||proof.record_count!==data.records.length||proof.daily_count!==data.daily.length
+        ||proof.source_record_count!==Number(upload.row_count)||proof.daily_count!==Number(upload.expected_daily_rows))
+      throw Error('Planning snapshot failed integrity/version checks. Refresh and retry.');
+    records=data.records;daily=data.daily;
+    onProgress(daily.length,daily.length);
+  }else{
+    [records,daily]=await Promise.all([
     sbPaged(()=>SB.from('plan_records')
       .select('id,source_row,line_no,buyer,product_type,product,ewo,po,col,print,emb,outsource,order_qty,pcd,delivery,psd,pfd,manpower,smv,criteria,total,is_summary_row')
       .eq('upload_id',upload.id).eq('is_summary_row',false)
@@ -840,7 +867,8 @@ async function fetchPlanningSnapshot(upload,onProgress=()=>{}){
       .eq('upload_id',upload.id)
       .order('plan_date',{ascending:true}).order('record_id',{ascending:true}),
       {size:10000,onPage:count=>onProgress(count,Number(upload.expected_daily_rows)||0)})
-  ]);
+    ]);
+  }
   const valid=records.filter(r=>!r.is_summary_row&&isChassisMasterLine(r.line_no));
   const planRows=valid.filter(r=>r.criteria==='Plan/Day');
   const sahRows=valid.filter(r=>r.criteria==='SAH/Day');
@@ -879,7 +907,20 @@ async function fetchPlanningSnapshot(upload,onProgress=()=>{}){
   const metricMeta=new Map(valid.map(r=>[String(r.id),r]));
   const METRIC_LOCAL=[];
   const DAILY_LOCAL=[],SAH_DAILY_LOCAL=[],CLOCK_DAILY_LOCAL=[];
-  for(const d of daily){
+  const seenRecords=new Set();
+  for(const r of records){
+    if(r.id==null||seenRecords.has(String(r.id)))throw Error('Planning contains duplicate or missing record IDs.');
+    seenRecords.add(String(r.id));
+  }
+  const seenDaily=new Set();
+  for(const cell of daily){
+    if(Array.isArray(cell)&&cell.length!==3)throw Error('Planning contains an invalid daily tuple.');
+    const d=Array.isArray(cell)?{record_id:cell[0],plan_date:cell[1],value:cell[2]}:cell;
+    const key=String(d.record_id)+'|'+String(d.plan_date);
+    if(seenDaily.has(key)||!/^\d{4}-\d{2}-\d{2}$/.test(String(d.plan_date))
+        ||d.value==null||String(d.value).trim()===''||!Number.isFinite(Number(d.value)))
+      throw Error('Planning contains duplicate, missing or invalid daily values.');
+    seenDaily.add(key);
     const m=metricMeta.get(String(d.record_id));
     if(m&&d.plan_date)METRIC_LOCAL.push({record_id:d.record_id,date:d.plan_date,value:N(d.value),
       line:lineNumber(m.line_no),product:dashboardStyle(m.product_type||m.product),
@@ -928,13 +969,14 @@ async function switchPlanningInstant(uploadId){
   ++EFF15_FR_TOKEN;
   ++SUPABASE_LOAD_TOKEN; // Invalidate any older load, including when this selection is cached.
   const upload=PLAN_UPLOAD_CATALOG.find(u=>String(u.id)===String(uploadId));
-  if(upload)ACTIVE_PLAN_UPLOAD=upload;
-  if(typeof ssaReset==='function'){ssaReset();SSA_PLAN=String(ACTIVE_PLAN_UPLOAD?.id||'');SSA_PENDING=true;if(typeof renderSizeSetAndon==='function')renderSizeSetAndon();if(typeof renderSizeSetModule==='function')renderSizeSetModule();}
-  if(typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
+  setPlanningReadState('loading');
 
   // Previously opened versions are restored instantly with zero MySQL requests.
   if(PLAN_VERSION_CACHE.has(String(uploadId))&&canReusePlanningSnapshot(PLAN_VERSION_CACHE.get(String(uploadId)),upload)){
+    ACTIVE_PLAN_UPLOAD=upload;
     restorePlanningState(PLAN_VERSION_CACHE.get(String(uploadId)));
+    setPlanningReadState('ready');
+    if(typeof ssaReset==='function')ssaReset();
     renderAll();
     if(CURRENT_SLIDE>9){try{renderSlide(CURRENT_SLIDE)}catch(e){console.error(e)}}
     setLoadProgress(100,'Planning version cache থেকে instantly loaded');
@@ -1006,24 +1048,24 @@ async function bootLiveSupabaseData(){
     ]);
 
     if(generation!==SITE_SESSION_GENERATION||!SITE_AUTH_USER)return false;
-    // Cache is only an instant visual bootstrap; it is never treated as the live authority.
-    let cached=restoreFastBootCache();
-    if(!cached) cached=await restoreDashboardFromCache();
+    // Never publish persisted report values before a successful live read.
+    // Keep only the small selected-upload preference across page reloads.
+    let preferredUpload=null;
+    try{preferredUpload=sessionStorage.getItem(fastBootCacheKey()+':selection');}catch(_){}
 
     if(generation!==SITE_SESSION_GENERATION||!SITE_AUTH_USER)return false;
     try{
-      const keepId=ACTIVE_PLAN_UPLOAD?.id||null;
-      if(!await loadFromSupabase(keepId,true,true))throw Error('Live report load did not complete');
+      const keepId=ACTIVE_PLAN_UPLOAD?.id||preferredUpload||null;
+      if(!await loadFromSupabase(keepId,true,false))throw Error('Live report load did not complete');
       timingStatus=PLAN_UPLOAD_CATALOG.length?'loaded':'empty';
       if(PLAN_UPLOAD_CATALOG.length)setSupabaseLiveBadge('ok','MySQL Live ✓ · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
       else setSupabaseLiveBadge('','MySQL connected · no planning');
       return true;
     }catch(e){
       console.error('Live MySQL verification failed',e);
-      timingStatus=cached?'cached':'failed';
-      setSupabaseLiveBadge('err',cached?'MySQL check failed · cached data':'MySQL sync failed');
-      if(!cached)throw e;
-      return false;
+      timingStatus='failed';
+      setSupabaseLiveBadge('err','MySQL verification failed · data hidden');
+      throw e;
     }
   }finally{
     finish({status:timingStatus});
@@ -1031,7 +1073,7 @@ async function bootLiveSupabaseData(){
   }
 }
 
-// ===== Instant same-browser refresh cache =====
+// ===== Owner-scoped selection preference and legacy-cache cleanup =====
 let SITE_SESSION_GENERATION=0;
 const FAST_BOOT_KEY='EKWL_FAST_BOOT_v3';
 function dashboardCacheOwner(){return SITE_AUTH_USER?.id||'';}
@@ -1040,42 +1082,16 @@ function fastBootCacheKey(){return FAST_BOOT_KEY+':'+dashboardCacheKey();}
 function saveFastBootCache(){
   if(!dashboardCacheOwner())return false;
   try{
-    const payload={
-      owner:dashboardCacheOwner(),
-      activeUpload:ACTIVE_PLAN_UPLOAD,
-      catalog:PLAN_UPLOAD_CATALOG,
-      planning:capturePlanningState(),
-      fabric:FABRIC_CUTTING_DATA,
-      sewing:SEWING_IO_DATA,
-      production:DATE_WISE_PRODUCTION_DATA,
-      sharedReportsLoaded:sharedReportCacheAvailability()
-    };
-    sessionStorage.setItem(fastBootCacheKey(),JSON.stringify(payload));
+    if(ACTIVE_PLAN_UPLOAD?.id)sessionStorage.setItem(fastBootCacheKey()+':selection',String(ACTIVE_PLAN_UPLOAD.id));
+    sessionStorage.removeItem(fastBootCacheKey()); // Retire the old unverified full-report blob.
     return true;
-  }catch(e){console.warn('Fast boot cache save skipped',e);return false;}
+  }catch(e){console.warn('Planning preference save skipped',e);return false;}
 }
 function restoreFastBootCache(){
-  try{
-    const raw=sessionStorage.getItem(fastBootCacheKey());
-    if(!raw)return false;
-    const c=JSON.parse(raw);
-    if(!dashboardCacheOwner()||c?.owner!==dashboardCacheOwner()||!c?.planning?.DATA?.length)return false;
-    ACTIVE_PLAN_UPLOAD=c.activeUpload||null;
-    PLAN_UPLOAD_CATALOG=c.catalog||[];
-    restorePlanningState(c.planning);
-    FABRIC_CUTTING_DATA=c.fabric||[];
-    SEWING_IO_DATA=c.sewing||[];
-    DATE_WISE_PRODUCTION_DATA=c.production||[];
-    registerSharedReportCache(c.sharedReportsLoaded,{fabric:c.fabric,sewing:c.sewing,production:c.production});
-    rebuildPlanningFilters(uploadMonthKey(ACTIVE_PLAN_UPLOAD),ACTIVE_PLAN_UPLOAD?.id);
-    if(ACTIVE_PLAN_UPLOAD?.id)PLAN_VERSION_CACHE.set(String(ACTIVE_PLAN_UPLOAD.id),c.planning);
-    applySitePermissions();
-    renderAll();
-    return true;
-  }catch(e){console.warn('Fast boot cache restore failed',e);return false;}
+  return false; // Retired: persisted report values cannot establish live correctness.
 }
 
-// ===== Persistent browser cache: instant bootstrap only; live MySQL is always verified =====
+// Legacy cache readers are retained for compatibility/cleanup, never used by live boot.
 const DASH_CACHE_DB='EKWL_Planning_Cache_v3', DASH_CACHE_STORE='snapshots', DASH_CACHE_KEY='dashboard';
 function openDashCache(){
   return new Promise((resolve,reject)=>{
@@ -1085,27 +1101,9 @@ function openDashCache(){
   });
 }
 async function saveDashboardCache(){
-  const owner=dashboardCacheOwner(),generation=SITE_SESSION_GENERATION,key=dashboardCacheKey();
-  if(!owner)return false;
-  try{
-    const db=await openDashCache();
-    if(generation!==SITE_SESSION_GENERATION){db.close();return false;}
-    const payload={
-      owner,
-      savedAt:Date.now(),PLAN_UPLOAD_CATALOG,ACTIVE_PLAN_UPLOAD,
-      activeSnapshot:capturePlanningState(),
-      // Only the active planning snapshot is persisted. Historical sequences load on demand.
-      FABRIC_CUTTING_DATA,SEWING_IO_DATA,DATE_WISE_PRODUCTION_DATA,
-      sharedReportsLoaded:sharedReportCacheAvailability()
-    };
-    await new Promise((resolve,reject)=>{
-      const tx=db.transaction(DASH_CACHE_STORE,'readwrite');
-      tx.objectStore(DASH_CACHE_STORE).put(payload,key);
-      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
-    });
-    db.close();
-    return true;
-  }catch(e){console.warn('Persistent dashboard cache save failed',e);return false;}
+  // Persist only the selection. Live snapshots are small on the wire, and
+  // cloning/serializing full reports blocks large-plan navigation unnecessarily.
+  return saveFastBootCache();
 }
 async function readDashboardCache(){
   const key=dashboardCacheKey(),generation=SITE_SESSION_GENERATION;
@@ -1130,30 +1128,9 @@ async function clearDashboardCache(key=dashboardCacheKey()){
   }catch(e){console.warn(e);}
 }
 async function restoreDashboardFromCache(){
-  const c=await readDashboardCache();
-  if(!dashboardCacheOwner()||c?.owner!==dashboardCacheOwner()||!c?.activeSnapshot)return false;
-  PLAN_UPLOAD_CATALOG=c.PLAN_UPLOAD_CATALOG||[];
-  ACTIVE_PLAN_UPLOAD=c.ACTIVE_PLAN_UPLOAD||null;
-  PLAN_VERSION_CACHE.clear();
-  restorePlanningState(c.activeSnapshot);
-  if(ACTIVE_PLAN_UPLOAD?.id) PLAN_VERSION_CACHE.set(String(ACTIVE_PLAN_UPLOAD.id),c.activeSnapshot);
-  FABRIC_CUTTING_DATA=c.FABRIC_CUTTING_DATA||[];
-  SEWING_IO_DATA=c.SEWING_IO_DATA||[];
-  DATE_WISE_PRODUCTION_DATA=c.DATE_WISE_PRODUCTION_DATA||[];
-  registerSharedReportCache(c.sharedReportsLoaded,{fabric:c.FABRIC_CUTTING_DATA,sewing:c.SEWING_IO_DATA,production:c.DATE_WISE_PRODUCTION_DATA});
-  rebuildPlanningFilters(uploadMonthKey(ACTIVE_PLAN_UPLOAD),ACTIVE_PLAN_UPLOAD?.id);
-  applySitePermissions();
-  renderAll();
-  goSlide(CURRENT_SLIDE);
-  setLoadChip('load-plan','ok','Planning ('+DATA.length.toLocaleString()+')');
-  setLoadChip('load-fabric','ok','Fabrics & Cutting ('+FABRIC_CUTTING_DATA.length.toLocaleString()+')');
-  setLoadChip('load-sewing','ok','Sewing I/O ('+SEWING_IO_DATA.length.toLocaleString()+')');
-  setLoadChip('load-production','ok','Date Wise Production ('+DATE_WISE_PRODUCTION_DATA.length.toLocaleString()+')');
-  setLoadProgress(100,'Browser cache থেকে instantly loaded');
-  setStatus(true,'Cached MySQL reports instantly loaded',
-    activePlanningLabel()+' · '+DATA.length+' Plan/Day · '+FABRIC_CUTTING_DATA.length+' Fabric/Cutting · '+SEWING_IO_DATA.length+' Sewing I/O · '+DATE_WISE_PRODUCTION_DATA.length+' Production');
-  return true;
+  return false; // Retired: persisted report values cannot establish live correctness.
 }
+
 let SUPABASE_LOAD_TOKEN=0;
 async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reuseCache=false){
   const loadToken=++SUPABASE_LOAD_TOKEN;
@@ -1175,6 +1152,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
       // also invalidates any older planning snapshot restored from this user's cache.
       PLAN_UPLOAD_CATALOG=[];ACTIVE_PLAN_UPLOAD=null;PLAN_VERSION_CACHE.clear();
       restorePlanningState({});
+      if(typeof setPlanningReadState==='function')setPlanningReadState('ready');
       rebuildPlanningFilters('','');
       try{sessionStorage.removeItem(fastBootCacheKey());}catch(e){console.warn(e)}
       await clearDashboardCache();
@@ -1193,7 +1171,6 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
     rebuildPlanningFilters(oldMonth,requestedUploadId);
     const selectedId=requestedUploadId || document.getElementById('planning-sequence-filter')?.value || uploads[0].id;
     const upload=uploads.find(u=>String(u.id)===String(selectedId)) || uploads[0];
-    ACTIVE_PLAN_UPLOAD=upload;
     const cached=PLAN_VERSION_CACHE.get(String(upload.id));
     const reused=reuseCache&&canReusePlanningSnapshot(cached,upload);
     setLoadProgress(10,'Planning selected · loading daily values…');
@@ -1203,7 +1180,10 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
       setLoadProgress(percent,'Planning daily values loaded: '+count.toLocaleString()+(total>0?' / '+total.toLocaleString():''));
     });
     if(!current())return false;
+    ACTIVE_PLAN_UPLOAD=upload;
     restorePlanningState(snapshot);
+    if(typeof setPlanningReadState==='function')setPlanningReadState('ready');
+    if(typeof ssaReset==='function')ssaReset();
 
     // Keep Slide 15 FR Comparison synchronized with the selected Planning upload.
     if(CURRENT_SLIDE===15 && typeof EFF15_SUB!=='undefined' && EFF15_SUB==='fr'){
@@ -1222,7 +1202,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
 
     renderAll();
     PLAN_VERSION_CACHE.set(String(upload.id),capturePlanningState());
-    if(!reused){saveFastBootCache();await saveDashboardCache();}
+    if(!reused){saveFastBootCache();void saveDashboardCache();}
     if(!current())return false;
     setLoadProgress(100,reused?'Planning version checked · browser cache reused':'Planning loaded · shared reports load on demand');
     setStatus(true,
@@ -1239,6 +1219,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
     if(!current())return false;
     console.error(error);
     setSupabaseLiveBadge('err','MySQL sync failed');
+    if(typeof setPlanningReadState==='function')setPlanningReadState('error','Planning verification failed: '+(error?.message||'Please retry.'));
     const lf=document.getElementById('load-fill');if(lf)lf.classList.remove('loading');
     setStatus(false,'MySQL load failed: '+(error?.message||error)+'. CSV upload এখনও ব্যবহার করা যাবে.');
     return false;

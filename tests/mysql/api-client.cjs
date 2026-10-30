@@ -21,6 +21,8 @@ vm.createContext(context);vm.runInContext(fs.readFileSync('mysql-api-client.js',
  const query=calls.at(-1);assert.equal(query.payload.offset,1000);assert.equal(query.payload.limit,1000);
  assert.equal(query.options.credentials,'same-origin');assert.equal(query.options.headers['X-CSRF-Token'],'fixture-csrf');assert.ok(query.url.startsWith('https://fixture.test/ekwl-staging/api/index.php'));
  assert.deepEqual(JSON.parse(JSON.stringify(query.payload.filters)),[['eq','upload_id','version']]);
+ await api.planningSnapshot('version');assert.equal(calls.at(-1).route,'planning/snapshot');assert.equal(calls.at(-1).payload.upload_id,'version');
+ await api.reportSnapshot('fabric');assert.equal(calls.at(-1).route,'reports/snapshot');assert.equal(calls.at(-1).payload.kind,'fabric');
  await api.rpc('ekwl_save_report',{p_kind:'production',p_replace:true,p_rows:Array.from({length:301},(_,i)=>({ewo:String(i),total_qty:1}))});
  const imports=calls.filter(c=>c.route==='imports');assert.equal(imports.length,5);assert.deepEqual(imports.slice(1,4).map(c=>c.payload.rows.length),[150,150,1]);
  assert.equal(imports.at(-1).payload.action,'finalize');

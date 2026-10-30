@@ -108,6 +108,41 @@ function state(c){return JSON.parse(JSON.stringify({planning:c.capturePlanningSt
   await next.c.ensureSharedReports(next.c.sharedReportsForSlide(7));
   assert.ok(next.maxActive()>=3);
   console.log('PASS selected-plan records, daily linkage, and one daily-data download');
+  const atomic=setup(html),upload=atomic.tables.plan_uploads[0];
+  Object.assign(upload,{revision:7,row_count:atomic.tables.plan_records.length,expected_daily_rows:atomic.tables.plan_daily.length});
+  const legacySnapshot=await atomic.c.fetchPlanningSnapshot(upload);
+  const eligible=atomic.tables.plan_records.filter(r=>!r.is_summary_row);
+  const cells=[...atomic.tables.plan_daily].sort((a,b)=>a.plan_date.localeCompare(b.plan_date)||a.record_id-b.record_id).map(r=>[r.record_id,r.plan_date,r.value]);
+  const response={format:'planning-tuples-v1',upload:{...upload},records:eligible,daily:cells,integrity:{complete:true,totals_reconciled:true,upload_id:upload.id,revision:7,record_count:eligible.length,source_record_count:upload.row_count,daily_count:cells.length}};
+  let atomicReads=0;atomic.c.SB.planningSnapshot=async()=>{atomicReads++;return {data:response,error:null};};
+  atomic.calls.length=0;const atomicSnapshot=await atomic.c.fetchPlanningSnapshot(upload);
+  const clean=x=>{x=JSON.parse(JSON.stringify(x));delete x.cacheValidation;return x;};
+  assert.deepEqual(clean(atomicSnapshot),clean(legacySnapshot));
+  assert.equal(atomicReads,1);assert.equal(atomic.calls.length,0,'no paged queries after snapshot read');
+  for(const bad of [
+    {...response,integrity:{...response.integrity,complete:false}},
+    {...response,integrity:{...response.integrity,revision:8}},
+    {...response,integrity:{...response.integrity,daily_count:1}},
+    {...response,upload:{...upload,id:'another-plan'}},
+    {...response,daily:cells.map((r,i)=>i===1?cells[0]:r)},
+    {...response,daily:cells.map((r,i)=>i===1?[r[0],r[1],null]:r)}
+  ]){
+    atomic.c.SB.planningSnapshot=async()=>({data:bad,error:null});
+    await assert.rejects(atomic.c.fetchPlanningSnapshot(upload),/integrity|duplicate|invalid/);
+  }
+  atomic.c.SB.planningSnapshot=async()=>({data:null,error:Error('Source totals mismatch')});
+  await assert.rejects(atomic.c.fetchPlanningSnapshot(upload),/Source totals mismatch/);
+  assert.equal(atomic.calls.length,0,'integrity error must not fall back to unverified reads');
+  const report=setup(html);let reportReads=0;
+  report.c.SB.reportSnapshot=async kind=>{reportReads++;return {data:{format:'report-rows-v1',kind,rows:[],integrity:{complete:true,row_count:0}},error:null};};
+  await report.c.ensureSharedReports(['fabric','sewing','production']);
+  assert.equal(reportReads,3);assert.equal(report.calls.length,0);
+  report.c.invalidateSharedReports(['fabric']);
+  report.c.SB.reportSnapshot=async kind=>({data:{format:'report-rows-v1',kind,rows:[],integrity:{complete:true,row_count:1}},error:null});
+  await assert.rejects(report.c.ensureSharedReports(['fabric']),/integrity/);
+  assert.equal(report.c.sharedReportsReady(['fabric']),false);
+  console.log('PASS single-request tuple snapshot equals legacy planning state; metadata, version, duplicate, null, source and report errors fail closed');
+
   if(old){
     const baseline=setup(old);await baseline.c.loadFromSupabase(1,false);
     const baselineState={planning:state(baseline.c).planning},newState={planning:state(next.c).planning};
@@ -153,14 +188,14 @@ function state(c){return JSON.parse(JSON.stringify({planning:c.capturePlanningSt
   const fallback=setup(html,{fail:'sewing_input_output'});
   fallback.c.SEWING_IO_DATA=[{ewo:'cached',input:99}];
   fallback.c.registerSharedReportCache(undefined,{sewing:fallback.c.SEWING_IO_DATA});
-  await fallback.c.ensureSharedReports(['sewing']);
-  assert.equal(fallback.c.SEWING_IO_DATA[0].ewo,'cached');assert.equal(fallback.c.sharedReportsReady(['sewing']),true);
+  await assert.rejects(fallback.c.ensureSharedReports(['sewing']),/Page failed/);
+  assert.equal(fallback.c.SEWING_IO_DATA[0].ewo,'cached');assert.equal(fallback.c.sharedReportsReady(['sewing']),false);
   fallback.c.invalidateSharedReports(['sewing']);
   await assert.rejects(fallback.c.ensureSharedReports(['sewing']),/Page failed/);
   const incomplete=setup(html,{fail:'sewing_input_output'});
   incomplete.c.registerSharedReportCache({sewing:false},{sewing:[]});
   await assert.rejects(incomplete.c.ensureSharedReports(['sewing']),/Page failed/);
-  console.log('PASS validated persisted cache survives failed live read; invalidation removes stale fallback; unloaded arrays are not valid caches');
+  console.log('PASS failed live reads preserve cached context but block readiness and new calculations; unloaded arrays are not valid caches');
 
 
   const concurrent=setup(html);
