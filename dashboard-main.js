@@ -1170,7 +1170,7 @@ async function loadFromSupabase(requestedUploadId=null,preserveFilters=false,reu
     const requestedUpload=uploads.find(u=>String(u.id)===String(requestedUploadId||''));
     const oldMonth=requestedUpload?uploadMonthKey(requestedUpload):(preserveFilters?document.getElementById('month-filter')?.value:'');
     rebuildPlanningFilters(oldMonth,requestedUploadId);
-    const selectedId=requestedUploadId || document.getElementById('planning-sequence-filter')?.value || uploads[0].id;
+    const selectedId=requestedUpload?.id || document.getElementById('planning-sequence-filter')?.value || uploads[0].id;
     const upload=uploads.find(u=>String(u.id)===String(selectedId)) || uploads[0];
     const cached=PLAN_VERSION_CACHE.get(String(upload.id));
     const reused=reuseCache&&canReusePlanningSnapshot(cached,upload);

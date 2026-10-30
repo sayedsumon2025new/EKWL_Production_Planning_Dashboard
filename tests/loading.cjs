@@ -71,6 +71,10 @@ function state(c){return JSON.parse(JSON.stringify({planning:c.capturePlanningSt
   selection.c.rebuildPlanningFilters=(month,id)=>{selectedMonth=month;};
   assert.equal(await selection.c.loadFromSupabase(1,true,false),true);
   assert.equal(selectedMonth,'2026-09','selected upload metadata must control the month, including cold-start preference');
+  const removed=setup(html);
+  removed.tables.plan_uploads.push({...removed.tables.plan_uploads[0],id:2,uploaded_at:'2026-10-01',planning_month:'2026-10-01'});
+  assert.equal(await removed.c.loadFromSupabase('removed-preference',true,false),true);
+  assert.equal(removed.c.ACTIVE_PLAN_UPLOAD.id,1,'missing preference must use the visible valid selector rather than an unrelated newest upload');
   console.log('PASS restored selection uses its own planning month, not the current dropdown month');
 
   // A page refresh restores a serialized, owner-scoped complete snapshot.
