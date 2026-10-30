@@ -128,7 +128,7 @@ function loadSharedReport(name){
         setLoadChip('load-'+name,'err',label+' · load failed');
       }
       finish({status:wasCurrent?'failed':'discarded',requests});
-      throw error;
+      throw new Error(label+': '+(error?.message||error));
     }
   })();
   return entry.promise;
@@ -168,7 +168,7 @@ function prepareSharedReportView(n){
     }
   }).catch(error=>{
     if(!current())return;
-    setSharedReportViewState(n,progressive?'planning-error':'error');
+    setSharedReportViewState(n,progressive?'planning-error':'error','WIP reports unavailable: '+(error?.message||error));
     if(progressive){renderSlide(n);setStatus(false,'WIP reports unavailable: '+(error?.message||error));return;}
     if(body)body.innerHTML=`<tr><td colspan="${columns}" class="cen">Report load failed. Reopen this slide or refresh to retry.</td></tr>`;
     setStatus(false,'Report load failed: '+(error?.message||error));

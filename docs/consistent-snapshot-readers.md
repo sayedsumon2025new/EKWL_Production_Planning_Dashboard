@@ -12,7 +12,7 @@ Daily values are streamed as `[record_id, plan_date, decimal_text]`, preserving 
 
 ## Other reports
 
-`POST reports/snapshot` accepts six fixed dataset names: fabric, sewing, production, size, accessories and embellishment. It delegates authorization, column selection and active-head filtering to the existing query policy. All internal pages share a repeatable-read transaction, so activation during the read cannot mix batches across pages. Headers, source rows and evidence fields selected previously are preserved.
+`POST reports/snapshot` accepts six fixed dataset names: fabric, sewing, production, size, accessories and embellishment. It delegates authorization, column selection and active-head filtering to the existing query policy. A single unbuffered SQL cursor runs in a repeatable-read transaction, so activation during the read cannot mix batches. This also avoids repeated OFFSET scans inside the server request. Headers, source rows and evidence fields selected previously are preserved.
 
 The client requires a complete row-count receipt. Live failure does not mark cached data ready for fresh calculations. Successful shared/module reads expire after 60 seconds on the next access. Owner/session guards and explicit upload invalidation remain in place. These caches are not push subscriptions; a view already open does not automatically observe another user's new upload.
 

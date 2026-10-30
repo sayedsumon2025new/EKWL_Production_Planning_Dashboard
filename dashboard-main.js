@@ -2911,7 +2911,7 @@ function renderS11(data){
     : dates;
 
   const dateLabel=d=>{const dt=new Date(d+'T00:00:00');return String(dt.getDate()).padStart(2,'0')+'-'+dt.toLocaleString('en-US',{month:'short'})+'-'+String(dt.getFullYear()).slice(-2)};
-  const s11Count=document.getElementById('s11-count'); if(s11Count)s11Count.textContent=lines.length+' Teams · '+displayDates.length+' active days'+(!reportsReady?' · WIP reports loading or unavailable':actualProductionDate?' · Actual Production Report updated through: '+dateLabel(actualProductionDate):'');
+  const s11Count=document.getElementById('s11-count'); if(s11Count)s11Count.textContent=lines.length+' Teams · '+displayDates.length+' active days'+(!reportsReady?' · '+(document.getElementById('s11')?.dataset.reportState==='planning-error'?document.getElementById('s11').dataset.reportMessage:'WIP reports loading; planning is ready'):actualProductionDate?' · Actual Production Report updated through: '+dateLabel(actualProductionDate):'');
   const s11Head=document.getElementById('s11-head'); if(s11Head)s11Head.innerHTML='<tr><th class="sticky-team">Team</th>'+displayDates.map(d=>'<th class="g-date">'+dateLabel(d)+'</th>').join('')+'</tr>';
 
   const ewoInput=document.getElementById('gantt-ewo-search');

@@ -52,6 +52,8 @@ fabric=c.call('reports/snapshot',{'kind':'fabric'})['data']
 assert len(fabric['rows'])==fabric['integrity']['row_count']==1201
 assert [r['ewo'] for r in fabric['rows']]==[str(i).zfill(7) for i in range(1201)]
 assert all(r['total_cut_qty']=='12.50000000' for r in fabric['rows'])
+assert len(c.query('fabric_cutting_info',limit=1000,internalStream=True)['data'])==1000
+c.query('fabric_cutting_info',limit=1001,internalStream=True,expected=400)
 limited_password='Fixture-'+secrets.token_hex(12);limited_email='snapshot-'+secrets.token_hex(5)+'@fixture.invalid'
 c.call('users',{'action':'create','email':limited_email,'password':limited_password,'role':'user','status':'active','permissions':{}})
 limited=Client();limited.login(limited_email,limited_password)
