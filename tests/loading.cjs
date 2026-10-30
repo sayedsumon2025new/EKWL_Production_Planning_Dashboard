@@ -63,7 +63,7 @@ function state(c){return JSON.parse(JSON.stringify({planning:c.capturePlanningSt
   assert.equal(next.c.CLOCK_HOUR_DAILY.length,next.c.CLOCK_HOUR_DATA.length*3);
   assert.equal(next.c.DAILY_PLAN.length,next.c.DATA.length*3);
   const after=next.calls.filter(c=>c.table==='plan_daily').length;
-  assert.equal(after,Math.floor(next.tables.plan_daily.length/1000)+1);
+  assert.equal(after,Math.floor(next.tables.plan_daily.length/10000)+1);
   assert.ok(next.maxActive()>=2);
   assert.equal(next.calls.filter(q=>['fabric_cutting_info','sewing_input_output','date_wise_production'].includes(q.table)).length,0);
   console.log('PASS Home boot performs zero raw shared-report reads');
@@ -110,9 +110,12 @@ function state(c){return JSON.parse(JSON.stringify({planning:c.capturePlanningSt
   console.log('PASS selected-plan records, daily linkage, and one daily-data download');
   if(old){
     const baseline=setup(old);await baseline.c.loadFromSupabase(1,false);
-    assert.deepEqual(state(next.c),state(baseline.c));
+    const baselineState=state(baseline.c),newState=state(next.c);
+    delete baselineState.planning.cacheValidation;delete newState.planning.cacheValidation;
+    assert.deepEqual(newState,baselineState);
     const before=baseline.calls.filter(c=>c.table==='plan_daily').length;
-    assert.equal(before,after);
+    assert.ok(after<before);
+
     console.log('PASS full baseline parity; Home data requests:',baseline.calls.length,'->',homeRequests,'; shared dependencies on first Gantt open:',next.calls.length-homeRequests);
   }
   console.log('PASS independent datasets overlap; maximum concurrent requests:',next.maxActive());
@@ -122,6 +125,18 @@ function state(c){return JSON.parse(JSON.stringify({planning:c.capturePlanningSt
     assert.equal(rows.length,count);assert.equal(new Set(rows.map(r=>r.id)).size,count);
   }
   console.log('PASS pagination: empty, exact page boundaries, and trailing page');
+  for(const count of [0,10000,10001,30000,90537]){
+    const x=setup(html),progress=[];
+    x.tables.plan_daily=Array.from({length:count},(_,i)=>({record_id:i+1,plan_date:'2026-11-01',value:String(i)}));
+    const rows=await x.c.sbPaged(()=>x.c.SB.from('plan_daily').select('record_id,plan_date,value'),{size:10000,onPage:n=>progress.push(n)});
+    assert.equal(rows.length,count);assert.deepEqual(Array.from(rows,r=>Number(r.value)),Array.from({length:count},(_,i)=>i));
+    assert.equal(x.calls.length,Math.floor(count/10000)+1);assert.equal(progress.at(-1),count);
+  }
+  const dailyFailure=setup(html,{fail:'plan_daily'});
+  await assert.rejects(dailyFailure.c.fetchPlanningSnapshot({id:1}),/Page failed/);
+  assert.equal(dailyFailure.c.DATA.length,0,'partial daily download must not publish');
+  console.log('PASS large plan pages preserve all rows/order/values; 90,537 values use 10 requests instead of 91; failure blocks partial publication');
+
   const failed=setup(html,{fail:'sewing_input_output'});
   failed.c.SEWING_IO_DATA=[{ewo:'previous',input:99}];
   assert.equal(await failed.c.loadFromSupabase(1,true),true);

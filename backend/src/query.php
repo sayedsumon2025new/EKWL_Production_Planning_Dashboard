@@ -122,6 +122,16 @@ function insertRows(string $name,array $rows,bool $upsert=false,?array $u=null):
     }
     return $out;
 }
+// Larger pages are limited to narrow daily values for one selected upload.
+// General report/JSON queries retain the existing 1,000-row response bound.
+function selectPageLimit(string $table,array $q): int {
+    if($table!=='plan_daily'||($q['fields']??'')!=='record_id,plan_date,value')return 1000;
+    foreach($q['filters']??[] as $filter){
+        if(count($filter)===3&&$filter[0]==='eq'&&$filter[1]==='upload_id'
+            &&is_string($filter[2])&&$filter[2]!=='')return 10000;
+    }
+    return 1000;
+}
 function dataQuery(array $u,array $q): array {
     $name=(string)($q['table']??'');
     if($name==='ewo_readiness_board'){
@@ -161,7 +171,7 @@ function dataQuery(array $u,array $q): array {
         // Always use deterministic paging; explicit sorts get primary-key tie breakers.
         foreach($c['pk'] as $pk)$orders[]=ident($pk).' ASC';
         $offset=(int)($q['offset']??0);$limit=(int)($q['limit']??1000);
-        if($offset<0||$limit<1||$limit>1000||$offset>5000000)throw new ApiError('Invalid pagination.');
+        if($offset<0||$limit<1||$limit>selectPageLimit($table,$q)||$offset>5000000)throw new ApiError('Invalid pagination.');
         $rows=run('SELECT '.implode(',',array_map(fn($key)=>columnSpec($key,$c).' AS '.ident($key),$keys)).$extra.' FROM '.ident('ekwl_'.$table).$condition.' ORDER BY '.implode(',',$orders).' LIMIT '.$limit.' OFFSET '.$offset,$args)->fetchAll();
         $rows=array_map(fn($r)=>hydrate($r,$c),$rows);
         if(!empty($q['single'])){
