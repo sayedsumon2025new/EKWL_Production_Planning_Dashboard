@@ -29,7 +29,8 @@ with sync_playwright() as pw:
     page.reload(wait_until='networkidle')
     page.wait_for_function("SITE_BOOTED && document.querySelector('#supabase-live-badge')?.className==='ok'",timeout=60000)
     assert page.locator('#home-live-kpis').inner_text()==home
-    assert 'cache' in page.locator('#status-msg').inner_text().lower()
+    assert page.locator('body').get_attribute('data-planning-state')=='ready'
+    assert 'successfully loaded' in page.locator('#status-msg').inner_text().lower()
     page.get_by_role('button',name='Account & Data',exact=True).click()
     page.wait_for_selector('#mysql-tools[open]')
     page.locator('#mysql-tools input[placeholder="Title"]').fill('<img src=x onerror=alert(1)>')

@@ -36,6 +36,14 @@ try {
         jsonOut(['data'=>['path'=>$id],'error'=>null]);exit;
     }
     $b=body();
+    if($route==='planning/snapshot'){
+        require dirname(__DIR__).'/backend/src/planning-snapshot.php';
+        session_write_close();Ekwl\planningSnapshotRead($u,$b);exit;
+    }
+    if($route==='reports/snapshot'){
+        require dirname(__DIR__).'/backend/src/report-snapshot.php';
+        session_write_close();Ekwl\reportSnapshotRead($u,$b);exit;
+    }
     if((config()['maintenance']??false)&&!in_array($route,['query','archive','runtime','notes','load-analysis-loss'],true)&&!($route==='rpc'&&($b['name']??'')==='get_ready_input_coverage'))throw new ApiError('Application writes paused for migration.',503);
     if($route==='query')$result=dataQuery($u,$b);
     elseif($route==='rpc')$result=rpc($u,$b);

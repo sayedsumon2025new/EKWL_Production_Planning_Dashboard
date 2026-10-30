@@ -6,11 +6,16 @@
     let csrf='',session=null,initial=null;
     const listeners=new Set();
     const request=async(route,payload,method='POST')=>{
+      let readTimer,readController;
       try{
         if(method==='POST'&&!csrf)await bootstrap();
         const url=new URL(endpoint);url.searchParams.set('route',route);
         const multipart=typeof FormData!=='undefined'&&payload instanceof FormData;
-        const response=await fetch(url,{method,credentials:'same-origin',cache:'no-store',
+        const readOnly=method==='GET'||['planning/snapshot','reports/snapshot'].includes(route)||(route==='query'&&(payload?.op||'select')==='select');
+        if(readOnly&&typeof AbortController!=='undefined'&&typeof setTimeout==='function'){
+          readController=new AbortController();readTimer=setTimeout(()=>readController.abort(),60000);
+        }
+        const response=await fetch(url,{...(readController?{signal:readController.signal}:{}),method,credentials:'same-origin',cache:'no-store',
           headers:method==='GET'?{}:{'X-CSRF-Token':csrf,...(multipart?{}:{'Content-Type':'application/json'})},
           ...(method==='POST'?{body:multipart?payload:JSON.stringify(payload??{})}:{})});
         const result=await response.json();
@@ -21,7 +26,8 @@
           return result;
         }
         return result;
-      }catch(error){return {data:null,error:{message:error.message||'API connection failed.'}};}
+      }catch(error){return {data:null,error:{message:readController?.signal.aborted?'MySQL read timed out. No incomplete report was loaded. Retry.':error.message||'API connection failed.'}};}
+      finally{if(readTimer)clearTimeout(readTimer);}
     };
     async function bootstrap(){
       if(!initial)initial=(async()=>{
@@ -93,6 +99,8 @@
     return {from:name=>new Query(name),rpc:(name,args)=>new Query(null,name,args),auth,
       functions:{invoke:(name,options)=>name==='admin-create-user'?request('users',options.body):Promise.resolve({data:null,error:{message:'Unsupported user operation.'}})},
       storage:{from:bucket=>({upload:async(path,file)=>{if(bucket!=='plan-data')return {data:null,error:{message:'Unsupported file store.'}};const form=new FormData();form.append('file',file);return request('files/upload',form);}})},
+      reportSnapshot:kind=>request('reports/snapshot',{kind}),
+      planningSnapshot:uploadId=>request('planning/snapshot',{upload_id:String(uploadId)}),
       request,endpoint:endpoint.href};
   }
   window.EKWLData=Object.freeze({createClient});

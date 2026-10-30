@@ -41,7 +41,17 @@ async function cachedPagedRows(build,current,size=1000){
 function loadActiveModuleRows(type,force=false){
   const table={size:'size_set_rows',accessories:'accessories_rows',embellishment:'embellishment_send_receive_rows'}[type];
   const columns=type==='embellishment'?'*':'source_row_no,row_data,file_name,uploaded_at';
-  return loadVersionedData('snapshot:'+type,current=>cachedPagedRows(()=>SB.from(table).select(columns).eq('is_active',true).order('source_row_no',{ascending:true}),current),{force});
+  return loadVersionedData('snapshot:'+type,async current=>{
+    if(typeof SB.reportSnapshot==='function'){
+      const {data,error}=await SB.reportSnapshot(type);
+      if(error)throw error;if(!current())throw Error('Data load superseded.');
+      if(data?.format!=='report-rows-v1'||data.kind!==type||!Array.isArray(data.rows)
+          ||data.integrity?.complete!==true||data.integrity.row_count!==data.rows.length)
+        throw Error('Report snapshot integrity check failed.');
+      return data.rows;
+    }
+    return cachedPagedRows(()=>SB.from(table).select(columns).eq('is_active',true).order('source_row_no',{ascending:true}),current);
+  },{force,ttl:60000});
 }
 function loadOrderBankSnapshot(force=false){
   return loadVersionedData('snapshot:orderbank',async current=>{

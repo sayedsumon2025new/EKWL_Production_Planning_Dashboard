@@ -31,7 +31,7 @@ assert user.call('notes',dict(action='list'))['data']['notes'][0]['content']=='p
 print('PASS authentication, CSRF, origin enforcement, allowlisted SQL, role restrictions and Notes isolation')
 # Planning staging remains invisible until exact records and daily cells are present.
 upload=admin.query('plan_uploads',op='insert',rows=[dict(file_name='fixture.csv',row_count=2,expected_daily_rows=4,planning_month='2026-10-01',sequence_no=1,planning_id='P01')],fields='id',single='required')['data']['id']
-rows=[dict(upload_id=upload,source_row=i+2,is_summary_row=False,line_no='Line 1',buyer='Buyer',ewo='00123',col='Blue',criteria=crit,total='100.12500000',psd='2026-10-15') for i,crit in enumerate(['Plan/Day','SAH/Day'])]
+rows=[dict(upload_id=upload,source_row=i+2,is_summary_row=False,line_no='Line 1',buyer='Buyer',ewo='00123',col='Blue',criteria=crit,total='20.24691356',psd='2026-10-15') for i,crit in enumerate(['Plan/Day','SAH/Day'])]
 records=admin.query('plan_records',op='insert',rows=rows,fields='id,source_row')['data']
 assert admin.query('plan_records',filters=[['eq','upload_id',upload]])['data']==[]
 admin.query('plan_uploads',op='update',filters=[['eq','id',upload]],values={'status':'complete'},expected=409)

@@ -32,9 +32,15 @@ jobs:
           php tests/mysql/json-ewo-filter.php
           php tests/mysql/planning-page-limit.php
           php tests/mysql/load-analysis-loss.php
+      - name: Verify consistent snapshots against isolated MySQL
+        run: |
+          python3 tests/mysql/start-runtime.py
+          python3 tests/mysql/new-fixture.py
+          python3 tests/mysql/consistent-snapshot.py /tmp/ekwl-test-auth.json
       - name: Verify Size Set performance in Chrome
         run: |
           python3 -m pip install playwright==1.58.0
+          python3 tests/mysql/snapshot-browser.py /tmp/ekwl-test-auth.json
           python3 tests/size-set-performance.py
           python3 tests/size-set-andon-browser.py
           python3 tests/cutting-wip-browser.py
