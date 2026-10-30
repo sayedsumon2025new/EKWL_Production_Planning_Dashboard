@@ -131,5 +131,37 @@ with sync_playwright() as p:
  page.set_viewport_size({'width':784,'height':884});page.locator('#gds-filter-button').scroll_into_view_if_needed()
  page.screenshot(path='/tmp/gds-cutting-stage-five.png')
  assert not errors,errors
+ # Real shared-report lifecycle: planning must remain visible while WIP waits/fails.
+ progressive=b.new_page(viewport={'width':1020,'height':1050})
+ progressive.on('pageerror',lambda e:errors.append(str(e)))
+ progressive.set_content('<!doctype html><meta charset="utf-8"><style>'+styles+'</style><div id="slides-wrap">'+markup+'</div>')
+ progressive.evaluate("document.documentElement.dataset.theme='dark';const s=document.getElementById('s11');s.dataset.logicalSlide='7';s.classList.add('active');s.style.display='block'")
+ progressive_setup=setup.replace('const DATA=f.data','let DATA=f.data').replace('const prepareSharedReportView=()=>true,','const ')
+ lifecycle="""
+ let CURRENT_SLIDE=7;const canAccessSlide=()=>true,setLoadChip=()=>{},setSupabaseLiveBadge=()=>{},setStatus=()=>{},saveFastBootCache=()=>{},saveDashboardCache=async()=>{};
+ const waiting={};const SB={reportSnapshot:kind=>new Promise((resolve,reject)=>waiting[kind]={resolve,reject})};
+ const snapshots={fabric:f.fabric,sewing:f.sewing.map(r=>({...r,total_input_qty:r.input,total_output_qty:r.output??0,total_wip_qty:r.wip,total_reject_qty:r.reject??0})),production:DATE_WISE_PRODUCTION_DATA};
+ function finishReport(kind){const rows=snapshots[kind];waiting[kind].resolve({data:{format:'report-rows-v1',kind,rows,integrity:{complete:true,row_count:rows.length}},error:null});}
+ function renderSlide(){renderS11([]);}
+ """
+ progressive.add_script_tag(content=progressive_setup+lifecycle+(ROOT/'shared-report-loader.js').read_text()+renderer+(ROOT/'gantt-daily-summary.js').read_text()+";window.summaryBuilds=0;const originalBuild=buildGanttDailySummary;buildGanttDailySummary=(...a)=>{window.summaryBuilds++;return originalBuild(...a)};renderS11([]);")
+ assert progressive.locator('#s11-body .g-ewo').count()>0
+ assert progressive.locator('#s11-body').evaluate("e=>getComputedStyle(e).visibility")=='visible'
+ assert progressive.locator('#s11-body .g-ewo').first.is_disabled()
+ assert progressive.locator('#s11-body .g-wip-covered,#s11-body .g-cutting-covered,#s11-body .g-material-short').count()==0
+ assert progressive.evaluate('window.summaryBuilds')==0,'closed summaries must not allocate full-plan stock'
+ progressive.evaluate('gdsToggleVisibility()')
+ forecast=progressive.locator('#gantt-daily-summary .gds-metric').filter(has=progressive.locator('th',has_text='Forecastable Pcs')).locator('td').first
+ assert forecast.inner_text()=='—'
+ assert 'loading or unavailable' in progressive.locator('#gds-note').inner_text()
+ progressive.evaluate("waiting.fabric.reject(Error('source failed'));finishReport('sewing');finishReport('production')")
+ progressive.wait_for_function("document.getElementById('s11').dataset.reportState==='planning-error'")
+ assert progressive.locator('#s11-body .g-ewo').count()>0
+ assert forecast.inner_text()=='—'
+ progressive.evaluate('renderS11([]);finishReport("fabric")')
+ progressive.wait_for_function("sharedReportsReady(['fabric','sewing','production'])&&GDS_STATE.source?.loading===false")
+ assert not progressive.locator('#s11-body .g-ewo').first.is_disabled()
+ assert forecast.inner_text().replace(' *','')=='300 pcs'
+ assert not errors,errors
  b.close()
 print('PASS actual Gantt integration, WIP multi-select/SAH, unchanged Gantt and lower totals, hide/show persistence, optional source failure, stale-session guard and visible filter on wide dates')

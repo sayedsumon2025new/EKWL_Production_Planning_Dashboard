@@ -159,7 +159,23 @@ function gdsSubtotalMark(value,partial){return value!==null&&partial?' <sup clas
 function gdsInput(context,embellishment){return {embellishmentAvailable:!GDS_STATE.source?.loading&&!GDS_STATE.source?.error,dates:context.dates,lines:context.lines,search:context.search,selected:[...GDS_STATE.selected],data:DATA,plan:DAILY_PLAN,sah:SAH_DAILY,clock:CLOCK_HOUR_DAILY,fabric:FABRIC_CUTTING_DATA,sewing:SEWING_IO_DATA,embellishment,metrics:typeof EFF15_METRIC_DAILY==='undefined'?undefined:EFF15_METRIC_DAILY,production:DATE_WISE_PRODUCTION_DATA,masterLines:[...getChassisMasterLines()]};}
 function paintGanttDailySummary(){
  const context=GDS_STATE.context,body=document.getElementById('gantt-daily-summary');if(!context||!body)return;
- const result=buildGanttDailySummary(gdsInput(context,GDS_STATE.source?.rows||[]));
+ const lowerDetails=document.getElementById('gds-consumable-table')?.closest('details');
+ if(lowerDetails&&!lowerDetails.dataset.gdsToggleBound){lowerDetails.dataset.gdsToggleBound='1';lowerDetails.addEventListener('toggle',()=>paintGanttDailySummary());}
+ if(GDS_STATE.hidden&&!lowerDetails?.open){
+  body.hidden=true;body.closest('table')?.classList.remove('gds-visible');
+  const note=document.getElementById('gds-note');if(note)note.hidden=true;
+  const button=document.getElementById('gds-visibility');if(button){button.textContent='Show summary ▾';button.setAttribute('aria-expanded','false');}
+  const head=document.querySelector('#s11-head th');if(head)head.textContent='Team';
+  return;
+ }
+ const reportsReady=typeof sharedReportsReady!=='function'||sharedReportsReady(['fabric','sewing','production']);
+ const input=gdsInput(context,GDS_STATE.source?.rows||[]);
+ if(!reportsReady){input.fabric=[];input.sewing=[];input.production=[];input.embellishment=[];input.embellishmentAvailable=false;}
+ const result=buildGanttDailySummary(input);
+ if(!reportsReady){
+  for(const day of result.days){day.values[3]=day.values[4]=day.total=null;day.stages=day.stages.map(()=>null);day.stageSah=day.stageSah.map(()=>null);day.partial[3]=day.partial[4]=false;}
+  result.notes=['WIP reports are loading or unavailable. Forecast and stock values remain unavailable until verification finishes.'];
+ }
  const count=GDS_STATE.selected.size,colspan=context.dates.length+1;
  const picker='<div class="gds-picker"><button type="button" id="gds-filter-button" aria-expanded="'+GDS_STATE.open+'" aria-controls="gds-filter-menu" onclick="gdsToggleMenu()">Consumable WIP · '+(count===GDS_STAGES.length?'All '+GDS_STAGES.length:count+' selected')+' ▾</button><div id="gds-filter-menu" class="gds-menu" role="group" aria-label="Select consumable WIP categories" '+(GDS_STATE.open?'':'hidden')+'>'+GDS_STAGE_ORDER.map(i=>{const name=GDS_STAGES[i];return '<label><input type="checkbox" value="'+i+'" '+(GDS_STATE.selected.has(i)?'checked':'')+' onchange="gdsSelectStage(this)">'+name+'</label>'}).join('')+'<div class="gds-menu-actions"><button type="button" onclick="gdsSelectAll(true)">Select all</button><button type="button" onclick="gdsSelectAll(false)">Clear</button></div></div></div>';
  body.innerHTML='<tr class="gds-controls"><td colspan="'+colspan+'"><div class="gds-control-row"><span>DAILY PLAN SUMMARY</span>'+picker+'</div></td></tr>';

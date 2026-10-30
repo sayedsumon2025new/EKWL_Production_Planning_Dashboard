@@ -246,7 +246,7 @@ function state(c){return JSON.parse(JSON.stringify({planning:c.capturePlanningSt
 
   const view=setup(html);view.c.CURRENT_SLIDE=7;let renderCount=0;
   view.c.renderSlide=()=>{assert.equal(view.c.sharedReportsReady(['fabric','sewing','production']),true);renderCount++;};
-  assert.equal(view.c.prepareSharedReportView(7),false);assert.equal(view.c.prepareSharedReportView(7),false);
+  assert.equal(view.c.prepareSharedReportView(7),true);assert.equal(view.c.prepareSharedReportView(7),true);
   await view.c.ensureSharedReports(['fabric','sewing','production']);
   await new Promise(r=>setTimeout(r,0));assert.equal(renderCount,1);
   assert.equal(view.c.prepareSharedReportView(7),true);

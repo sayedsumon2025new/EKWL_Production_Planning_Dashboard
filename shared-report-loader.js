@@ -150,15 +150,16 @@ function prepareSharedReportView(n){
   const names=sharedReportsForSlide(n);
   if(!names.length||sharedReportsReady(names)){setSharedReportViewState(n,'ready');return true;}
   if(!SITE_AUTH_USER||!canAccessSlide(n)||CURRENT_SLIDE!==n)return false;
-  if(SHARED_REPORT_VIEWS.has(n))return false;
+  const progressive=Number(n)===7;
+  if(SHARED_REPORT_VIEWS.has(n))return progressive;
   const generation=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER.id;
   const entry={};SHARED_REPORT_VIEWS.set(n,entry);
   const current=()=>SHARED_REPORT_VIEWS.get(n)===entry&&generation===SITE_SESSION_GENERATION&&userId===SITE_AUTH_USER?.id&&CURRENT_SLIDE===n&&canAccessSlide(n);
   const body=document.getElementById(n===7?'s11-body':'s12-body');
   const columns=document.getElementById(n===7?'s11-head':'s12-tbl')?.querySelectorAll?.('th')?.length||1;
-  setSharedReportViewState(n,'loading');
+  setSharedReportViewState(n,progressive?'planning':'loading');
   const loading=n===7?'Loading Gantt reports…':'Loading Fabrics & Cutting reports…';
-  if(body)body.innerHTML=`<tr><td colspan="${columns}" class="cen">${loading}</td></tr>`;
+  if(body&&!progressive)body.innerHTML=`<tr><td colspan="${columns}" class="cen">${loading}</td></tr>`;
   ensureSharedReports(names).then(()=>{
     if(current()&&sharedReportsReady(names)){
       renderSlide(n);
@@ -167,13 +168,14 @@ function prepareSharedReportView(n){
     }
   }).catch(error=>{
     if(!current())return;
-    setSharedReportViewState(n,'error');
+    setSharedReportViewState(n,progressive?'planning-error':'error');
+    if(progressive){renderSlide(n);setStatus(false,'WIP reports unavailable: '+(error?.message||error));return;}
     if(body)body.innerHTML=`<tr><td colspan="${columns}" class="cen">Report load failed. Reopen this slide or refresh to retry.</td></tr>`;
     setStatus(false,'Report load failed: '+(error?.message||error));
   }).finally(()=>{
     if(SHARED_REPORT_VIEWS.get(n)===entry)SHARED_REPORT_VIEWS.delete(n);
   });
-  return false;
+  return progressive;
 }
 
 function fetchABPTargetFromSQL(){

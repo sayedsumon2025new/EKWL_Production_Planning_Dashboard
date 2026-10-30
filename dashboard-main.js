@@ -2703,10 +2703,11 @@ function ganttConditionVisible(condition,enabled,filter){
 let GANTT_INDEX_CACHE=null;
 function invalidateGanttIndex(){GANTT_INDEX_CACHE=null;}
 function getGanttIndex(master){
+  const reportsReady=typeof sharedReportsReady!=='function'||sharedReportsReady(['fabric','sewing','production']);
   const sources=[DAILY_PLAN,CLOCK_HOUR_DATA,SAH_DATA,SEWING_IO_DATA,DATE_WISE_PRODUCTION_DATA,FABRIC_CUTTING_DATA];
   const owner=typeof SITE_AUTH_USER==='undefined'?'':SITE_AUTH_USER?.id;
   const generation=typeof SITE_SESSION_GENERATION==='undefined'?0:SITE_SESSION_GENERATION;
-  const key=[...master].join('|')+':'+String(ACTIVE_PLAN_UPLOAD?.id||'local');
+  const key=[...master].join('|')+':'+String(ACTIVE_PLAN_UPLOAD?.id||'local')+':'+reportsReady;
   if(GANTT_INDEX_CACHE&&GANTT_INDEX_CACHE.owner===owner&&GANTT_INDEX_CACHE.generation===generation&&GANTT_INDEX_CACHE.key===key&&sources.every((rows,i)=>rows===GANTT_INDEX_CACHE.sources[i]&&rows.length===GANTT_INDEX_CACHE.lengths[i])){
     if(typeof recordDataCacheHit==='function')recordDataCacheHit('gantt.index');return GANTT_INDEX_CACHE.value;
   }
@@ -2749,9 +2750,9 @@ function getGanttIndex(master){
   for(const x of scope){const ewo=normEwo(x.ewo);addColor(ewo,x.color);const k=Number(x.line)+'|'+x.date+'|'+String(x.ewo||'').trim();if(N(x.smv)>0&&!smvByKey.has(k))smvByKey.set(k,x);}
   for(const x of CLOCK_HOUR_DATA){for(const month of [x.month,'*']){const key=Number(x.line)+'|'+String(x.ewo)+'|'+month;clockByKey.set(key,(clockByKey.get(key)??0)+N(x.total));}}
   for(const x of SAH_DATA){for(const month of [x.month,'*']){const key=Number(x.line)+'|'+String(x.ewo)+'|'+month;if(!sahByKey.has(key))sahByKey.set(key,x);}}
-  for(const x of FABRIC_CUTTING_DATA||[]){const ew=normEwo(x.ewo);add(fabricByEwo,ew,x);add(fabricByColor,JSON.stringify([ew,normColor(x.color_name)]),x);addColor(ew,x.color_name);}
-  for(const x of SEWING_IO_DATA){const ew=normEwo(x.ewo);add(sewingByLineEwo,Number(x.line_no)+'|'+ew,x);add(sewingByEwo,ew,x);addColor(ew,x.color);}
-  for(const x of DATE_WISE_PRODUCTION_DATA||[]){const ew=normEwo(x.ewo);add(productionByCell,Number(x.line_no)+'|'+String(x.output_date||'').slice(0,10)+'|'+ew,x);addColor(ew,x.color);}
+  for(const x of (reportsReady?FABRIC_CUTTING_DATA:[])||[]){const ew=normEwo(x.ewo);add(fabricByEwo,ew,x);add(fabricByColor,JSON.stringify([ew,normColor(x.color_name)]),x);addColor(ew,x.color_name);}
+  for(const x of (reportsReady?SEWING_IO_DATA:[])){const ew=normEwo(x.ewo);add(sewingByLineEwo,Number(x.line_no)+'|'+ew,x);add(sewingByEwo,ew,x);addColor(ew,x.color);}
+  for(const x of (reportsReady?DATE_WISE_PRODUCTION_DATA:[])||[]){const ew=normEwo(x.ewo);add(productionByCell,Number(x.line_no)+'|'+String(x.output_date||'').slice(0,10)+'|'+ew,x);addColor(ew,x.color);}
   const colorsByCell=new Map();
   // Match the existing prefix lookup, including literal pipes in source color/EWO text.
   for(const k of ewoQty.keys())colorsByCell.set(k,[]);
@@ -2839,7 +2840,7 @@ function getGanttIndex(master){
   // This avoids rescanning thousands of production rows for every Gantt cell.
   const latestProdByLineEwo=new Map();
   let actualProductionDate='';
-  for(const x of (DATE_WISE_PRODUCTION_DATA||[])){
+  for(const x of (reportsReady?DATE_WISE_PRODUCTION_DATA:[])){
     const ln=Number(x.line_no);
     const ew=normEwo(x.ewo);
     const dt=String(x.output_date||'').slice(0,10);
@@ -2873,6 +2874,7 @@ function getGanttIndex(master){
 
 function renderS11(data){
   if(!prepareSharedReportView(7))return;
+  const reportsReady=typeof sharedReportsReady!=='function'||sharedReportsReady(['fabric','sewing','production']);
   if(typeof recordDashboardRender==='function')recordDashboardRender('7');
   const finishRender=typeof startDashboardTiming==='function'?startDashboardTiming('gantt.render'):()=>{};
   const master=getChassisMasterLines();
@@ -2909,7 +2911,7 @@ function renderS11(data){
     : dates;
 
   const dateLabel=d=>{const dt=new Date(d+'T00:00:00');return String(dt.getDate()).padStart(2,'0')+'-'+dt.toLocaleString('en-US',{month:'short'})+'-'+String(dt.getFullYear()).slice(-2)};
-  const s11Count=document.getElementById('s11-count'); if(s11Count)s11Count.textContent=lines.length+' Teams · '+displayDates.length+' active days'+(actualProductionDate?' · Actual Production Report updated through: '+dateLabel(actualProductionDate):'');
+  const s11Count=document.getElementById('s11-count'); if(s11Count)s11Count.textContent=lines.length+' Teams · '+displayDates.length+' active days'+(!reportsReady?' · WIP reports loading or unavailable':actualProductionDate?' · Actual Production Report updated through: '+dateLabel(actualProductionDate):'');
   const s11Head=document.getElementById('s11-head'); if(s11Head)s11Head.innerHTML='<tr><th class="sticky-team">Team</th>'+displayDates.map(d=>'<th class="g-date">'+dateLabel(d)+'</th>').join('')+'</tr>';
 
   const ewoInput=document.getElementById('gantt-ewo-search');
@@ -2920,7 +2922,7 @@ function renderS11(data){
   const conditionSelect=document.getElementById('gantt-condition-filter');
   const colorEnabled=!!colorToggle?.checked;
   const conditionFilter=colorEnabled?conditionSelect?.value||'':'';
-  if(conditionSelect)conditionSelect.disabled=!colorEnabled;
+  if(conditionSelect)conditionSelect.disabled=!colorEnabled||!reportsReady;
   if(lineSel){
     const current=String(GANTT_LINE_FILTER||'');
     lineSel.innerHTML='<option value="">All Lines</option>'+allLines.map(x=>'<option value="'+x+'" '+(String(x)===current?'selected':'')+'>Line '+x+'</option>').join('');
@@ -2951,7 +2953,7 @@ function renderS11(data){
       // in the uploaded Date Wise Actual Production Report. Dates through that report date
       // keep the normal Gantt color; coverage begins strictly on the next plan date.
       const latestProductionDate=actualProductionDate;
-      const afterProductionCutoff=!!actualProductionDate && thisDate>actualProductionDate;
+      const afterProductionCutoff=reportsReady&&!!actualProductionDate && thisDate>actualProductionDate;
 
       let wipCovered=false,cuttingCovered=false,cutableCovered=false,materialShort=false;
       if(afterProductionCutoff){
@@ -2982,11 +2984,11 @@ function renderS11(data){
       }
 
       const condition=ganttCoverageCondition(wipCovered,cuttingCovered,cutableCovered,materialShort);
-      if(!ganttConditionVisible(condition,colorEnabled,conditionFilter))return '';
+      if(reportsReady&&!ganttConditionVisible(condition,colorEnabled,conditionFilter))return '';
       const cellEwos=items.map(item=>({line,date,ewo:item.ewo,qty:item.qty,color:item.color,planColors:item.planColors,buyer:item.buyer,style:item.style}));
       const payloadWithWip=encodeURIComponent(JSON.stringify({line,date,...w,cellEwos}));
-      const coverageClass=!colorEnabled?'':condition==='wip'?' g-wip-covered':condition==='cutting'?' g-cutting-covered':condition==='cutable'?' g-cutable-covered':condition==='short'?' g-material-short':'';
-      return '<button type="button" class="g-ewo'+coverageClass+'" data-gantt="'+payloadWithWip+'" aria-label="Open EWO '+esc(w.ewo)+' status">'+esc(w.ewo)+'</button>';
+      const coverageClass=!reportsReady||!colorEnabled?'':condition==='wip'?' g-wip-covered':condition==='cutting'?' g-cutting-covered':condition==='cutable'?' g-cutable-covered':condition==='short'?' g-material-short':'';
+      return '<button type="button" '+(!reportsReady?'disabled title="WIP reports are being verified" ':'')+'class="g-ewo'+coverageClass+'" data-gantt="'+payloadWithWip+'" aria-label="Open EWO '+esc(w.ewo)+' status">'+esc(w.ewo)+'</button>';
     }).filter(Boolean);
     return entries.length?'<td class="g-ewo-cell"><div class="g-ewo-stack">'+entries.join('\n')+'</div></td>':'<td class="g-empty">&nbsp;</td>';
   }).join('')+'</tr>').join('');
