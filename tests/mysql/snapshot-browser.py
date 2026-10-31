@@ -31,6 +31,22 @@ with sync_playwright() as p:
  assert page.locator('#s1 .kpi-row').evaluate("e=>getComputedStyle(e).visibility")!='hidden'
  page.evaluate("loadActiveModuleRows('size')")
  assert len([u for u,q in calls if ('reports%2Fsnapshot' in u or 'reports/snapshot' in u) and q.get('kind')=='size'])==1
+ page.evaluate('goSlide(14)')
+ page.wait_for_function('ORDER_BANK_RAW_ROWS.length===1201',timeout=60000)
+ assert len([u for u,q in calls if ('reports%2Fsnapshot' in u or 'reports/snapshot' in u) and q.get('kind')=='orderbank'])==1
+ assert page.evaluate('ORDER_BANK_RAW_ROWS[0].OrderQty')=='12.5000'
+ page.evaluate("ORDER_BANK_RAW_ROWS=[{EWO:'STALE-BROWSER',OrderQty:999999}];goSlide(16)")
+ page.wait_for_function("OE_RENDERED_KEY!==''",timeout=60000)
+ execution=page.frame_locator('#order-execution-frame')
+ assert execution.locator('#sql-note').inner_text().startswith('SQL Order Bank · Planning:')
+ f=page.locator('#order-execution-frame').content_frame
+ assert f.locator('body').evaluate('()=>D1.summary.total_orders')==1201
+ assert f.locator('body').evaluate('()=>D1.summary.total_qty')==15012.5
+ assert len([u for u,q in calls if ('reports%2Fsnapshot' in u or 'reports/snapshot' in u) and q.get('kind')=='planning-records'])==1
+ page.evaluate('goSlide(21)')
+ page.wait_for_function('RD_BUSY===false&&RD_ROWS.length===250',timeout=60000)
+ assert len([u for u,q in calls if ('reports%2Fsnapshot' in u or 'reports/snapshot' in u) and q.get('kind')=='readiness'])==1
+ assert not [q for u,q in calls if q and q.get('table')=='ewo_readiness_board']
  assert not errors,errors
  page.evaluate('siteLogout()');page.wait_for_function('SITE_AUTH_USER===null')
  b.close()

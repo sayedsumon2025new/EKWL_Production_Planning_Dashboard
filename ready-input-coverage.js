@@ -51,7 +51,14 @@ async function loadReadyInputCoverage(){
     const cutoff=await SB.from('date_wise_production').select('output_date').order('output_date',{ascending:false}).limit(1);
     if(cutoff.error)throw cutoff.error;if(!current())return;
     const rows=[];
-    for(let offset=0;;offset+=1000){
+    if(typeof SB.reportSnapshot==='function'){
+      const {data,error}=await SB.reportSnapshot('coverage',{upload_id:upload});
+      if(error)throw error;if(!current())return;
+      if(data?.format!=='report-rows-v1'||data.kind!=='coverage'||!Array.isArray(data.rows)
+          ||data.integrity?.complete!==true||data.integrity.row_count!==data.rows.length
+          ||String(data.integrity.upload_id)!==upload)throw Error('Coverage SQL read did not complete.');
+      rows.push(...data.rows);
+    }else for(let offset=0;;offset+=1000){
       const {data,error}=await SB.rpc('get_ready_input_coverage',{p_upload_id:upload}).order('ewo',{ascending:true}).range(offset,offset+999);
       if(error)throw error;if(!current())return;rows.push(...(data||[]));if((data||[]).length<1000)break;
     }

@@ -6,6 +6,7 @@ namespace Ekwl;
  * Daily cells are streamed as tuples: no giant PHP array or paged-version mixing.
  */
 function planningSnapshotRead(array $u,array $b): void {
+    $started=microtime(true);
     requirePermission($u,'home');
     $id=$b['upload_id']??null;
     if(!is_string($id)||!preg_match('/^[a-f0-9-]{36}$/Di',$id))throw new ApiError('A selected planning upload is required.');
@@ -15,17 +16,41 @@ function planningSnapshotRead(array $u,array $b): void {
     try {
         $upload=run("SELECT * FROM ekwl_plan_uploads WHERE id=? AND status='complete'",[$id])->fetch();
         if(!$upload)throw new ApiError('Selected planning upload is unavailable. Refresh the plan list.',409);
-        $stats=run('SELECT COUNT(*) n,COUNT(DISTINCT source_row) distinct_rows,MIN(source_row) lo,MAX(source_row) hi,SUM(NOT EXISTS(SELECT 1 FROM ekwl_plan_daily d WHERE d.record_id=ekwl_plan_records.id AND d.upload_id=ekwl_plan_records.upload_id)) missing_daily FROM ekwl_plan_records WHERE upload_id=?',[$id])->fetch();
-        $dailyStats=run('SELECT COUNT(*) n,SUM(d.value IS NULL OR r.id IS NULL) invalid_rows FROM ekwl_plan_daily d LEFT JOIN ekwl_plan_records r ON r.id=d.record_id AND r.upload_id=d.upload_id WHERE d.upload_id=?',[$id])->fetch();
-        validatePlanningCounts($upload,$stats,$dailyStats);
-        $bad=run("SELECT r.id,r.source_row,r.criteria,r.total,SUM(d.value) daily_total FROM ekwl_plan_records r LEFT JOIN ekwl_plan_daily d ON d.record_id=r.id AND d.upload_id=r.upload_id WHERE r.upload_id=? AND r.is_summary_row=0 AND r.criteria IN ('Plan/Day','SAH/Day','Clock Hour/Day') GROUP BY r.id,r.source_row,r.criteria,r.total HAVING COUNT(d.id)=0 OR r.total IS NULL OR SUM(d.value)<>r.total LIMIT 1",[$id])->fetch();
-        if($bad)throw new ApiError('Planning source row '.$bad['source_row'].' ('.$bad['criteria'].'): Total '.($bad['total']??'missing').' does not match daily sum '.($bad['daily_total']??'missing').'. Check the original report and re-import; no partial planning data was published.',409);
         $fields='id,source_row,line_no,buyer,product_type,product,ewo,po,col,print,emb,outsource,order_qty,pcd,delivery,psd,pfd,manpower,smv,criteria,total,is_summary_row';
-        $records=run("SELECT ".$fields." FROM ekwl_plan_records WHERE upload_id=? AND is_summary_row=0 AND criteria IN ('Plan/Day','SAH/Day','Clock Hour/Day','Effi/Day') ORDER BY source_row,id",[$id])->fetchAll();
-        $records=array_map(fn($r)=>hydrate($r,catalog()['plan_records']),$records);
+        $source=run('SELECT '.$fields.' FROM ekwl_plan_records WHERE upload_id=? ORDER BY source_row,id',[$id])->fetchAll();
+        // One grouped daily scan replaces correlated existence probes and repeated
+        // joins/scans. SQL DECIMAL SUM remains exact; no float reconciliation.
+        // record_id is BIGINT. Grouping its exact numeric expression prevents
+        // an ordered grouping scan over every upload's record/date index.
+        // The upload filter can use its own index without any index-name hint.
+        $groups=run('SELECT record_id,COUNT(*) n,SUM(value) daily_total,SUM(value IS NULL) invalid_rows FROM ekwl_plan_daily WHERE upload_id=? GROUP BY (record_id+0)',[$id]);
+        $byRecord=[];$dailyStats=['n'=>0,'invalid_rows'=>0];
+        while($row=$groups->fetch()){
+            $byRecord[(string)$row['record_id']]=$row;
+            $dailyStats['n']+=(int)$row['n'];$dailyStats['invalid_rows']+=(int)$row['invalid_rows'];
+        }
+        $groups->closeCursor();
+        $stats=['n'=>count($source),'distinct_rows'=>0,'lo'=>$source[0]['source_row']??0,'hi'=>$source?end($source)['source_row']:0,'missing_daily'=>0];
+        $sourceRows=[];$records=[];$bad=null;
+        foreach($source as $r){
+            $sourceRows[(string)$r['source_row']]=true;
+            $daily=$byRecord[(string)$r['id']]??null;unset($byRecord[(string)$r['id']]);
+            if(!$daily)$stats['missing_daily']++;
+            if(!$r['is_summary_row']&&in_array($r['criteria'],['Plan/Day','SAH/Day','Clock Hour/Day'],true)
+                &&(!$daily||$r['total']===null||$daily['daily_total']===null||decimalComparable((string)$r['total'])!==decimalComparable((string)$daily['daily_total'])))
+                $bad??=$r+['daily_total'=>$daily['daily_total']??null];
+            if(!$r['is_summary_row']&&in_array($r['criteria'],['Plan/Day','SAH/Day','Clock Hour/Day','Effi/Day'],true))$records[]=hydrate($r,catalog()['plan_records']);
+        }
+        $stats['distinct_rows']=count($sourceRows);
+        // A remaining group belongs to a missing record or a different upload.
+        $dailyStats['invalid_rows']+=count($byRecord);
+        validatePlanningCounts($upload,$stats,$dailyStats);
+        if($bad)throw new ApiError('Planning source row '.$bad['source_row'].' ('.$bad['criteria'].'): Total '.($bad['total']??'missing').' does not match daily sum '.($bad['daily_total']??'missing').'. Check the original report and re-import; no partial planning data was published.',409);
+        unset($source,$sourceRows,$byRecord);
         // Start the only large query unbuffered. All other SQL is finished first.
         $pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY,false);
         $cursor=run('SELECT record_id,plan_date,value FROM ekwl_plan_daily WHERE upload_id=? ORDER BY plan_date,record_id,id',[$id]);
+        header('Server-Timing: planning_prepare;dur='.round((microtime(true)-$started)*1000,1));
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');header('X-Content-Type-Options: nosniff');
         if(function_exists('ob_gzhandler')&&!ini_get('zlib.output_compression')&&!headers_sent()&&str_contains($_SERVER['HTTP_ACCEPT_ENCODING']??'','gzip'))ob_start('ob_gzhandler',8192);

@@ -141,7 +141,8 @@ async function previewEmbellishmentFile(){
 }
 async function loadEmbellishmentModule(force=false){
   if(EM_MODE==='preview'&&!force){renderEmbellishmentModule();return;}
-  if(!force&&dataCacheEntry('snapshot:embellishment')?.loaded&&dataCacheEntry('snapshot:embellishment').value===EM_ROWS&&EM_MODE==='sql'){recordDataCacheHit('snapshot:embellishment');renderEmbellishmentModule();return;}
+  const currentSnapshot=dataCacheEntry('snapshot:embellishment',60000);
+  if(!force&&currentSnapshot?.loaded&&currentSnapshot.value===EM_ROWS&&EM_MODE==='sql'){recordDataCacheHit('snapshot:embellishment');renderEmbellishmentModule();return;}
   const token=++EM_LOAD_TOKEN,session=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   if(!userId||!canAccessSlide(19))return;
   emMessage('em-msg','Loading Embellishment SQL snapshot…');

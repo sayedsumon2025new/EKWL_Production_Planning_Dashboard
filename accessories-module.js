@@ -132,7 +132,8 @@ async function previewAccessoriesFile(){
 
 async function loadAccessoriesModule(force=false){
   if(AC_MODE==='preview'&&!force){renderAccessoriesModule();return;}
-  if(!force&&dataCacheEntry('snapshot:accessories')?.loaded&&dataCacheEntry('snapshot:accessories').value===AC_ROWS&&AC_MODE==='sql'){recordDataCacheHit('snapshot:accessories');renderAccessoriesModule();return;}
+  const currentSnapshot=dataCacheEntry('snapshot:accessories',60000);
+  if(!force&&currentSnapshot?.loaded&&currentSnapshot.value===AC_ROWS&&AC_MODE==='sql'){recordDataCacheHit('snapshot:accessories');renderAccessoriesModule();return;}
   const token=++AC_LOAD_TOKEN,session=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   if(!userId||!canAccessSlide(18))return;
   acMessage('ac-msg','Loading Accessories SQL snapshots…');

@@ -62,6 +62,31 @@ limited.call('reports/snapshot',{'kind':'fabric'},expected=403)
 # Shared reports use the same authorization and output values as the existing query.
 for kind,table in [('fabric','fabric_cutting_info'),('sewing','sewing_input_output'),('production','date_wise_production'),('size','size_set_rows'),('accessories','accessories_rows'),('embellishment','embellishment_send_receive_rows')]:
     d=c.call('reports/snapshot',{'kind':kind})['data'];assert d['kind']==kind and d['integrity']['complete'] and len(d['rows'])==d['integrity']['row_count']
+# Remaining large modules use the same direct SQL policy.
+plan=c.call('reports/snapshot',{'kind':'planning-records','upload_id':uid,'revision':data['upload']['revision']})['data']
+assert len(plan['rows'])==1000 and plan['integrity']['upload_id']==uid and plan['rows'][0]['ewo']=='00000000'
+c.call('reports/snapshot',{'kind':'planning-records','upload_id':uid,'revision':9999},expected=409)
+c.call('reports/snapshot',{'kind':'planning-records'},expected=400)
+ready=c.call('reports/snapshot',{'kind':'readiness','upload_id':uid})['data']
+legacy=c.query('ewo_readiness_board',filters=[['eq','upload_id',uid]],orders=[['ewo',True]])['data']
+assert ready['rows']==legacy and ready['integrity']['row_count']==len(legacy)
+coverage=c.call('reports/snapshot',{'kind':'coverage','upload_id':uid})['data']
+legacy_coverage=c.call('rpc',{'name':'get_ready_input_coverage','args':{'p_upload_id':uid},'orders':[['ewo',True]]})['data']
+assert coverage['rows']==legacy_coverage and coverage['integrity']['upload_id']==uid and coverage['integrity']['complete']
+limited.call('reports/snapshot',{'kind':'coverage','upload_id':uid},expected=403)
+c.query('ewo_readiness_board',filters=[['eq','upload_id',uid]],limit=1001,internalAll=True,expected=400)
+limited.call('reports/snapshot',{'kind':'orderbank'},expected=403)
+limited.call('reports/snapshot',{'kind':'readiness','upload_id':uid},expected=403)
+token=str(uuid.uuid4());headers=['EWO','Buyer','PO','GmtColor','OrderQty','EFD']
+for start in range(0,1201,500):
+    c.query('order_bank_import_rows',op='insert',rows=[{'upload_token':token,'source_row_no':i+1,'source_data':{'EWO':str(i).zfill(8),'Buyer':'Synthetic','PO':'PO','GmtColor':'Blue','OrderQty':'12.5000','EFD':'2026-12-31'}} for i in range(start,min(start+500,1201))])
+c.call('rpc',{'name':'finalize_order_bank_import','args':{'p_upload_token':token,'p_expected_rows':1201,'p_file_name':'synthetic-bank.csv','p_source_columns':headers}})
+bank=c.call('reports/snapshot',{'kind':'orderbank'})['data']
+assert len(bank['rows'])==bank['integrity']['row_count']==1201
+assert all(r['source_columns']==headers for r in bank['rows'])
+assert [r['source_data']['EWO'] for r in bank['rows']]==[str(i).zfill(8) for i in range(1201)]
+assert all(r['source_data']['OrderQty']=='12.5000' for r in bank['rows'])
+print('PASS direct SQL Order Bank exact dynamic columns/cells; selected-plan records/revision; one-pass readiness equals legacy; permissions and external pagination bounds')
 c.call('reports/snapshot',{'kind':'users'},expected=400)
 Client().call('reports/snapshot',{'kind':'fabric'},expected=401)
 print(json.dumps({'synthetic_daily_values':90000,'snapshot_requests':1,'legacy_daily_requests':90,'exact_value_order_parity':True,'php_32mb_stream_passed':True,'snapshot_seconds_local':round(elapsed,3),'gzip_bytes':len(encoded),'json_bytes':len(decoded),'metadata_mismatch_blocked':True,'totals_mismatch_blocked':True,'private_production_data_verified':False}))

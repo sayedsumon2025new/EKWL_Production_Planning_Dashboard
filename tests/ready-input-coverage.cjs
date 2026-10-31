@@ -13,6 +13,10 @@ function setup(options={}){
  vm.createContext(c);vm.runInContext(source,c);vm.runInContext('snapshot=()=>JSON.parse(JSON.stringify({rows:RC_ROWS,busy:RC_BUSY,error:RC_ERROR,cutoff:RC_CUTOFF}));',c);return {c,calls};
 }
 (async()=>{
+ const single=setup();let reads=0;single.c.SB.reportSnapshot=async(kind,options)=>{reads++;return {data:{format:'report-rows-v1',kind,rows:Array.from({length:1201},(_,i)=>({ewo:String(i)})),integrity:{complete:true,row_count:1201,upload_id:options.upload_id}},error:null};};
+ await single.c.loadReadyInputCoverage();assert.equal(reads,1);assert.equal(single.c.snapshot().rows.length,1201);assert.equal(single.calls.length,0);
+ single.c.SB.reportSnapshot=async()=>({data:{format:'report-rows-v1',kind:'coverage',rows:[],integrity:{complete:false,row_count:0,upload_id:'A'}},error:null});
+ await single.c.loadReadyInputCoverage();assert.equal(single.c.snapshot().rows.length,0);assert.match(single.c.snapshot().error,/did not complete/);
  const x=setup({count:1001});await x.c.loadReadyInputCoverage();assert.equal(x.c.snapshot().rows.length,1001);assert.equal(x.calls.length,2);assert.equal(x.calls[0].filters.upload_id,'A');
  assert.equal(x.c.rcDateOffset('2026-12-31',1),'2027-01-01');assert.equal(x.c.rcDateOffset('2024-02-28',1),'2024-02-29');
  assert.match(x.c.rcDayCell({day1_status:'green',day1_plan:100},1),/rc-green/);

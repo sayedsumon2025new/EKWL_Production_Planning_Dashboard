@@ -18,7 +18,14 @@
         const response=await fetch(url,{...(readController?{signal:readController.signal}:{}),method,credentials:'same-origin',cache:'no-store',
           headers:method==='GET'?{}:{'X-CSRF-Token':csrf,...(multipart?{}:{'Content-Type':'application/json'})},
           ...(method==='POST'?{body:multipart?payload:JSON.stringify(payload??{})}:{})});
-        const result=await response.json();
+        const requestId=response.headers?.get?.('X-Request-ID');
+        const contentType=response.headers?.get?.('Content-Type');
+        if(contentType&&!contentType.includes('application/json'))throw Error('MySQL returned a non-JSON response (HTTP '+response.status+').'+(requestId?' Request ID: '+requestId:''));
+        let result;
+        try{result=await response.json();}catch(error){
+          if(readController?.signal.aborted)throw error;
+          throw Error('MySQL response was incomplete or invalid (HTTP '+response.status+').'+(requestId?' Request ID: '+requestId:''));
+        }
         if(result.data?.csrf)csrf=result.data.csrf;
         if(result.error){
           result.error.status=response.status;
@@ -99,7 +106,7 @@
     return {from:name=>new Query(name),rpc:(name,args)=>new Query(null,name,args),auth,
       functions:{invoke:(name,options)=>name==='admin-create-user'?request('users',options.body):Promise.resolve({data:null,error:{message:'Unsupported user operation.'}})},
       storage:{from:bucket=>({upload:async(path,file)=>{if(bucket!=='plan-data')return {data:null,error:{message:'Unsupported file store.'}};const form=new FormData();form.append('file',file);return request('files/upload',form);}})},
-      reportSnapshot:kind=>request('reports/snapshot',{kind}),
+      reportSnapshot:(kind,options={})=>request('reports/snapshot',{...options,kind}),
       planningSnapshot:uploadId=>request('planning/snapshot',{upload_id:String(uploadId)}),
       request,endpoint:endpoint.href};
   }

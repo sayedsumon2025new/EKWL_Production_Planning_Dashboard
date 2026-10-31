@@ -31,6 +31,7 @@ jobs:
         run: |
           php tests/mysql/json-ewo-filter.php
           php tests/mysql/planning-page-limit.php
+          php tests/mysql/report-diagnostic.php
           php tests/mysql/load-analysis-loss.php
       - name: Verify consistent snapshots against isolated MySQL
         run: |
@@ -46,6 +47,7 @@ jobs:
           python3 tests/cutting-wip-browser.py
           python3 tests/gantt-daily-summary-browser.py
           python3 tests/load-analysis-live-browser.py
+          python3 tests/ewo-readiness-browser.py
       - name: Run calculation, cache and API adapter regressions
         shell: bash
         run: |

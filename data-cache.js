@@ -55,6 +55,15 @@ function loadActiveModuleRows(type,force=false){
 }
 function loadOrderBankSnapshot(force=false){
   return loadVersionedData('snapshot:orderbank',async current=>{
+    if(typeof SB.reportSnapshot==='function'){
+      const {data,error}=await SB.reportSnapshot('orderbank');
+      if(error)throw error;if(!current())throw Error('Order Bank read superseded.');
+      if(data?.format!=='report-rows-v1'||data.kind!=='orderbank'||!Array.isArray(data.rows)
+          ||data.integrity?.complete!==true||data.integrity.row_count!==data.rows.length)
+        throw Error('Order Bank SQL read did not complete.');
+      if(data.rows.some(r=>r.upload_batch_id!==data.rows[0].upload_batch_id))throw Error('Order Bank contains mixed source batches.');
+      return data.rows;
+    }
     const all=[];let snapshotId=null;
     for(let from=0;;from+=1000){
       let query=SB.from(snapshotId===null?'order_bank_latest_all':'order_bank_raw').select('*');
@@ -67,7 +76,7 @@ function loadOrderBankSnapshot(force=false){
     }
     if(all.some(r=>r.upload_batch_id!==all[0].upload_batch_id))throw Error('Order Bank changed during loading. Refresh to load the complete latest snapshot.');
     return all;
-  },{force});
+  },{force,ttl:60000});
 }
 const EWO_SOURCE_TTL=60000;
 const EWO_SOURCE_SNAPSHOT_FENCES=new Map();
@@ -82,10 +91,18 @@ function loadEwoSource(type,ids=null){
   const values=ids===null?null:[...new Set(ids.map(String))].sort(),scope=values===null?'all':JSON.stringify(values);
   let snapshot=dataCacheEntry('snapshot:'+type,EWO_SOURCE_TTL);
   const fence=EWO_SOURCE_SNAPSHOT_FENCES.get(type);
-  if(snapshot&&fence&&snapshot.userId===fence.userId&&snapshot.generation===fence.generation&&snapshot.version===fence.version)snapshot=null;
-  const full=dataCacheEntry('ewo:'+type+':all',EWO_SOURCE_TTL)||snapshot;
+  const fenced=snapshot&&fence&&snapshot.userId===fence.userId&&snapshot.generation===fence.generation&&snapshot.version===fence.version;
+  if(fenced)snapshot=null;
+  const allEwos=dataCacheEntry('ewo:'+type+':all',EWO_SOURCE_TTL);
+  const full=snapshot&&(!allEwos||snapshot.at>=allEwos.at)?snapshot:allEwos;
   const filter=rows=>values===null?rows:rows.filter(row=>{const value=type==='size'||type==='accessories'?row.row_data?.EWO:type==='embellishment'?row['EWO No']:row.EWO;return value!=null&&values.includes(String(value));});
   if(full){recordDataCacheHit('ewo:'+type);return values===null?full.promise:full.promise.then(filter);}
+  if(values===null&&type!=='orderbank'&&typeof SB.reportSnapshot==='function'){
+    return loadVersionedData('ewo:'+type+':all',async current=>{
+      const rows=await loadActiveModuleRows(type,!!fenced);
+      if(!current())throw Error('EWO source read superseded.');return rows;
+    },{ttl:EWO_SOURCE_TTL});
+  }
   const table={size:'size_set_rows',accessories:'accessories_rows',embellishment:'embellishment_send_receive_rows',orderbank:'order_bank_latest_all'}[type];
   const columns=type==='size'||type==='accessories'?'row_data':type==='embellishment'?EWO_EM_COLUMNS:'EWO,GmtColor,OrderQty';
   return loadVersionedData('ewo:'+type+':'+scope,current=>cachedPagedRows(()=>{
