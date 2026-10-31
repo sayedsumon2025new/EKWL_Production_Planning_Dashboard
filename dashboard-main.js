@@ -727,6 +727,7 @@ function setLoadChip(id,state,label){
 function setPlanningReadState(state,message=''){
   if(!document.body)return;
   document.body.dataset.planningState=state;
+  if(state!=='ready'&&typeof resetChassisExcelLinks==='function')resetChassisExcelLinks();
   for(const slide of document.querySelectorAll('.slide[data-logical-slide]')){
     const number=Number(slide.dataset.logicalSlide);
     if([0,12,13,14].includes(number))continue;
@@ -2097,6 +2098,7 @@ async function captureReport(button,mode){
 }
 function setupReportActions(){
  document.querySelectorAll('.card').forEach(card=>{
+  if(card.closest('#s9'))return;
   if(!card.querySelector('table')&&!card.querySelector('#s3-buyer-pie,#s3-product-pie'))return;
   if(card.querySelector(':scope > .report-actions'))return;
   const actions=document.createElement('div');actions.className='report-actions';actions.innerHTML='<button class="pg-btn" onclick="copyReportData(this)">Copy data</button><button class="pg-btn" onclick="captureReport(this,\'copy\')">Copy image</button><button class="pg-btn" onclick="captureReport(this,\'download\')">Download PNG</button>';card.prepend(actions);
@@ -2495,7 +2497,7 @@ function drawS4ChassisChart(labels, hwVals, planVals, totalHW, totalPlan){
   const one=v=>Number(v||0).toFixed(1);
   function setup(id){
     const c=document.getElementById(id); if(!c) return null;
-    const cssW=Math.max(240,c.parentElement.clientWidth-20), cssH=230, dpr=window.devicePixelRatio||1;
+    const cssW=Math.max(240,c.parentElement.clientWidth-20), cssH=190, dpr=window.devicePixelRatio||1;
     c.width=Math.round(cssW*dpr); c.height=Math.round(cssH*dpr); c.style.width=cssW+'px'; c.style.height=cssH+'px';
     const x=c.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,cssW,cssH); return {c,x,W:cssW,H:cssH};
   }
@@ -3164,6 +3166,7 @@ function renderS8(data){
 
 /* ══ SLIDE 9: LINE CALENDAR ═════════════════════ */
 function renderS9(data){
+  if(typeof resetChassisExcelLinks==='function')resetChassisExcelLinks();
   if(typeof recordDashboardRender==='function')recordDashboardRender('10');
   // Date columns come only from uploaded Plan/Day data. A date with no positive plan on any master line is an Off Day and is hidden.
   const allDates=[...new Set(DAILY_PLAN.map(d=>d.date).filter(Boolean))].sort();
@@ -3179,6 +3182,7 @@ function renderS9(data){
   if(!dates.length){
     document.getElementById('s9-cal').innerHTML='<tbody><tr><td>No active date-wise Plan/Day data found.</td></tr></tbody>';
     for(const id of ['s9-legend','s9-sum-head','s9-sum-body','s9-hit-chart','s9-product-chart','s9-day-chart'])document.getElementById(id).innerHTML='';
+    if(typeof fitChassisReportTables==='function')fitChassisReportTables();
     return;
   }
 
@@ -3438,6 +3442,7 @@ function renderS9(data){
   document.getElementById('s9-sum-body').innerHTML=
     styles.map(st=>summaryRow(st,counts[st],false)).join('')+
     summaryRow('Occupied line-days',totals,true);
+  if(typeof fitChassisReportTables==='function')fitChassisReportTables();
 }
 
 /* ══ TEMPLATE DOWNLOAD ══════════════════════════ */
@@ -3873,6 +3878,7 @@ async function siteLogout(){
   closeS2LineDetails();S2_LINE_DETAILS=[];
   const cacheKey=dashboardCacheKey(),fastKey=fastBootCacheKey();
   ++SITE_SESSION_GENERATION;++SUPABASE_LOAD_TOKEN;++PLAN_FILTER_TOKEN;++EFF15_FR_TOKEN;
+  if(typeof resetChassisExcelLinks==='function')resetChassisExcelLinks();
   SITE_AUTH_USER=null; // Prevent reset callbacks from starting new report reads during logout.
   invalidateSharedReports();
   invalidateTinySettings();

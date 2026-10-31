@@ -48,6 +48,7 @@ jobs:
           python3 tests/gantt-daily-summary-browser.py
           python3 tests/load-analysis-live-browser.py
           python3 tests/ewo-readiness-browser.py
+          python3 tests/chassis-compact-browser.py
       - name: Run calculation, cache and API adapter regressions
         shell: bash
         run: |
