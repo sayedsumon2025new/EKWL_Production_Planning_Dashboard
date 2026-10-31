@@ -6,12 +6,12 @@ let DASHBOARD_FILTER_CONTEXT=null;
 function readTinySetting(key,build){
   const generation=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   const existing=TINY_SETTING_READS.get(key);
-  if(existing?.generation===generation&&existing.userId===userId)return existing.promise;
+  if(existing?.generation===generation&&existing.userId===userId&&(!existing.loaded||Date.now()-existing.at<60000))return existing.promise;
   const entry={generation,userId,promise:null};TINY_SETTING_READS.set(key,entry);
   entry.promise=Promise.resolve().then(build).then(result=>{
     if(generation!==SITE_SESSION_GENERATION||userId!==SITE_AUTH_USER?.id||TINY_SETTING_READS.get(key)!==entry)throw Error('Settings read superseded.');
     if(result.error)throw result.error;
-    return result;
+    entry.loaded=true;entry.at=Date.now();return result;
   }).catch(error=>{if(TINY_SETTING_READS.get(key)===entry)TINY_SETTING_READS.delete(key);throw error;});
   return entry.promise;
 }

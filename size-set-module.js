@@ -304,7 +304,8 @@ function clearSizeSetFilters(){
 async function loadSizeSetModule(force=false){
   const upload=document.getElementById('ss-upload-card');if(upload)upload.style.display=siteIsAdmin()?'':'none';
   if(SS_MODE==='preview'&&!force){renderSizeSetModule();return;}
-  if(!force&&dataCacheEntry('snapshot:size')?.loaded&&dataCacheEntry('snapshot:size').value===SS_ROWS&&SS_MODE==='sql'){recordDataCacheHit('snapshot:size');renderSizeSetModule();return;}
+  const currentSnapshot=dataCacheEntry('snapshot:size',60000);
+  if(!force&&currentSnapshot?.loaded&&currentSnapshot.value===SS_ROWS&&SS_MODE==='sql'){recordDataCacheHit('snapshot:size');renderSizeSetModule();return;}
   const token=++SS_LOAD_TOKEN,session=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   if(!userId||!canAccessSlide(17))return;
   ssMessage('ss-msg','Loading latest Size Set SQL snapshot…');

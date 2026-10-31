@@ -2,13 +2,14 @@
 let OE_LOAD_PROMISE=null;
 let OE_PENDING_KEY='';
 let OE_RENDERED_KEY='';
+let OE_RENDERED_AT=0;
 let OE_LOAD_TOKEN=0;
 
-function invalidateOrderExecutionData(){++OE_LOAD_TOKEN;OE_PENDING_KEY='';OE_RENDERED_KEY='';}
+function invalidateOrderExecutionData(){++OE_LOAD_TOKEN;OE_PENDING_KEY='';OE_RENDERED_KEY='';OE_RENDERED_AT=0;}
 
 function resetOrderExecutionSlide(){
   ++OE_LOAD_TOKEN;
-  OE_LOAD_PROMISE=null;OE_PENDING_KEY='';OE_RENDERED_KEY='';
+  OE_LOAD_PROMISE=null;OE_PENDING_KEY='';OE_RENDERED_KEY='';OE_RENDERED_AT=0;
   const frame=document.getElementById('order-execution-frame');
   if(frame){frame.dataset.ready='';frame.removeAttribute('src');}
 }
@@ -30,7 +31,7 @@ window.addEventListener('message',event=>{
   }
   if(event.data.type==='ekwl-execution-rendered'){
     if(event.data.key===OE_PENDING_KEY){
-      OE_RENDERED_KEY=OE_PENDING_KEY;
+      OE_RENDERED_KEY=OE_PENDING_KEY;OE_RENDERED_AT=Date.now();
       OE_PENDING_KEY='';
     }
   }
@@ -52,12 +53,13 @@ async function loadOrderExecutionSlide(force=false){
   const userId=String(SITE_AUTH_USER.id);
   const generation=SITE_SESSION_GENERATION;
   const uploadId=String(ACTIVE_PLAN_UPLOAD?.id||'');
+  const uploadRevision=ACTIVE_PLAN_UPLOAD?.revision;
   const planningReady=!!uploadId && String(EFF15_METRIC_UPLOAD_ID||'')===uploadId;
-  const key=userId+':'+uploadId+':'+planningReady;
-  if(!force && (key===OE_RENDERED_KEY || key===OE_PENDING_KEY))return;
+  const key=userId+':'+uploadId+':'+String(uploadRevision??'')+':'+planningReady;
+  if(!force && ((key===OE_RENDERED_KEY&&Date.now()-OE_RENDERED_AT<60000) || key===OE_PENDING_KEY))return;
   const token=++OE_LOAD_TOKEN;
   const current=()=>token===OE_LOAD_TOKEN && generation===SITE_SESSION_GENERATION &&
-    SITE_AUTH_USER?.id===userId && String(ACTIVE_PLAN_UPLOAD?.id||'')===uploadId &&
+    SITE_AUTH_USER?.id===userId && String(ACTIVE_PLAN_UPLOAD?.id||'')===uploadId && String(ACTIVE_PLAN_UPLOAD?.revision??'')===String(uploadRevision??'') &&
     frame.dataset.ready==='1' && canAccessSlide(16);
   const send=payload=>{if(current())frame.contentWindow.postMessage(payload,'*');};
   send({type:'ekwl-execution-loading'});
@@ -65,11 +67,26 @@ async function loadOrderExecutionSlide(force=false){
     try{
       const all=await loadOrderBankSnapshot(force);
       if(!current())return;
-      const orders=(!force&&ORDER_BANK_RAW_ROWS.length)?ORDER_BANK_RAW_ROWS:all;
+      const sourceColumns=all[0]?.source_columns;
+      const orders=all.map(row=>{
+        if(Array.isArray(sourceColumns)&&sourceColumns.length){
+          if(!row.source_data||sourceColumns.some(key=>!Object.hasOwn(row.source_data,key)))throw Error('Order Bank SQL source cells do not match their headers.');
+          return row.source_data;
+        }
+        return row;
+      });
       let records=[],daily=[],dateRange=[],planningError='';
       if(planningReady){
         try{
-          records=await sbPaged(()=>SB.from('plan_records')
+          if(typeof SB.reportSnapshot==='function'){
+            const {data,error}=await SB.reportSnapshot('planning-records',{upload_id:uploadId,...(uploadRevision==null?{}:{revision:uploadRevision})});
+            if(error)throw error;
+            if(data?.format!=='report-rows-v1'||data.kind!=='planning-records'||!Array.isArray(data.rows)
+                ||data.integrity?.complete!==true||data.integrity.row_count!==data.rows.length
+                ||String(data.integrity.upload_id)!==uploadId
+                ||(uploadRevision!=null&&String(data.integrity.revision)!==String(uploadRevision)))throw Error('Planning SQL read did not complete.');
+            records=data.rows;
+          }else records=await sbPaged(()=>SB.from('plan_records')
             .select('id,source_row,unit,line_no,buyer,product_type,product,ewo,stroke,po,col,print,emb,outsource,order_qty,planned_qty,pcd,psd,pfd,strip_plan_qty,delivery,manpower,smv,average,criteria,total,is_summary_row')
             .eq('upload_id',uploadId).eq('is_summary_row',false)
             .in('criteria',['Plan/Day','SAH/Day','Clock Hour/Day','Effi/Day'])

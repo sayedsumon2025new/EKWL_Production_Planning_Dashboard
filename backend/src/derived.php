@@ -47,7 +47,8 @@ function loadDerivedSource(string $upload,string $kind): array {
     }
     return $data;
 }
-function derivedQuery(array $u,array $q,string $kind): array {
+// Full output is enabled only by an internal PHP argument, never by request JSON.
+function derivedQuery(array $u,array $q,string $kind,bool $internalAll=false): array {
     requirePermission($u,'slide_21');$upload=$kind==='coverage'?(string)($q['args']['p_upload_id']??''):'';
     if($kind==='board'&&count($q['filters']??[])!==1)throw new ApiError('Select one planning upload for readiness.');
     if($kind==='board')foreach($q['filters']??[] as $filter){
@@ -55,7 +56,7 @@ function derivedQuery(array $u,array $q,string $kind): array {
     }
     if(!$upload)throw new ApiError('Planning upload required.');$offset=(int)($q['offset']??0);$limit=(int)($q['limit']??1000);
     if($offset<0||$limit<1||$limit>1000)throw new ApiError('Invalid pagination.');
-    return transaction(function()use($upload,$kind,$offset,$limit,$q){
+    return transaction(function()use($upload,$kind,$offset,$limit,$q,$internalAll){
         $data=loadDerivedSource($upload,$kind);$today=(new \DateTimeImmutable('now',new \DateTimeZone('Asia/Dhaka')))->format('Y-m-d');
         $prepared=ReadinessEngine::prepare($data,$upload,$today);
         $rows=$kind==='board'?ReadinessEngine::board($prepared):ReadinessEngine::coverage($prepared,$data['date_wise_production']??[]);
@@ -65,6 +66,6 @@ function derivedQuery(array $u,array $q,string $kind): array {
             foreach($fields as $f)if(!in_array($f,$allowed,true))throw new ApiError('Unsupported readiness field.');
             $rows=array_map(fn($r)=>array_intersect_key($r,array_flip($fields)),$rows);
         }
-        return array_slice($rows,$offset,$limit);
+        return $internalAll?$rows:array_slice($rows,$offset,$limit);
     });
 }

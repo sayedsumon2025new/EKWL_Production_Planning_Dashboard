@@ -45,6 +45,9 @@ try {
         session_write_close();Ekwl\reportSnapshotRead($u,$b);exit;
     }
     if((config()['maintenance']??false)&&!in_array($route,['query','archive','runtime','notes','load-analysis-loss'],true)&&!($route==='rpc'&&($b['name']??'')==='get_ready_input_coverage'))throw new ApiError('Application writes paused for migration.',503);
+    // Persist the identity/CSRF checks, then release the PHP session lock for
+    // read-only SQL. One slow analysis must not queue every other tab/panel.
+    if(($route==='query'&&($b['op']??'select')==='select')||($route==='rpc'&&($b['name']??'')==='get_ready_input_coverage'))session_write_close();
     if($route==='query')$result=dataQuery($u,$b);
     elseif($route==='rpc')$result=rpc($u,$b);
     elseif($route==='users')$result=['data'=>adminUsers($u,$b)];
@@ -64,5 +67,6 @@ try {
 catch(Throwable $e){
     // Request ID is safe to expose; SQL, paths and exception traces remain server side.
     error_log('EKWL API '.$requestId.' '.get_class($e));
-    jsonOut(['data'=>null,'error'=>['message'=>'Operation failed. Contact the administrator with request ID '.$requestId,'code'=>500,'request_id'=>$requestId]],500);
+    $detail=isset($u)&&($route??'')==='reports/snapshot'&&function_exists('Ekwl\\reportReadDiagnostic')?Ekwl\reportReadDiagnostic($e):'';
+    jsonOut(['data'=>null,'error'=>['message'=>$detail.'Operation failed. Contact the administrator with request ID '.$requestId,'code'=>500,'request_id'=>$requestId]],500);
 }

@@ -90,12 +90,22 @@ async function loadEWOReadinessBoard(includeCoverage=true){
       uploadId=String(data?.[0]?.id||'');
     }
     if(!uploadId){RD_BUSY=false;renderEWOReadinessBoard();return;}
-    const rows=[];
+    let rows;
+    if(typeof SB.reportSnapshot==='function'){
+      const {data,error}=await SB.reportSnapshot('readiness',{upload_id:uploadId});
+      if(error)throw error;if(!current())return;
+      if(data?.format!=='report-rows-v1'||data.kind!=='readiness'||!Array.isArray(data.rows)
+          ||data.integrity?.complete!==true||data.integrity.row_count!==data.rows.length
+          ||String(data.integrity.upload_id)!==uploadId)throw Error('Readiness SQL analysis did not complete.');
+      rows=data.rows;
+    }else{
+    rows=[];
     for(let offset=0;;offset+=1000){
       const {data,error}=await SB.from('ewo_readiness_board').select(RD_COLUMNS).eq('upload_id',uploadId)
         .order('ewo',{ascending:true}).range(offset,offset+999);
       if(error)throw error;if(!current())return;
       rows.push(...(data||[]));if((data||[]).length<1000)break;
+    }
     }
     RD_ROWS=rows;RD_UPLOAD_ID=uploadId;rdPopulateBuyers();
   }catch(error){
