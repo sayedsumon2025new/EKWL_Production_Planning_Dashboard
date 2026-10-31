@@ -60,7 +60,7 @@ try:
             limit:async()=>({data:[{output_date:'2026-10-11'}],error:null}),
             range:async()=>({data:table==='ready_input_coverage'?window.coverageRows:window.fixtureRows,error:null})};return q;};
           SB.rpc=()=>SB.from('ready_input_coverage');
-          SB.reportSnapshot=async kind=>({data:{format:'report-rows-v1',kind,rows:window.fixtureRows,integrity:{complete:true,row_count:window.fixtureRows.length,upload_id:'fixture-plan'}},error:null});
+          SB.reportSnapshot=async kind=>{const rows=kind==='coverage'?window.coverageRows:window.fixtureRows;return {data:{format:'report-rows-v1',kind,rows,integrity:{complete:true,row_count:rows.length,upload_id:'fixture-plan'}},error:null};};
           applySitePermissions();goSlide(21);await loadEWOReadinessBoard();
         }""")
         assert page.locator('#s21 .slide-title').text_content().strip()=='21 EWO Readiness Board'
