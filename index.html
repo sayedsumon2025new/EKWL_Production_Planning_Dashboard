@@ -2105,6 +2105,7 @@ input,select,textarea{
 <link rel="stylesheet" href="gantt-daily-summary.css?v=1">
 <link rel="stylesheet" href="size-set-andon.css?v=tna-tabs-fit-2">
 <link rel="stylesheet" href="gantt-layout.css?v=1">
+<link rel="stylesheet" href="chassis-compact.css?v=1">
 </head>
 <body class="site-locked">
 <div id="supabase-live-badge">MySQL · waiting</div>
@@ -2631,7 +2632,7 @@ input,select,textarea{
     </div>
   </div>
 <section id="s4-analysis">  <div class="slide-header">
-    <div class="slide-title">Chassis Line Plan & Loading <span class="slide-subtitle" id="s4-month"></span></div>
+    <div class="slide-title">Line plan & loading <span class="slide-subtitle" id="s4-month"></span></div>
     <div class="s4-date-tools" role="group" aria-label="Chassis plan date range">
       <label>From <input id="s4-date-from" type="date" aria-label="Chassis plan from date" onchange="s4DateRangeChanged('from')"></label>
       <label>To <input id="s4-date-to" type="date" aria-label="Chassis plan to date" onchange="s4DateRangeChanged('to')"></label>
@@ -2641,7 +2642,6 @@ input,select,textarea{
   </div>
   <div class="card">
     <div class="card-title">🏭 Chassis Loading Summary <span class="ct-right">🔴 Over 100% &nbsp; 🟢 ≤100%</span>
-      <span class="s4-capture-actions"><button type="button" class="pg-btn" id="s4-copy-image" onclick="captureS4Image('copy')">Copy screenshot</button><button type="button" class="pg-btn" id="s4-download-image" onclick="captureS4Image('download')">Download PNG</button><span id="s4-capture-status" class="s4-capture-status" role="status" aria-live="polite"></span></span>
     </div>
     <div class="tbl-wrap"><table class="dt" id="s4-tbl">
       <thead><tr>
@@ -2685,13 +2685,13 @@ input,select,textarea{
     <div class="s9-analysis-card"><div class="s9-analysis-title">Product Wise Hit &amp; Not Hit %</div><div id="s9-product-chart"></div></div>
     <div class="s9-analysis-card s9-day-analysis-card"><div class="s9-analysis-title">Day Wise Hit &amp; Not Hit %</div><div id="s9-day-chart"></div></div>
   </div>
-  <div class="card" style="padding:8px">
+  <div class="card calendar-card" style="padding:8px"><div class="chassis-table-toolbar"><strong>Line priority calendar</strong><a class="chassis-excel" href="#" onclick="return exportChassisExcel(event,'s9-cal','Line Priority',5)">↓ Export Excel</a></div>
     <div class="cal-wrap">
       <table class="cal" id="s9-cal"></table>
     </div>
   </div>
   <div class="card" style="margin-top:12px">
-    <div class="card-title">📊 Item Count per Day</div>
+    <div class="card-title">Item Count per Day<a class="chassis-excel" href="#" onclick="return exportChassisExcel(event,'s9-summary-tbl','Item Count per Day',1)">↓ Export Excel</a></div>
     <div class="tbl-wrap">
       <table class="dt" id="s9-summary-tbl">
         <thead id="s9-sum-head"></thead>
@@ -3150,6 +3150,7 @@ input,select,textarea{
 <script defer src="frontend-runtime.js?v=2"></script>
 <script defer src="data-cache.js?v=3"></script>
 <script defer src="dashboard-main.js?v=mysql-staging-1"></script>
+<script defer src="chassis-excel.js?v=1"></script>
 <script defer src="dashboard-effects.js?v=2"></script>
 <script defer src="mysql-management.js?v=1"></script>
 <script defer src="order-execution-bridge.js?v=3"></script>
