@@ -61,26 +61,35 @@ function buildLoadAnalysisLoss(input){
  const selected=new Set((input.selected||[0,1,2,3,4]).filter(i=>Number.isInteger(i)&&i>=0&&i<5));
  const notes=new Set(),allocated=gdsAllocate(input,notes),summary=buildGanttDailySummary({...input,selected:[...selected]},{allocation:allocated,notes}),evidence=laEvidence(input.sources||{}),overrides=input.overrides||{};
  const plan=gdsGroup(allocated.plan,row=>JSON.stringify([row.date,Number(row.line),gdsKey(row.ewo)]));
+ const cellKey=row=>JSON.stringify([row.date,Number(row.line),gdsKey(row.ewo)]),lineKey=row=>JSON.stringify([Number(row.line),gdsKey(row.ewo)]);
+ const dataByLine=gdsGroup(input.data,lineKey),dailyByCell=gdsGroup(gdsUniqueDaily(input.sah),cellKey),scheduledByCell=gdsGroup(input.plan.filter(r=>gdsNumber(r.value)!==null),cellKey);
+ const dates=new Set(input.dates),lines=new Set(input.lines),proofByScope=new Map();
  const records=[];
- for(const [key,rows] of plan){const [date,line,ewo]=JSON.parse(key);if(!input.dates.includes(date)||!input.lines.includes(line))continue;
-  const data=input.data.filter(row=>Number(row.line)===line&&gdsKey(row.ewo)===ewo),smvs=[...new Set(data.map(row=>gdsNumber(row.smv)).filter(v=>v>0))],a=allocated.allocations.get(key);
-  const daily=gdsUniqueDaily(input.sah).filter(row=>row.date===date&&Number(row.line)===line&&gdsKey(row.ewo)===ewo);
+ for(const [key,rows] of plan){const [date,line,ewo]=JSON.parse(key);if(!dates.has(date)||!lines.has(line))continue;
+  const data=dataByLine.get(JSON.stringify([line,ewo]))||[],smvs=[...new Set(data.map(row=>gdsNumber(row.smv)).filter(v=>v>0))],a=allocated.allocations.get(key);
+  const daily=dailyByCell.get(key)||[];
   const expected=daily.length?gdsSum(daily,row=>gdsNumber(row.value)):smvs.length===1?rows.reduce((n,row)=>n+gdsNumber(row.value),0)*smvs[0]/60:null;
   const known=a?.stages.filter((v,i)=>v!==null&&selected.has(i))||[],covered=selected.size===0&&a?0:known.length&&(a.smv!==null||known.every(v=>v===0))?known.reduce((n,v)=>n+v,0)*(a.smv||0)/60:null;
   const printPcs=selected.has(1)?a?.stages[1]??null:0,embPcs=selected.has(2)?a?.stages[2]??null:0;
   const printSah=printPcs===null?null:printPcs===0?0:a.smv===null?null:printPcs*a.smv/60;
   const embSah=embPcs===null?null:embPcs===0?0:a.smv===null?null:embPcs*a.smv/60;
   const delayed=(printSah||0)+(embSah||0),achievable=covered===null?null:Math.max(0,covered-delayed);
-  const scheduled=input.plan.filter(r=>r.date===date&&Number(r.line)===line&&gdsKey(r.ewo)===ewo&&gdsNumber(r.value)!==null);
+  const scheduled=scheduledByCell.get(key)||[];
   const scheduledColors=[...new Set(scheduled.map(r=>r.color??data.find(d=>d.record_id!=null&&String(d.record_id)===String(r.record_id))?.color).filter(Boolean))];
-  const proof=laRecordEvidence(evidence.get(ewo)||[],scheduledColors,line),supported=laSupportedReasons(proof,scheduledColors);
+  const proofKey=JSON.stringify([line,ewo,scheduledColors]);
+  if(!proofByScope.has(proofKey)){
+   const proof=laRecordEvidence(evidence.get(ewo)||[],scheduledColors,line);
+   proofByScope.set(proofKey,{proof,supported:laSupportedReasons(proof,scheduledColors)});
+  }
+  const {proof,supported}=proofByScope.get(proofKey);
   const auto=input.evidenceAvailable!==false&&supported.length===1?supported[0]:'unknown',saved=overrides[key];
   const manual=saved&&LA_REASONS.some(r=>r[0]===saved.reason&&!['planning','print','emb'].includes(r[0]))?saved:null;
   const manualApplied=!!manual&&(manual.reason==='unknown'||supported.includes(manual.reason));
   records.push({key,date,line,ewo,allocatedPcs:a?.stages||[],netDemand:a?.qty??null,smv:a?.smv??null,colors:scheduledColors,plan:expected,planDerived:!daily.length&&expected!==null,ganttForecast:covered,forecast:achievable,printPcs,embPcs,printSah,embSah,gap:expected===null||achievable===null?null:Math.max(0,expected-achievable),evidence:proof,supportedReasons:supported,allowedReasons:[...supported,'unknown'],auto,reason:manualApplied?manual.reason:auto,manual,manualApplied,reasonBasis:input.evidenceAvailable===false?'Some evidence sources are unavailable; automatic cause is unconfirmed':manual&&!manualApplied?'Saved correction retained but not applied: no matching report evidence':supported.length>1?'Multiple supported issues; exact cause is unconfirmed':supported.length===0?'No complete matching report evidence':'One matching report issue; forecast attribution, not proven actual causality',partial:!!a?.stagePartial.some(Boolean)||!daily.length||input.sourcePartial===true});
  }
+ const recordsByDate=gdsGroup(records,row=>row.date);
  const days=summary.days.map(day=>{
-  const date=day.date,target=gdsNumber(input.dailyCapacity),ganttForecast=day.values[4],planned=gdsNumber(input.planTotals?.[date]),rows=records.filter(row=>row.date===date);
+  const date=day.date,target=gdsNumber(input.dailyCapacity),ganttForecast=day.values[4],planned=gdsNumber(input.planTotals?.[date]),rows=recordsByDate.get(date)||[];
   const delayed=rows.reduce((n,row)=>n+(row.printSah||0)+(row.embSah||0),0),forecast=ganttForecast===null?null:Math.max(0,ganttForecast-delayed);
   const loss=target===null||forecast===null?null:Math.max(0,target-forecast),loading=loss===null||planned===null?null:Math.min(loss,Math.max(0,target-planned));
   const buckets=Object.fromEntries(LA_REASONS.map(reason=>[reason[0],loss===null?null:0]));

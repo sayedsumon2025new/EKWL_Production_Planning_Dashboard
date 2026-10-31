@@ -96,6 +96,30 @@ with sync_playwright() as p:
  assert not frame.locator('[data-edit]').count()
  page.evaluate('refreshLoadAnalysisPlan()');frame.locator('#reconcile').filter(has_text='Arithmetic matched').wait_for()
  assert page.evaluate('LOAD_ANALYSIS_MODEL.model.reconciliation.ok')
+ # Closed evidence does not create a large hidden DOM. All records remain
+ # available through bounded pages, including the last source row.
+ frame.locator('#sources').evaluate('(node)=>node.open=false')
+ page.evaluate("""()=>{const model=structuredClone(LOAD_ANALYSIS_MODEL.model);model.records=Array.from({length:247},(_,i)=>({...structuredClone(model.records[0]),key:'page-'+i,ewo:'EWO-'+i}));model.records[246].evidence[0].text='LAST EVIDENCE SOURCE';document.getElementById('load-analysis-workspace').contentWindow.postMessage({type:'ekwl-load-analysis-plan',ready:true,uploadId:ACTIVE_PLAN_UPLOAD.id,dates,totals:LOAD_ANALYSIS_MODEL.payload.totals,dailyCapacity:120,label:'Evidence pagination fixture',selected:[0,1,2,3,4],model,canCorrect:true},location.origin)}""")
+ frame.locator('#la-evidence-range').filter(has_text='247 records').wait_for(state='attached')
+ assert frame.locator('#evidence tbody tr').count()==0
+ frame.locator('#sources').evaluate('(node)=>node.open=true')
+ frame.locator('#la-evidence-range').filter(has_text='1–100 / 247').wait_for()
+ assert frame.locator('#evidence tbody tr').count()==100
+ frame.locator('#la-evidence-next').click()
+ frame.locator('#la-evidence-range').filter(has_text='101–200 / 247').wait_for()
+ frame.locator('body').evaluate("()=>window.dispatchEvent(new Event('beforeprint'))")
+ assert frame.locator('#evidence tbody tr').count()==247
+ frame.locator('body').evaluate("()=>window.dispatchEvent(new Event('afterprint'))")
+ assert frame.locator('#evidence tbody tr').count()==100
+ frame.locator('#la-evidence-next').click()
+ frame.locator('#la-evidence-range').filter(has_text='201–247 / 247').wait_for()
+ assert frame.locator('#evidence tbody tr').count()==47
+ assert 'LAST EVIDENCE SOURCE' in frame.locator('#evidence tbody tr').last.inner_text()
+ assert frame.locator('#la-evidence-next').is_disabled()
+ frame.locator('#la-evidence-prev').click()
+ frame.locator('#la-evidence-range').filter(has_text='101–200 / 247').wait_for()
+ page.evaluate('refreshLoadAnalysisPlan()')
+ frame.locator('#la-evidence-range').filter(has_text='1–2 / 2').wait_for()
  # Sign-out clears the iframe and ignores all late reads.
  page.evaluate('hold={};refreshLoadAnalysisPlan();SITE_SESSION_GENERATION++;SITE_AUTH_USER=null;refreshLoadAnalysisPlan();hold.resolve?.()')
  frame.locator('#load-analysis-summary-table .source-row td').nth(1).filter(has_text='—').wait_for()
