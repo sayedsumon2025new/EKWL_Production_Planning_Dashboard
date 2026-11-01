@@ -6,7 +6,7 @@ with tempfile.TemporaryDirectory() as d:
     out=Path(d)/'release'
     subprocess.run([sys.executable,str(ROOT/'tools/mysql/build_deploy.py'),'--out',str(out),'--version','test-release-123'],check=True)
     paths={f['path'] for f in json.loads((out/'deploy-manifest.json').read_text())['files']}
-    assert {'index.html','size-set-tna.html','size-set-tna.js','size-set-tna.css','gantt-daily-summary.js','gantt-daily-summary.css','gantt-layout.css','chassis-compact.css','chassis-excel.js','load-analysis-loss.js','backend/src/load-analysis-loss.php','api/index.php','backend/src/auth.php','backend/.htaccess','mysql-api-client.js'}<=paths
+    assert {'index.html','size-set-tna.html','size-set-tna.js','size-set-tna.css','gantt-daily-summary.js','gantt-daily-summary.css','gantt-layout.css','chassis-compact.css','chassis-excel.js','rfd-module.js','rfd-module.css','backend/src/rfd.php','load-analysis-loss.js','backend/src/load-analysis-loss.php','api/index.php','backend/src/auth.php','backend/.htaccess','mysql-api-client.js'}<=paths
     assert not any('/config/' in '/'+p or '/private/' in '/'+p or p.endswith(('.sql','.local.php','.ndjson','.zip')) for p in paths)
     assert not (out/'ekwl-live-root.zip').exists()
     html=(out/'site/index.html').read_text()

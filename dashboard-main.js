@@ -661,6 +661,7 @@ function goSlide(n){
   if(n===17)setTimeout(()=>loadSizeSetModule(),0);
   if(n===18)setTimeout(()=>loadAccessoriesModule(),0);
   if(n===19)setTimeout(()=>loadEmbellishmentModule(),0);
+  if(n===22)setTimeout(()=>loadRfdModule(),0);
   if(n===20 && typeof refreshLoadAnalysisPlan==='function')refreshLoadAnalysisPlan();
   if(n===14 || n===15 || n===21){
     try{renderSlide(n)}catch(e){
@@ -730,7 +731,7 @@ function setPlanningReadState(state,message=''){
   if(state!=='ready'&&typeof resetChassisExcelLinks==='function')resetChassisExcelLinks();
   for(const slide of document.querySelectorAll('.slide[data-logical-slide]')){
     const number=Number(slide.dataset.logicalSlide);
-    if([0,12,13,14].includes(number))continue;
+    if([0,12,13,14,22].includes(number))continue;
     slide.classList.add('planning-dependent');
     slide.setAttribute('aria-busy',String(state==='loading'));
     slide.dataset.planningMessage=message||(state==='error'?'Planning could not be verified. Refresh or select a valid report.':'Loading and verifying the selected planning report…');
@@ -2098,7 +2099,7 @@ async function captureReport(button,mode){
 }
 function setupReportActions(){
  document.querySelectorAll('.card').forEach(card=>{
-  if(card.closest('#s9'))return;
+  if(card.closest('#s9,#s22'))return;
   if(!card.querySelector('table')&&!card.querySelector('#s3-buyer-pie,#s3-product-pie'))return;
   if(card.querySelector(':scope > .report-actions'))return;
   const actions=document.createElement('div');actions.className='report-actions';actions.innerHTML='<button class="pg-btn" onclick="copyReportData(this)">Copy data</button><button class="pg-btn" onclick="captureReport(this,\'copy\')">Copy image</button><button class="pg-btn" onclick="captureReport(this,\'download\')">Download PNG</button>';card.prepend(actions);
@@ -3895,6 +3896,7 @@ async function siteLogout(){
   if(typeof resetGanttDailySummary==='function')resetGanttDailySummary();
   if(typeof resetSizeSetModule==='function')resetSizeSetModule();
   if(typeof resetAccessoriesModule==='function')resetAccessoriesModule();
+  if(typeof resetRfdModule==='function')resetRfdModule();
   if(typeof resetEmbellishmentModule==='function')resetEmbellishmentModule();
   if(typeof resetEWOReadinessBoard==='function')resetEWOReadinessBoard();
   SITE_AUTH_USER=null;SITE_USER_PROFILE=null;SITE_BOOTED=false;
