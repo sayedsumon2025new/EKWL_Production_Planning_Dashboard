@@ -36,6 +36,10 @@ try {
         jsonOut(['data'=>['path'=>$id],'error'=>null]);exit;
     }
     $b=body();
+    if($route==='rfd/booking'){
+        require dirname(__DIR__).'/backend/src/rfd-booking.php';
+        session_write_close();$result=['data'=>Ekwl\bookingAction($u,$b),'error'=>null];jsonOut($result);exit;
+    }
     if($route==='rfd'){
         require dirname(__DIR__).'/backend/src/rfd.php';
         session_write_close();$result=['data'=>Ekwl\rfdAction($u,$b),'error'=>null];jsonOut($result);exit;

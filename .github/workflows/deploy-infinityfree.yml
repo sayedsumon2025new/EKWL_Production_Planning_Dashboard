@@ -39,6 +39,7 @@ jobs:
           python3 tests/mysql/new-fixture.py
           python3 tests/mysql/consistent-snapshot.py /tmp/ekwl-test-auth.json
           python3 tests/mysql/rfd.py /tmp/ekwl-test-auth.json
+          python3 tests/mysql/rfd-booking.py /tmp/ekwl-test-auth.json
       - name: Verify Size Set performance in Chrome
         run: |
           python3 -m pip install playwright==1.58.0
@@ -51,6 +52,7 @@ jobs:
           python3 tests/ewo-readiness-browser.py
           python3 tests/chassis-compact-browser.py
           python3 tests/rfd-browser.py /tmp/ekwl-test-auth.json
+          python3 tests/rfd-booking-browser.py /tmp/ekwl-test-auth.json
           python3 tests/slides-navigation.py
       - name: Run calculation, cache and API adapter regressions
         shell: bash
