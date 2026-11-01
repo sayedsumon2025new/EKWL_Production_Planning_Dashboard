@@ -34,7 +34,14 @@ with sync_playwright() as p:
  page.locator('#booking-search').fill(records[0][0]);page.wait_for_timeout(250)
  expected=[r for r in records if any(records[0][0].lower() in v.lower() for v in r)];assert page.evaluate('BOOKING_FILTERED.map(x=>x.row)')==expected
  page.locator('#s22 button[onclick="clearBookingFilters()"]').click();assert page.evaluate('BOOKING_FILTERED.length')==len(records)
- for width in [784,1065,1464,1920]:page.set_viewport_size({'width':width,'height':900});page.wait_for_timeout(100);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),width
+ for width in [784,1065,1400,1401,1464,1920]:
+  page.set_viewport_size({'width':width,'height':900});page.wait_for_timeout(100);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),width
+  for tab in ['rfd','booking']:
+   assert page.locator('#'+tab+'-tab').evaluate("e=>{const r=e.getBoundingClientRect(),nav=document.querySelector('#topnav').getBoundingClientRect();return r.top>=nav.bottom&&r.bottom<=innerHeight&&document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest('[role=tab]')===e}"),('tab covered',width,tab)
+   page.locator('#'+tab+'-tab').click();assert page.locator('#'+tab+'-panel').is_visible()
+  page.locator('#s22').evaluate('e=>e.scrollTop=e.scrollHeight')
+  assert page.locator('#booking-tab').evaluate("e=>{const r=e.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest('#booking-tab')===e}"),('tab hidden after scrolling',width)
+  page.locator('#s22').evaluate('e=>e.scrollTop=0')
  page.evaluate("SITE_USER_PROFILE={role:'user',permissions:{slide_22:true}};renderBookingModule()");assert page.locator('#booking-upload').is_hidden()
  page.evaluate('siteLogout()');page.wait_for_function('SITE_AUTH_USER===null');assert page.evaluate('BOOKING_ROWS.length')==0;assert page.evaluate('RFD_ROWS.length')==0;assert page.locator('#booking-table').text_content()==''
  assert not errors,errors;b.close()

@@ -5,3 +5,6 @@
 #s22 .booking-table th,#s22 .booking-table td{text-transform:none!important}
 
 #s22 .rfd-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:12px}#s22 .rfd-tabs button{padding:9px 22px;background:transparent;border:0;border-bottom:3px solid transparent;color:var(--text2);font-weight:700;cursor:pointer}#s22 .rfd-tabs button[aria-selected="true"]{border-bottom-color:var(--gold);color:var(--text)}#s22 [hidden]{display:none!important}#s22 .booking-table th{white-space:pre-wrap}
+/* RFD is a direct body child: reserve the fixed navigation height explicitly. */
+@media screen{#s22.slide{position:fixed;top:48px;right:0;bottom:0;left:0}#s22 .rfd-tabs{position:sticky;top:0;z-index:20;background:var(--navy)}}
+@media screen and (max-width:1400px){#s22.slide{top:92px}}
