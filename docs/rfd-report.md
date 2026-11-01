@@ -15,3 +15,9 @@ Validation includes exact parser/response contracts, synthetic and optional loca
 ## Booking tab
 
 Slide 22 also includes Booking, with its own CSV preview, upload, active report, search, buyer/supplier filters and exact-cell CSV export. Its 13 headers match EWO Wise Fabric Booking Information.csv, including the multiline final header. It shares slide_22 read permission and Admin-only writes. Its additive ekwl_rfd_booking_uploads/rows tables are created only on first Admin upload. Saving Booking cannot replace or alter the original RFD report. Both report buffers clear at logout. Neither report is filtered by the selected plan.
+
+## Daily Cutting Status tab
+
+This independent raw report accepts the 14 exact columns of Cutting Closing Status Date Wise.csv. Multiline source headers, blank rows/cells, duplicate records, decimals and original row order are retained. Date and buyer filters use the source strings without inferred conversion. Saving stores all file rows regardless of active filter or page.
+
+Endpoint rfd/daily-cutting uses slide_22 read permission and Admin-only writes. On the first Admin upload, it creates the additive ekwl_rfd_daily_cutting_uploads and ekwl_rfd_daily_cutting_rows tables. Partial uploads remain staged; a verified complete batch activates atomically. RFD and Booking active reports stay independent. Tab data and download URLs clear at logout. Original uploaded CSV contents are not shipped in public code.
