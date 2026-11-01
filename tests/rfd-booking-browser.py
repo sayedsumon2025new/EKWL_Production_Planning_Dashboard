@@ -13,9 +13,9 @@ else:
  records=[[str(i).zfill(7),'0001','Buyer','Team','Supplier',' Fabric, \"quoted\"\nবাংলা & <script>bad()</script> ','Cotton',' White ','160','60','KG','12.5000',''] for i in range(501)]
  stream=io.StringIO(newline='');w=csv.writer(stream);w.writerow(H);w.writerows(records);payload=stream.getvalue().encode();name='BOOKING-UI.csv'
 with sync_playwright() as p:
- b=p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),args=['--no-sandbox']);page=b.new_page(viewport={'width':1464,'height':900});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+ b=p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),args=['--no-sandbox']);context=b.new_context(viewport={'width':1464,'height':900});context.add_cookies([{'name':c.name,'value':c.value,'url':BASE,'httpOnly':True,'sameSite':'Strict'} for c in client.jar]);page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.route('**/*',lambda r:r.continue_() if r.request.url.startswith(BASE) else r.fulfill(body=''))
- page.goto(BASE,wait_until='networkidle');page.locator('#site-login-email').fill(auth['email']);page.locator('#site-login-password').fill(auth['password']);page.locator('#site-login-btn').click();page.wait_for_function("SITE_AUTH_USER!==null&&SITE_USER_PROFILE!==null&&document.body.dataset.planningState==='ready'",timeout=60000)
+ page.goto(BASE,wait_until='networkidle');page.wait_for_function("SITE_AUTH_USER!==null&&SITE_USER_PROFILE!==null&&document.body.dataset.planningState==='ready'",timeout=60000)
  page.evaluate('goSlide(22)');page.locator('#booking-tab').click();page.wait_for_function('BOOKING_REPORT!==null&&BOOKING_MODE===\'sql\'');assert page.locator('#s22').is_visible();assert page.locator('#booking-table thead th').all_text_contents()==H, {'actual':page.locator('#booking-table thead th').all_text_contents(),'expected':H}
  assert page.evaluate('BOOKING_ROWS')==saved['rows'];assert page.locator('#booking-table tbody tr').count()==min(100,len(saved['rows']))
  page.locator('#booking-last').evaluate('e=>{if(!e.disabled)e.click()}');assert page.locator('#booking-table tbody tr').last.locator('td').all_text_contents()==saved['rows'][-1]

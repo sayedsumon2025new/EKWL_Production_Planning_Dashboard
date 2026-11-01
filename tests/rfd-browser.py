@@ -13,9 +13,9 @@ else:
  records=[['20-Jul-26','EKWL HW',str(i).zfill(7),'001','','',' White ', 'Fabric, "quoted"\nবাংলা & <script>bad()</script>','','','Buyer','','','','12.5000','0','0.000','03','','','',''] for i in range(501)]
  stream=io.StringIO(newline='');w=csv.writer(stream);w.writerow(H);w.writerows(records);payload=stream.getvalue().encode();name='RFD-UI.csv'
 with sync_playwright() as p:
- b=p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),args=['--no-sandbox']);page=b.new_page(viewport={'width':1464,'height':900});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+ b=p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),args=['--no-sandbox']);context=b.new_context(viewport={'width':1464,'height':900});context.add_cookies([{'name':c.name,'value':c.value,'url':BASE,'httpOnly':True,'sameSite':'Strict'} for c in client.jar]);page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.route('**/*',lambda r:r.continue_() if r.request.url.startswith(BASE) else r.fulfill(body=''))
- page.goto(BASE,wait_until='networkidle');page.locator('#site-login-email').fill(auth['email']);page.locator('#site-login-password').fill(auth['password']);page.locator('#site-login-btn').click();page.wait_for_function("SITE_AUTH_USER!==null&&SITE_USER_PROFILE!==null&&document.body.dataset.planningState==='ready'",timeout=60000)
+ page.goto(BASE,wait_until='networkidle');page.wait_for_function("SITE_AUTH_USER!==null&&SITE_USER_PROFILE!==null&&document.body.dataset.planningState==='ready'",timeout=60000)
  page.evaluate('goSlide(22)');page.wait_for_function('RFD_REPORT!==null&&RFD_MODE===\'sql\'');assert page.locator('#s22').is_visible();assert page.locator('#rfd-table thead th').all_text_contents()==H
  assert page.evaluate('RFD_ROWS')==saved['rows'];assert page.locator('#rfd-table tbody tr').count()==min(100,len(saved['rows']))
  page.locator('#rfd-last').click();assert page.locator('#rfd-table tbody tr').last.locator('td').all_text_contents()==saved['rows'][-1]
