@@ -11,7 +11,7 @@
         if(method==='POST'&&!csrf)await bootstrap();
         const url=new URL(endpoint);url.searchParams.set('route',route);
         const multipart=typeof FormData!=='undefined'&&payload instanceof FormData;
-        const readOnly=(route==='rfd'&&payload?.action==='read')||method==='GET'||['planning/snapshot','reports/snapshot'].includes(route)||(route==='query'&&(payload?.op||'select')==='select');
+        const readOnly=(['rfd','rfd/booking'].includes(route)&&payload?.action==='read')||method==='GET'||['planning/snapshot','reports/snapshot'].includes(route)||(route==='query'&&(payload?.op||'select')==='select');
         if(readOnly&&typeof AbortController!=='undefined'&&typeof setTimeout==='function'){
           readController=new AbortController();readTimer=setTimeout(()=>readController.abort(),60000);
         }
