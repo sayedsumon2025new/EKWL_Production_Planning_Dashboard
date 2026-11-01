@@ -2106,6 +2106,7 @@ input,select,textarea{
 <link rel="stylesheet" href="size-set-andon.css?v=tna-tabs-fit-2">
 <link rel="stylesheet" href="gantt-layout.css?v=1">
 <link rel="stylesheet" href="chassis-compact.css?v=1">
+<link rel="stylesheet" href="rfd-module.css?v=1">
 </head>
 <body class="site-locked">
 <div id="supabase-live-badge">MySQL · waiting</div>
@@ -2366,6 +2367,7 @@ input,select,textarea{
       <span hidden data-slide-description="18">Date-wise SQL snapshots and the 15 CSV source columns</span>
       <span hidden data-slide-description="19">Print and EMB send, receive and return quantities by report date</span>
       <span hidden data-slide-description="20">Planned SAH vs Forecast SAH report</span>
+      <span hidden data-slide-description="22">RFD CSV source report · original columns, exact cells and verified MySQL upload</span>
       <span hidden data-slide-description="21">First-day feeding readiness, source evidence and PCD / PSD / PFD milestone risk</span>
     </div>
     <div class="home-status" data-admin-home-extra="1" style="flex-wrap:wrap">
@@ -3106,6 +3108,13 @@ input,select,textarea{
   </div>
 </div>
 
+<!-- RFD is an independent raw report, not filtered by the selected planning file. -->
+<div class="slide" id="s22" data-logical-slide="22">
+ <div class="slide-header"><div><div class="slide-title"></div><div class="slide-subtitle">Original RFD report · all 22 source columns</div></div><div class="pager-btns"><button type="button" class="pg-btn" onclick="loadRfdModule(true)">↻ Refresh saved report</button><button type="button" class="pg-btn" onclick="goSlide(0)">Home</button></div></div>
+ <details id="rfd-upload" class="rfd-upload" hidden><summary>Upload RFD CSV</summary><div class="rfd-upload-controls"><label>Original CSV file<input id="rfd-file" type="file" accept=".csv,text/csv" onchange="previewRfdFile()"></label><button id="rfd-save" type="button" class="top-btn primary" onclick="uploadRfdFile()">Upload &amp; Save</button></div><p class="rfd-status">Preview is local until saved. Upload saves every row in original order; previous completed reports remain stored.</p></details>
+ <div class="card rfd-card"><div class="rfd-toolbar"><input id="rfd-search" type="search" placeholder="Search EWO, color, buyer or any source value…" aria-label="Search RFD"><select id="rfd-buyer" aria-label="RFD buyer" onchange="rfdFilter()"><option value="">All buyers</option></select><select id="rfd-place" aria-label="Receive and delivery place" onchange="rfdFilter()"><option value="">All places</option></select><button type="button" class="pg-btn" onclick="clearRfdFilters()">Clear</button><a id="rfd-export" href="#" class="rfd-csv" onclick="return exportRfdCSV(event)">Export CSV</a></div><div id="rfd-source" class="rfd-source"></div><div id="rfd-count" class="rfd-count"></div><p id="rfd-message" class="rfd-status" role="status">Waiting for sign in…</p><div class="rfd-scroll"><table id="rfd-table" class="rfd-table"></table></div><div class="rfd-pagination"><span id="rfd-page-label"></span><button id="rfd-first" type="button" class="pg-btn" onclick="rfdPage('first')">First</button><button id="rfd-prev" type="button" class="pg-btn" onclick="rfdPage(-1)">Previous</button><button id="rfd-next" type="button" class="pg-btn" onclick="rfdPage(1)">Next</button><button id="rfd-last" type="button" class="pg-btn" onclick="rfdPage('last')">Last</button></div></div>
+</div>
+
 <!-- ─── SLIDE 19: EMBELLISHMENT SEND RECEIVE ──────── -->
 <div class="slide" id="s19" data-logical-slide="19">
   <div class="slide-header">
@@ -3159,6 +3168,7 @@ input,select,textarea{
 <script defer src="size-set-module.js?v=3"></script>
 <script defer src="size-set-andon.js?v=1"></script>
 <script defer src="accessories-module.js?v=3"></script>
+<script defer src="rfd-module.js?v=1"></script>
 <script defer src="embellishment-module.js?v=3"></script>
 <script defer src="ewo-readiness.js?v=4"></script>
 <script defer src="ready-input-coverage.js?v=2"></script>

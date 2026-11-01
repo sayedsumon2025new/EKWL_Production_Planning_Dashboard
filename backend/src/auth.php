@@ -170,7 +170,7 @@ function permissionsJSON($permissions): string {
     if (!is_array($permissions))throw new ApiError('Permission object required.');
     $out=[];
     foreach($permissions as $k=>$v) {
-        if (!preg_match('/^(slide_(?:[0-9]|1[0-9]|2[01])|planning_upload|fabric|sewing|production|embellishment_upload|user_admin|admin_settings)$/',(string)$k)||!is_bool($v))throw new ApiError('Invalid permission.');
+        if (!preg_match('/^(slide_(?:[0-9]|1[0-9]|2[012])|planning_upload|fabric|sewing|production|embellishment_upload|user_admin|admin_settings)$/',(string)$k)||!is_bool($v))throw new ApiError('Invalid permission.');
         $out[$k]=$v;
     }
     return json_encode((object)$out,JSON_THROW_ON_ERROR);
