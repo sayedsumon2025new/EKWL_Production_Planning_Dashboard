@@ -2,7 +2,7 @@
 const BOOKING_HEADERS=Object.freeze(["EWO No", "Booking No", "Buyer", "Buyer Team", "Supplier", "Construction", "Composition", "Color/Length", "GSM/Height", "Width", "UOM", "Booking Qty.", "Reason for\n Additional \nBooking"]);
 let BOOKING_ROWS=[],BOOKING_FILTERED=[],BOOKING_PAGE=1,BOOKING_REPORT=null,BOOKING_MODE='sql',BOOKING_PREVIEW=null,BOOKING_LOADED_AT=0,BOOKING_OWNER='',BOOKING_GENERATION=-1,BOOKING_TOKEN=0,BOOKING_FILE_TOKEN=0,BOOKING_LOAD=null,BOOKING_BUSY=false,BOOKING_SEARCH_TIMER=0,BOOKING_EXPORT_URL=null;
 const bookingNode=id=>document.getElementById(id),bookingAdmin=()=>String(SITE_USER_PROFILE?.role||'').toLowerCase()==='admin';
-function bookingMessage(text){const n=bookingNode('booking-message');if(n)n.textContent=text;}
+function bookingMessage(text){const n=bookingNode('booking-message');if(n)n.textContent=text;rfdScheduleFit('booking');}
 function parseBookingCSV(text){
  const rows=parseRecords(text,true,true),headers=rows.shift();
  if(!headers||headers.length!==13||headers.some((v,i)=>v!==BOOKING_HEADERS[i]))throw Error('Booking CSV must have the same 13 source headers in the same order.');
@@ -20,29 +20,26 @@ function clearBookingExport(){if(BOOKING_EXPORT_URL)URL.revokeObjectURL(BOOKING_
 function setBookingRows(rows,report,mode){
  clearBookingExport();
  BOOKING_ROWS=rows;BOOKING_REPORT=report;BOOKING_MODE=mode;BOOKING_PAGE=1;BOOKING_OWNER=SITE_AUTH_USER?.id||'';BOOKING_GENERATION=SITE_SESSION_GENERATION;
- for(const [id,column,label]of [['booking-buyer',2,'All buyers'],['booking-place',4,'All suppliers']]){
-  const n=bookingNode(id);if(n)n.innerHTML='<option value="">'+label+'</option>'+[...new Set(rows.map(r=>r[column]).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
- }
- const search=bookingNode('booking-search');if(search)search.value='';renderBookingModule();
+ rfdResetTableTools('booking');renderBookingModule();
 }
 function renderBookingModule(){
  const permitted=!!SITE_AUTH_USER&&canAccessSlide(22),upload=bookingNode('booking-upload');if(upload){upload.hidden=!permitted||!bookingAdmin();if(permitted&&bookingAdmin()&&!BOOKING_REPORT)upload.open=true;}
  if(CURRENT_SLIDE!==22||RFD_ACTIVE_TAB!=='booking')return;
  const table=bookingNode('booking-table');if(!table)return;
  if(!permitted||BOOKING_OWNER!==SITE_AUTH_USER.id||BOOKING_GENERATION!==SITE_SESSION_GENERATION){table.replaceChildren();return;}
- const query=(bookingNode('booking-search')?.value||'').trim().toLowerCase(),buyer=bookingNode('booking-buyer')?.value||'',place=bookingNode('booking-place')?.value||'';
- BOOKING_FILTERED=BOOKING_ROWS.map((row,i)=>({row,i})).filter(({row})=>(!buyer||row[2]===buyer)&&(!place||row[4]===place)&&(!query||row.some(v=>v.toLowerCase().includes(query))));
+ BOOKING_FILTERED=rfdCascadeRows('booking',BOOKING_ROWS);
  const pages=Math.max(1,Math.ceil(BOOKING_FILTERED.length/100));BOOKING_PAGE=Math.max(1,Math.min(BOOKING_PAGE,pages));const start=(BOOKING_PAGE-1)*100,part=BOOKING_FILTERED.slice(start,start+100);
- table.innerHTML='<colgroup>'+BOOKING_HEADERS.map((_,i)=>'<col style="width:'+([0,1].includes(i)?170:i===2?110:i===7?340:[8,9].includes(i)?240:160)+'px">').join('')+'</colgroup><thead><tr>'+BOOKING_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map(value=>'<td>'+esc(value)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="13" class="booking-empty">'+(BOOKING_ROWS.length?'No matching records.':'No saved Booking report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>';
+ table.innerHTML='<colgroup>'+BOOKING_HEADERS.map(()=>'<col>').join('')+'</colgroup><thead><tr>'+BOOKING_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map(value=>'<td>'+esc(value)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="13" class="booking-empty">'+(BOOKING_ROWS.length?'No matching records.':'No saved Booking report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>'+rfdTotalsFooter('booking',BOOKING_HEADERS,BOOKING_FILTERED,!!BOOKING_REPORT);
  bookingNode('booking-count').textContent=BOOKING_FILTERED.length.toLocaleString()+' / '+BOOKING_ROWS.length.toLocaleString()+' rows · 13 source columns';
  bookingNode('booking-source').textContent=BOOKING_REPORT?(BOOKING_MODE==='preview'?'CSV PREVIEW · NOT SAVED':'MYSQL · SAVED REPORT')+' · '+BOOKING_REPORT.file_name+(BOOKING_REPORT.completed_at?' · Saved '+BOOKING_REPORT.completed_at+' UTC':''):'Booking source report';
  bookingNode('booking-page-label').textContent='Page '+BOOKING_PAGE+' / '+pages+(part.length?' · Rows '+(start+1)+'–'+(start+part.length):'');
  for(const id of ['booking-first','booking-prev'])bookingNode(id).disabled=BOOKING_PAGE===1;
  for(const id of ['booking-next','booking-last'])bookingNode(id).disabled=BOOKING_PAGE>=pages;
+ rfdFitTable('booking',table,BOOKING_HEADERS,BOOKING_FILTERED);rfdScheduleFit('booking');
 }
 function bookingPage(direction){const pages=Math.max(1,Math.ceil(BOOKING_FILTERED.length/100));BOOKING_PAGE=direction==='first'?1:direction==='last'?pages:BOOKING_PAGE+Number(direction);renderBookingModule();bookingNode('booking-table').parentElement.scrollTop=0;}
 function bookingFilter(){BOOKING_PAGE=1;renderBookingModule();}
-function clearBookingFilters(){for(const id of ['booking-search','booking-buyer','booking-place'])if(bookingNode(id))bookingNode(id).value='';bookingFilter();}
+function clearBookingFilters(){for(const id of ['booking-search','booking-buyer','booking-place','booking-color'])if(bookingNode(id))bookingNode(id).value='';bookingFilter();}
 async function loadBookingModule(force=false){
  if(!SITE_AUTH_USER||!canAccessSlide(22))return;
  if(BOOKING_OWNER&&(BOOKING_OWNER!==SITE_AUTH_USER.id||BOOKING_GENERATION!==SITE_SESSION_GENERATION))resetBookingModule();
@@ -99,5 +96,5 @@ function exportBookingCSV(event){
  const quote=v=>'"'+String(v).replace(/"/g,'""')+'"',csv=[BOOKING_HEADERS,...BOOKING_FILTERED.map(x=>x.row)].map(row=>row.map(quote).join(',')).join('\r\n');
  clearBookingExport();const link=event.currentTarget,url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));BOOKING_EXPORT_URL=url;link.href=url;link.download=(BOOKING_REPORT?.file_name||'Booking.csv').replace(/\.csv$/i,BOOKING_FILTERED.length<BOOKING_ROWS.length?'_filtered.csv':'.csv').replace(/[^\p{L}\p{N}_.-]+/gu,'_');setTimeout(()=>{URL.revokeObjectURL(url);if(BOOKING_EXPORT_URL===url)clearBookingExport();},30000);return true;
 }
-function resetBookingModule(){clearBookingExport();++BOOKING_TOKEN;++BOOKING_FILE_TOKEN;clearTimeout(BOOKING_SEARCH_TIMER);BOOKING_ROWS=[];BOOKING_FILTERED=[];BOOKING_PAGE=1;BOOKING_REPORT=null;BOOKING_PREVIEW=null;BOOKING_LOADED_AT=0;BOOKING_OWNER='';BOOKING_GENERATION=-1;BOOKING_LOAD=null;BOOKING_BUSY=false;const file=bookingNode('booking-file');if(file){file.value='';file.disabled=false;}if(bookingNode('booking-save'))bookingNode('booking-save').disabled=false;for(const id of ['booking-table','booking-source','booking-count','booking-page-label'])bookingNode(id)?.replaceChildren();bookingMessage('Waiting for sign in…');if(bookingNode('booking-upload'))bookingNode('booking-upload').hidden=true;}
+function resetBookingModule(){rfdResetTableTools('booking');clearBookingExport();++BOOKING_TOKEN;++BOOKING_FILE_TOKEN;clearTimeout(BOOKING_SEARCH_TIMER);BOOKING_ROWS=[];BOOKING_FILTERED=[];BOOKING_PAGE=1;BOOKING_REPORT=null;BOOKING_PREVIEW=null;BOOKING_LOADED_AT=0;BOOKING_OWNER='';BOOKING_GENERATION=-1;BOOKING_LOAD=null;BOOKING_BUSY=false;const file=bookingNode('booking-file');if(file){file.value='';file.disabled=false;}if(bookingNode('booking-save'))bookingNode('booking-save').disabled=false;for(const id of ['booking-table','booking-source','booking-count','booking-page-label'])bookingNode(id)?.replaceChildren();bookingMessage('Waiting for sign in…');if(bookingNode('booking-upload'))bookingNode('booking-upload').hidden=true;}
 document.addEventListener('DOMContentLoaded',()=>{bookingNode('booking-search')?.addEventListener('input',()=>{clearTimeout(BOOKING_SEARCH_TIMER);BOOKING_SEARCH_TIMER=setTimeout(bookingFilter,180);});});

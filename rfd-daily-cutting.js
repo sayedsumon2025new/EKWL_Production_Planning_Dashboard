@@ -2,7 +2,7 @@
 const DCS_HEADERS=Object.freeze(["Date", "EWO No.", "Style", "Color", "Buyer", "Order Qty\nPcs", "GSM", "Width", "UOM", "Received \nfor Cutting", "Input/Cut Fabrics", "Cutting No", "Measurement \nUnit", "Qty Ready \nfor Next Process"]);
 let DCS_ROWS=[],DCS_FILTERED=[],DCS_PAGE=1,DCS_REPORT=null,DCS_MODE='sql',DCS_PREVIEW=null,DCS_LOADED_AT=0,DCS_OWNER='',DCS_GENERATION=-1,DCS_TOKEN=0,DCS_FILE_TOKEN=0,DCS_LOAD=null,DCS_BUSY=false,DCS_SEARCH_TIMER=0,DCS_EXPORT_URL=null;
 const dcsNode=id=>document.getElementById(id),dcsAdmin=()=>String(SITE_USER_PROFILE?.role||'').toLowerCase()==='admin';
-function dcsMessage(text){const n=dcsNode('dcs-message');if(n)n.textContent=text;}
+function dcsMessage(text){const n=dcsNode('dcs-message');if(n)n.textContent=text;rfdScheduleFit('dcs');}
 function parseDcsCSV(text){
  const rows=parseRecords(text,true,true),headers=rows.shift();
  if(!headers||headers.length!==14||headers.some((v,i)=>v!==DCS_HEADERS[i]))throw Error('Daily Cutting Status CSV must have the same 14 source headers in the same order.');
@@ -20,29 +20,26 @@ function clearDcsExport(){if(DCS_EXPORT_URL)URL.revokeObjectURL(DCS_EXPORT_URL);
 function setDcsRows(rows,report,mode){
  clearDcsExport();
  DCS_ROWS=rows;DCS_REPORT=report;DCS_MODE=mode;DCS_PAGE=1;DCS_OWNER=SITE_AUTH_USER?.id||'';DCS_GENERATION=SITE_SESSION_GENERATION;
- for(const [id,column,label]of [['dcs-buyer',4,'All buyers'],['dcs-place',0,'All dates']]){
-  const n=dcsNode(id);if(n)n.innerHTML='<option value="">'+label+'</option>'+[...new Set(rows.map(r=>r[column]).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
- }
- const search=dcsNode('dcs-search');if(search)search.value='';renderDcsModule();
+ rfdResetTableTools('dcs');renderDcsModule();
 }
 function renderDcsModule(){
  const permitted=!!SITE_AUTH_USER&&canAccessSlide(22),upload=dcsNode('dcs-upload');if(upload){upload.hidden=!permitted||!dcsAdmin();if(permitted&&dcsAdmin()&&!DCS_REPORT)upload.open=true;}
  if(CURRENT_SLIDE!==22||RFD_ACTIVE_TAB!=='dcs')return;
  const table=dcsNode('dcs-table');if(!table)return;
  if(!permitted||DCS_OWNER!==SITE_AUTH_USER.id||DCS_GENERATION!==SITE_SESSION_GENERATION){table.replaceChildren();return;}
- const query=(dcsNode('dcs-search')?.value||'').trim().toLowerCase(),buyer=dcsNode('dcs-buyer')?.value||'',place=dcsNode('dcs-place')?.value||'';
- DCS_FILTERED=DCS_ROWS.map((row,i)=>({row,i})).filter(({row})=>(!buyer||row[4]===buyer)&&(!place||row[0]===place)&&(!query||row.some(v=>v.toLowerCase().includes(query))));
+ DCS_FILTERED=rfdCascadeRows('dcs',DCS_ROWS);
  const pages=Math.max(1,Math.ceil(DCS_FILTERED.length/100));DCS_PAGE=Math.max(1,Math.min(DCS_PAGE,pages));const start=(DCS_PAGE-1)*100,part=DCS_FILTERED.slice(start,start+100);
- table.innerHTML='<colgroup>'+DCS_HEADERS.map((_,i)=>'<col style="width:'+([0,1].includes(i)?170:i===2?110:i===7?340:[8,9].includes(i)?240:160)+'px">').join('')+'</colgroup><thead><tr>'+DCS_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map(value=>'<td>'+esc(value)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="14" class="dcs-empty">'+(DCS_ROWS.length?'No matching records.':'No saved Daily Cutting Status report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>';
+ table.innerHTML='<colgroup>'+DCS_HEADERS.map(()=>'<col>').join('')+'</colgroup><thead><tr>'+DCS_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map(value=>'<td>'+esc(value)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="14" class="dcs-empty">'+(DCS_ROWS.length?'No matching records.':'No saved Daily Cutting Status report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>'+rfdTotalsFooter('dcs',DCS_HEADERS,DCS_FILTERED,!!DCS_REPORT);
  dcsNode('dcs-count').textContent=DCS_FILTERED.length.toLocaleString()+' / '+DCS_ROWS.length.toLocaleString()+' rows · 14 source columns';
  dcsNode('dcs-source').textContent=DCS_REPORT?(DCS_MODE==='preview'?'CSV PREVIEW · NOT SAVED':'MYSQL · SAVED REPORT')+' · '+DCS_REPORT.file_name+(DCS_REPORT.completed_at?' · Saved '+DCS_REPORT.completed_at+' UTC':''):'Daily Cutting Status source report';
  dcsNode('dcs-page-label').textContent='Page '+DCS_PAGE+' / '+pages+(part.length?' · Rows '+(start+1)+'–'+(start+part.length):'');
  for(const id of ['dcs-first','dcs-prev'])dcsNode(id).disabled=DCS_PAGE===1;
  for(const id of ['dcs-next','dcs-last'])dcsNode(id).disabled=DCS_PAGE>=pages;
+ rfdFitTable('dcs',table,DCS_HEADERS,DCS_FILTERED);rfdScheduleFit('dcs');
 }
 function dcsPage(direction){const pages=Math.max(1,Math.ceil(DCS_FILTERED.length/100));DCS_PAGE=direction==='first'?1:direction==='last'?pages:DCS_PAGE+Number(direction);renderDcsModule();dcsNode('dcs-table').parentElement.scrollTop=0;}
 function dcsFilter(){DCS_PAGE=1;renderDcsModule();}
-function clearDcsFilters(){for(const id of ['dcs-search','dcs-buyer','dcs-place'])if(dcsNode(id))dcsNode(id).value='';dcsFilter();}
+function clearDcsFilters(){for(const id of ['dcs-search','dcs-buyer','dcs-place','dcs-color'])if(dcsNode(id))dcsNode(id).value='';dcsFilter();}
 async function loadDcsModule(force=false){
  if(!SITE_AUTH_USER||!canAccessSlide(22))return;
  if(DCS_OWNER&&(DCS_OWNER!==SITE_AUTH_USER.id||DCS_GENERATION!==SITE_SESSION_GENERATION))resetDcsModule();
@@ -99,5 +96,5 @@ function exportDcsCSV(event){
  const quote=v=>'"'+String(v).replace(/"/g,'""')+'"',csv=[DCS_HEADERS,...DCS_FILTERED.map(x=>x.row)].map(row=>row.map(quote).join(',')).join('\r\n');
  clearDcsExport();const link=event.currentTarget,url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));DCS_EXPORT_URL=url;link.href=url;link.download=(DCS_REPORT?.file_name||'Daily Cutting Status.csv').replace(/\.csv$/i,DCS_FILTERED.length<DCS_ROWS.length?'_filtered.csv':'.csv').replace(/[^\p{L}\p{N}_.-]+/gu,'_');setTimeout(()=>{URL.revokeObjectURL(url);if(DCS_EXPORT_URL===url)clearDcsExport();},30000);return true;
 }
-function resetDcsModule(){clearDcsExport();++DCS_TOKEN;++DCS_FILE_TOKEN;clearTimeout(DCS_SEARCH_TIMER);DCS_ROWS=[];DCS_FILTERED=[];DCS_PAGE=1;DCS_REPORT=null;DCS_PREVIEW=null;DCS_LOADED_AT=0;DCS_OWNER='';DCS_GENERATION=-1;DCS_LOAD=null;DCS_BUSY=false;const file=dcsNode('dcs-file');if(file){file.value='';file.disabled=false;}if(dcsNode('dcs-save'))dcsNode('dcs-save').disabled=false;for(const id of ['dcs-table','dcs-source','dcs-count','dcs-page-label'])dcsNode(id)?.replaceChildren();dcsMessage('Waiting for sign in…');if(dcsNode('dcs-upload'))dcsNode('dcs-upload').hidden=true;}
+function resetDcsModule(){rfdResetTableTools('dcs');clearDcsExport();++DCS_TOKEN;++DCS_FILE_TOKEN;clearTimeout(DCS_SEARCH_TIMER);DCS_ROWS=[];DCS_FILTERED=[];DCS_PAGE=1;DCS_REPORT=null;DCS_PREVIEW=null;DCS_LOADED_AT=0;DCS_OWNER='';DCS_GENERATION=-1;DCS_LOAD=null;DCS_BUSY=false;const file=dcsNode('dcs-file');if(file){file.value='';file.disabled=false;}if(dcsNode('dcs-save'))dcsNode('dcs-save').disabled=false;for(const id of ['dcs-table','dcs-source','dcs-count','dcs-page-label'])dcsNode(id)?.replaceChildren();dcsMessage('Waiting for sign in…');if(dcsNode('dcs-upload'))dcsNode('dcs-upload').hidden=true;}
 document.addEventListener('DOMContentLoaded',()=>{dcsNode('dcs-search')?.addEventListener('input',()=>{clearTimeout(DCS_SEARCH_TIMER);DCS_SEARCH_TIMER=setTimeout(dcsFilter,180);});});
