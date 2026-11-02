@@ -4,6 +4,11 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 sys.path.insert(0,str(Path(__file__).parent/'mysql'))
 from client import Client
+def display_row(row):
+ import re
+ shown=list(row);codes=list(dict.fromkeys(re.findall(r'(?<!\d)\d{6}(?!\d)',row[2])))
+ if codes:shown[2]='\n'.join(codes)
+ return shown
 BASE='http://127.0.0.1:18080/';auth=json.loads(Path(sys.argv[1]).read_text());client=Client();client.login(auth['email'],auth['password']);saved=client.call('rfd',{'action':'read'})['data'];H=saved['headers']
 private=os.environ.get('RFD_TEST_CSV')
 if private:
@@ -18,7 +23,7 @@ with sync_playwright() as p:
  page.goto(BASE,wait_until='networkidle');page.wait_for_function("SITE_AUTH_USER!==null&&SITE_USER_PROFILE!==null&&document.body.dataset.planningState==='ready'",timeout=60000)
  page.evaluate('goSlide(22)');page.wait_for_function('RFD_REPORT!==null&&RFD_MODE===\'sql\'');assert page.locator('#s22').is_visible();assert page.locator('#rfd-table thead th').all_text_contents()==H
  assert page.evaluate('RFD_ROWS')==saved['rows'];assert page.locator('#rfd-table tbody tr').count()==min(100,len(saved['rows']))
- page.locator('#rfd-last').click();assert page.locator('#rfd-table tbody tr').last.locator('td').all_text_contents()==saved['rows'][-1]
+ page.locator('#rfd-last').click();assert page.locator('#rfd-table tbody tr').last.locator('td').all_text_contents()==display_row(saved['rows'][-1])
  page.evaluate("setPlanningReadState('error')");assert page.locator('#rfd-table').is_visible();assert not page.locator('#s22').evaluate("e=>e.classList.contains('planning-dependent')");page.evaluate("setPlanningReadState('ready')")
  page.locator('#rfd-upload').evaluate('e=>e.open=true');page.locator('#rfd-file').set_input_files({'name':name,'mimeType':'text/csv','buffer':payload});page.wait_for_function('RFD_MODE===\'preview\'')
  assert page.evaluate('RFD_PREVIEW.rows')==records
@@ -28,7 +33,7 @@ with sync_playwright() as p:
  assert page.locator('#rfd-table img,#rfd-table script').count()==0
  assert page.evaluate('RFD_ROWS')==records;assert 'every source cell matches' in page.locator('#rfd-message').inner_text()
  stored=client.call('rfd',{'action':'read'})['data'];assert stored['rows']==records;assert stored['report']['file_sha256']==hashlib.sha256(payload).hexdigest()
- page.locator('#rfd-last').click();assert page.locator('#rfd-table tbody tr').last.locator('td').all_text_contents()==records[-1]
+ page.locator('#rfd-last').click();assert page.locator('#rfd-table tbody tr').last.locator('td').all_text_contents()==display_row(records[-1])
  with page.expect_download() as download:page.locator('#rfd-export').click()
  text=Path(download.value.path()).read_text(encoding='utf-8-sig');assert list(csv.reader(io.StringIO(text,newline='')))==[H,*records]
  page.locator('#rfd-search').fill(records[0][2]);page.wait_for_timeout(250)

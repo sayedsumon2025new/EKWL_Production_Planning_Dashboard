@@ -30,6 +30,23 @@ try:
   }window.fixtureDerived={headers:[...FDR_HEADERS],rows:fixtureFdr,evidence,pairs:{},sources:{},report:{id:'offline',model_version:'offline',generated_at:'2026-11-01',materialized:false},integrity:{complete:true,row_count:205}};window.originalFixtures=JSON.stringify([fixtureRaw,fixtureFdr]);
   window.openFixture=prefix=>{RFD_ACTIVE_TAB=prefix;for(const name of ['rfd','booking','dcs','fdr']){document.getElementById(name+'-panel').hidden=name!==prefix;document.getElementById(name+'-tab').setAttribute('aria-selected',String(name===prefix));}if(prefix==='rfd')setRfdRows(fixtureRaw.rfd,{file_name:'offline.csv'},'preview');if(prefix==='booking')setBookingRows(fixtureRaw.booking,{file_name:'offline.csv'},'preview');if(prefix==='dcs')setDcsRows(fixtureRaw.dcs,{file_name:'offline.csv'},'preview');if(prefix==='fdr')fdrSet(fixtureDerived);};
   }""")
+  # Render original EWO variants through every actual tab; never mutate source rows or exports.
+  cases=['EWO: 271444 - <img src=x onerror=bad()> & "Navy"\r\nOriginal','EWO-001234 (Revised)','271958 / 272611 — combined','271966','Reference only','1234567']
+  for prefix,col in [('rfd',2),('booking',0),('dcs',3),('fdr',1)]:
+   page.evaluate('p=>openFixture(p)',prefix)
+   page.evaluate("""([prefix,col,cases])=>{const raw=prefix==='fdr'?fixtureFdr:fixtureRaw[prefix],copy=raw.map(r=>[...r]);cases.forEach((v,i)=>copy[i][col]=v);if(prefix==='rfd')setRfdRows(copy,{file_name:'format.csv'},'preview');if(prefix==='booking')setBookingRows(copy,{file_name:'format.csv'},'preview');if(prefix==='dcs')setDcsRows(copy,{file_name:'format.csv'},'preview');if(prefix==='fdr')fdrSet({...fixtureDerived,rows:copy});}""",[prefix,col,cases])
+   table=page.locator(f'#{prefix}-table');assert table.locator('tbody tr').count()==100
+   for i,want in enumerate(['271444','001234','271958\n272611','271966','Reference only','1234567']):assert table.locator('tbody tr').nth(i).locator('td').nth(col).inner_text()==want
+   anchor=table.locator('[data-rfd-ewo-original]').first;anchor.scroll_into_view_if_needed();anchor.hover();tip=page.locator('#rfd-ewo-tooltip');assert tip.is_visible();assert tip.locator('span').text_content()==cases[0];assert tip.locator('img,script').count()==0;assert anchor.get_attribute('aria-describedby')=='rfd-ewo-tooltip'
+   assert tip.evaluate('e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight}')
+   page.keyboard.press('Escape');assert page.locator('#rfd-ewo-tooltip').count()==0
+   target=anchor if prefix!='fdr'else anchor.locator('xpath=..');target.focus();assert page.locator('#rfd-ewo-tooltip').is_visible();page.keyboard.press('Tab');assert anchor.get_attribute('aria-describedby') is None;page.locator('#'+prefix+'-search').focus();assert page.locator('#rfd-ewo-tooltip').count()==0
+   assert table.locator('tbody tr').nth(3).locator('td').nth(col).locator('[data-rfd-ewo-original]').count()==0
+   with page.expect_download()as d:page.locator(f'#{prefix}-export').click()
+   exported=source_csv(d.value.path());assert [r[col]for r in exported[1:7]]==cases
+   assert page.evaluate('JSON.stringify([fixtureRaw,fixtureFdr])===originalFixtures')
+   anchor.hover();assert page.locator('#rfd-ewo-tooltip').is_visible();page.evaluate('resetRfdModule()');assert page.locator('#rfd-ewo-tooltip').count()==0
+   page.evaluate('p=>openFixture(p)',prefix)
   def total(prefix,col):return page.locator(f'#{prefix}-table tfoot [data-total-column="{col}"]').inner_text()
   for prefix in ['rfd','booking','dcs','fdr']:
    page.evaluate('p=>openFixture(p)',prefix);assert page.locator(f'#{prefix}-table tbody tr').count()==100;assert page.locator(f'#{prefix}-table tfoot td').count()=={'rfd':22,'booking':13,'dcs':25,'fdr':31}[prefix]
@@ -59,5 +76,5 @@ try:
   page.evaluate("openFixture('booking');setBookingRows(fixtureRaw.booking.slice(0,2),{file_name:'offline.csv'},'preview')");page.set_viewport_size({'width':1920,'height':900});page.wait_for_timeout(150);assert page.locator('.booking-scroll').evaluate('e=>e.clientHeight<220'), 'short data has excess empty height';page.screenshot(path='/tmp/rfd-layout-booking-short.png')
   assert page.evaluate('JSON.stringify([fixtureRaw,fixtureFdr])===originalFixtures')
   page.evaluate('resetRfdModule()');assert page.locator('#s22 table tfoot').count()==0;assert page.evaluate('RFD_CASCADE_CACHE.size===0&&RFD_TOTAL_CACHE.size===0&&RFD_LAYOUT_CACHE.size===0');assert page.locator('#rfd-color').inner_text()=='All colors';assert not errors,errors
-  b.close();print('PASS four real renderers: cascading Buyer/Place-Date/Color/search, 205-row exact totals across pages, unit separation, order/batch/pair deduplication, exclusions, source-only exports, sticky responsive footers and session cleanup')
+  b.close();print('PASS four real renderers: cascading Buyer/Place-Date/Color/search, 205-row exact totals across pages, unit separation, order/batch/pair deduplication, exclusions, source-only exports, six-digit EWO/original hover with keyboard and reset guards, sticky responsive footers and session cleanup')
 finally:server.shutdown()

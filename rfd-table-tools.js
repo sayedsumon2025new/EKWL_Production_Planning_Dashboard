@@ -5,9 +5,29 @@ const RFD_TABLE_VIEWS={
  dcs:{filters:[['dcs-buyer',1,'All buyers'],['dcs-place',0,'All dates'],['dcs-color',6,'All colors']],rules:Object.fromEntries(Array.from({length:18},(_,i)=>i+7).map(i=>[i,{unit:'PCS',unique:[8,10,12,14,16,18,20,22].includes(i)?'production-day':'production-latest',strictMissing:true}]))},
  fdr:{filters:[['fdr-buyer',0,'All buyers'],['fdr-place',2,'All colors']],rules:{6:{unit:'KG'},7:{unit:'PCS'},8:{unit:'YDS'},9:{unit:'ROLLS'},13:{unitColumn:12},14:{unitColumn:12,unique:'pair'},15:{unitColumn:12,unique:'pair'},17:{unit:'PCS',unique:'pair'},19:{unit:'PCS',unique:'pair'},20:{unit:'PCS',unique:'pair'},21:{unit:'PCS',unique:'pair'},22:{unit:'PCS',unique:'pair'},23:{unit:'PCS',unique:'pair'},24:{unit:'PCS',unique:'pair'},25:{unit:'PCS',unique:'pair'},26:{unit:'PCS',unique:'pair'},27:{unit:'PCS',unique:'pair'},28:{unit:'PCS',unique:'pair'},29:{unit:'PCS',unique:'pair'}},excluded:{16:'MCD Live Stock remains blank pending a formula.',18:'Consumption is a rate, not an additive quantity.'}}
 };
+// Presentation only: retain the exact source identifier for matching, totals and export.
+const RFD_EWO_COLUMNS={rfd:2,booking:0,dcs:3,fdr:1};
+function rfdEwoView(value){const original=String(value??''),codes=[...new Set(original.match(/(?<!\d)\d{6}(?!\d)/g)||[])],text=codes.length?codes.join('\n'):original;return{original,text,changed:text!==original};}
+function rfdEwoCell(value,focusable=true){const view=rfdEwoView(value);if(!view.changed)return esc(view.text);const attr=esc(view.original).replace(/\r/g,'&#13;').replace(/\n/g,'&#10;');return '<span class="rfd-ewo-original" '+(focusable?'tabindex="0" ':'')+'data-rfd-ewo-original="'+attr+'" aria-label="'+esc(view.text)+'; original EWO available on hover or focus">'+esc(view.text)+'</span>';}
+let RFD_EWO_TOOLTIP=null,RFD_EWO_ANCHOR=null;
+function rfdHideEwoTooltip(){if(RFD_EWO_ANCHOR)RFD_EWO_ANCHOR.removeAttribute('aria-describedby');RFD_EWO_ANCHOR=null;if(RFD_EWO_TOOLTIP){RFD_EWO_TOOLTIP.remove();RFD_EWO_TOOLTIP=null;}}
+function rfdShowEwoTooltip(anchor){
+ rfdHideEwoTooltip();if(!anchor||CURRENT_SLIDE!==22||!SITE_AUTH_USER||!canAccessSlide(22))return;
+ const tip=document.createElement('div');tip.id='rfd-ewo-tooltip';tip.className='rfd-ewo-tooltip';tip.setAttribute('role','tooltip');const label=document.createElement('strong');label.textContent='Original EWO';const value=document.createElement('span');value.textContent=anchor.getAttribute('data-rfd-ewo-original');tip.append(label,value);document.body.append(tip);RFD_EWO_TOOLTIP=tip;RFD_EWO_ANCHOR=anchor;anchor.setAttribute('aria-describedby',tip.id);
+ const box=anchor.getBoundingClientRect(),size=tip.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(box.left,innerWidth-size.width-8))+'px';tip.style.top=Math.max(8,box.top-size.height-8>=8?box.top-size.height-8:Math.min(box.bottom+8,innerHeight-size.height-8))+'px';
+}
+if(typeof document.addEventListener==='function'){
+ document.addEventListener('pointerover',e=>{const a=e.target?.closest?.('#s22 [data-rfd-ewo-original]');if(a&&a!==RFD_EWO_ANCHOR)rfdShowEwoTooltip(a);});
+ document.addEventListener('pointerout',e=>{if(RFD_EWO_ANCHOR?.contains(e.target)&&!RFD_EWO_ANCHOR.contains(e.relatedTarget))rfdHideEwoTooltip();});
+ document.addEventListener('focusin',e=>{const a=e.target?.closest?.('#s22 [data-rfd-ewo-original]')||e.target?.closest?.('#s22 button[data-fdr-column="1"]')?.querySelector('[data-rfd-ewo-original]');if(a)rfdShowEwoTooltip(a);});
+ document.addEventListener('focusout',e=>{if(RFD_EWO_ANCHOR&&(RFD_EWO_ANCHOR.contains(e.target)||e.target?.contains?.(RFD_EWO_ANCHOR)))rfdHideEwoTooltip();});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')rfdHideEwoTooltip();});
+ document.addEventListener('scroll',rfdHideEwoTooltip,true);
+ document.addEventListener('click',e=>{if(RFD_EWO_ANCHOR&&!RFD_EWO_ANCHOR.contains(e.target))rfdHideEwoTooltip();});
+}
 const RFD_CASCADE_CACHE=new Map(),RFD_TOTAL_CACHE=new Map();
 const rfdFacetKey=v=>String(v??'').trim().replace(/\s+/gu,' ').toLowerCase();
-function rfdResetTableTools(prefix){if(RFD_LAYOUT_FRAMES.has(prefix)){cancelAnimationFrame(RFD_LAYOUT_FRAMES.get(prefix));RFD_LAYOUT_FRAMES.delete(prefix);}RFD_LAYOUT_CACHE.delete(prefix);RFD_CASCADE_CACHE.delete(prefix);RFD_TOTAL_CACHE.delete(prefix);for(const[id,,label]of RFD_TABLE_VIEWS[prefix].filters){const node=document.getElementById(id);if(node){node.innerHTML='<option value="">'+esc(label)+'</option>';node.value='';delete node._rfdOptions;}}const search=document.getElementById(prefix+'-search');if(search)search.value='';}
+function rfdResetTableTools(prefix){rfdHideEwoTooltip();if(RFD_LAYOUT_FRAMES.has(prefix)){cancelAnimationFrame(RFD_LAYOUT_FRAMES.get(prefix));RFD_LAYOUT_FRAMES.delete(prefix);}RFD_LAYOUT_CACHE.delete(prefix);RFD_CASCADE_CACHE.delete(prefix);RFD_TOTAL_CACHE.delete(prefix);for(const[id,,label]of RFD_TABLE_VIEWS[prefix].filters){const node=document.getElementById(id);if(node){node.innerHTML='<option value="">'+esc(label)+'</option>';node.value='';delete node._rfdOptions;}}const search=document.getElementById(prefix+'-search');if(search)search.value='';}
 function rfdCascadeRows(prefix,rows){
  const config=RFD_TABLE_VIEWS[prefix],query=(document.getElementById(prefix+'-search')?.value||'').trim().toLowerCase();
  const state=()=>JSON.stringify([query,...config.filters.map(([id])=>document.getElementById(id)?.value||'')]);const before=state(),cached=RFD_CASCADE_CACHE.get(prefix);
@@ -57,7 +77,7 @@ function rfdFitTable(prefix,table,headers,items){
   const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),measured=new Map(),bounds=headers.map((h,i)=>rfdColumnBounds(prefix,i,h));
   const measure=(value,bold=false)=>{let max=0;for(const line of String(value??'').split(/\r\n|\r|\n/)){if(line.length>2048)return 20000;const key=(bold?'b':'r')+line.replace(/[0-9]/g,'0');let w=measured.get(key);if(w===undefined){if(ctx){ctx.font=(bold?'700':'500')+' 11px Arial';w=ctx.measureText(line).width;}else w=line.length*7;if(measured.size<4000)measured.set(key,w);}max=Math.max(max,w);}return Math.ceil(max+20);};
   widths=headers.map((h,i)=>Math.max(bounds[i].min,Math.min(bounds[i].max,measure(h,true))));
-  for(const{row}of items)for(let i=0;i<headers.length;i++){if(widths[i]>=bounds[i].max)continue;const value=String(row[i]??'');if(value.length*12+20<=widths[i])continue;widths[i]=Math.min(bounds[i].max,Math.max(widths[i],measure(value)));}
+  for(const{row}of items)for(let i=0;i<headers.length;i++){if(widths[i]>=bounds[i].max)continue;const value=i===RFD_EWO_COLUMNS[prefix]?rfdEwoView(row[i]).text:String(row[i]??'');if(value.length*12+20<=widths[i])continue;widths[i]=Math.min(bounds[i].max,Math.max(widths[i],measure(value)));}
   const foot=table.tFoot?.rows?.[0];if(foot)for(let i=0;i<headers.length;i++)widths[i]=Math.min(bounds[i].max,Math.max(widths[i],measure(foot.cells[i]?.textContent||'',true)));
   let extra=Math.max(0,available-widths.reduce((a,b)=>a+b,0));const flexible=bounds.map((b,i)=>b.flex?i:-1).filter(i=>i>=0);while(extra>0){const active=flexible.filter(i=>widths[i]<bounds[i].max);if(!active.length)break;const portion=Math.max(1,Math.floor(extra/active.length));for(const i of active){const add=Math.min(portion,bounds[i].max-widths[i],extra);widths[i]+=add;extra-=add;}}
   RFD_LAYOUT_CACHE.set(prefix,{items,available,widths});
@@ -65,7 +85,7 @@ function rfdFitTable(prefix,table,headers,items){
  const cols=table.querySelectorAll('col');widths.forEach((w,i)=>{if(cols[i])cols[i].style.width=w+'px';});table.style.width=widths.reduce((a,b)=>a+b,0)+'px';
  const top=box.getBoundingClientRect().top,pager=box.parentElement.querySelector('[class$="-pagination"]'),reserve=(pager?.getBoundingClientRect().height||28)+30;box.style.maxHeight=Math.max(140,Math.floor(window.innerHeight-top-reserve))+'px';const first=cols[0]?.getBoundingClientRect().width||widths[0],second=cols[1]?.getBoundingClientRect().width||widths[1];table.style.setProperty('--rfd-sticky-2',first+'px');table.style.setProperty('--rfd-sticky-3',(first+second)+'px');
 }
-if(typeof window!=='undefined')window.addEventListener('resize',()=>{clearTimeout(RFD_RESIZE_TIMER);RFD_RESIZE_TIMER=setTimeout(()=>{if(typeof CURRENT_SLIDE==='undefined'||CURRENT_SLIDE!==22)return;const prefix=RFD_ACTIVE_TAB,table=document.getElementById(prefix+'-table'),cache=RFD_CASCADE_CACHE.get(prefix);if(table?.tHead&&cache)rfdFitTable(prefix,table,[...table.tHead.rows[0].cells].map(e=>e.textContent),cache.items);},80);});
+if(typeof window!=='undefined')window.addEventListener('resize',()=>{rfdHideEwoTooltip();clearTimeout(RFD_RESIZE_TIMER);RFD_RESIZE_TIMER=setTimeout(()=>{if(typeof CURRENT_SLIDE==='undefined'||CURRENT_SLIDE!==22)return;const prefix=RFD_ACTIVE_TAB,table=document.getElementById(prefix+'-table'),cache=RFD_CASCADE_CACHE.get(prefix);if(table?.tHead&&cache)rfdFitTable(prefix,table,[...table.tHead.rows[0].cells].map(e=>e.textContent),cache.items);},80);});
 
 function rfdScheduleFit(prefix){if(typeof requestAnimationFrame!=='function'||RFD_LAYOUT_FRAMES.has(prefix))return;RFD_LAYOUT_FRAMES.set(prefix,requestAnimationFrame(()=>{RFD_LAYOUT_FRAMES.delete(prefix);if(CURRENT_SLIDE!==22||RFD_ACTIVE_TAB!==prefix)return;const table=document.getElementById(prefix+'-table'),cache=RFD_CASCADE_CACHE.get(prefix);if(table?.tHead&&cache)rfdFitTable(prefix,table,[...table.tHead.rows[0].cells].map(e=>e.textContent),cache.items);}));}
 

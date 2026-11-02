@@ -25,11 +25,12 @@ function setDcsRows(rows,report,mode){
 function renderDcsModule(){
  const permitted=!!SITE_AUTH_USER&&canAccessSlide(22),upload=dcsNode('dcs-upload');if(upload){upload.hidden=!permitted||!dcsAdmin();if(permitted&&dcsAdmin()&&!DCS_REPORT)upload.open=true;}
  if(CURRENT_SLIDE!==22||RFD_ACTIVE_TAB!=='dcs')return;
+ rfdHideEwoTooltip();
  const table=dcsNode('dcs-table');if(!table)return;
  if(!permitted||DCS_OWNER!==SITE_AUTH_USER.id||DCS_GENERATION!==SITE_SESSION_GENERATION){table.replaceChildren();return;}
  DCS_FILTERED=rfdCascadeRows('dcs',DCS_ROWS);
  const pages=Math.max(1,Math.ceil(DCS_FILTERED.length/100));DCS_PAGE=Math.max(1,Math.min(DCS_PAGE,pages));const start=(DCS_PAGE-1)*100,part=DCS_FILTERED.slice(start,start+100);
- table.innerHTML='<colgroup>'+DCS_HEADERS.map(()=>'<col>').join('')+'</colgroup><thead><tr>'+DCS_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map(value=>'<td>'+esc(value)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="25" class="dcs-empty">'+(DCS_ROWS.length?'No matching records.':'No saved Daily Production Status report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>'+rfdTotalsFooter('dcs',DCS_HEADERS,DCS_FILTERED,!!DCS_REPORT);
+ table.innerHTML='<colgroup>'+DCS_HEADERS.map(()=>'<col>').join('')+'</colgroup><thead><tr>'+DCS_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map((value,j)=>'<td>'+(j===3?rfdEwoCell(value):esc(value))+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="25" class="dcs-empty">'+(DCS_ROWS.length?'No matching records.':'No saved Daily Production Status report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>'+rfdTotalsFooter('dcs',DCS_HEADERS,DCS_FILTERED,!!DCS_REPORT);
  dcsNode('dcs-count').textContent=DCS_FILTERED.length.toLocaleString()+' / '+DCS_ROWS.length.toLocaleString()+' rows · 25 source columns';
  dcsNode('dcs-source').textContent=DCS_REPORT?(DCS_MODE==='preview'?'CSV PREVIEW · NOT SAVED':'MYSQL · SAVED REPORT')+' · '+DCS_REPORT.file_name+(DCS_REPORT.completed_at?' · Saved '+DCS_REPORT.completed_at+' UTC':''):'Daily Production Status source report';
  dcsNode('dcs-page-label').textContent='Page '+DCS_PAGE+' / '+pages+(part.length?' · Rows '+(start+1)+'–'+(start+part.length):'');
