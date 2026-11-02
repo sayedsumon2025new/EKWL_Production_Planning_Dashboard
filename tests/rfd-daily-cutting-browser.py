@@ -6,6 +6,11 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 sys.path.insert(0,str(Path(__file__).parent/'mysql'))
 from client import Client
+def display_row(row):
+ import re
+ shown=list(row);codes=list(dict.fromkeys(re.findall(r'(?<!\d)\d{6}(?!\d)',row[3])))
+ if codes:shown[3]='\n'.join(codes)
+ return shown
 BASE='http://127.0.0.1:18080/';auth=json.loads(Path(sys.argv[1]).read_text());client=Client();client.login(auth['email'],auth['password']);saved=client.call('rfd/daily-cutting',{'action':'read'})['data'];H=saved['headers'];rfd_before=client.call('rfd',{'action':'read'})['data'];booking_before=client.call('rfd/booking',{'action':'read'})['data']
 private=os.environ.get('DCS_TEST_CSV')
 if private:
@@ -20,7 +25,7 @@ with sync_playwright() as p:
  page.goto(BASE,wait_until='networkidle');page.wait_for_function("SITE_AUTH_USER!==null&&SITE_USER_PROFILE!==null&&document.body.dataset.planningState==='ready'",timeout=60000)
  page.evaluate('goSlide(22)');page.locator('#dcs-tab').click();page.wait_for_function('DCS_REPORT!==null&&DCS_MODE===\'sql\'');assert page.locator('#s22').is_visible();assert page.locator('#dcs-table thead th').all_text_contents()==H, {'actual':page.locator('#dcs-table thead th').all_text_contents(),'expected':H}
  assert page.evaluate('DCS_ROWS')==saved['rows'];assert page.locator('#dcs-table tbody tr').count()==min(100,len(saved['rows']))
- page.locator('#dcs-last').evaluate('e=>{if(!e.disabled)e.click()}');assert page.locator('#dcs-table tbody tr').last.locator('td').all_text_contents()==saved['rows'][-1]
+ page.locator('#dcs-last').evaluate('e=>{if(!e.disabled)e.click()}');assert page.locator('#dcs-table tbody tr').last.locator('td').all_text_contents()==display_row(saved['rows'][-1])
  page.evaluate("setPlanningReadState('error')");assert page.locator('#dcs-table').is_visible();assert not page.locator('#s22').evaluate("e=>e.classList.contains('planning-dependent')");page.evaluate("setPlanningReadState('ready')")
  page.locator('#dcs-upload').evaluate('e=>e.open=true');page.locator('#dcs-file').set_input_files({'name':name,'mimeType':'text/csv','buffer':payload});page.wait_for_function('DCS_MODE===\'preview\'')
  assert page.evaluate('DCS_PREVIEW.rows')==records
@@ -30,7 +35,7 @@ with sync_playwright() as p:
  assert page.locator('#dcs-table img,#dcs-table script').count()==0
  assert page.evaluate('DCS_ROWS')==records;assert 'every source cell matches' in page.locator('#dcs-message').inner_text()
  stored=client.call('rfd/daily-cutting',{'action':'read'})['data'];assert stored['rows']==records;assert client.call('rfd',{'action':'read'})['data']==rfd_before;assert client.call('rfd/booking',{'action':'read'})['data']==booking_before;assert stored['report']['file_sha256']==hashlib.sha256(payload).hexdigest()
- page.locator('#dcs-last').evaluate('e=>{if(!e.disabled)e.click()}');assert page.locator('#dcs-table tbody tr').last.locator('td').all_text_contents()==records[-1]
+ page.locator('#dcs-last').evaluate('e=>{if(!e.disabled)e.click()}');assert page.locator('#dcs-table tbody tr').last.locator('td').all_text_contents()==display_row(records[-1])
  # Independent Decimal/date reference checks real original report totals when supplied locally.
  if private:
   dated={};daily=[8,10,12,14,16,18,20,22]

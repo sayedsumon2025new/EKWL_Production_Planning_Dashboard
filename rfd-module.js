@@ -32,11 +32,12 @@ function setRfdRows(rows,report,mode){
 function renderRfdModule(){
  const permitted=!!SITE_AUTH_USER&&canAccessSlide(22),upload=rfdNode('rfd-upload');if(upload){upload.hidden=!permitted||!rfdAdmin();if(permitted&&rfdAdmin()&&!RFD_REPORT)upload.open=true;}
  if(CURRENT_SLIDE!==22)return;
+ rfdHideEwoTooltip();
  const table=rfdNode('rfd-table');if(!table)return;
  if(!permitted||RFD_OWNER!==SITE_AUTH_USER.id||RFD_GENERATION!==SITE_SESSION_GENERATION){table.replaceChildren();return;}
  RFD_FILTERED=rfdCascadeRows('rfd',RFD_ROWS);
  const pages=Math.max(1,Math.ceil(RFD_FILTERED.length/100));RFD_PAGE=Math.max(1,Math.min(RFD_PAGE,pages));const start=(RFD_PAGE-1)*100,part=RFD_FILTERED.slice(start,start+100);
- table.innerHTML='<colgroup>'+RFD_HEADERS.map(()=>'<col>').join('')+'</colgroup><thead><tr>'+RFD_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map(value=>'<td>'+esc(value)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="22" class="rfd-empty">'+(RFD_ROWS.length?'No matching records.':'No saved RFD report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>'+rfdTotalsFooter('rfd',RFD_HEADERS,RFD_FILTERED,!!RFD_REPORT);
+ table.innerHTML='<colgroup>'+RFD_HEADERS.map(()=>'<col>').join('')+'</colgroup><thead><tr>'+RFD_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map((value,j)=>'<td>'+(j===2?rfdEwoCell(value):esc(value))+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="22" class="rfd-empty">'+(RFD_ROWS.length?'No matching records.':'No saved RFD report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>'+rfdTotalsFooter('rfd',RFD_HEADERS,RFD_FILTERED,!!RFD_REPORT);
  rfdNode('rfd-count').textContent=RFD_FILTERED.length.toLocaleString()+' / '+RFD_ROWS.length.toLocaleString()+' rows · 22 source columns';
  rfdNode('rfd-source').textContent=RFD_REPORT?(RFD_MODE==='preview'?'CSV PREVIEW · NOT SAVED':'MYSQL · SAVED REPORT')+' · '+RFD_REPORT.file_name+(RFD_REPORT.completed_at?' · Saved '+RFD_REPORT.completed_at+' UTC':''):'RFD source report';
  rfdNode('rfd-page-label').textContent='Page '+RFD_PAGE+' / '+pages+(part.length?' · Rows '+(start+1)+'–'+(start+part.length):'');
