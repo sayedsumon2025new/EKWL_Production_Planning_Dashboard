@@ -1,5 +1,7 @@
 """Actual PHP/MySQL DCS page and upload, isolated localhost fixture only."""
 import csv,hashlib,io,json,os,shutil,sys
+from decimal import Decimal
+from datetime import datetime
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 sys.path.insert(0,str(Path(__file__).parent/'mysql'))
@@ -10,7 +12,7 @@ if private:
  payload=Path(private).read_bytes();name='DCS.csv'
  with open(private,encoding='utf-8-sig',newline='') as f:records=list(csv.reader(f));assert records.pop(0)==H
 else:
- records=[['01-Nov-26',str(i).zfill(7),'Style',' Blue ','Buyer','1000','160','60','KG','12.5000',' Fabric, \"quoted\"\nবাংলা & <script>bad()</script> ','001','PCS','0'] for i in range(500)]+[['']*14]
+ records=[['01-Nov-26','Buyer','Team',str(i).zfill(7),'Style','Company',' Blue ','1000','0','12.5000','0','1','0','2','0','3','0','4','0','5','0','6','0','7',' Fabric, \"quoted\"\nবাংলা & <script>bad()</script> '] for i in range(500)]+[['']*25]
  stream=io.StringIO(newline='');w=csv.writer(stream);w.writerow(H);w.writerows(records);payload=stream.getvalue().encode();name='DCS-UI.csv'
 with sync_playwright() as p:
  b=p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),args=['--no-sandbox']);context=b.new_context(viewport={'width':1464,'height':900});context.add_cookies([{'name':c.name,'value':c.value,'url':BASE,'httpOnly':True,'sameSite':'Strict'} for c in client.jar]);page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
@@ -29,12 +31,23 @@ with sync_playwright() as p:
  assert page.evaluate('DCS_ROWS')==records;assert 'every source cell matches' in page.locator('#dcs-message').inner_text()
  stored=client.call('rfd/daily-cutting',{'action':'read'})['data'];assert stored['rows']==records;assert client.call('rfd',{'action':'read'})['data']==rfd_before;assert client.call('rfd/booking',{'action':'read'})['data']==booking_before;assert stored['report']['file_sha256']==hashlib.sha256(payload).hexdigest()
  page.locator('#dcs-last').evaluate('e=>{if(!e.disabled)e.click()}');assert page.locator('#dcs-table tbody tr').last.locator('td').all_text_contents()==records[-1]
+ # Independent Decimal/date reference checks real original report totals when supplied locally.
+ if private:
+  dated={};daily=[8,10,12,14,16,18,20,22]
+  for row in records:
+   key=(row[3].strip().upper(),row[6].strip().upper());date=datetime.strptime(row[0],'%d-%b-%y');dated.setdefault(key,[]).append((date,row))
+  latest=[max(group,key=lambda entry:entry[0])[1] for group in dated.values()]
+  for column in range(7,25):
+   scope=records if column in daily else latest
+   expected=sum((Decimal(row[column].replace(',','')) for row in scope),Decimal(0))
+   shown=page.locator(f'#dcs-table tfoot [data-total-column="{column}"]').inner_text()
+   assert Decimal(shown.replace(',',''))==expected,'Original production footer does not reconcile'
  with page.expect_download() as download:page.locator('#dcs-export').click()
  text=Path(download.value.path()).read_text(encoding='utf-8-sig');assert list(csv.reader(io.StringIO(text,newline='')))==[H,*records]
- page.locator('#dcs-search').fill(records[0][1]);page.wait_for_timeout(250)
- expected=[r for r in records if any(records[0][1].lower() in v.lower() for v in r)];assert page.evaluate('DCS_FILTERED.map(x=>x.row)')==expected
+ page.locator('#dcs-search').fill(records[0][3]);page.wait_for_timeout(250)
+ expected=[r for r in records if any(records[0][3].lower() in v.lower() for v in r)];assert page.evaluate('DCS_FILTERED.map(x=>x.row)')==expected
  page.locator('#s22 button[onclick="clearDcsFilters()"]').click();assert page.evaluate('DCS_FILTERED.length')==len(records)
- page.locator('#dcs-place').select_option(records[0][0]);page.locator('#dcs-buyer').select_option(records[0][4]);assert page.evaluate('DCS_FILTERED.map(x=>x.row)')==[r for r in records if r[0]==records[0][0] and r[4]==records[0][4]]
+ page.locator('#dcs-place').select_option(records[0][0]);page.locator('#dcs-buyer').select_option(records[0][1]);assert page.evaluate('DCS_FILTERED.map(x=>x.row)')==[r for r in records if r[0]==records[0][0] and r[1]==records[0][1]]
  page.locator('#s22 button[onclick="clearDcsFilters()"]').click()
  for width in [784,1065,1400,1401,1464,1920]:
   page.set_viewport_size({'width':width,'height':900});page.wait_for_timeout(100);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),width
@@ -47,4 +60,4 @@ with sync_playwright() as p:
  page.evaluate("SITE_USER_PROFILE={role:'user',permissions:{slide_22:true}};renderDcsModule()");assert page.locator('#dcs-upload').is_hidden()
  page.evaluate('siteLogout()');page.wait_for_function('SITE_AUTH_USER===null');assert page.evaluate('DCS_ROWS.length')==0;assert page.evaluate('RFD_ROWS.length')==0;assert page.evaluate('BOOKING_ROWS.length')==0;assert page.locator('#dcs-table').text_content()==''
  assert not errors,errors;b.close()
- print(json.dumps({'dcs_browser_rows_verified':len(records),'cells_verified':len(records)*14,'original_headers_and_cell_strings':True,'sql_upload_readback':True,'pagination_export_and_filters':True,'independent_of_planning':True,'logout_and_permission_guards':True,'javascript_errors':0}))
+ print(json.dumps({'dcs_browser_rows_verified':len(records),'cells_verified':len(records)*25,'original_headers_and_cell_strings':True,'original_footer_reconciliation':bool(private),'sql_upload_readback':True,'pagination_export_and_filters':True,'independent_of_planning':True,'logout_and_permission_guards':True,'javascript_errors':0}))

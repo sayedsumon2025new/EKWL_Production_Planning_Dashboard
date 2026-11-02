@@ -3,13 +3,13 @@ from client import *
 import csv,hashlib,os
 assert BASE.startswith('http://127.0.0.1:18080/')
 auth=json.loads(Path(sys.argv[1]).read_text());admin=Client();admin.login(auth['email'],auth['password'])
-H=['Date', 'EWO No.', 'Style', 'Color', 'Buyer', 'Order Qty\nPcs', 'GSM', 'Width', 'UOM', 'Received \nfor Cutting', 'Input/Cut Fabrics', 'Cutting No', 'Measurement \nUnit', 'Qty Ready \nfor Next Process']
+H=['Date', 'Buyer', 'Buyer Team', 'EWO No', 'Style No', 'Company Name', 'Color Name', 'Order Qty', 'Cutting Today ', 'Cutting Total', 'Sewing Today', 'Sewing Total', 'Finishing Receive Today', 'Finishing Receive Total', 'Iron Today', 'Iron Total', 'Hang Tag Today', 'Hang Tag Total', 'Folding Today', 'Folding Total', 'Poly Today', 'Poly Total', 'Carton day', 'Carton Total', 'Carton WIP Qty']
 private=os.environ.get('DCS_TEST_CSV')
 if private:
  with open(private,encoding='utf-8-sig',newline='')as f:records=list(csv.reader(f));assert records.pop(0)==H
 else:
- records=[['01-Nov-26',str(i).zfill(7),'Style',' Blue ','Buyer','1000','160','60','KG','12.5000',' Fabric, \"quoted\"\nবাংলা & <text> ','001','PCS','0'] for i in range(500)]+[['']*14]
-assert all(len(r)==14 for r in records)
+ records=[['01-Nov-26','Buyer','Team',str(i).zfill(7),'Style','Company',' Blue ','1000','0','12.5000','0','1','0','2','0','3','0','4','0','5','0','6','0','7',' Fabric, \"quoted\"\nবাংলা & <script>bad()</script> '] for i in range(500)]+[['']*25]
+assert all(len(r)==25 for r in records)
 rfd_before=admin.call('rfd',{'action':'read'})['data'];booking_before=admin.call('rfd/booking',{'action':'read'})['data']
 def call(c,body,expected=200):return c.call('rfd/daily-cutting',body,expected=expected)
 def begin(rows,name='DCS.csv'):
@@ -21,13 +21,14 @@ admin.call('users',{'action':'create','email':email,'password':password,'role':'
 reader=Client();reader.login(email,password)
 call(reader,{'action':'read'})
 call(reader,{'action':'begin'},expected=403)
+call(admin,{'action':'begin','file_name':'Legacy.csv','headers':['legacy']*14,'expected_rows':1,'file_sha256':'0'*64},expected=400)
 # Save an old completed report; an unfinished new one cannot replace it.
-old=begin([['old']*14]);call(admin,{'action':'chunk','id':old,'start_row':2,'rows':[['old']*14]});call(admin,{'action':'finalize','id':old})
+old=begin([['old']*25]);call(admin,{'action':'chunk','id':old,'start_row':2,'rows':[['old']*25]});call(admin,{'action':'finalize','id':old})
 job=begin(records)
 call(admin,{'action':'finalize','id':job},expected=409)
 assert call(reader,{'action':'read'})['data']['report']['id']==old
 call(admin,{'action':'chunk','id':job,'start_row':3,'rows':[records[0]]},expected=409)
-call(admin,{'action':'chunk','id':job,'start_row':2,'rows':[[123]*14]},expected=400)
+call(admin,{'action':'chunk','id':job,'start_row':2,'rows':[[123]*25]},expected=400)
 for start in range(0,len(records),250):
  part=records[start:start+250];result=call(admin,{'action':'chunk','id':job,'start_row':start+2,'rows':part})['data'];assert result['received_rows']==start+len(part)
  if start==0:
@@ -44,4 +45,4 @@ none_email='dcs-none-'+secrets.token_hex(5)+'@fixture.invalid';admin.call('users
 none=Client();none.login(none_email,password);call(none,{'action':'read'},expected=403)
 assert admin.call('rfd',{'action':'read'})['data']==rfd_before
 assert admin.call('rfd/booking',{'action':'read'})['data']==booking_before
-print(json.dumps({'dcs_rows':len(records),'columns':14,'exact_cells_verified':len(records)*14,'row_order_preserved':True,'partial_activation_blocked':True,'retry_idempotent':True,'read_write_permissions_checked':True,'original_file_test':bool(private)}))
+print(json.dumps({'dcs_rows':len(records),'columns':25,'exact_cells_verified':len(records)*25,'row_order_preserved':True,'partial_activation_blocked':True,'retry_idempotent':True,'read_write_permissions_checked':True,'original_file_test':bool(private)}))
