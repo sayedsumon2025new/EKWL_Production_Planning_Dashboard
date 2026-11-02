@@ -12,7 +12,7 @@ def save(kind,rows):
  admin.call(route,{'action':'finalize','id':job});return job
 rfd=[];booking=[];cut=[]
 for e,construction,qty in [('000123','Body','400'),('000123','Body','100'),('000123','Rib','100')]+[('FDR'+str(i).zfill(6),'Body','10')for i in range(110)]:
- r=['0']*22;r[2]=e;r[6]='Blue';r[7]='Long fabric description <source> '+('Cotton, soft fabric details. '*12);r[8]=construction;r[9]='Cotton';r[10]='Buyer';r[14]=qty;r[17]='1';rfd.append(r)
+ r=['0']*22;r[2]=e;r[6]='Blue';r[7]=('Second matching fabric detail' if len(rfd)==1 else 'Long fabric description <source> '+('Cotton, soft fabric details. '*12));r[8]=construction;r[9]='Cotton';r[10]='Buyer';r[14]=qty;r[17]='1';rfd.append(r)
 for e,construction,qty in [('000123','Body','400'),('000123','Rib','200')]+[('FDR'+str(i).zfill(6),'Body','20')for i in range(110)]:booking.append([e,'B','Buyer','Team','Supplier',construction,'Cotton','Blue','160','60','kg',qty,'Additional reason\nSecond line'])
 for e,date,batch,issued,ready in [('000123','01-Nov-26','C1','200','400'),('000123','01-Nov-26','C1','100','400'),('000123','02-Nov-26','C2','50','100')]+[('FDR'+str(i).zfill(6),'01-Nov-26','C'+str(i),'2','5')for i in range(110)]:cut.append([date,e,'Style','Blue','Buyer','1000','160','60','kg',issued,'10',batch,'Pcs',ready])
 heads={k:save(k,r) for k,r in [('rfd',rfd),('booking',booking),('cutting',cut)]}
@@ -21,6 +21,9 @@ Client().call('rfd/fabrics-details',{'action':'read'},expected=401)
 admin.call('rfd/fabrics-details',{'action':'refresh'},csrf=False,expected=403)
 r=admin.call('rfd/fabrics-details',{'action':'refresh'})['data'];assert r['integrity']['complete'] and len(r['rows'])==112 and len(r['headers'])==31
 main=[row for row in r['rows'] if row[1]=='000123'];assert len(main)==2
+body=next(row for row in main if row[4]=='Body');assert 'Second matching fabric detail' in body[3] and 'Long fabric description' in body[3];assert r['report']['model_version']=='fabrics-derived-v2'
+for i,row in enumerate(r['rows']):
+ if row[1]=='000123':assert r['evidence'][i]['fabric_details_match']['status']=='matched'
 for row in main:
  for i,v in {14:'600',15:'600',16:'—',17:'1000',18:'0.6',19:'1000',20:'500',21:'400',22:'300',23:'100',24:'0',25:'0',26:'0',27:'200',28:'100',29:'50'}.items():assert row[i]==v,(i,row[i])
 assert r['report']['materialized'];again=admin.call('rfd/fabrics-details',{'action':'refresh'})['data'];assert again['rows']==r['rows'] and again['report']['id']==r['report']['id']

@@ -12,6 +12,7 @@ with sync_playwright() as p:
  assert page.locator('#fdr-panel input[type=file]').count()==0
  assert page.evaluate('FDR_ROWS')==expected['rows'];assert page.locator('#fdr-table thead th').all_text_contents()==expected['headers'];assert page.locator('#fdr-table tbody tr').count()==100
  page.locator('#fdr-search').fill('000123');page.wait_for_timeout(250);assert page.evaluate('FDR_FILTERED.length')==2
+ page.locator('#fdr-table [data-fdr-column="3"]').first.click();assert 'fabric_details_match' in page.locator('#fdr-evidence-body').inner_text();assert 'Fabric Construction' in page.locator('#fdr-evidence-body').inner_text();page.locator('#fdr-evidence button').click()
  page.locator('#fdr-table [data-fdr-column="16"]').first.click();assert page.locator('#fdr-evidence').is_visible();assert 'excluded' in page.locator('#fdr-evidence-body').inner_text();assert 'cutting_rows' in page.locator('#fdr-evidence-body').inner_text();page.locator('#fdr-evidence button').click()
  page.locator('#fdr-panel button[onclick="clearFdrFilters()"]').click()
  for width in [784,1065,1400,1401,1464,1920]:
