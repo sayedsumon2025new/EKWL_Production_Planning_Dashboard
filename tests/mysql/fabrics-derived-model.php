@@ -1,0 +1,29 @@
+<?php
+declare(strict_types=1);
+require __DIR__.'/../../backend/src/bootstrap.php';
+require __DIR__.'/../../backend/src/rfd-fabrics-details.php';
+function check($ok,string $message): void {if(!$ok)throw new RuntimeException($message);}
+function raw(int $n,array $cells): array {return ['n'=>$n,'v'=>$cells];}
+function rfdRow(int $n,string $construction,string $qty): array {$r=array_fill(0,22,'0');$r[2]='000123';$r[6]=' Blue ';$r[7]='Fabric <source>'; $r[8]=$construction;$r[9]='Cotton';$r[10]='Buyer';$r[14]=$qty;$r[17]='1';return raw($n,$r);}
+function bookingRow(int $n,string $construction,string $qty,string $unit='kg'): array {return raw($n,['000123','B1','Buyer','Team','Supplier',$construction,'Cotton','Blue','160','60',$unit,$qty,'Additional']);}
+function cutRow(int $n,string $date,string $batch,string $issued,string $ready): array {return raw($n,[$date,'000123','Style','Blue','Buyer','1000','160','60','kg',$issued,'10',$batch,'Pcs',$ready]);}
+$s=['rfd'=>['rows'=>[rfdRow(2,'Body','400'),rfdRow(3,' body ','100'),rfdRow(4,'Rib','100')]],'booking'=>['rows'=>[bookingRow(2,'Body','400'),bookingRow(3,'Rib','200')]],'cutting'=>['rows'=>[cutRow(2,'01-Nov-26','C1','200','400'),cutRow(3,'01-Nov-26','C1','100','400'),cutRow(4,'02-Nov-26','C2','50','100')]]];
+$ops=['routing'=>[Ekwl\fdrPair('000123','Blue')=>['print'=>true,'emb'=>false,'rows'=>[2]]],'sewing'=>[raw(1,['ewo'=>'000123','color'=>'Blue','total_input_qty'=>'100','total_output_qty'=>'80','total_wip_qty'=>'20']),raw(2,['ewo'=>'000123','color'=>'Blue','total_input_qty'=>'100','total_output_qty'=>'70','total_wip_qty'=>'30'])],'embellishment'=>[raw(2,['batch_id'=>'B','EWO No'=>'000123','Color'=>'Blue','Today Print Send Qty'=>'400','Today Print Receive Qty'=>'300','Today EMB Send Qty'=>'0','Today EMB Receive Qty'=>'0'])]];
+$result=Ekwl\fdrBuild($s,$ops);check(count($result['rows'])===2,'Grain / join expansion');
+foreach($result['rows'] as $row){check(count($row)===31,'31 columns');foreach([14=>'600',15=>'600',16=>'—',17=>'1000',18=>'0.6',19=>'1000',20=>'500',21=>'400',22=>'300',23=>'100',24=>'0',25=>'0',26=>'0',27=>'200',28=>'100',29=>'50'] as $i=>$value)check($row[$i]===$value,'Formula column '.$i.' got '.$row[$i]);check($row[1]==='000123','Leading-zero key');}
+check(array_sum(array_map(fn($r)=>(int)$r[6],$result['rows']))===600,'No RFD multiplication');check(array_sum(array_map(fn($r)=>(int)$r[13],$result['rows']))===600,'No Booking multiplication');
+$x=$s;foreach($x['cutting']['rows'] as &$v)$v['v'][9]='9999999';unset($v);check(Ekwl\fdrBuild($x,$ops)['rows']===$result['rows'],'Received for Cutting never changes any report result');
+$x=$s;$x['cutting']['rows'][1]['v'][5]='1001';$r=Ekwl\fdrBuild($x,$ops);check($r['rows'][0][17]==='—'&&$r['rows'][0][18]==='—','Order conflicts are not summed');
+$x=$s;$x['booking']['rows'][1]['v'][10]='PCS';$r=Ekwl\fdrBuild($x,$ops);check($r['rows'][0][14]==='—','Mixed units blocked');
+$x=$s;$x['cutting']['rows'][1]['v'][0]='2026-11-01';$r=Ekwl\fdrBuild($x,$ops);check($r['rows'][0][20]==='500','Equivalent dates do not duplicate the cutting batch');
+$x=$s;$x['cutting']['rows'][1]['v'][0]='31-Feb-26';$r=Ekwl\fdrBuild($x,$ops);check($r['rows'][0][20]==='—','Invalid date blocked');
+$x=$s;$x['cutting']['rows'][1]['v'][13]='401';$r=Ekwl\fdrBuild($x,$ops);check($r['rows'][0][20]==='—','Cutting batch conflict blocked');
+$x=$ops;$x['embellishment'][0]['v']['Today EMB Send Qty']='50';$x['embellishment'][0]['v']['Today EMB Receive Qty']='20';$r=Ekwl\fdrBuild($s,$x);check($r['rows'][0][28]==='—','Both process routing unresolved');
+$x=$ops;$x['embellishment'][0]['v']['Today Print Receive Qty']='';$r=Ekwl\fdrBuild($s,$x);check($r['rows'][0][28]==='—','Missing required process receipt not zero');
+$x=$ops;$x['routing']=[];$r=Ekwl\fdrBuild($s,$x);check($r['rows'][0][28]==='—','Process applicability is not guessed from movements');
+$x=$ops;$x['routing'][Ekwl\fdrPair('000123','Blue')]=['print'=>false,'emb'=>false,'rows'=>[2]];$x['embellishment']=[];$r=Ekwl\fdrBuild($s,$x);check($r['rows'][0][28]==='300','Confirmed no-process cutting less sewing');
+$x=$ops;$x['embellishment'][0]['v']['Total Print Send Qty']='999999';$x['embellishment'][0]['v']['Total Print Receive Qty']='999999';check(Ekwl\fdrBuild($s,$x)['rows']===$result['rows'],'Cumulative movement columns are not re-summed');
+$x=$ops;$x['sewing']=[];$r=Ekwl\fdrBuild($s,$x);check($r['rows'][0][27]==='—'&&$r['rows'][0][28]==='—','Missing sewing not zero');
+check(Ekwl\fdrText(Ekwl\fdrSum([raw(1,['0.1']),raw(2,['0.2'])],0))==='0.3','Exact decimal sum');check(Ekwl\fdrNumber('1,20')===null,'Malformed grouping rejected');check(Ekwl\fdrText(Ekwl\fdrNumber('1,000.5000'))==='1000.5','Validated grouped decimal');
+$many=['rfd'=>['rows'=>[]],'booking'=>['rows'=>[]],'cutting'=>$s['cutting']];for($i=0;$i<2000;$i++){$many['rfd']['rows'][]=rfdRow($i+2,'Part '.$i,'1');$many['booking']['rows'][]=bookingRow($i+2,'Part '.$i,'1');}$start=microtime(true);$large=Ekwl\fdrBuild($many,$ops);check(count($large['rows'])===2000&&$large['rows'][1999][14]==='2000','Large single-order grains retain exact totals');echo json_encode(['single_order_fabric_rows'=>2000,'model_seconds'=>round(microtime(true)-$start,3)]).PHP_EOL;
+echo "PASS Fabrics derived grain, no join multiplication, exact sums, MCD stock, consumption, unique order/batch counts, units, missing data and process routing guards\n";
