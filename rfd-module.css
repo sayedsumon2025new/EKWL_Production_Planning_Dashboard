@@ -20,3 +20,23 @@
 #s22 .fdr-table th{white-space:pre-wrap;line-height:1.4;text-align:left;height:auto}#s22 .fdr-table td{height:auto;line-height:1.5}#s22 .fdr-table td.fdr-number{text-align:right;font-variant-numeric:tabular-nums}#s22 .fdr-scroll{max-width:100%;max-height:calc(100dvh - 340px)}
 
 #s22 .fdr-value{display:block;width:100%;height:auto;min-height:20px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;cursor:pointer;padding:0}#s22 .fdr-value.fdr-number{text-align:right;font-variant-numeric:tabular-nums}#fdr-evidence{width:min(800px,94vw);max-height:85dvh;overflow:auto;margin:auto;padding:18px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px}#fdr-evidence::backdrop{background:#0008}#fdr-evidence pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.6;margin-top:12px}
+
+#s22 table tfoot td{position:sticky;bottom:0;top:auto!important;z-index:8;background:var(--navy2)!important;color:var(--text)!important;border-top:2px solid var(--border);padding:8px!important;font-weight:750!important;white-space:pre-wrap;vertical-align:middle}#s22 table tfoot td:nth-child(-n+3){z-index:10}#s22 table tfoot td[data-total-state="partial"]{text-decoration:underline dotted;text-underline-offset:3px}#s22 table tfoot td:not(:first-child){text-align:right}
+#s22 table tfoot td{position:sticky!important}
+@media(max-width:800px){#s22 table tfoot td:nth-child(2),#s22 table tfoot td:nth-child(3){left:auto!important}#s22 table tfoot td:first-child{left:0!important;z-index:11}}
+
+/* Compact data-sized tables; long descriptions wrap without truncation. */
+#s22 :is(.rfd-card,.booking-card,.dcs-card,.fdr-card){padding:12px;border-radius:10px;box-shadow:0 4px 14px rgba(15,23,42,.055);min-width:0}
+#s22 :is(.rfd-toolbar,.booking-toolbar,.dcs-toolbar,.fdr-toolbar){gap:8px;align-items:center;margin-bottom:9px}
+#s22 :is(.rfd-toolbar,.booking-toolbar,.dcs-toolbar,.fdr-toolbar) :is(input,select){height:32px;padding:5px 9px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font:11px Arial,sans-serif;min-width:100px}
+#s22 :is(.rfd-scroll,.booking-scroll,.dcs-scroll,.fdr-scroll){min-height:0!important;height:auto!important;border-radius:7px;max-width:100%}
+#s22 table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table){min-width:100%!important;table-layout:fixed;border-collapse:separate;font:11px Arial,sans-serif}
+#s22 table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table) :is(th,td){height:auto;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap}
+#s22 table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table) th{padding:7px 8px!important;font-size:10.5px;letter-spacing:.1px;vertical-align:middle}
+#s22 table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table) tbody td{padding:5px 8px!important;vertical-align:top}
+#s22 table tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--card) 95%,var(--border))}
+#s22 table tbody tr:hover td{background:color-mix(in srgb,var(--card) 88%,var(--border))}
+#s22 table :is(th,td):nth-child(2){left:var(--rfd-sticky-2,170px)!important}#s22 table :is(th,td):nth-child(3){left:var(--rfd-sticky-3,340px)!important}
+#s22 :is(.rfd-empty,.booking-empty,.dcs-empty,.fdr-empty){height:auto!important;padding:18px 10px!important}
+#s22 .fdr-value{min-height:16px;line-height:1.45}
+@media(max-width:800px){#s22 table thead th:nth-child(-n+3){left:auto!important}#s22 table tfoot td:nth-child(2),#s22 table tfoot td:nth-child(3){left:auto!important}}

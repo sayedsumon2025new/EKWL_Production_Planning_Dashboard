@@ -15,7 +15,10 @@ STUB = """window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{
 onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},from:()=>{const q=new Proxy({},
 {get:(_,k)=>k==='then'?(a,b)=>Promise.resolve({data:[],error:null}).then(a,b):()=>q});return q;}})};"""
 
-server = ThreadingHTTPServer(('127.0.0.1', 0), partial(QuietHandler, directory=str(ROOT)))
+class ReadinessServer(ThreadingHTTPServer):
+    request_queue_size = 128
+
+server = ReadinessServer(('127.0.0.1', 0), partial(QuietHandler, directory=str(ROOT)))
 thread = Thread(target=server.serve_forever, daemon=True)
 thread.start()
 try:
@@ -34,6 +37,7 @@ try:
                 request.fulfill(body='', content_type='application/javascript')
         page.route('**/*',route)
         page.goto(base,wait_until='networkidle')
+        page.wait_for_function("typeof SB!=='undefined' && typeof loadEWOReadinessBoard==='function'")
         assert not errors,errors
         page.evaluate("""async()=>{
           SITE_AUTH_USER={id:'fixture-user'};SITE_USER_PROFILE={role:'user',permissions:{slide_21:true}};

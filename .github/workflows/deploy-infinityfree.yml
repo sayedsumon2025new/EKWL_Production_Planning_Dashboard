@@ -48,6 +48,7 @@ jobs:
           python3 -m pip install playwright==1.58.0
           python3 tests/mysql/snapshot-browser.py /tmp/ekwl-test-auth.json
           python3 tests/fabrics-derived-browser.py /tmp/ekwl-test-auth.json
+          python3 tests/rfd-cascade-totals-browser.py
           python3 tests/size-set-performance.py
           python3 tests/size-set-andon-browser.py
           python3 tests/cutting-wip-browser.py

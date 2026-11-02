@@ -9,7 +9,7 @@ function selectRfdTab(tab){
 const RFD_HEADERS=Object.freeze(['Receive & Delivery Date','Receive & Delivery Place','EWO No','Batch No','Re-Finish ID','Tag Number','Color','Fabric Details','Fabric Construction','Fabric Composition','Buyer Name','Vehicle Number','DC No','Re Delivery','Net Delivery Qty Kg.','Net Delivery Qty Pcs','Net Delivery Qty Yds','Total Roll','Lock No','Delivery From','Mushak Challan No','Body Fabrics']);
 let RFD_ROWS=[],RFD_FILTERED=[],RFD_PAGE=1,RFD_REPORT=null,RFD_MODE='sql',RFD_PREVIEW=null,RFD_LOADED_AT=0,RFD_OWNER='',RFD_GENERATION=-1,RFD_TOKEN=0,RFD_FILE_TOKEN=0,RFD_LOAD=null,RFD_BUSY=false,RFD_SEARCH_TIMER=0,RFD_EXPORT_URL=null;
 const rfdNode=id=>document.getElementById(id),rfdAdmin=()=>String(SITE_USER_PROFILE?.role||'').toLowerCase()==='admin';
-function rfdMessage(text){const n=rfdNode('rfd-message');if(n)n.textContent=text;}
+function rfdMessage(text){const n=rfdNode('rfd-message');if(n)n.textContent=text;rfdScheduleFit('rfd');}
 function parseRfdCSV(text){
  const rows=parseRecords(text,true,true),headers=rows.shift();
  if(!headers||headers.length!==22||headers.some((v,i)=>v!==RFD_HEADERS[i]))throw Error('RFD CSV must have the same 22 source headers in the same order.');
@@ -27,29 +27,26 @@ function clearRfdExport(){if(RFD_EXPORT_URL)URL.revokeObjectURL(RFD_EXPORT_URL);
 function setRfdRows(rows,report,mode){
  clearRfdExport();
  RFD_ROWS=rows;RFD_REPORT=report;RFD_MODE=mode;RFD_PAGE=1;RFD_OWNER=SITE_AUTH_USER?.id||'';RFD_GENERATION=SITE_SESSION_GENERATION;
- for(const [id,column,label]of [['rfd-buyer',10,'All buyers'],['rfd-place',1,'All places']]){
-  const n=rfdNode(id);if(n)n.innerHTML='<option value="">'+label+'</option>'+[...new Set(rows.map(r=>r[column]).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
- }
- const search=rfdNode('rfd-search');if(search)search.value='';renderRfdModule();
+ rfdResetTableTools('rfd');renderRfdModule();
 }
 function renderRfdModule(){
  const permitted=!!SITE_AUTH_USER&&canAccessSlide(22),upload=rfdNode('rfd-upload');if(upload){upload.hidden=!permitted||!rfdAdmin();if(permitted&&rfdAdmin()&&!RFD_REPORT)upload.open=true;}
  if(CURRENT_SLIDE!==22)return;
  const table=rfdNode('rfd-table');if(!table)return;
  if(!permitted||RFD_OWNER!==SITE_AUTH_USER.id||RFD_GENERATION!==SITE_SESSION_GENERATION){table.replaceChildren();return;}
- const query=(rfdNode('rfd-search')?.value||'').trim().toLowerCase(),buyer=rfdNode('rfd-buyer')?.value||'',place=rfdNode('rfd-place')?.value||'';
- RFD_FILTERED=RFD_ROWS.map((row,i)=>({row,i})).filter(({row})=>(!buyer||row[10]===buyer)&&(!place||row[1]===place)&&(!query||row.some(v=>v.toLowerCase().includes(query))));
+ RFD_FILTERED=rfdCascadeRows('rfd',RFD_ROWS);
  const pages=Math.max(1,Math.ceil(RFD_FILTERED.length/100));RFD_PAGE=Math.max(1,Math.min(RFD_PAGE,pages));const start=(RFD_PAGE-1)*100,part=RFD_FILTERED.slice(start,start+100);
- table.innerHTML='<colgroup>'+RFD_HEADERS.map((_,i)=>'<col style="width:'+([0,1].includes(i)?170:i===2?110:i===7?340:[8,9].includes(i)?240:160)+'px">').join('')+'</colgroup><thead><tr>'+RFD_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map(value=>'<td>'+esc(value)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="22" class="rfd-empty">'+(RFD_ROWS.length?'No matching records.':'No saved RFD report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>';
+ table.innerHTML='<colgroup>'+RFD_HEADERS.map(()=>'<col>').join('')+'</colgroup><thead><tr>'+RFD_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map(value=>'<td>'+esc(value)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="22" class="rfd-empty">'+(RFD_ROWS.length?'No matching records.':'No saved RFD report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>'+rfdTotalsFooter('rfd',RFD_HEADERS,RFD_FILTERED,!!RFD_REPORT);
  rfdNode('rfd-count').textContent=RFD_FILTERED.length.toLocaleString()+' / '+RFD_ROWS.length.toLocaleString()+' rows · 22 source columns';
  rfdNode('rfd-source').textContent=RFD_REPORT?(RFD_MODE==='preview'?'CSV PREVIEW · NOT SAVED':'MYSQL · SAVED REPORT')+' · '+RFD_REPORT.file_name+(RFD_REPORT.completed_at?' · Saved '+RFD_REPORT.completed_at+' UTC':''):'RFD source report';
  rfdNode('rfd-page-label').textContent='Page '+RFD_PAGE+' / '+pages+(part.length?' · Rows '+(start+1)+'–'+(start+part.length):'');
  for(const id of ['rfd-first','rfd-prev'])rfdNode(id).disabled=RFD_PAGE===1;
  for(const id of ['rfd-next','rfd-last'])rfdNode(id).disabled=RFD_PAGE>=pages;
+ rfdFitTable('rfd',table,RFD_HEADERS,RFD_FILTERED);rfdScheduleFit('rfd');
 }
 function rfdPage(direction){const pages=Math.max(1,Math.ceil(RFD_FILTERED.length/100));RFD_PAGE=direction==='first'?1:direction==='last'?pages:RFD_PAGE+Number(direction);renderRfdModule();rfdNode('rfd-table').parentElement.scrollTop=0;}
 function rfdFilter(){RFD_PAGE=1;renderRfdModule();}
-function clearRfdFilters(){for(const id of ['rfd-search','rfd-buyer','rfd-place'])if(rfdNode(id))rfdNode(id).value='';rfdFilter();}
+function clearRfdFilters(){for(const id of ['rfd-search','rfd-buyer','rfd-place','rfd-color'])if(rfdNode(id))rfdNode(id).value='';rfdFilter();}
 async function loadRfdModule(force=false){
  if(RFD_ACTIVE_TAB==='fdr')return loadFdrModule(force);
  if(RFD_ACTIVE_TAB==='dcs')return loadDcsModule(force);
@@ -109,5 +106,5 @@ function exportRfdCSV(event){
  const quote=v=>'"'+String(v).replace(/"/g,'""')+'"',csv=[RFD_HEADERS,...RFD_FILTERED.map(x=>x.row)].map(row=>row.map(quote).join(',')).join('\r\n');
  clearRfdExport();const link=event.currentTarget,url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));RFD_EXPORT_URL=url;link.href=url;link.download=(RFD_REPORT?.file_name||'RFD.csv').replace(/\.csv$/i,RFD_FILTERED.length<RFD_ROWS.length?'_filtered.csv':'.csv').replace(/[^\p{L}\p{N}_.-]+/gu,'_');setTimeout(()=>{URL.revokeObjectURL(url);if(RFD_EXPORT_URL===url)clearRfdExport();},30000);return true;
 }
-function resetRfdModule(){resetFdrModule();resetDcsModule();resetBookingModule();RFD_ACTIVE_TAB='rfd';for(const name of ['rfd','booking','dcs','fdr']){if(rfdNode(name+'-panel'))rfdNode(name+'-panel').hidden=name!=='rfd';rfdNode(name+'-tab')?.setAttribute('aria-selected',String(name==='rfd'));}clearRfdExport();++RFD_TOKEN;++RFD_FILE_TOKEN;clearTimeout(RFD_SEARCH_TIMER);RFD_ROWS=[];RFD_FILTERED=[];RFD_PAGE=1;RFD_REPORT=null;RFD_PREVIEW=null;RFD_LOADED_AT=0;RFD_OWNER='';RFD_GENERATION=-1;RFD_LOAD=null;RFD_BUSY=false;const file=rfdNode('rfd-file');if(file){file.value='';file.disabled=false;}if(rfdNode('rfd-save'))rfdNode('rfd-save').disabled=false;for(const id of ['rfd-table','rfd-source','rfd-count','rfd-page-label'])rfdNode(id)?.replaceChildren();rfdMessage('Waiting for sign in…');if(rfdNode('rfd-upload'))rfdNode('rfd-upload').hidden=true;}
+function resetRfdModule(){rfdResetTableTools('rfd');resetFdrModule();resetDcsModule();resetBookingModule();RFD_ACTIVE_TAB='rfd';for(const name of ['rfd','booking','dcs','fdr']){if(rfdNode(name+'-panel'))rfdNode(name+'-panel').hidden=name!=='rfd';rfdNode(name+'-tab')?.setAttribute('aria-selected',String(name==='rfd'));}clearRfdExport();++RFD_TOKEN;++RFD_FILE_TOKEN;clearTimeout(RFD_SEARCH_TIMER);RFD_ROWS=[];RFD_FILTERED=[];RFD_PAGE=1;RFD_REPORT=null;RFD_PREVIEW=null;RFD_LOADED_AT=0;RFD_OWNER='';RFD_GENERATION=-1;RFD_LOAD=null;RFD_BUSY=false;const file=rfdNode('rfd-file');if(file){file.value='';file.disabled=false;}if(rfdNode('rfd-save'))rfdNode('rfd-save').disabled=false;for(const id of ['rfd-table','rfd-source','rfd-count','rfd-page-label'])rfdNode(id)?.replaceChildren();rfdMessage('Waiting for sign in…');if(rfdNode('rfd-upload'))rfdNode('rfd-upload').hidden=true;}
 document.addEventListener('DOMContentLoaded',()=>{rfdNode('rfd-search')?.addEventListener('input',()=>{clearTimeout(RFD_SEARCH_TIMER);RFD_SEARCH_TIMER=setTimeout(rfdFilter,180);});});
