@@ -6,8 +6,10 @@ sys.path.insert(0,str(Path(__file__).parent/'mysql'))
 from client import Client
 def display_row(row):
  import re
- shown=list(row);codes=list(dict.fromkeys(re.findall(r'(?<!\d)\d{6}(?!\d)',row[0])))
- if codes:shown[0]='\n'.join(codes)
+ shown=list(row)
+ for col in [0,1]:
+  codes=list(dict.fromkeys(re.findall(r'(?<!\d)\d{6}(?!\d)',row[col])))
+  if codes:shown[col]='\n'.join(codes)
  return shown
 BASE='http://127.0.0.1:18080/';auth=json.loads(Path(sys.argv[1]).read_text());client=Client();client.login(auth['email'],auth['password']);saved=client.call('rfd/booking',{'action':'read'})['data'];H=saved['headers'];rfd_before=client.call('rfd',{'action':'read'})['data']
 private=os.environ.get('BOOKING_TEST_CSV')

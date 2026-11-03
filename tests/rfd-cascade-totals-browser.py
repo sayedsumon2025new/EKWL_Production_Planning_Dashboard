@@ -47,6 +47,15 @@ try:
    assert page.evaluate('JSON.stringify([fixtureRaw,fixtureFdr])===originalFixtures')
    anchor.hover();assert page.locator('#rfd-ewo-tooltip').is_visible();page.evaluate('resetRfdModule()');assert page.locator('#rfd-ewo-tooltip').count()==0
    page.evaluate('p=>openFixture(p)',prefix)
+  # Booking No is a separate source column: FBR/Add references display the code without merging rows.
+  page.evaluate("openFixture('booking');const copy=fixtureRaw.booking.map(r=>[...r]);copy[0][1]='271080-FBR';copy[1][1]='271080-FBR-Add-1';setBookingRows(copy,{file_name:'booking-numbers.csv'},'preview')")
+  for i,original in enumerate(['271080-FBR','271080-FBR-Add-1']):
+   cell=page.locator('#booking-table tbody tr').nth(i).locator('td').nth(1);assert cell.inner_text()=='271080'
+   cell.locator('[data-rfd-ewo-original]').hover();tip=page.locator('#rfd-ewo-tooltip');assert tip.locator('strong').inner_text()=='Original Booking No';assert tip.locator('span').text_content()==original;page.keyboard.press('Escape')
+  assert page.evaluate('BOOKING_ROWS.length')==205
+  with page.expect_download()as d:page.locator('#booking-export').click()
+  exported=source_csv(d.value.path());assert exported[1][1]=='271080-FBR'and exported[2][1]=='271080-FBR-Add-1';assert len(exported)==206
+  page.evaluate("openFixture('booking')")
   def total(prefix,col):return page.locator(f'#{prefix}-table tfoot [data-total-column="{col}"]').inner_text()
   for prefix in ['rfd','booking','dcs','fdr']:
    page.evaluate('p=>openFixture(p)',prefix);assert page.locator(f'#{prefix}-table tbody tr').count()==100;assert page.locator(f'#{prefix}-table tfoot td').count()=={'rfd':22,'booking':13,'dcs':25,'fdr':31}[prefix]
