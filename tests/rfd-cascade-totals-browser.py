@@ -84,6 +84,14 @@ try:
    page.set_viewport_size({'width':1464,'height':900})
   page.evaluate("openFixture('booking');setBookingRows(fixtureRaw.booking.slice(0,2),{file_name:'offline.csv'},'preview')");page.set_viewport_size({'width':1920,'height':900});page.wait_for_timeout(150);assert page.locator('.booking-scroll').evaluate('e=>e.clientHeight<220'), 'short data has excess empty height';page.screenshot(path='/tmp/rfd-layout-booking-short.png')
   assert page.evaluate('JSON.stringify([fixtureRaw,fixtureFdr])===originalFixtures')
-  page.evaluate('resetRfdModule()');assert page.locator('#s22 table tfoot').count()==0;assert page.evaluate('RFD_CASCADE_CACHE.size===0&&RFD_TOTAL_CACHE.size===0&&RFD_LAYOUT_CACHE.size===0');assert page.locator('#rfd-color').inner_text()=='All colors';assert not errors,errors
-  b.close();print('PASS four real renderers: cascading Buyer/Place-Date/Color/search, 205-row exact totals across pages, unit separation, order/batch/pair deduplication, exclusions, source-only exports, six-digit EWO/original hover with keyboard and reset guards, sticky responsive footers and session cleanup')
+  page.evaluate("()=>{BOOKING_PREVIEW={rows:BOOKING_ROWS};window.converterRequests=0;window.converterPreviousRequest=SB.request;SB.request=async()=>{converterRequests++;throw Error('Converter must not read SQL');};}")
+  page.locator('#converter-tab').click();assert page.locator('#converter-panel').is_visible();assert page.locator('#booking-panel').is_hidden();assert page.locator('#converter-tab').get_attribute('aria-selected')=='true';assert page.locator('#rfd-refresh').is_hidden()
+  page.evaluate('loadRfdModule(true)');assert page.evaluate('converterRequests')==0
+  for width in [721,1065,1920]:
+   page.set_viewport_size({'width':width,'height':884});page.wait_for_timeout(100);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert page.locator('#converter-tab').evaluate("e=>{const r=e.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest('#converter-tab')===e}")
+  page.locator('#booking-tab').click();assert page.locator('#converter-panel').is_hidden();assert page.locator('#rfd-refresh').is_visible();assert page.evaluate('BOOKING_ROWS.length')==2
+  page.evaluate("SITE_USER_PROFILE={role:'user',permissions:{}};selectRfdTab('converter')");assert page.evaluate('RFD_ACTIVE_TAB')=='booking'
+  page.evaluate("()=>{SITE_USER_PROFILE={role:'admin',permissions:{slide_22:true}};selectRfdTab('converter');SB.request=converterPreviousRequest;}")
+  page.evaluate('resetRfdModule()');assert page.locator('#s22 table tfoot').count()==0;assert page.evaluate('RFD_CASCADE_CACHE.size===0&&RFD_TOTAL_CACHE.size===0&&RFD_LAYOUT_CACHE.size===0');assert page.locator('#rfd-color').inner_text()=='All colors';assert page.locator('#converter-panel').is_hidden();assert page.locator('#converter-tab').get_attribute('aria-selected')=='false';assert not errors,errors
+  b.close();print('PASS four real renderers: cascading Buyer/Place-Date/Color/search, 205-row exact totals across pages, unit separation, order/batch/pair deduplication, exclusions, source-only exports, six-digit EWO/original hover with keyboard and reset guards, sticky responsive footers, fifth converter navigation with zero SQL reads and session cleanup')
 finally:server.shutdown()

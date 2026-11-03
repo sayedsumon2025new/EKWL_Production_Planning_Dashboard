@@ -49,3 +49,7 @@ All four table views display the distinct six-digit numeric codes found in their
 This is presentation only: SQL values, matching keys, quantity calculations, search and source exports retain their existing exact original values. Identifiers without a complete six-digit code remain visible unchanged rather than being truncated, padded or silently discarded. Column auto-fit measures displayed EWO text.
 
 Booking No uses the same six-digit presentation as EWO No, with an explicitly labelled Original Booking No tooltip. FBR and Add suffixes stay in SQL, search, calculations and CSV exports. Multiple booking rows with the same displayed number remain independent; booking quantities are not merged or deduplicated by their display text. Auto-fit measures the short Booking No display.
+
+## Data Converter tab
+
+Data Converter is a fifth, empty workspace tab, as requested. It uses the existing slide_22 access permission, does not load or write SQL, and contains no conversion controls yet. The saved-report refresh button is hidden while it is selected. Switching back preserves report state; logout/reset returns to RFD and hides the workspace.
