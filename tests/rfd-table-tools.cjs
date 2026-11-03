@@ -22,3 +22,6 @@ console.log('PASS cascading upstream/downstream/search/reset behavior; exact dec
 for(const [original,text] of [['EWO: 271444 - Navy','271444'],['EWO-001234 (Revised)','001234'],['271444 / 272205','271444\n272205'],['271444 / 271444','271444'],['271444','271444'],['1234567','1234567'],['Unknown','Unknown'],['','']]){const view=c.rfdEwoView(original);assert.equal(view.text,text);assert.equal(view.original,original);assert.equal(view.changed,text!==original);}
 assert(!c.rfdEwoCell('271444').includes('data-rfd-ewo-original'));assert(c.rfdEwoCell('EWO 271444 <script>').includes('&lt;script&gt;'));assert(!c.rfdEwoCell('EWO 271444',false).includes('tabindex'));
 console.log('PASS EWO display-only extraction, leading zeros, all distinct codes, unchanged clean identifiers, exact original attributes, safe escaping and unrecognized values retained');
+
+const bookingNumber=c.rfdEwoCell('271080-FBR-Add-1',true,'Original Booking No');assert(bookingNumber.includes('>271080</span>'));assert(bookingNumber.includes('data-rfd-ewo-original="271080-FBR-Add-1"'));assert(bookingNumber.includes('data-rfd-ewo-label="Original Booking No"'));
+console.log('PASS Booking No suffix display with exact original booking reference retained for hover');
