@@ -34,6 +34,7 @@ jobs:
           php tests/mysql/report-diagnostic.php
           php tests/mysql/load-analysis-loss.php
           php tests/mysql/fabrics-derived-model.php
+          php tests/mysql/rfd-converter-model.php
       - name: Verify consistent snapshots against isolated MySQL
         run: |
           python3 tests/mysql/start-runtime.py
@@ -60,6 +61,11 @@ jobs:
           python3 tests/rfd-booking-browser.py /tmp/ekwl-test-auth.json
           python3 tests/rfd-daily-cutting-browser.py /tmp/ekwl-test-auth.json
           python3 tests/slides-navigation.py
+      - name: Verify color reconciliation approvals and report linkage
+        run: |
+          python3 tests/mysql/new-fixture.py
+          python3 tests/mysql/rfd-converter.py /tmp/ekwl-test-auth.json
+          python3 tests/rfd-converter-browser.py /tmp/ekwl-test-auth.json
       - name: Run calculation, cache and API adapter regressions
         shell: bash
         run: |

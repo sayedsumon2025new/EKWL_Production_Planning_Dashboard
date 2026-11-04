@@ -21,7 +21,7 @@ Client().call('rfd/fabrics-details',{'action':'read'},expected=401)
 admin.call('rfd/fabrics-details',{'action':'refresh'},csrf=False,expected=403)
 r=admin.call('rfd/fabrics-details',{'action':'refresh'})['data'];assert r['integrity']['complete'] and len(r['rows'])==112 and len(r['headers'])==31
 main=[row for row in r['rows'] if row[1]=='000123'];assert len(main)==2
-body=next(row for row in main if row[4]=='Body');assert 'Second matching fabric detail' in body[3] and 'Long fabric description' in body[3];assert r['report']['model_version']=='fabrics-derived-v3'
+body=next(row for row in main if row[4]=='Body');assert 'Second matching fabric detail' in body[3] and 'Long fabric description' in body[3];assert r['report']['model_version']=='fabrics-derived-v4'
 for i,row in enumerate(r['rows']):
  if row[1]=='000123':assert r['evidence'][i]['fabric_details_match']['status']=='matched'
 for row in main:

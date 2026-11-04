@@ -36,6 +36,12 @@ try {
         jsonOut(['data'=>['path'=>$id],'error'=>null]);exit;
     }
     $b=body();
+    if($route==='rfd/converter'){
+        require dirname(__DIR__).'/backend/src/rfd-converter.php';
+        session_write_close();$result=['data'=>Ekwl\rcAction($u,$b),'error'=>null];
+        if(function_exists('ob_gzhandler')&&!ini_get('zlib.output_compression')&&!headers_sent()&&str_contains($_SERVER['HTTP_ACCEPT_ENCODING']??'','gzip'))ob_start('ob_gzhandler',8192);
+        jsonOut($result);exit;
+    }
     if($route==='rfd/fabrics-details'){
         require dirname(__DIR__).'/backend/src/rfd-fabrics-details.php';
         session_write_close();$result=['data'=>Ekwl\fdrAction($u,$b),'error'=>null];
