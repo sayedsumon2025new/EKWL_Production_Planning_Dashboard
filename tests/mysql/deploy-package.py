@@ -9,6 +9,11 @@ with tempfile.TemporaryDirectory() as d:
     assert {'index.html','size-set-tna.html','size-set-tna.js','size-set-tna.css','gantt-daily-summary.js','gantt-daily-summary.css','gantt-layout.css','chassis-compact.css','chassis-excel.js','rfd-fabrics-details.js','backend/src/rfd-fabrics-details.php','backend/src/rfd-color-identity.php','backend/src/rfd-converter.php','rfd-daily-cutting.js','backend/src/rfd-daily-cutting.php','rfd-booking.js','backend/src/rfd-booking.php','rfd-table-tools.js','rfd-converter.js','rfd-converter.css','rfd-module.js','rfd-module.css','backend/src/rfd.php','load-analysis-loss.js','backend/src/load-analysis-loss.php','api/index.php','backend/src/auth.php','backend/.htaccess','mysql-api-client.js'}<=paths
     assert not any('/config/' in '/'+p or '/private/' in '/'+p or p.endswith(('.sql','.local.php','.ndjson','.zip')) for p in paths)
     assert not (out/'ekwl-live-root.zip').exists()
+    assert {'premium-corporate.css','premium-corporate.js'}<=paths
+    for document in ['index.html','load-analysis.html','order-execution-plan.html','size-set-tna.html']:
+        content=(out/'site'/document).read_text()
+        assert content.count('premium-corporate.css?v=test-release-123')==1
+        assert content.count('premium-corporate.js?v=test-release-123')==1
     html=(out/'site/index.html').read_text()
     assert 'chassis-excel.js?v=test-release-123' in html and 'chassis-compact.css?v=test-release-123' in html
     assert 'mysql-api-client.js?v=test-release-123' in html and '@supabase/supabase-js' not in html

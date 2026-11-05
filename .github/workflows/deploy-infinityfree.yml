@@ -61,6 +61,7 @@ jobs:
           python3 tests/rfd-booking-browser.py /tmp/ekwl-test-auth.json
           python3 tests/rfd-daily-cutting-browser.py /tmp/ekwl-test-auth.json
           python3 tests/slides-navigation.py
+          python3 tests/premium-corporate-browser.py
       - name: Verify color reconciliation approvals and report linkage
         run: |
           python3 tests/mysql/new-fixture.py
