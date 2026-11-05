@@ -53,6 +53,12 @@ try:
    tna=page.frame_locator('#ss-tna-performance');tna.locator('#events tr').first.wait_for()
    assert tna.locator('html').get_attribute('data-theme')==theme
   assert page.evaluate('JSON.stringify({data:DATA,daily:DAILY_PLAN,size:SS_ROWS})')==before
-  assert not errors,errors;b.close()
+  assert not errors,errors
+  # A one-second report clock must not rescan thousands of unchanged cells.
+  clock=b.new_page();clock.set_content('<main><span id="clock">00:00</span><table>'+''.join('<tr><td>Sample record</td><td>100</td></tr>'for _ in range(2000))+'</table></main>')
+  clock.add_script_tag(content=(ROOT/'premium-corporate.js').read_text());clock.wait_for_timeout(100)
+  clock.evaluate("window.styleReads=0;window.originalStyle=getComputedStyle;window.getComputedStyle=(...args)=>{styleReads++;return originalStyle(...args);};document.getElementById('clock').textContent='00:01'")
+  clock.wait_for_timeout(80);assert clock.evaluate('styleReads')<30,'Clock update rescanned the report'
+  b.close()
  print('PASS actual dashboard: immutable report records and table values; bold 12px black light-theme cells; 4.5:1 text contrast in both themes; responsive navigation; embedded TNA theme propagation')
 finally:server.shutdown()
