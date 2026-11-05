@@ -134,3 +134,4 @@ html body .slide#s22 table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table) t
 html body .slide#s22 table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table) tbody tr:hover td{background:var(--grid-hover)!important}
 html body .slide#s22 table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table) th{background-color:var(--premium-head)!important}
 html body :is(.page,main,#wrap) table th{background-color:var(--premium-head)!important}
+html body #converter-panel .rcon-banner{background:var(--premium-soft)!important;border-color:var(--premium-line)!important;color:var(--premium-ink)!important}

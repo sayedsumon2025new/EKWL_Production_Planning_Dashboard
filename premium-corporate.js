@@ -26,6 +26,7 @@
  }
  function request(){if(!pending)pending=requestAnimationFrame(contrast);}
  function schedule(){fullScan=true;dirty.clear();request();}
+ function themeContrast(){fullScan=true;dirty.clear();if(pending)cancelAnimationFrame(pending);contrast();}
  function changed(records){
   for(const record of records){const el=record.target.nodeType===Node.ELEMENT_NODE?record.target:record.target.parentElement;if(!el)continue;
    if(record.type==='attributes'&&(el===document.body||el.classList.contains('slide'))){schedule();return;}
@@ -33,8 +34,8 @@
   }
   request();
  }
- function sendTheme(){const theme=document.documentElement.dataset.theme==='dark'?'dark':'light';for(const f of frames())f.contentWindow?.postMessage({type:'ekwl-presentation-theme',theme},'*');schedule();}
- window.addEventListener('message',e=>{if(e.source!==window.parent||e.source===window||e.origin!==location.origin||e.data?.type!=='ekwl-presentation-theme')return;document.documentElement.dataset.theme=e.data.theme==='dark'?'dark':'light';schedule();});
+ function sendTheme(){const theme=document.documentElement.dataset.theme==='dark'?'dark':'light';for(const f of frames())f.contentWindow?.postMessage({type:'ekwl-presentation-theme',theme},'*');themeContrast();}
+ window.addEventListener('message',e=>{if(e.source!==window.parent||e.source===window||e.origin!==location.origin||e.data?.type!=='ekwl-presentation-theme')return;document.documentElement.dataset.theme=e.data.theme==='dark'?'dark':'light';themeContrast();});
  window.addEventListener('ekwl-theme-changed',sendTheme);
  window.addEventListener('resize',schedule);
  window.addEventListener('beforeprint',()=>document.querySelectorAll('[data-premium-contrast]').forEach(el=>el.style.setProperty('color','#000000','important')));

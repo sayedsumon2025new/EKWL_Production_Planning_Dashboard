@@ -28,6 +28,9 @@ try:
   text=page.evaluate("()=>{goSlide(1);return document.getElementById('s1-tbl').textContent}")
   for theme in ['light','dark']:
    if page.evaluate('EKWLTheme.get()')!=theme:page.locator('#theme-toggle').click()
+   # Theme changes must not leave inline contrast from the previous palette.
+   immediate=page.locator('#theme-toggle').evaluate('e=>getComputedStyle(e).color')
+   assert immediate==('rgb(0, 0, 0)'if theme=='light'else'rgb(255, 255, 255)'),(theme,immediate)
    page.evaluate('goSlide(1)');page.wait_for_timeout(120)
    assert page.locator('#s1-tbl').text_content()==text
    assert page.evaluate('JSON.stringify({data:DATA,daily:DAILY_PLAN,size:SS_ROWS})')==before
