@@ -2,12 +2,15 @@
 import csv,io,json,shutil,sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+import importlib.util
+_fixture_spec=importlib.util.spec_from_file_location("rfd_plan_fixture",Path(__file__).with_name("rfd-plan-fixture.py"));_fixture=importlib.util.module_from_spec(_fixture_spec);_fixture_spec.loader.exec_module(_fixture)
 sys.path.insert(0,str(Path(__file__).parent/'mysql'));from client import Client
 BASE='http://127.0.0.1:18080/';auth=json.loads(Path(sys.argv[1]).read_text());client=Client();client.login(auth['email'],auth['password']);expected=client.call('rfd/fabrics-details',{'action':'read'})['data']
 with sync_playwright() as p:
  b=p.chromium.launch(executable_path=shutil.which('google-chrome')or shutil.which('chromium'),args=['--no-sandbox']);context=b.new_context(viewport={'width':1464,'height':900});context.add_cookies([{'name':c.name,'value':c.value,'url':BASE,'httpOnly':True,'sameSite':'Strict'}for c in client.jar]);page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.route('**/*',lambda r:r.continue_() if r.request.url.startswith(BASE) else r.fulfill(body=''))
  page.goto(BASE,wait_until='networkidle');page.wait_for_function("SITE_AUTH_USER!==null&&SITE_USER_PROFILE!==null&&document.body.dataset.planningState==='ready'",timeout=60000)
+ _fixture.select_fixture_plan(page,[r[1]for r in expected['rows']])
  page.evaluate('goSlide(22)');page.locator('#fdr-tab').click();page.wait_for_function('FDR_REPORT!==null&&FDR_LOAD===null',timeout=60000)
  assert page.locator('#fdr-panel input[type=file]').count()==0
  assert page.evaluate('FDR_ROWS')==expected['rows'];assert page.locator('#fdr-table thead th').all_text_contents()==expected['headers'];assert page.locator('#fdr-table tbody tr').count()==100
