@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const nodes={};const c={document:{getElementById:id=>nodes[id]||null},esc:v=>String(v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))};vm.createContext(c);vm.runInContext(fs.readFileSync('rfd-table-tools.js','utf8'),c);const wrap=rows=>rows.map((row,i)=>({row,i}));
+const allPlan={ready:true,matches:()=>true};const nodes={};const c={getRfdPlanScope:()=>allPlan,document:{getElementById:id=>nodes[id]||null},esc:v=>String(v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))};vm.createContext(c);vm.runInContext(fs.readFileSync('rfd-table-tools.js','utf8'),c);const wrap=rows=>rows.map((row,i)=>({row,i}));
 const rfd=(buyer,place,color,kg)=>{const r=Array(22).fill('');r[10]=buyer;r[1]=place;r[6]=color;r[14]=kg;r[15]='0';r[16]='0';r[17]='1';return r;};
 for(const id of ['rfd-search','rfd-buyer','rfd-place','rfd-color'])nodes[id]={value:'',innerHTML:''};
 const rows=[rfd('A','P1','Blue','0.1'),rfd('A','P2','Red','0.2'),rfd('B','P3','Green','0.3')];

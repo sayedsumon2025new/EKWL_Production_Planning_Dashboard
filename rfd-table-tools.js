@@ -30,16 +30,18 @@ const rfdFacetKey=v=>String(v??'').trim().replace(/\s+/gu,' ').toLowerCase();
 function rfdResetTableTools(prefix){rfdHideEwoTooltip();if(RFD_LAYOUT_FRAMES.has(prefix)){cancelAnimationFrame(RFD_LAYOUT_FRAMES.get(prefix));RFD_LAYOUT_FRAMES.delete(prefix);}RFD_LAYOUT_CACHE.delete(prefix);RFD_CASCADE_CACHE.delete(prefix);RFD_TOTAL_CACHE.delete(prefix);for(const[id,,label]of RFD_TABLE_VIEWS[prefix].filters){const node=document.getElementById(id);if(node){node.innerHTML='<option value="">'+esc(label)+'</option>';node.value='';delete node._rfdOptions;}}const search=document.getElementById(prefix+'-search');if(search)search.value='';}
 function rfdCascadeRows(prefix,rows){
  const config=RFD_TABLE_VIEWS[prefix],query=(document.getElementById(prefix+'-search')?.value||'').trim().toLowerCase();
- const state=()=>JSON.stringify([query,...config.filters.map(([id])=>document.getElementById(id)?.value||'')]);const before=state(),cached=RFD_CASCADE_CACHE.get(prefix);
- if(cached?.rows===rows&&cached.length===rows.length&&cached.state===before)return cached.items;
- let scope=rows.map((row,i)=>({row,i})).filter(({row})=>!query||row.some(v=>String(v).toLowerCase().includes(query)));
+ const state=()=>JSON.stringify([query,...config.filters.map(([id])=>document.getElementById(id)?.value||'')]);const before=state(),cached=RFD_CASCADE_CACHE.get(prefix),plan=typeof getRfdPlanScope==='function'?getRfdPlanScope():null;
+ if(typeof renderRfdPlanScope==='function')renderRfdPlanScope();
+ if(cached?.rows===rows&&cached.length===rows.length&&cached.state===before&&cached.plan===plan)return cached.items;
+ const selected=rows.map((row,i)=>({row,i})).filter(({row})=>!!plan?.matches(row[RFD_EWO_COLUMNS[prefix]])),planCount=selected.length;
+ let scope=selected.filter(({row})=>!query||row.some(v=>String(v).toLowerCase().includes(query)));
  // Upstream filters retain all valid choices; changing one clears only incompatible descendants.
  for(const[id,column,label]of config.filters){const node=document.getElementById(id);if(!node)continue;const options=new Map();for(const{row}of scope){const raw=String(row[column]??''),key=rfdFacetKey(raw);if(key&&key!=='—'&&!options.has(key))options.set(key,raw);}
   let selected=rfdFacetKey(node.value);if(!options.has(selected))selected='';const values=[...options.entries()].sort((a,b)=>a[0].localeCompare(b[0])),signature=JSON.stringify(values);
   if(node._rfdOptions!==signature){node.innerHTML='<option value="">'+esc(label)+'</option>'+values.map(([,raw])=>'<option value="'+esc(raw).replace(/\r/g,'&#13;').replace(/\n/g,'&#10;')+'">'+esc(raw.trim())+'</option>').join('');node._rfdOptions=signature;}
   node.value=selected?options.get(selected):'';if(selected)scope=scope.filter(({row})=>rfdFacetKey(row[column])===selected);
  }
- RFD_CASCADE_CACHE.set(prefix,{rows,length:rows.length,state:state(),items:scope});return scope;
+ RFD_CASCADE_CACHE.set(prefix,{rows,length:rows.length,state:state(),items:scope,plan,planCount});return scope;
 }
 function rfdTotalNumber(value){const text=String(value??'').trim();if(!/^[+-]?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,8})?$/.test(text)||text.length>80)return null;const clean=text.replace(/,/g,''),negative=clean[0]==='-',parts=clean.replace(/^[+-]/,'').split('.');return (negative?-1n:1n)*BigInt(parts[0]+(parts[1]||'').padEnd(8,'0'));}
 function rfdTotalFormat(value){const negative=value<0n,n=negative?-value:value,whole=(n/100000000n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,','),fraction=(n%100000000n).toString().padStart(8,'0').replace(/0+$/,'');return(negative?'-':'')+whole+(fraction?'.'+fraction:'');}
@@ -62,6 +64,7 @@ function rfdQuantityTotals(prefix,items,data=null){
  }return result;
 }
 function rfdTotalsFooter(prefix,headers,items,enabled=true,data=null){
+ enabled=enabled&&typeof getRfdPlanScope==='function'&&getRfdPlanScope().ready;
  const cached=RFD_TOTAL_CACHE.get(prefix);if(cached?.items===items&&cached.enabled===enabled&&cached.data===data)return cached.html;const totals=enabled?rfdQuantityTotals(prefix,items,data):{},config=RFD_TABLE_VIEWS[prefix];
  const hasPartial=Object.values(totals).some(t=>t.state==='partial');
  const html='<tfoot><tr class="rfd-total-row" aria-label="Filtered quantity totals">'+headers.map((_,i)=>{const total=totals[i],excluded=config.excluded?.[i],text=i===0?('Filtered totals'+(hasPartial?'\n* available subtotal':'')):total?.text||(excluded||!enabled&&config.rules[i]?'—':''),title=i===0?'All matching rows, not just this page. * = available subtotal with missing or conflicting values.':total?.title||excluded||(!enabled&&config.rules[i]?'No verified report data available.':'Identifiers, dimensions and text are not added.');return'<td data-total-column="'+i+'" data-total-state="'+(total?.state||(!enabled&&config.rules[i]?'unavailable':'not-additive'))+'" title="'+esc(title)+'">'+esc(text)+'</td>';}).join('')+'</tr></tfoot>';

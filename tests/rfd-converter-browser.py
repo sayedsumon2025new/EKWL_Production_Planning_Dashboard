@@ -2,6 +2,8 @@
 import json,shutil,sys,secrets
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+import importlib.util
+_fixture_spec=importlib.util.spec_from_file_location("rfd_plan_fixture",Path(__file__).with_name("rfd-plan-fixture.py"));_fixture=importlib.util.module_from_spec(_fixture_spec);_fixture_spec.loader.exec_module(_fixture)
 sys.path.insert(0,str(Path(__file__).parent/'mysql'));from client import Client
 BASE='http://127.0.0.1:18080/';auth=json.loads(Path(sys.argv[1]).read_text());client=Client();client.login(auth['email'],auth['password'])
 original={route:client.call(route,{'action':'read'})['data']['rows']for route in ['rfd','rfd/booking','rfd/daily-cutting']}
@@ -9,6 +11,7 @@ with sync_playwright()as p:
  b=p.chromium.launch(executable_path=shutil.which('google-chrome')or shutil.which('chromium'),args=['--no-sandbox']);context=b.new_context(viewport={'width':1480,'height':920});context.add_cookies([{'name':c.name,'value':c.value,'url':BASE,'httpOnly':True,'sameSite':'Strict'}for c in client.jar]);page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.route('**/*',lambda r:r.continue_()if r.request.url.startswith(BASE)else r.fulfill(body=''))
  page.goto(BASE,wait_until='networkidle');page.wait_for_function("SITE_AUTH_USER!==null&&SITE_USER_PROFILE!==null&&typeof loadRfdConverter==='function'",timeout=60000)
+ _fixture.select_fixture_plan(page,[r[3 if route.endswith('daily-cutting')else 0 if route.endswith('booking')else 2]for route,rows in original.items()for r in rows])
  page.evaluate('goSlide(22)');page.locator('#converter-tab').click();page.wait_for_function('RCON_DATA!==null&&RCON_LOAD===null',timeout=60000)
  assert '271966'not in page.locator('#rcon-body').inner_text();assert '271080'in page.locator('#rcon-body').inner_text();assert not any('qty'in t.lower()or'quantity'in t.lower()for t in page.locator('#converter-panel th').all_text_contents())
  assert page.locator('#rcon-body button').first.evaluate('e=>e.clientHeight<40'),'Review button wraps'
@@ -39,7 +42,7 @@ with sync_playwright()as p:
  for route,rows in original.items():assert client.call(route,{'action':'read'})['data']['rows']==rows
  # A real read-only account can inspect evidence but cannot approve through the UI.
  reader_email='color-ui-'+secrets.token_hex(5)+'@fixture.invalid';reader_pwd='Fixture-'+secrets.token_hex(12);client.call('users',{'action':'create','email':reader_email,'password':reader_pwd,'role':'user','status':'active','permissions':{'slide_22':True}});reader=Client();reader.login(reader_email,reader_pwd)
- rctx=b.new_context();rctx.add_cookies([{'name':c.name,'value':c.value,'url':BASE,'httpOnly':True,'sameSite':'Strict'}for c in reader.jar]);rp=rctx.new_page();rp.on('pageerror',lambda e:errors.append(str(e)));rp.route('**/*',lambda r:r.continue_()if r.request.url.startswith(BASE)else r.fulfill(body=''));rp.goto(BASE,wait_until='networkidle');rp.wait_for_function("SITE_USER_PROFILE?.role==='user'");rp.evaluate('goSlide(22)');rp.locator('#converter-tab').click();rp.wait_for_function('RCON_DATA!==null&&RCON_LOAD===null');assert rp.evaluate('RCON_DATA.can_approve')is False;rp.locator('#rcon-search').fill('271080');rp.locator('#rcon-body [data-rcon-review]').click();assert rp.locator('#rcon-admin-only').is_visible();assert rp.locator('#rcon-approve').is_disabled();assert rp.locator('#rcon-edit').is_disabled();rctx.close()
+ rctx=b.new_context();rctx.add_cookies([{'name':c.name,'value':c.value,'url':BASE,'httpOnly':True,'sameSite':'Strict'}for c in reader.jar]);rp=rctx.new_page();rp.on('pageerror',lambda e:errors.append(str(e)));rp.route('**/*',lambda r:r.continue_()if r.request.url.startswith(BASE)else r.fulfill(body=''));rp.goto(BASE,wait_until='networkidle');rp.wait_for_function("SITE_USER_PROFILE?.role==='user'");rp.wait_for_function("document.body.dataset.planningState==='ready'");_fixture.select_fixture_plan(rp,[r[3 if route.endswith('daily-cutting')else 0 if route.endswith('booking')else 2]for route,rows in original.items()for r in rows]);rp.evaluate('goSlide(22)');rp.locator('#converter-tab').click();rp.wait_for_function('RCON_DATA!==null&&RCON_LOAD===null');assert rp.evaluate('RCON_DATA.can_approve')is False;rp.locator('#rcon-search').fill('271080');rp.locator('#rcon-body [data-rcon-review]').click();assert rp.locator('#rcon-admin-only').is_visible();assert rp.locator('#rcon-approve').is_disabled();assert rp.locator('#rcon-edit').is_disabled();rctx.close()
  # A read failure clears the old view; a late request cannot restore account data after logout.
  page.evaluate("()=>{window.originalRCRequest=SB.request;SB.request=async(route,body)=>route==='rfd/converter'?{data:null,error:{message:'Fixture source read failed'}}:originalRCRequest(route,body);}")
  page.locator('#rcon-refresh').click();page.wait_for_function("RCON_LOAD===null&&RCON_DATA===null");assert 'unavailable'in page.locator('#rcon-message').inner_text()

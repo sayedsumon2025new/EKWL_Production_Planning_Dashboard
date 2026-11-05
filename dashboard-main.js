@@ -728,6 +728,7 @@ function setLoadChip(id,state,label){
 function setPlanningReadState(state,message=''){
   if(!document.body)return;
   document.body.dataset.planningState=state;
+  if(typeof refreshRfdPlanScope==='function')refreshRfdPlanScope();
   if(state!=='ready'&&typeof resetChassisExcelLinks==='function')resetChassisExcelLinks();
   for(const slide of document.querySelectorAll('.slide[data-logical-slide]')){
     const number=Number(slide.dataset.logicalSlide);

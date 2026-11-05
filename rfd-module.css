@@ -44,3 +44,7 @@
 #s22 .rfd-ewo-original{display:inline-block;white-space:pre-wrap;font-variant-numeric:tabular-nums;font-weight:700;border-bottom:1px dotted currentColor;cursor:help;outline-offset:3px}#s22 .rfd-ewo-original:focus-visible{outline:2px solid #18a99b;border-radius:2px}.rfd-ewo-tooltip{position:fixed;z-index:2147483000;left:8px;top:8px;max-width:min(360px,calc(100vw - 16px));max-height:min(240px,calc(100dvh - 16px));overflow:auto;padding:11px 14px;border:1px solid #38536c;border-radius:8px;background:#172b42;color:#f3f7fc;box-shadow:0 6px 24px #0003;pointer-events:none;font:12px/1.55 Arial,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}.rfd-ewo-tooltip strong{display:block;color:#9eb7d0;font-size:10px;letter-spacing:.5px;margin-bottom:4px}.rfd-ewo-tooltip span{display:block}
 
 #s22 .converter-card{padding:24px;border:1px solid var(--border);border-radius:10px;min-height:180px}#s22 .converter-card h3{font-size:18px;margin:0 0 9px;color:var(--text)}#s22 .converter-card p{font-size:12px;line-height:1.6;color:var(--text2);margin:0}
+
+/* The selected plan limits display/totals/exports; source uploads stay complete. */
+#s22 .rfd-plan-scope{padding:9px 12px;margin:0 0 12px;border:1px solid var(--border);border-left:3px solid var(--premium-accent,var(--teal));border-radius:5px;background:var(--card);color:var(--text);font:650 12px/1.45 'Segoe UI',Arial,sans-serif;overflow-wrap:anywhere}
+#s22 .rfd-plan-scope[data-scope-state=error]{border-left-color:#cb5663}

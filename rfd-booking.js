@@ -31,7 +31,7 @@ function renderBookingModule(){
  BOOKING_FILTERED=rfdCascadeRows('booking',BOOKING_ROWS);
  const pages=Math.max(1,Math.ceil(BOOKING_FILTERED.length/100));BOOKING_PAGE=Math.max(1,Math.min(BOOKING_PAGE,pages));const start=(BOOKING_PAGE-1)*100,part=BOOKING_FILTERED.slice(start,start+100);
  table.innerHTML='<colgroup>'+BOOKING_HEADERS.map(()=>'<col>').join('')+'</colgroup><thead><tr>'+BOOKING_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map((value,j)=>'<td>'+(j===0?rfdEwoCell(value):j===1?rfdEwoCell(value,true,'Original Booking No'):esc(value))+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="13" class="booking-empty">'+(BOOKING_ROWS.length?'No matching records.':'No saved Booking report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>'+rfdTotalsFooter('booking',BOOKING_HEADERS,BOOKING_FILTERED,!!BOOKING_REPORT);
- bookingNode('booking-count').textContent=BOOKING_FILTERED.length.toLocaleString()+' / '+BOOKING_ROWS.length.toLocaleString()+' rows · 13 source columns';
+ bookingNode('booking-count').textContent=BOOKING_FILTERED.length.toLocaleString()+' / '+rfdPlanRowCount('booking').toLocaleString()+' selected-plan rows · 13 source columns';
  bookingNode('booking-source').textContent=BOOKING_REPORT?(BOOKING_MODE==='preview'?'CSV PREVIEW · NOT SAVED':'MYSQL · SAVED REPORT')+' · '+BOOKING_REPORT.file_name+(BOOKING_REPORT.completed_at?' · Saved '+BOOKING_REPORT.completed_at+' UTC':''):'Booking source report';
  bookingNode('booking-page-label').textContent='Page '+BOOKING_PAGE+' / '+pages+(part.length?' · Rows '+(start+1)+'–'+(start+part.length):'');
  for(const id of ['booking-first','booking-prev'])bookingNode(id).disabled=BOOKING_PAGE===1;
@@ -65,7 +65,7 @@ async function previewBookingFile(){
  try{
   if(file.size>16777216)throw Error('Booking CSV exceeds 16 MiB.');
   const buffer=await file.arrayBuffer(),text=new TextDecoder('utf-8',{fatal:true}).decode(buffer),rows=parseBookingCSV(text);
-  if(!current())return;BOOKING_PREVIEW={file,rows,buffer};BOOKING_LOADED_AT=0;setBookingRows(rows,{file_name:file.name},'preview');bookingMessage('CSV preview: '+rows.length.toLocaleString()+' rows · not saved. Upload & Save stores all rows, including rows outside this page/filter.');
+  if(!current())return;BOOKING_PREVIEW={file,rows,buffer};BOOKING_LOADED_AT=0;setBookingRows(rows,{file_name:file.name},'preview');bookingMessage('CSV preview: '+rows.length.toLocaleString()+' source rows · not saved. Upload & Save stores all rows, including rows outside this page/filter.');
  }catch(error){if(current())bookingMessage('CSV preview failed: '+(error?.message||error));}
 }
 async function uploadBookingFile(){
@@ -91,7 +91,7 @@ async function uploadBookingFile(){
  }catch(error){if(current())bookingMessage('Upload not verified: '+(error?.message||error)+'. Previous completed SQL report stays available; Refresh saved report to view it.');}
  finally{if(owner===SITE_AUTH_USER?.id&&generation===SITE_SESSION_GENERATION){BOOKING_BUSY=false;bookingNode('booking-save').disabled=false;bookingNode('booking-file').disabled=false;}}
 }
-function exportBookingCSV(event){
+function exportBookingCSV(event){if(typeof rfdPlanExportAllowed!=='function'||!rfdPlanExportAllowed()){event.preventDefault();return false;}
  if(!SITE_AUTH_USER||!canAccessSlide(22)||CURRENT_SLIDE!==22||BOOKING_OWNER!==SITE_AUTH_USER.id||BOOKING_GENERATION!==SITE_SESSION_GENERATION){event.preventDefault();return false;}
  clearTimeout(BOOKING_SEARCH_TIMER);bookingFilter();if(!BOOKING_FILTERED.length){event.preventDefault();return false;}
  const quote=v=>'"'+String(v).replace(/"/g,'""')+'"',csv=[BOOKING_HEADERS,...BOOKING_FILTERED.map(x=>x.row)].map(row=>row.map(quote).join(',')).join('\r\n');

@@ -42,7 +42,7 @@ function renderRfdModule(){
  RFD_FILTERED=rfdCascadeRows('rfd',RFD_ROWS);
  const pages=Math.max(1,Math.ceil(RFD_FILTERED.length/100));RFD_PAGE=Math.max(1,Math.min(RFD_PAGE,pages));const start=(RFD_PAGE-1)*100,part=RFD_FILTERED.slice(start,start+100);
  table.innerHTML='<colgroup>'+RFD_HEADERS.map(()=>'<col>').join('')+'</colgroup><thead><tr>'+RFD_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map((value,j)=>'<td>'+(j===2?rfdEwoCell(value):esc(value))+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="22" class="rfd-empty">'+(RFD_ROWS.length?'No matching records.':'No saved RFD report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>'+rfdTotalsFooter('rfd',RFD_HEADERS,RFD_FILTERED,!!RFD_REPORT);
- rfdNode('rfd-count').textContent=RFD_FILTERED.length.toLocaleString()+' / '+RFD_ROWS.length.toLocaleString()+' rows · 22 source columns';
+ rfdNode('rfd-count').textContent=RFD_FILTERED.length.toLocaleString()+' / '+rfdPlanRowCount('rfd').toLocaleString()+' selected-plan rows · 22 source columns';
  rfdNode('rfd-source').textContent=RFD_REPORT?(RFD_MODE==='preview'?'CSV PREVIEW · NOT SAVED':'MYSQL · SAVED REPORT')+' · '+RFD_REPORT.file_name+(RFD_REPORT.completed_at?' · Saved '+RFD_REPORT.completed_at+' UTC':''):'RFD source report';
  rfdNode('rfd-page-label').textContent='Page '+RFD_PAGE+' / '+pages+(part.length?' · Rows '+(start+1)+'–'+(start+part.length):'');
  for(const id of ['rfd-first','rfd-prev'])rfdNode(id).disabled=RFD_PAGE===1;
@@ -80,7 +80,7 @@ async function previewRfdFile(){
  try{
   if(file.size>16777216)throw Error('RFD CSV exceeds 16 MiB.');
   const buffer=await file.arrayBuffer(),text=new TextDecoder('utf-8',{fatal:true}).decode(buffer),rows=parseRfdCSV(text);
-  if(!current())return;RFD_PREVIEW={file,rows,buffer};RFD_LOADED_AT=0;setRfdRows(rows,{file_name:file.name},'preview');rfdMessage('CSV preview: '+rows.length.toLocaleString()+' rows · not saved. Upload & Save stores all rows, including rows outside this page/filter.');
+  if(!current())return;RFD_PREVIEW={file,rows,buffer};RFD_LOADED_AT=0;setRfdRows(rows,{file_name:file.name},'preview');rfdMessage('CSV preview: '+rows.length.toLocaleString()+' source rows · not saved. Upload & Save stores all rows, including rows outside this page/filter.');
  }catch(error){if(current())rfdMessage('CSV preview failed: '+(error?.message||error));}
 }
 async function uploadRfdFile(){
@@ -106,11 +106,11 @@ async function uploadRfdFile(){
  }catch(error){if(current())rfdMessage('Upload not verified: '+(error?.message||error)+'. Previous completed SQL report stays available; Refresh saved report to view it.');}
  finally{if(owner===SITE_AUTH_USER?.id&&generation===SITE_SESSION_GENERATION){RFD_BUSY=false;rfdNode('rfd-save').disabled=false;rfdNode('rfd-file').disabled=false;}}
 }
-function exportRfdCSV(event){
+function exportRfdCSV(event){if(typeof rfdPlanExportAllowed!=='function'||!rfdPlanExportAllowed()){event.preventDefault();return false;}
  if(!SITE_AUTH_USER||!canAccessSlide(22)||CURRENT_SLIDE!==22||RFD_OWNER!==SITE_AUTH_USER.id||RFD_GENERATION!==SITE_SESSION_GENERATION){event.preventDefault();return false;}
  clearTimeout(RFD_SEARCH_TIMER);rfdFilter();if(!RFD_FILTERED.length){event.preventDefault();return false;}
  const quote=v=>'"'+String(v).replace(/"/g,'""')+'"',csv=[RFD_HEADERS,...RFD_FILTERED.map(x=>x.row)].map(row=>row.map(quote).join(',')).join('\r\n');
  clearRfdExport();const link=event.currentTarget,url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));RFD_EXPORT_URL=url;link.href=url;link.download=(RFD_REPORT?.file_name||'RFD.csv').replace(/\.csv$/i,RFD_FILTERED.length<RFD_ROWS.length?'_filtered.csv':'.csv').replace(/[^\p{L}\p{N}_.-]+/gu,'_');setTimeout(()=>{URL.revokeObjectURL(url);if(RFD_EXPORT_URL===url)clearRfdExport();},30000);return true;
 }
-function resetRfdModule(){resetRfdConverter();rfdResetTableTools('rfd');resetFdrModule();resetDcsModule();resetBookingModule();RFD_ACTIVE_TAB='rfd';if(rfdNode('rfd-refresh'))rfdNode('rfd-refresh').hidden=false;for(const name of RFD_TABS){if(rfdNode(name+'-panel'))rfdNode(name+'-panel').hidden=name!=='rfd';rfdNode(name+'-tab')?.setAttribute('aria-selected',String(name==='rfd'));}clearRfdExport();++RFD_TOKEN;++RFD_FILE_TOKEN;clearTimeout(RFD_SEARCH_TIMER);RFD_ROWS=[];RFD_FILTERED=[];RFD_PAGE=1;RFD_REPORT=null;RFD_PREVIEW=null;RFD_LOADED_AT=0;RFD_OWNER='';RFD_GENERATION=-1;RFD_LOAD=null;RFD_BUSY=false;const file=rfdNode('rfd-file');if(file){file.value='';file.disabled=false;}if(rfdNode('rfd-save'))rfdNode('rfd-save').disabled=false;for(const id of ['rfd-table','rfd-source','rfd-count','rfd-page-label'])rfdNode(id)?.replaceChildren();rfdMessage('Waiting for sign in…');if(rfdNode('rfd-upload'))rfdNode('rfd-upload').hidden=true;}
+function resetRfdModule(){if(typeof resetRfdPlanScope==='function')resetRfdPlanScope();resetRfdConverter();rfdResetTableTools('rfd');resetFdrModule();resetDcsModule();resetBookingModule();RFD_ACTIVE_TAB='rfd';if(rfdNode('rfd-refresh'))rfdNode('rfd-refresh').hidden=false;for(const name of RFD_TABS){if(rfdNode(name+'-panel'))rfdNode(name+'-panel').hidden=name!=='rfd';rfdNode(name+'-tab')?.setAttribute('aria-selected',String(name==='rfd'));}clearRfdExport();++RFD_TOKEN;++RFD_FILE_TOKEN;clearTimeout(RFD_SEARCH_TIMER);RFD_ROWS=[];RFD_FILTERED=[];RFD_PAGE=1;RFD_REPORT=null;RFD_PREVIEW=null;RFD_LOADED_AT=0;RFD_OWNER='';RFD_GENERATION=-1;RFD_LOAD=null;RFD_BUSY=false;const file=rfdNode('rfd-file');if(file){file.value='';file.disabled=false;}if(rfdNode('rfd-save'))rfdNode('rfd-save').disabled=false;for(const id of ['rfd-table','rfd-source','rfd-count','rfd-page-label'])rfdNode(id)?.replaceChildren();rfdMessage('Waiting for sign in…');if(rfdNode('rfd-upload'))rfdNode('rfd-upload').hidden=true;}
 document.addEventListener('DOMContentLoaded',()=>{rfdNode('rfd-search')?.addEventListener('input',()=>{clearTimeout(RFD_SEARCH_TIMER);RFD_SEARCH_TIMER=setTimeout(rfdFilter,180);});});

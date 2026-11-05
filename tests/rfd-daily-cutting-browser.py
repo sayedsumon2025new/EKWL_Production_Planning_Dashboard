@@ -4,6 +4,8 @@ from decimal import Decimal
 from datetime import datetime
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+import importlib.util
+_fixture_spec=importlib.util.spec_from_file_location("rfd_plan_fixture",Path(__file__).with_name("rfd-plan-fixture.py"));_fixture=importlib.util.module_from_spec(_fixture_spec);_fixture_spec.loader.exec_module(_fixture)
 sys.path.insert(0,str(Path(__file__).parent/'mysql'))
 from client import Client
 def display_row(row):
@@ -23,6 +25,8 @@ with sync_playwright() as p:
  b=p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),args=['--no-sandbox']);context=b.new_context(viewport={'width':1464,'height':900});context.add_cookies([{'name':c.name,'value':c.value,'url':BASE,'httpOnly':True,'sameSite':'Strict'} for c in client.jar]);page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.route('**/*',lambda r:r.continue_() if r.request.url.startswith(BASE) else r.fulfill(body=''))
  page.goto(BASE,wait_until='networkidle');page.wait_for_function("SITE_AUTH_USER!==null&&SITE_USER_PROFILE!==null&&document.body.dataset.planningState==='ready'",timeout=60000)
+ visible=[r for r in records if r[3].strip()]
+ _fixture.select_fixture_plan(page,[r[3]for r in [*saved['rows'],*visible]])
  page.evaluate('goSlide(22)');page.locator('#dcs-tab').click();page.wait_for_function('DCS_REPORT!==null&&DCS_MODE===\'sql\'');assert page.locator('#s22').is_visible();assert page.locator('#dcs-table thead th').all_text_contents()==H, {'actual':page.locator('#dcs-table thead th').all_text_contents(),'expected':H}
  assert page.evaluate('DCS_ROWS')==saved['rows'];assert page.locator('#dcs-table tbody tr').count()==min(100,len(saved['rows']))
  page.locator('#dcs-last').evaluate('e=>{if(!e.disabled)e.click()}');assert page.locator('#dcs-table tbody tr').last.locator('td').all_text_contents()==display_row(saved['rows'][-1])
@@ -35,7 +39,7 @@ with sync_playwright() as p:
  assert page.locator('#dcs-table img,#dcs-table script').count()==0
  assert page.evaluate('DCS_ROWS')==records;assert 'every source cell matches' in page.locator('#dcs-message').inner_text()
  stored=client.call('rfd/daily-cutting',{'action':'read'})['data'];assert stored['rows']==records;assert client.call('rfd',{'action':'read'})['data']==rfd_before;assert client.call('rfd/booking',{'action':'read'})['data']==booking_before;assert stored['report']['file_sha256']==hashlib.sha256(payload).hexdigest()
- page.locator('#dcs-last').evaluate('e=>{if(!e.disabled)e.click()}');assert page.locator('#dcs-table tbody tr').last.locator('td').all_text_contents()==display_row(records[-1])
+ page.locator('#dcs-last').evaluate('e=>{if(!e.disabled)e.click()}');assert page.locator('#dcs-table tbody tr').last.locator('td').all_text_contents()==display_row(visible[-1])
  # Independent Decimal/date reference checks real original report totals when supplied locally.
  if private:
   dated={};daily=[8,10,12,14,16,18,20,22]
@@ -48,10 +52,10 @@ with sync_playwright() as p:
    shown=page.locator(f'#dcs-table tfoot [data-total-column="{column}"]').inner_text()
    assert Decimal(shown.replace(',',''))==expected,'Original production footer does not reconcile'
  with page.expect_download() as download:page.locator('#dcs-export').click()
- text=Path(download.value.path()).read_text(encoding='utf-8-sig');assert list(csv.reader(io.StringIO(text,newline='')))==[H,*records]
+ text=Path(download.value.path()).read_text(encoding='utf-8-sig');assert list(csv.reader(io.StringIO(text,newline='')))==[H,*visible]
  page.locator('#dcs-search').fill(records[0][3]);page.wait_for_timeout(250)
  expected=[r for r in records if any(records[0][3].lower() in v.lower() for v in r)];assert page.evaluate('DCS_FILTERED.map(x=>x.row)')==expected
- page.locator('#s22 button[onclick="clearDcsFilters()"]').click();assert page.evaluate('DCS_FILTERED.length')==len(records)
+ page.locator('#s22 button[onclick="clearDcsFilters()"]').click();assert page.evaluate('DCS_FILTERED.length')==len(visible)
  page.locator('#dcs-place').select_option(records[0][0]);page.locator('#dcs-buyer').select_option(records[0][1]);assert page.evaluate('DCS_FILTERED.map(x=>x.row)')==[r for r in records if r[0]==records[0][0] and r[1]==records[0][1]]
  page.locator('#s22 button[onclick="clearDcsFilters()"]').click()
  for width in [784,1065,1400,1401,1464,1920]:
@@ -65,4 +69,4 @@ with sync_playwright() as p:
  page.evaluate("SITE_USER_PROFILE={role:'user',permissions:{slide_22:true}};renderDcsModule()");assert page.locator('#dcs-upload').is_hidden()
  page.evaluate('siteLogout()');page.wait_for_function('SITE_AUTH_USER===null');assert page.evaluate('DCS_ROWS.length')==0;assert page.evaluate('RFD_ROWS.length')==0;assert page.evaluate('BOOKING_ROWS.length')==0;assert page.locator('#dcs-table').text_content()==''
  assert not errors,errors;b.close()
- print(json.dumps({'dcs_browser_rows_verified':len(records),'cells_verified':len(records)*25,'original_headers_and_cell_strings':True,'original_footer_reconciliation':bool(private),'sql_upload_readback':True,'pagination_export_and_filters':True,'independent_of_planning':True,'logout_and_permission_guards':True,'javascript_errors':0}))
+ print(json.dumps({'dcs_browser_rows_verified':len(records),'cells_verified':len(records)*25,'original_headers_and_cell_strings':True,'original_footer_reconciliation':bool(private),'sql_upload_readback':True,'pagination_export_and_filters':True,'uploads_preserve_all_source_rows':True,'selected_plan_scope':True,'logout_and_permission_guards':True,'javascript_errors':0}))

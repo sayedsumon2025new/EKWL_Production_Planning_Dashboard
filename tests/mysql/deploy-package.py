@@ -10,11 +10,13 @@ with tempfile.TemporaryDirectory() as d:
     assert not any('/config/' in '/'+p or '/private/' in '/'+p or p.endswith(('.sql','.local.php','.ndjson','.zip')) for p in paths)
     assert not (out/'ekwl-live-root.zip').exists()
     assert {'premium-corporate.css','premium-corporate.js'}<=paths
+    assert 'rfd-plan-scope.js' in paths
     for document in ['index.html','load-analysis.html','order-execution-plan.html','size-set-tna.html']:
         content=(out/'site'/document).read_text()
         assert content.count('premium-corporate.css?v=test-release-123')==1
         assert content.count('premium-corporate.js?v=test-release-123')==1
     html=(out/'site/index.html').read_text()
+    assert html.count('rfd-plan-scope.js?v=test-release-123')==1
     assert 'chassis-excel.js?v=test-release-123' in html and 'chassis-compact.css?v=test-release-123' in html
     assert 'mysql-api-client.js?v=test-release-123' in html and '@supabase/supabase-js' not in html
     assert 'load-analysis.html?v=test-release-123' in html

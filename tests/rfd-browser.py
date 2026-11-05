@@ -2,6 +2,8 @@
 import csv,hashlib,io,json,os,shutil,sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+import importlib.util
+_fixture_spec=importlib.util.spec_from_file_location("rfd_plan_fixture",Path(__file__).with_name("rfd-plan-fixture.py"));_fixture=importlib.util.module_from_spec(_fixture_spec);_fixture_spec.loader.exec_module(_fixture)
 sys.path.insert(0,str(Path(__file__).parent/'mysql'))
 from client import Client
 def display_row(row):
@@ -21,6 +23,8 @@ with sync_playwright() as p:
  b=p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),args=['--no-sandbox']);context=b.new_context(viewport={'width':1464,'height':900});context.add_cookies([{'name':c.name,'value':c.value,'url':BASE,'httpOnly':True,'sameSite':'Strict'} for c in client.jar]);page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.route('**/*',lambda r:r.continue_() if r.request.url.startswith(BASE) else r.fulfill(body=''))
  page.goto(BASE,wait_until='networkidle');page.wait_for_function("SITE_AUTH_USER!==null&&SITE_USER_PROFILE!==null&&document.body.dataset.planningState==='ready'",timeout=60000)
+ visible=[r for r in records if r[2].strip()]
+ _fixture.select_fixture_plan(page,[r[2]for r in [*saved['rows'],*visible]])
  page.evaluate('goSlide(22)');page.wait_for_function('RFD_REPORT!==null&&RFD_MODE===\'sql\'');assert page.locator('#s22').is_visible();assert page.locator('#rfd-table thead th').all_text_contents()==H
  assert page.evaluate('RFD_ROWS')==saved['rows'];assert page.locator('#rfd-table tbody tr').count()==min(100,len(saved['rows']))
  page.locator('#rfd-last').click();assert page.locator('#rfd-table tbody tr').last.locator('td').all_text_contents()==display_row(saved['rows'][-1])
@@ -33,14 +37,14 @@ with sync_playwright() as p:
  assert page.locator('#rfd-table img,#rfd-table script').count()==0
  assert page.evaluate('RFD_ROWS')==records;assert 'every source cell matches' in page.locator('#rfd-message').inner_text()
  stored=client.call('rfd',{'action':'read'})['data'];assert stored['rows']==records;assert stored['report']['file_sha256']==hashlib.sha256(payload).hexdigest()
- page.locator('#rfd-last').click();assert page.locator('#rfd-table tbody tr').last.locator('td').all_text_contents()==display_row(records[-1])
+ page.locator('#rfd-last').click();assert page.locator('#rfd-table tbody tr').last.locator('td').all_text_contents()==display_row(visible[-1])
  with page.expect_download() as download:page.locator('#rfd-export').click()
- text=Path(download.value.path()).read_text(encoding='utf-8-sig');assert list(csv.reader(io.StringIO(text,newline='')))==[H,*records]
+ text=Path(download.value.path()).read_text(encoding='utf-8-sig');assert list(csv.reader(io.StringIO(text,newline='')))==[H,*visible]
  page.locator('#rfd-search').fill(records[0][2]);page.wait_for_timeout(250)
  expected=[r for r in records if any(records[0][2].lower() in v.lower() for v in r)];assert page.evaluate('RFD_FILTERED.map(x=>x.row)')==expected
- page.locator('#s22 button[onclick="clearRfdFilters()"]').click();assert page.evaluate('RFD_FILTERED.length')==len(records)
+ page.locator('#s22 button[onclick="clearRfdFilters()"]').click();assert page.evaluate('RFD_FILTERED.length')==len(visible)
  for width in [784,1065,1464,1920]:page.set_viewport_size({'width':width,'height':900});page.wait_for_timeout(100);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),width
  page.evaluate("SITE_USER_PROFILE={role:'user',permissions:{slide_22:true}};renderRfdModule()");assert page.locator('#rfd-upload').is_hidden()
  page.evaluate('siteLogout()');page.wait_for_function('SITE_AUTH_USER===null');assert page.evaluate('RFD_ROWS.length')==0;assert page.locator('#rfd-table').text_content()==''
  assert not errors,errors;b.close()
- print(json.dumps({'rfd_browser_rows_verified':len(records),'cells_verified':len(records)*22,'original_headers_and_cell_strings':True,'sql_upload_readback':True,'pagination_export_and_filters':True,'independent_of_planning':True,'logout_and_permission_guards':True,'javascript_errors':0}))
+ print(json.dumps({'rfd_browser_rows_verified':len(records),'cells_verified':len(records)*22,'original_headers_and_cell_strings':True,'sql_upload_readback':True,'pagination_export_and_filters':True,'uploads_preserve_all_source_rows':True,'selected_plan_scope':True,'logout_and_permission_guards':True,'javascript_errors':0}))
