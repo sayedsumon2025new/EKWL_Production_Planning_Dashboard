@@ -1,0 +1,137 @@
+/* Presentation only: report data, calculations, filters and cell meanings stay owned by their modules. */
+:root{
+ --premium-ink:#000;--premium-bg:#f3f5f7;--premium-panel:#fff;--premium-soft:#f7f9fb;
+ --premium-line:#d6e0e8;--premium-head:#e7eef4;--premium-accent:#176742;
+ --bg:var(--premium-bg)!important;--card:var(--premium-panel)!important;
+ --text:var(--premium-ink)!important;--text2:var(--premium-ink)!important;--text3:var(--premium-ink)!important;
+ --border:var(--premium-line)!important;--panel-shadow:0 1px 3px #12294008!important;
+ --tone-f6f5f1:var(--premium-bg);--tone-fffefa:var(--premium-panel);--tone-233247:var(--premium-ink);
+ --tone-526174:var(--premium-ink);--tone-647184:var(--premium-ink);--tone-e9edf0:var(--premium-head);
+ --grid-header-top:#edf3f7;--grid-header-bottom:var(--premium-head);--grid-header-text:var(--premium-ink);
+ --grid-text:var(--premium-ink);--grid-row:var(--premium-panel);--grid-stripe:var(--premium-soft);
+ --grid-hover:#edf5f0;--grid-border:var(--premium-line);--grid-total:#e5f1e9;
+ --grid-input:var(--premium-panel);--grid-focus:#2e7955;
+}
+:root[data-theme=dark],body.dark{
+ --premium-ink:#f7f9fc;--premium-bg:#111923;--premium-panel:#1b2735;--premium-soft:#213041;
+ --premium-line:#425469;--premium-head:#2c4055;--premium-accent:#acd9bd;
+ --tone-f6f5f1:var(--premium-bg);--tone-fffefa:var(--premium-panel);--tone-233247:var(--premium-ink);
+ --tone-526174:var(--premium-ink);--tone-647184:var(--premium-ink);--tone-e9edf0:var(--premium-head);
+ --grid-header-top:#334b62;--grid-header-bottom:var(--premium-head);--grid-header-text:var(--premium-ink);
+ --grid-text:var(--premium-ink);--grid-row:var(--premium-panel);--grid-stripe:var(--premium-soft);
+ --grid-hover:#2a4051;--grid-border:var(--premium-line);--grid-total:#2a493b;--grid-input:var(--premium-panel);
+}
+html body{font-family:'Segoe UI',Arial,sans-serif!important;font-weight:600!important;color:var(--premium-ink)!important;background:var(--premium-bg)!important;font-variant-numeric:tabular-nums}
+html body :is(button,input,select,textarea,table){font-family:'Segoe UI',Arial,sans-serif!important;font-weight:600}
+html body :is(p,label,summary,small,.muted,.sub,.explain,.priority,.flbl){color:var(--premium-ink)!important;font-weight:600!important}
+/* High specificity matches the existing module-scoped presentation overrides. */
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(div,span,p,label,small,strong,b,button,a,summary,h1,h2,h3,h4,input,select,textarea,th,td),
+html body #topnav#topnav :is(div,span,button,a,input,select),
+html body :is(dialog,#order-hover,#cal-detail-box,#s2-line-dialog,#site-login-gate) :is(div,span,p,small,label,strong,b,h1,h2,h3,button,a,th,td){
+ color:var(--premium-local-ink,var(--premium-ink))!important;font-weight:600!important;font-family:'Segoe UI',Arial,sans-serif!important;text-shadow:none!important;
+}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(h1,h2,h3,.slide-title,.card-title,.home-live-panel-title,.home-card-title),
+html body #topnav#topnav .brand{font-weight:750!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.kpi-val,.home-live-kpi-val,.home-mini-val,.home-hit-hole b){font-weight:750!important;letter-spacing:-.3px}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.slide-subtitle,.ct-right,.home-card-sub,.small-note,.home-hit-legend){font-size:12px!important;line-height:1.45!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) .slide{padding:14px 18px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) .slide-header{gap:8px;margin-bottom:12px!important;flex-wrap:wrap}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) .slide-title{font-size:22px!important;line-height:1.25;letter-spacing:-.4px}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.card,.home-live-panel,.home-card,.s9-analysis-card,.admin-setting-card){border-radius:6px!important;box-shadow:var(--panel-shadow)!important;border-color:var(--premium-line)!important;min-width:0}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) .card{padding:12px!important;margin-bottom:12px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) .card-title{font-size:13px!important;letter-spacing:0;padding-bottom:9px;margin-bottom:10px}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.two-col,.three-col,.home-live-detail-grid){gap:12px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.order-filters,.s6-filter-bar,.ac-controls,.ss-controls){gap:7px!important;flex-wrap:wrap}
+html body :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:12px!important;line-height:1.35;min-height:30px;border-radius:4px!important;padding:5px 8px!important;max-width:100%;font-weight:600!important}
+html body input::placeholder,html body textarea::placeholder{color:var(--premium-ink)!important;opacity:.8}
+html body #topnav#topnav :is(button,select),html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.pg-btn,.top-btn,.report-actions button,.home-live-date-controls button){min-height:30px;border-radius:4px!important;font-size:12px!important;padding:5px 9px!important;line-height:1.35}
+html body #topnav#topnav{box-shadow:0 1px 3px #1229400a}
+html body #topnav#topnav .right{gap:6px}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) .kpi-row{gap:10px!important;grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.kpi,#home-live-kpis .home-quick-box){padding:12px 14px!important;border:1px solid var(--premium-line)!important;border-top:2px solid var(--premium-accent)!important;border-radius:6px!important;gap:5px;overflow:visible;min-width:0}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.kpi-lbl,.kpi-label,#home-live-kpis .home-quick-box>span){background:transparent!important;padding:0!important;margin:0 0 6px!important;letter-spacing:0!important;text-transform:none!important;font-size:12px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.kpi-val,.kpi-sub,.home-live-kpi-val,.home-live-kpi-label){margin-left:0!important;margin-right:0!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.kpi-val,.home-live-kpi-val){font-size:27px!important;line-height:1.2!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.kpi-sub,.home-live-kpi-label){font-size:11px!important;line-height:1.4!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-shell{max-width:1680px;padding:4px 0 18px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-head{min-height:0!important;padding:14px 0!important;margin-bottom:12px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-title{font-size:28px!important;text-transform:none!important;line-height:1.2!important;letter-spacing:-.5px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-hero-sub{font-size:13px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-quick{padding:0!important;margin-bottom:14px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-quick-grid{gap:10px!important;grid-template-columns:repeat(4,minmax(0,1fr))}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-live-heading{gap:8px;padding-bottom:8px;margin-bottom:10px;flex-wrap:wrap}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-live-panel{padding:12px!important;min-height:0!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-live-panel-title{font-size:13px!important;padding-bottom:8px!important;margin-bottom:9px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-live-detail-grid{align-items:stretch}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-mini-row{font-size:12px!important;line-height:1.4;margin:7px 0;gap:8px}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-grid{gap:10px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-grid .home-card{min-height:105px!important;padding:13px 14px!important;border-top:2px solid var(--premium-line)!important;transform:none!important;background:var(--premium-panel)!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-card-title{font-size:13px!important;line-height:1.4!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-card-sub{font-size:12px!important;line-height:1.4!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-icon{font-size:21px!important}
+/* Ordinary tables wrap at words; timelines and calendars keep their spatial widths. */
+html body table{font-size:12px!important;font-variant-numeric:tabular-nums}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) table:not(.gantt):not(.cal):not(.lboard):not(.htbl) :is(th,td),
+html body :is(#wrap,.panel,.page,main,.modal,dialog) table:not(.gantt):not(.cal):not(.lboard):not(.htbl) :is(th,td){padding:6px 8px!important;font-size:12px!important;line-height:1.4!important;height:auto!important;vertical-align:middle;overflow-wrap:break-word;word-break:normal}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) table:not(.gantt):not(.cal):not(.lboard):not(.htbl) th,
+html body :is(#wrap,.panel,.page,main,.modal,dialog) table th{font-size:12px!important;font-weight:750!important;white-space:normal!important;letter-spacing:0!important;text-transform:none!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) table thead th{background:linear-gradient(var(--grid-header-top),var(--grid-header-bottom)),var(--premium-head)!important;color:var(--premium-ink)!important;border-color:var(--premium-line)!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) table :is(.num,.r,.fdr-number),html body :is(#slides-wrap#slides-wrap,.slide.slide) table .fdr-value.fdr-number{text-align:right!important;font-variant-numeric:tabular-nums}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) table :is(tfoot td,.range-total td,.oh-total td,.total-row td){font-weight:750!important;color:var(--premium-ink)!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.tbl-wrap,.cal-wrap,.gantt-wrap,.rfd-scroll,.booking-scroll,.dcs-scroll,.fdr-scroll){max-width:100%;scrollbar-width:thin;overscroll-behavior:contain;border-radius:5px!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table) :is(th,td){padding:5px 8px!important;line-height:1.4!important;white-space:pre-wrap!important;overflow-wrap:break-word!important;height:auto!important;vertical-align:middle}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.rfd-toolbar,.booking-toolbar,.dcs-toolbar,.fdr-toolbar){gap:7px;margin-bottom:8px}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) .fdr-value{font:inherit!important;line-height:1.4!important;min-height:0!important;white-space:pre-wrap!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) :is(.rfd-source,.booking-source,.dcs-source,.fdr-source){font-size:11px!important;line-height:1.4!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) .rcon-table :is(th,td){font-size:12px!important;padding:6px 8px!important;line-height:1.4!important;white-space:normal!important}
+/**** Gantt: raised cells keep the original plan, event payloads and stage fills. ****/
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s11 .gantt :is(th,td){font-size:12px!important;line-height:1.35!important;padding:4px!important;height:auto;vertical-align:middle}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s11 .gantt .g-ewo{font-size:12px!important;font-weight:750!important;min-height:25px!important;padding:4px 6px!important;border-radius:4px!important;border-width:1px;box-shadow:inset 0 1px 0 #ffffff55,0 2px 0 #0002,0 3px 5px #14284010;transform:translateY(-1px);transition:transform .12s,box-shadow .12s}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s11 .gantt .g-ewo:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 #ffffff55,0 3px 0 #0002,0 5px 7px #14284022}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s11 :is(.gds-note,.gds-toolbar,.gantt-coverage-legend){font-size:11px!important;line-height:1.4!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s9 :is(table.cal,#s9-summary-tbl) :is(th,td){font-size:12px!important;padding:5px 6px!important;line-height:1.35!important;height:auto!important;white-space:normal!important;overflow-wrap:break-word!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #s9 .s9-analysis-title{font-size:13px!important}
+/**** Isolated report documents use the same tokens, density and type. ****/
+html body :is(.page,main,#app,#wrap){color:var(--premium-ink)!important}
+html body :is(.page,main) :is(p,span,label,small,b,strong,button,h1,h2,h3,th,td){font-family:'Segoe UI',Arial,sans-serif!important;color:var(--premium-local-ink,var(--premium-ink))!important;font-weight:600!important}
+html body :is(.page,main) :is(h1,h2,h3,th){font-weight:750!important}
+html body :is(.page,.panel,.source-panel,.reason-note>div,.setting-card){border-color:var(--premium-line)!important;border-radius:6px!important;background:var(--premium-panel)!important;box-shadow:var(--panel-shadow)!important}
+html body .page .report-header{padding:14px 18px!important;background:var(--premium-head)!important;border-bottom:2px solid var(--premium-line)!important;gap:12px}
+html body .page .report-header:after{display:none!important}
+html body .page :is(.kpi-chip,.chip,.badge){background:var(--premium-soft)!important;border-color:var(--premium-line)!important}
+html body .page .kpi-chip{padding:8px 12px!important;border-radius:5px!important}
+html body .page .content{padding:12px 14px!important}
+html body .page :is(.source-strip,.la-view-scope,.reconcile,.footer){background:var(--premium-soft)!important;border-color:var(--premium-line)!important}
+html body .page :is(.source-strip,.source-panel){padding:10px 12px!important;margin-top:12px!important}
+html body .page table th{background:var(--premium-head)!important;color:var(--premium-ink)!important}
+html body .page table td{color:var(--premium-local-ink,var(--premium-ink))!important;border-color:var(--premium-line)!important}
+html body .page table tr:not(.source-row):not(.total-row):not(.la-view-gap):not(.planning):not(.unassigned) td{background:var(--premium-panel)}
+html body .page :is(.source-row,.total-row,.la-view-gap) td{background:var(--grid-total)!important}
+html[data-theme=dark] body .page :is(.planning,.unassigned,.la-view-delayed) td{background:var(--premium-soft)!important}
+html body main{padding:14px 18px!important}
+html body main .page-head h1{font-size:25px!important}
+html body main :is(.filters,.kpis){gap:9px;margin-bottom:13px}
+html body main .kpi{padding:14px!important;border-radius:6px!important;background:var(--premium-panel)!important}
+html body #wrap#wrap :is(td,th){color:var(--premium-local-ink,var(--premium-ink))!important;font-weight:600!important}
+html body #wrap#wrap th{font-weight:750!important}
+html body :is(button,input,select,textarea,a,summary):focus-visible{outline:2px solid var(--premium-accent)!important;outline-offset:2px}
+@media(max-width:1000px){html body :is(#slides-wrap#slides-wrap,.slide.slide) .slide{padding:12px!important}html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){html body :is(#slides-wrap#slides-wrap,.slide.slide) .slide{padding:10px!important}html body :is(#slides-wrap#slides-wrap,.slide.slide) .slide-title{font-size:20px!important}html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-title{font-size:25px!important}html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-grid{grid-template-columns:1fr}html body :is(#slides-wrap#slides-wrap,.slide.slide) #s0 .home-mini-row{grid-template-columns:minmax(80px,1fr) minmax(45px,2fr) auto}html body .page .report-header,html body main{padding:12px!important}}
+@media(prefers-reduced-motion:reduce){html body :is(#slides-wrap#slides-wrap,.slide.slide) .g-ewo{transition:none!important;transform:none!important}}
+@media print{:root,:root[data-theme=dark],body.dark{--premium-ink:#000;--premium-bg:#fff;--premium-panel:#fff;--premium-soft:#f6f6f6;--premium-head:#e8edf1;--premium-line:#bcc7d0;--grid-total:#e7f0e9;--grid-header-top:#eef2f5;--grid-header-bottom:#e1e8ee;--grid-header-text:#000;--grid-text:#000;--grid-row:#fff;--grid-stripe:#f6f6f6;--grid-border:#bcc7d0}html body{background:#fff!important;color:#000!important}}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #home-live-kpis .home-quick-box>span,html body :is(#slides-wrap#slides-wrap,.slide.slide) #home-live-kpis .home-live-kpi-label{color:var(--premium-ink)!important;line-height:1.4!important}
+html body :is(#slides-wrap#slides-wrap,.slide.slide) #home-live-kpis .home-quick-box>span{font-size:12px!important;font-weight:700!important}
+
+/* Some legacy modules sit outside the main wrapper. Share the same surfaces. */
+:root{--panel:var(--premium-panel)!important;--panel2:var(--premium-soft)!important;--line:var(--premium-line)!important;--navy:var(--premium-bg)!important;--navy2:var(--premium-head)!important;--navy3:var(--premium-soft)!important}
+html body,html body *{transition-property:transform,box-shadow,border-color!important}
+html body :is(.slide#s14,.slide#s15,.slide#s16,.slide#s17,.slide#s18,.slide#s19,.slide#s20,.slide#s21,.slide#s22){background:var(--premium-bg)!important;color:var(--premium-ink)!important}
+html body :is(.slide#s14,.slide#s15,.slide#s16,.slide#s17,.slide#s18,.slide#s19,.slide#s20,.slide#s21,.slide#s22) .card{background:var(--premium-panel)!important;color:var(--premium-ink)!important}
+
+/* Raw RFD cells have no status fills: use theme-aware neutral rows. */
+html body .slide#s22 table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table) tbody td{background:var(--premium-panel)!important}
+html body .slide#s22 table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table) tbody tr:nth-child(even) td{background:var(--premium-soft)!important}
+html body .slide#s22 table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table) tbody tr:hover td{background:var(--grid-hover)!important}
+html body .slide#s22 table:is(.rfd-table,.booking-table,.dcs-table,.fdr-table) th{background-color:var(--premium-head)!important}
+html body :is(.page,main,#wrap) table th{background-color:var(--premium-head)!important}
+html body #converter-panel .rcon-banner{background:var(--premium-soft)!important;border-color:var(--premium-line)!important;color:var(--premium-ink)!important}
