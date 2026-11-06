@@ -9,3 +9,12 @@ c.document.body.dataset.planningState='ready';elements['planning-sequence-filter
 elements['planning-sequence-filter'].value='';assert(!c.getRfdPlanScope().ready);elements['planning-sequence-filter'].value='p2';c.DATA=[];assert(c.getRfdPlanScope().ready);assert.equal(c.getRfdPlanScope().ewos.size,0);assert(!c.getRfdPlanScope().matches('272205'));
 c.SITE_AUTH_USER=null;assert(!c.getRfdPlanScope().ready);c.SITE_AUTH_USER={id:'next-owner'};c.canAccessSlide=()=>false;assert(!c.getRfdPlanScope().ready);
 console.log('PASS selected-plan identity, verified upload/rows, all colors by EWO, suffixes/leading zeros, conservative mixed identifiers, loading/error/empty/permission fences and cache invalidation');
+// Explicit All is independent of planning readiness, but never of actor permission.
+c.canAccessSlide=()=>true;c.SITE_AUTH_USER={id:'mode-owner'};c.ACTIVE_PLAN_UPLOAD={id:'modes'};elements['planning-sequence-filter'].value='modes';c.EFF15_METRIC_UPLOAD_ID='modes';c.DATA=[{ewo:'271080',color:'Blue'}];c.document.body.dataset.planningState='ready';
+c.setRfdPlanMode('without');let scope=c.getRfdPlanScope();assert.equal(scope.mode,'without');assert(!scope.matches('271080'));assert(scope.matches('272205-FBR'));assert(!scope.matches('271080 / 272205'));assert(!scope.matches(''));
+c.setRfdPlanMode('all');scope=c.getRfdPlanScope();assert(scope.ready);for(const value of ['271080','272205','271080 / 272205',''])assert(scope.matches(value));
+c.document.body.dataset.planningState='loading';assert(c.getRfdPlanScope().matches('271080'));elements['planning-sequence-filter'].value='';c.ACTIVE_PLAN_UPLOAD=null;assert(c.getRfdPlanScope().matches(''));
+c.setRfdPlanMode('without');assert(!c.getRfdPlanScope().ready);assert(!c.rfdPlanExportAllowed());c.setRfdPlanMode('all');assert(c.rfdPlanExportAllowed());
+c.canAccessSlide=()=>false;assert(!c.getRfdPlanScope().matches('271080'));c.canAccessSlide=()=>true;c.SITE_SESSION_GENERATION++;assert.equal(c.getRfdPlanScope().mode,'within');assert(!c.getRfdPlanScope().ready);
+c.setRfdPlanMode('invalid');assert.equal(c.getRfdPlanScope().mode,'within');
+console.log('PASS Within/Without/All modes; suffixes, conservative mixed/blank identifiers, explicit All without a plan, scope caching, export readiness, actor permissions and session reset');
