@@ -139,7 +139,7 @@ const UPLOAD_CACHE_DEPENDENCIES={
   floor:{settings:['floor']},
   size:{snapshots:['size'],sources:['size'],popup:true,readiness:true},
   accessories:{snapshots:['accessories'],sources:['accessories'],popup:true,readiness:true},
-  embellishment:{snapshots:['embellishment'],sources:['embellishment'],popup:true,readiness:true,coverage:true}
+  embellishment:{snapshots:['embellishment'],sources:['embellishment'],reports:['embellishment'],gantt:true,popup:true,readiness:true,coverage:true}
 };
 function invalidateUploadDependencies(source){
   const dep=UPLOAD_CACHE_DEPENDENCIES[source];if(!dep)throw Error('Unknown upload source: '+source);
