@@ -1,7 +1,7 @@
 /* Slide 07 popup: use the selected Gantt cell, current Plan snapshot, and active SQL reports. */
 let GANTT_HOVER_REQUEST=0;
 let GANTT_POPUP_TRIGGER=null;
-const ganttKey=v=>String(v??'').trim().toUpperCase().replace(/\.0+$/,'');
+const ganttKey=v=>gsEwo(v);
 const ganttColorKey=v=>String(v??'').trim().toUpperCase().replace(/\s+/g,' ');
 const ganttQty=v=>Number(v)||0;
 function resetGanttHoverCache(types){invalidateDataCache([...VERSIONED_DATA_CACHE.keys()].filter(key=>key.startsWith('hover:')));invalidateEwoSources(types);++GANTT_HOVER_REQUEST;closeGanttPopup();if(typeof resetGanttActionCache==='function')resetGanttActionCache();}
@@ -10,14 +10,15 @@ async function ganttHoverSources(ewo,color,colors){
   const allowed=new Set((colors||[color]).map(ganttColorKey));
   const key=ganttKey(ewo)+'|'+[...allowed].sort().join('|');
   return loadVersionedData('hover:'+key,()=>Promise.allSettled([
-    loadEwoSource('size',[String(ewo)]),
-    loadEwoSource('accessories',[String(ewo)]),
-    loadEwoSource('embellishment',[String(ewo)]),
-    loadEwoSource('orderbank',[String(ewo)])
+    loadEwoSource('size'),
+    loadEwoSource('accessories'),
+    Promise.resolve(GANTT_EMBELLISHMENT),
+    loadEwoSource('orderbank')
   ]).then(results=>{
     const available=i=>results[i].status==='fulfilled';
-    const matching=(i,getColor)=>available(i)?results[i].value.filter(row=>allowed.has(ganttColorKey(getColor(row)))):[];
-    const size=matching(0,row=>row.row_data?.Color),accessories=available(1)?results[1].value:[];
+    const ewoRows=i=>available(i)?results[i].value.filter(row=>ganttKey(i<2?row.row_data?.EWO:i===2?row['EWO No']:row.EWO)===ganttKey(ewo)):[];
+    const matching=(i,getColor)=>ewoRows(i).filter(row=>allowed.has(ganttColorKey(getColor(row))));
+    const size=matching(0,row=>row.row_data?.Color),accessories=ewoRows(1);
     const embellishment=matching(2,row=>row.Color);
     const orderBank=matching(3,row=>row.GmtColor);
     const unique=(list,getValue)=>[...new Set(list.map(getValue).map(v=>String(v??'').trim()).filter(Boolean))].join(' | ')||null;
@@ -35,7 +36,6 @@ async function ganttHoverSources(ewo,color,colors){
       order_bank_rows:available(3)?orderBank.length:0,
       order_qty:available(3)&&orderBank.length?orderBank.reduce((total,row)=>total+qty(row,'OrderQty'),0):null,
       embellishment_rows:available(2)?embellishment.length:0,
-      embellishment_by_color:available(2)?[...s12EmbellishmentTotals(embellishment).entries()]:null,
       print_send:sum('Today Print Send Qty\n'),
       print_receive:sum(' Today Print Receive Qty'),
       embroidery_send:sum('Today EMB Send Qty'),
@@ -53,8 +53,7 @@ function ganttHoverSewing(line,ewo,colors){
     const rowColor=String(row.color||'').trim(),key=ganttColorKey(rowColor);
     if(!result.has(key))result.set(key,{color:rowColor||'Unspecified',input:0,output:0,reject:0,wip:0});
     const item=result.get(key);
-    item.input+=ganttQty(row.input);item.output+=ganttQty(row.output);
-    item.reject+=ganttQty(row.reject);item.wip+=ganttQty(row.wip);
+    for(const field of ['input','output','reject','wip'])item[field]=item[field]===null||row[field]==null||String(row[field]).trim()===''?null:item[field]+ganttQty(row[field]);
   }
   return [...result.values()].sort((a,b)=>a.color.localeCompare(b.color));
 }
@@ -121,35 +120,13 @@ function ganttPopupHeader(w){
 }
 
 function ganttPopupCuttingWip(w,source){
-  if(!source||typeof s12CuttingWipMetric!=='function'||typeof fabricEwoColorKey!=='function')return {value:null,reason:'Cutting WIP reports are not available.'};
-  const keys=new Set(w.selectedColors.map(color=>fabricEwoColorKey(w.ewo,color)).filter(Boolean));
-  if(!keys.size)return {value:null,reason:'Select an EWO + Color.'};
-  const cutByKey=new Map(),sewingByKey=new Map(),processByKey=new Map();
-  for(const r of FABRIC_CUTTING_DATA){
-    const key=fabricEwoColorKey(r.ewo,r.color_name);if(!keys.has(key))continue;
-    if(r.total_cut_qty==null||String(r.total_cut_qty).trim()===''||!Number.isFinite(Number(r.total_cut_qty)))continue;
-    cutByKey.set(key,(cutByKey.get(key)||0)+Number(r.total_cut_qty));
-  }
-  // Cutting stock is shared across lines for the same EWO/color, just as in S12.
-  for(const r of SEWING_IO_DATA){
-    const key=fabricEwoColorKey(r.ewo,r.color);if(!keys.has(key))continue;
-    sewingByKey.set(key,{input:(sewingByKey.get(key)?.input||0)+ganttQty(r.input)});
-  }
-  const required=v=>!['','no','n','0','false','n/a','na','none','-','—'].includes(String(v??'').trim().toLowerCase());
-  for(const r of DATA){
-    if(r.is_summary_row)continue;
-    const key=fabricEwoColorKey(r.ewo,r.color);if(!keys.has(key))continue;
-    const flags=processByKey.get(key)||{print:false,emb:false};
-    flags.print||=required(r.print);flags.emb||=required(r.emb);processByKey.set(key,flags);
-  }
-  if(!source.embellishment_by_color&&keys.size>1&&source.embellishment_rows>0)return {value:null,reason:'Reload the report to obtain per-color process receipts.'};
-  const movements=new Map(source.embellishment_by_color||[]);
-  // Backward-compatible single-color cache records can still use their exact receipt.
-  if(!source.embellishment_by_color&&keys.size===1&&source.embellishment_rows>0){
-    movements.set([...keys][0],{printSend:source.print_send,printReceive:source.print_receive,embSend:source.embroidery_send,embReceive:source.embroidery_receive});
-  }
-  const available=source.embellishment_by_color!==null&&!source.errors?.includes('Embellishment');
-  return s12CuttingWipMetric(keys,cutByKey,sewingByKey,processByKey,movements,available);
+ const model=getGanttStock(),items=[...new Set(w.selectedColors.map(gsColor))].map(color=>model.pairs.get(gsPair(w.ewo,color)));
+ return {value:items.length&&items.every(p=>p?.cutting!==null&&p?.cutting!==undefined)?items.reduce((n,p)=>n+p.cutting,0):null,reason:[...new Set(items.flatMap(p=>p?.reasons||['No matching EWO + Color.']))].join(' ')};
+}
+function ganttPopupAllocation(w){
+ const rows=(getGanttStock().details.get(JSON.stringify([w.date,Number(w.line),gsEwo(w.ewo)]))||[]).filter(r=>w.selectedColors.some(c=>gsColor(c)===r.color));
+ if(!rows.length)return '<div class="gt-row">No allocation through the production cutoff, or no matching plan.</div>';
+ return rows.map(r=>'<div class="gt-row"><span>'+esc(r.color)+' · Delivery '+esc(r.delivery||'Missing / last priority')+'</span><strong>Plan '+esc(r.value.toLocaleString('en-US'))+'</strong></div>'+[ [3,'Sewing'],[4,'Ready Cutting'],[2,'Embroidery'],[1,'Print'] ].map(([i,name])=>'<div class="gt-row"><span>'+name+' allocated</span><strong>'+esc(r.stages[i]===null?'—':r.stages[i].toLocaleString('en-US'))+'</strong></div>').join('')+'<div class="gt-row"><span>Uncovered plan · not a fabric shortage claim</span><strong>'+esc(r.need.toLocaleString('en-US'))+'</strong></div>'+ (r.reasons.length?'<p>'+esc(r.reasons.join(' '))+'</p>':'')).join('');
 }
 
 function ganttHoverHtml(w,source){
@@ -159,19 +136,15 @@ function ganttHoverHtml(w,source){
   const card=(title,kind,body)=>`<section class="gt-card gt-${kind}"><h3>${esc(title)}</h3><div class="gt-card-body">${body}</div></section>`;
   const allowed=new Set(w.selectedColors.map(ganttColorKey));
   const plan=ganttHoverPlan(w),sewing=ganttHoverSewing(w.line,w.ewo,w.selectedColors);
-  const cut=FABRIC_CUTTING_DATA.filter(row=>ganttKey(row.ewo)===ganttKey(w.ewo)&&allowed.has(ganttColorKey(row.color_name)));
-  const cutSum=key=>{
-    const values=cut.map(row=>row[key]).filter(value=>value!=null&&String(value).trim()!==''&&Number.isFinite(Number(value)));
-    return values.length?values.reduce((sum,value)=>sum+Number(value),0):null;
-  };
-  const cutable=cutSum('cutable_qty'),cutQty=cutSum('total_cut_qty');
+  const model=getGanttStock(),cutItems=w.selectedColors.map(color=>model.pairs.get(gsPair(w.ewo,color)));
+  const cutSum=field=>cutItems.length&&cutItems.every(p=>p?.[field]!==null&&p?.[field]!==undefined&&!p?.[field+'Invalid'])?cutItems.reduce((n,p)=>n+p[field],0):null;
+  const cutable=null,cutQty=cutSum('cut');
   const cuttingWip=ganttPopupCuttingWip(w,source);
-  const em=Number(source?.embellishment_rows)>0;
-  const send=em?Number(source.print_send):null,recv=em?Number(source.print_receive):null;
-  const embSend=em?Number(source.embroidery_send):null,embRecv=em?Number(source.embroidery_receive):null;
+  const send=cutSum('printSend'),recv=cutSum('printReceive');
+  const embSend=cutSum('embSend'),embRecv=cutSum('embReceive');
   const actions=source?.size_rows>0?source.size_action:null;
   const accessories=source?.accessories_rows>0?source.accessories_status:null;
-  const selectedSewing=sewing.length?sewing.reduce((sum,item)=>({input:sum.input+item.input,output:sum.output+item.output,reject:sum.reject+item.reject,wip:sum.wip+item.wip}),{input:0,output:0,reject:0,wip:0}):{input:null,output:null,reject:null,wip:null};
+  const selectedSewing=Object.fromEntries(['input','output','reject','wip'].map(field=>[field,sewing.length&&sewing.every(r=>r[field]!==null)?sewing.reduce((n,r)=>n+r[field],0):null]));
   return ganttPopupHeader(w)+
     '<div class="gt-cards">'+
     card('Planning','planning',
@@ -184,22 +157,20 @@ function ganttHoverHtml(w,source){
       card('Size Set','size',row('','Next Action',actions))+
       card('Accessories','accessories',row('','Sewing Trims',accessories))+
     '</div>'+
-    card('Cutting','cutting',
-      row('01','Total Order Qty',cutSum('color_order_qty')==null?null:fmt(cutSum('color_order_qty')))+
-      row('02','Fabrics Booking (kg)',cutSum('fabric_booking_qty')==null?null:fmt(cutSum('fabric_booking_qty')))+
-      row('03','Fabrics Received (kg)',cutSum('total_fabric_received')==null?null:fmt(cutSum('total_fabric_received')))+
-      row('04','Fabrics Balance (Kg)',cutSum('fabric_balance')==null?null:fmt(cutSum('fabric_balance')))+
-      row('05','Total Cutting Pcs',cutQty==null?null:fmt(cutQty))+
-      row('06','Cutting Balance',cutSum('cutting_balance')==null?null:fmt(cutSum('cutting_balance'))))+
+    card('Cutting · RFD Daily Production','cutting',
+      row('01','Total Cutting · Σ Cutting Today',fmt(cutQty),'EWO + Color · all source dates; Cutting Total is not used.')+
+      row('02','Sewing Input · all Lines',fmt(cutSum('input')))+
+      row('03','Saved RFD source',model.source?.file_name||null,'Batch '+(model.source?.id||'—')+' · source rows '+cutItems.flatMap(p=>p?.cutRows||[]).join(', ')))+
+    card('Delivery priority allocation','allocation',ganttPopupAllocation(w))+
     card('Embellishment Send / Receive','embellishment',
       '<div class="gt-emb-pair"><div><h4>Print</h4>'+
         row('','Send',send==null?null:fmt(send))+
         row('','Received',recv==null?null:fmt(recv))+
-        row('','WIP',send==null?null:fmt(send-recv))+
+        row('','WIP',send==null||recv==null?null:fmt(send-recv))+
       '</div><div><h4>Embroidery</h4>'+
         row('','Send',embSend==null?null:fmt(embSend))+
         row('','Received',embRecv==null?null:fmt(embRecv))+
-        row('','WIP',embSend==null?null:fmt(embSend-embRecv))+
+        row('','WIP',embSend==null||embRecv==null?null:fmt(embSend-embRecv))+
       '</div></div>')+
     card('Sewing','sewing',
       row('1','Total Input Qty',selectedSewing.input==null?null:fmt(selectedSewing.input))+
@@ -207,10 +178,10 @@ function ganttHoverHtml(w,source){
       row('3','Total Rejection Qty',selectedSewing.reject==null?null:fmt(selectedSewing.reject))+
       row('4','Total WIP Qty',selectedSewing.wip==null?null:fmt(selectedSewing.wip)))+
     card('Consumable WIP','wip',
-      row('1','Cutable WIP',cutable==null?null:fmt(cutable))+
-      row('2','Cutting WIP',cuttingWip.value==null?null:fmt(cuttingWip.value),'EWO + Color across all lines · '+(cuttingWip.reason||'Print Receive − Sewing Input; Embroidery Receive − Sewing Input; no process: Total Cutting − Sewing Input.'))+
-      row('3','Print',send==null?null:fmt(send-recv))+
-      row('4','Embroidery',embSend==null?null:fmt(embSend-embRecv))+
+      row('1','Cutable WIP · Paused',null)+
+      row('2','Cutting WIP',cuttingWip.value==null?null:fmt(cuttingWip.value),'RFD Cutting Today · EWO + Color across all lines · '+(cuttingWip.reason||'Print Receive − Sewing Input; Embroidery Receive − Sewing Input; no process: Total Cutting − Sewing Input.'))+
+      row('3','Print',send==null||recv==null?null:fmt(send-recv))+
+      row('4','Embroidery',embSend==null||embRecv==null?null:fmt(embSend-embRecv))+
       row('5','Sewing WIP',selectedSewing.wip==null?null:fmt(selectedSewing.wip)))+
     '</div>';
 }

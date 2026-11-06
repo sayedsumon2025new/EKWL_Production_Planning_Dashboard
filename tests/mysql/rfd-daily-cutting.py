@@ -46,3 +46,15 @@ none=Client();none.login(none_email,password);call(none,{'action':'read'},expect
 assert admin.call('rfd',{'action':'read'})['data']==rfd_before
 assert admin.call('rfd/booking',{'action':'read'})['data']==booking_before
 print(json.dumps({'dcs_rows':len(records),'columns':25,'exact_cells_verified':len(records)*25,'row_order_preserved':True,'partial_activation_blocked':True,'retry_idempotent':True,'read_write_permissions_checked':True,'original_file_test':bool(private)}))
+# Gantt/Load Analysis consume the same verified active upload without granting upload access.
+assert admin.call('reports/snapshot',{'kind':'gantt-cutting'})['data']==result
+Client().call('reports/snapshot',{'kind':'gantt-cutting'},expected=401)
+none.call('reports/snapshot',{'kind':'gantt-cutting'},expected=403)
+reader.call('reports/snapshot',{'kind':'gantt-cutting'},expected=403)
+for permission in ['slide_7','slide_20']:
+ email='gantt-'+secrets.token_hex(5)+'@fixture.invalid';admin.call('users',{'action':'create','email':email,'password':password,'role':'user','status':'active','permissions':{permission:True}})
+ view=Client();view.login(email,password)
+ assert view.call('reports/snapshot',{'kind':'gantt-cutting'})['data']==result
+ view.call('rfd/daily-cutting',{'action':'read'},expected=403)
+ view.call('rfd/daily-cutting',{'action':'begin'},expected=403)
+print('PASS same verified saved RFD upload for Gantt/Load Analysis; anonymous/unrelated users denied; report readers cannot upload')

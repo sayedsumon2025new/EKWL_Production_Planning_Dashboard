@@ -87,6 +87,8 @@ async function uploadDcsFile(){
   const saved=await request({action:'finalize',id:job.id});if(saved.status!=='SUCCESS'||saved.rows!==preview.rows.length)throw Error('Daily Production Status activation audit did not match.');
   const read=verifyDcsRead(await request({action:'read'}));
   if(read.report?.id===job.id&&(read.rows.length!==preview.rows.length||read.rows.some((row,i)=>row.some((value,j)=>value!==preview.rows[i][j]))))throw Error('Saved Daily Production Status cells did not match the original CSV. Refresh before using this report.');
+  invalidateSharedReports(['gantt-cutting']);
+  if(typeof closeGanttPopup==='function')closeGanttPopup();
   DCS_PREVIEW=null;dcsNode('dcs-file').value='';DCS_LOADED_AT=Date.now();setDcsRows(read.rows,read.report,'sql');dcsMessage(read.report?.id===job.id?'Saved and verified: every source cell matches the CSV.':'Upload saved. A newer Daily Production Status report is now active.');dcsNode('dcs-upload').open=false;
  }catch(error){if(current())dcsMessage('Upload not verified: '+(error?.message||error)+'. Previous completed SQL report stays available; Refresh saved report to view it.');}
  finally{if(owner===SITE_AUTH_USER?.id&&generation===SITE_SESSION_GENERATION){DCS_BUSY=false;dcsNode('dcs-save').disabled=false;dcsNode('dcs-file').disabled=false;}}

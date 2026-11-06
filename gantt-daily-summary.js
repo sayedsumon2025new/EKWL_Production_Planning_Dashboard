@@ -57,6 +57,7 @@ function gdsCuttingReports(input,notes){
 // Allocate the full snapshot before applying display filters. Sewing is line/EWO
 // stock; upstream stock is shared by EWO. Colors never participate in allocation.
 function gdsAllocate(input,notes){
+ if(input.rfdDaily!==undefined){const model=buildGanttStock(input);model.notes.forEach(note=>notes.add(note));return model;}
  const master=input.masterLines?new Set(input.masterLines.map(Number)):null;
  const sourcePlan=gdsUniqueDaily(input.plan).filter(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&Number(row.line)>0&&Number(row.line)!==46&&(!master||master.has(Number(row.line)))&&gdsKey(row.ewo)&&gdsNumber(row.value)!==null);
  const net=gdsGroup(sourcePlan,row=>JSON.stringify([row.date,Number(row.line),gdsKey(row.ewo)]));
@@ -110,7 +111,7 @@ function gdsAllocate(input,notes){
  return {plan,cutoff,allocations};
 }
 function buildGanttDailySummary(input,precomputed){
- const selected=new Set(input.selected),lineSet=new Set(input.lines.map(Number)),dateSet=new Set(input.dates),search=gdsKey(input.search),notes=new Set(precomputed?.notes||[]);
+ const selected=new Set(input.selected.filter(i=>input.rfdDaily===undefined||i!==0)),lineSet=new Set(input.lines.map(Number)),dateSet=new Set(input.dates),search=gdsKey(input.search),notes=new Set(precomputed?.notes||[]);
  const allocation=precomputed?.allocation||gdsAllocate(input,notes),planning=gdsPlanningTotals(input);
  const plan=allocation.plan.filter(row=>dateSet.has(row.date)&&lineSet.has(Number(row.line))&&(!search||gdsKey(row.ewo)===search));
  const byDate=gdsGroup(plan,row=>row.date),dataByLine=gdsGroup(input.data,row=>Number(row.line));
@@ -131,16 +132,18 @@ function buildGanttDailySummary(input,precomputed){
   let forecastPartial=false;
   const keys=new Set(rows.map(row=>JSON.stringify([date,Number(row.line),gdsKey(row.ewo)])));
   for(const key of keys){
-   const item=allocation.allocations.get(key);if(!item)continue;
+   const cell=allocation.allocations.get(key);if(!cell)continue;
+   for(const item of cell.parts||[cell]){
    let pcs=0,known=0;
    item.stages.forEach((value,i)=>{
-    if(value===null){stagePartial[i]=true;if(selected.has(i))forecastPartial=true;}
+    if(value===null){if(input.rfdDaily===undefined||i!==0)stagePartial[i]=true;if(selected.has(i))forecastPartial=true;}
     else {stages[i]+=value;stageKnown[i]++;if(item.stagePartial[i])stagePartial[i]=true;
      if(value===0||item.smv!==null){stageSah[i]+=value*(item.smv||0)/60;stageSahKnown[i]++;}else stageSahPartial[i]=true;
      if(selected.has(i)){pcs+=value;known++;selectedKnown++;if(item.stagePartial[i])forecastPartial=true;}}
    });
    forecast+=pcs;
    if(known){if(pcs>0&&item.smv===null)missingSmv++;else {forecastSah+=pcs*(item.smv||0)/60;sahKnown++;}}
+   }
   }
   const hasEwos=keys.size>0,beforeBaseline=!allocation.cutoff||date<=allocation.cutoff;
   stages.forEach((_,i)=>{if((hasEwos&&!stageKnown[i])||beforeBaseline)stages[i]=null;if((hasEwos&&!stageSahKnown[i])||beforeBaseline)stageSah[i]=null;stageSahPartial[i]||=stagePartial[i];});
@@ -156,7 +159,7 @@ function buildGanttDailySummary(input,precomputed){
 }
 function gdsFormat(value,index){if(value===null)return '—';const text=Number(value).toLocaleString('en-US',{maximumFractionDigits:index===2||index===3||index===7?0:1});return text+(index===5?'%':'');}
 function gdsSubtotalMark(value,partial){return value!==null&&partial?' <sup class="gds-partial" title="Available data subtotal; some source values are unavailable" aria-label="Available data subtotal">*</sup>':'';}
-function gdsInput(context,embellishment){return {embellishmentAvailable:!GDS_STATE.source?.loading&&!GDS_STATE.source?.error,dates:context.dates,lines:context.lines,search:context.search,selected:[...GDS_STATE.selected],data:DATA,plan:DAILY_PLAN,sah:SAH_DAILY,clock:CLOCK_HOUR_DAILY,fabric:FABRIC_CUTTING_DATA,sewing:SEWING_IO_DATA,embellishment,metrics:typeof EFF15_METRIC_DAILY==='undefined'?undefined:EFF15_METRIC_DAILY,production:DATE_WISE_PRODUCTION_DATA,masterLines:[...getChassisMasterLines()]};}
+function gdsInput(context,embellishment){return {rfdDaily:GANTT_RFD_CUTTING,embellishmentAvailable:!GDS_STATE.source?.loading&&!GDS_STATE.source?.error,dates:context.dates,lines:context.lines,search:context.search,selected:[...GDS_STATE.selected],data:DATA,plan:DAILY_PLAN,sah:SAH_DAILY,clock:CLOCK_HOUR_DAILY,fabric:FABRIC_CUTTING_DATA,sewing:SEWING_IO_DATA,embellishment:GANTT_EMBELLISHMENT,metrics:typeof EFF15_METRIC_DAILY==='undefined'?undefined:EFF15_METRIC_DAILY,production:DATE_WISE_PRODUCTION_DATA,masterLines:[...getChassisMasterLines()]};}
 function paintGanttDailySummary(){
  const context=GDS_STATE.context,body=document.getElementById('gantt-daily-summary');if(!context||!body)return;
  const lowerDetails=document.getElementById('gds-consumable-table')?.closest('details');
@@ -168,16 +171,18 @@ function paintGanttDailySummary(){
   const head=document.querySelector('#s11-head th');if(head)head.textContent='Team';
   return;
  }
- const reportsReady=typeof sharedReportsReady!=='function'||sharedReportsReady(['fabric','sewing','production']);
+ const reportsReady=typeof sharedReportsReady!=='function'||sharedReportsReady(sharedReportsForSlide(7));
  const input=gdsInput(context,GDS_STATE.source?.rows||[]);
- if(!reportsReady){input.fabric=[];input.sewing=[];input.production=[];input.embellishment=[];input.embellishmentAvailable=false;}
- const result=buildGanttDailySummary(input);
+ if(!reportsReady){input.rfdDaily=null;input.fabric=[];input.sewing=[];input.production=[];input.embellishment=[];input.embellishmentAvailable=false;}
+ const model=reportsReady?getGanttStock():null;
+ const result=buildGanttDailySummary(input,model?{allocation:model,notes:model.notes}:undefined);
  if(!reportsReady){
   for(const day of result.days){day.values[3]=day.values[4]=day.total=null;day.stages=day.stages.map(()=>null);day.stageSah=day.stageSah.map(()=>null);day.partial[3]=day.partial[4]=false;}
   result.notes=['WIP reports are loading or unavailable. Forecast and stock values remain unavailable until verification finishes.'];
  }
+ GDS_STATE.selected.delete(0);
  const count=GDS_STATE.selected.size,colspan=context.dates.length+1;
- const picker='<div class="gds-picker"><button type="button" id="gds-filter-button" aria-expanded="'+GDS_STATE.open+'" aria-controls="gds-filter-menu" onclick="gdsToggleMenu()">Consumable WIP · '+(count===GDS_STAGES.length?'All '+GDS_STAGES.length:count+' selected')+' ▾</button><div id="gds-filter-menu" class="gds-menu" role="group" aria-label="Select consumable WIP categories" '+(GDS_STATE.open?'':'hidden')+'>'+GDS_STAGE_ORDER.map(i=>{const name=GDS_STAGES[i];return '<label><input type="checkbox" value="'+i+'" '+(GDS_STATE.selected.has(i)?'checked':'')+' onchange="gdsSelectStage(this)">'+name+'</label>'}).join('')+'<div class="gds-menu-actions"><button type="button" onclick="gdsSelectAll(true)">Select all</button><button type="button" onclick="gdsSelectAll(false)">Clear</button></div></div></div>';
+ const picker='<div class="gds-picker"><button type="button" id="gds-filter-button" aria-expanded="'+GDS_STATE.open+'" aria-controls="gds-filter-menu" onclick="gdsToggleMenu()">Consumable WIP · '+(count===GDS_STAGES.length-1?'All active '+(GDS_STAGES.length-1):count+' selected')+' ▾</button><div id="gds-filter-menu" class="gds-menu" role="group" aria-label="Select consumable WIP categories" '+(GDS_STATE.open?'':'hidden')+'>'+GDS_STAGE_ORDER.map(i=>{const name=GDS_STAGES[i]+(i===0?' · Paused':'');return '<label><input type="checkbox" '+(i===0?'disabled ':'')+'value="'+i+'" '+(GDS_STATE.selected.has(i)?'checked':'')+' onchange="gdsSelectStage(this)">'+name+'</label>'}).join('')+'<div class="gds-menu-actions"><button type="button" onclick="gdsSelectAll(true)">Select all</button><button type="button" onclick="gdsSelectAll(false)">Clear</button></div></div></div>';
  body.innerHTML='<tr class="gds-controls"><td colspan="'+colspan+'"><div class="gds-control-row"><span>DAILY PLAN SUMMARY</span>'+picker+'</div></td></tr>';
  const labels=['Clock Hour','Plan SAH','Plan Pcs','Forecastable Pcs','Forecastable SAH','Plan Efficiency','Plan Working Hours','Plan Manpower'];
  const units=['h','h','pcs','pcs','h','%','h','people'];
@@ -190,25 +195,20 @@ function paintGanttDailySummary(){
  const table=body.closest('table');table?.classList.toggle('gds-visible',!GDS_STATE.hidden);
  const head=document.querySelector('#s11-head th');if(head)head.textContent=GDS_STATE.hidden?'Team':'Planning metric';
  const button=document.getElementById('gds-visibility');if(button){button.textContent=GDS_STATE.hidden?'Show summary ▾':'Hide summary ▴';button.setAttribute('aria-expanded',String(!GDS_STATE.hidden));}
- const note=document.getElementById('gds-note');if(note){note.hidden=GDS_STATE.hidden;note.textContent='Forecast: '+(count===GDS_STAGES.length?'All consumable WIP':count?[...GDS_STATE.selected].map(i=>GDS_STAGES[i]).join(' + '):'None selected')+' · Daily allocated plan coverage; Line + EWO, all colors. Sewing → Cutting → Embroidery → Print → Cutable; used stock is deducted before later dates. Filter sums stage contributions without reallocating stock. SAH = Σ(covered EWO pcs × EWO SMV ÷ 60).'+(result.cutoff?' Stock baseline through '+result.cutoff+'; dates through baseline show —.':'')+(GDS_STATE.source?.loading?' Loading Print/Embroidery WIP…':'')+(GDS_STATE.source?.error?' Print/Embroidery report could not load.':'')+(result.notes.length?' '+result.notes.join(' '):'');}
+ const note=document.getElementById('gds-note');if(note){note.hidden=GDS_STATE.hidden;note.textContent='Forecast: '+(count===GDS_STAGES.length-1?'All consumable WIP':count?[...GDS_STATE.selected].map(i=>GDS_STAGES[i]).join(' + '):'None selected')+' · Exact EWO + Color; Sewing → Cutting → Embroidery → Print. Shared stock priority: Delivery Date → Plan Date → Line. Used stock is deducted once; display filters do not reallocate. Cutable is paused. SAH = Σ(covered EWO pcs × EWO SMV ÷ 60).'+(result.cutoff?' Stock baseline through '+result.cutoff+'; dates through baseline show —.':'')+(GDS_STATE.source?.loading?' Loading Print/Embroidery WIP…':'')+(GDS_STATE.source?.error?' Print/Embroidery report could not load.':'')+(result.notes.length?' '+result.notes.join(' '):'');}
  const lower=document.getElementById('gds-consumable-table');if(lower){
   lower.innerHTML='<thead><tr><th>Consumable WIP</th>'+context.dates.map(date=>'<th>'+esc(date.slice(8)+'-'+date.slice(5,7)+'-'+date.slice(2,4))+'</th>').join('')+'</tr></thead><tbody>'+GDS_STAGE_ORDER.map(i=>{const label=GDS_STAGES[i];return '<tr><th scope="row">'+label+'</th>'+result.days.map(day=>'<td>'+gdsFormat(day.stages[i],3)+gdsSubtotalMark(day.stages[i],day.stagePartial[i])+'</td>').join('')+'</tr>'}).join('')+'<tr class="gds-lower-total"><th>Total → Daily cover</th>'+result.days.map(day=>'<td>'+gdsFormat(day.total,3)+gdsSubtotalMark(day.total,day.totalPartial)+'</td>').join('')+'</tr></tbody>';
  }
- const lowerNote=document.getElementById('gds-consumable-note');if(lowerNote)lowerNote.textContent=count===GDS_STAGES.length?'Total daily cover = Forecastable Pcs above. Balances carry forward; shared EWO stock is allocated once across all lines before filters.':'This table retains all stage allocations; the upper forecast sums selected contributions. Filter changes do not reassign stock or reset prior-day consumption.';
+ const lowerNote=document.getElementById('gds-consumable-note');if(lowerNote)lowerNote.textContent=count===GDS_STAGES.length-1?'Total daily cover = Forecastable Pcs above. Balances carry forward; shared EWO + Color stock is allocated once by delivery priority before filters.':'This table retains all stage allocations; the upper forecast sums selected contributions. Filter changes do not reassign stock or reset prior-day consumption.';
 }
 function renderGanttDailySummary(context){
  if(!document.getElementById('gantt-daily-summary'))return;
- GDS_STATE.context=context;const request=++GDS_STATE.request,generation=SITE_SESSION_GENERATION,owner=SITE_AUTH_USER?.id;
- GDS_STATE.source={loading:true,rows:[],error:false};paintGanttDailySummary();
- const ids=[...new Set(DAILY_PLAN.filter(row=>context.dates.includes(row.date)&&context.lines.includes(Number(row.line))&&(!context.search||gdsKey(row.ewo)===gdsKey(context.search))).map(row=>String(row.ewo)))];
- if(!ids.length){GDS_STATE.source={loading:false,rows:[],error:false};paintGanttDailySummary();return;}
- // Load the active report before local EWO normalization; exact text IN filters
- // can omit source identifiers such as a numeric EWO saved with a .0 suffix.
- loadEwoSource('embellishment').then(rows=>{
-  if(request!==GDS_STATE.request||generation!==SITE_SESSION_GENERATION||owner!==SITE_AUTH_USER?.id)return;
-  GDS_STATE.source={loading:false,rows,error:false};paintGanttDailySummary();
- }).catch(()=>{if(request!==GDS_STATE.request||generation!==SITE_SESSION_GENERATION||owner!==SITE_AUTH_USER?.id)return;GDS_STATE.source={loading:false,rows:[],error:true};paintGanttDailySummary();});
+ GDS_STATE.context=context;++GDS_STATE.request;
+ const ready=typeof sharedReportsReady!=='function'||sharedReportsReady(sharedReportsForSlide(7));
+ GDS_STATE.source={loading:!ready,rows:ready?GANTT_EMBELLISHMENT:[],error:false};
+ paintGanttDailySummary();
 }
+
 function gdsToggleVisibility(){GDS_STATE.hidden=!GDS_STATE.hidden;GDS_STATE.open=false;paintGanttDailySummary();}
 function gdsToggleMenu(){GDS_STATE.open=!GDS_STATE.open;const menu=document.getElementById('gds-filter-menu'),button=document.getElementById('gds-filter-button');if(menu)menu.hidden=!GDS_STATE.open;if(button)button.setAttribute('aria-expanded',String(GDS_STATE.open));}
 function gdsSelectStage(input){const value=Number(input.value);if(input.checked)GDS_STATE.selected.add(value);else GDS_STATE.selected.delete(value);const focus=input.value;paintGanttDailySummary();document.querySelector('#gds-filter-menu input[value="'+focus+'"]')?.focus();}
