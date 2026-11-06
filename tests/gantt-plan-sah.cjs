@@ -1,7 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync(__dirname+'/../gantt-hover.js','utf8');
 const c={document:{addEventListener(){}},DATA:[],SEWING_IO_DATA:[],FABRIC_CUTTING_DATA:[],SAH_DATA:[],SAH_DAILY:[],esc:String};
-vm.createContext(c);vm.runInContext(source,c);
+vm.createContext(c);vm.runInContext(fs.readFileSync(__dirname+'/../gantt-stock.js','utf8'),c);vm.runInContext(source,c);c.getGanttStock=()=>({pairs:new Map(),details:new Map(),source:null});
 const w={line:11,ewo:'271738',date:'2026-10-12',selectedColors:['Off White'],color:'Off White',qty:317,planColors:[{color:'Off White',qty:317}],buyer:'Tommy',style:'Dress'};
 c.SAH_DATA=[
  {record_id:1,line:11,ewo:'271738.0',color:' off   white '},

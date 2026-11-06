@@ -38,6 +38,9 @@ function setup(source,options={}){
   c.console={error:(...a)=>{if(!options.fail)console.error(...a);},warn(){}};
   c.resetLoadUI=()=>{};
   Object.assign(c,{EFF15_METRIC_DAILY:[],EFF15_METRIC_UPLOAD_ID:null,SITE_SESSION_GENERATION:0,SITE_AUTH_USER:{id:'test-admin'}});
+  tables.embellishment_send_receive_rows=[];
+  c.GANTT_RFD_CUTTING=null;c.GANTT_EMBELLISHMENT=[];c.verifyDcsRead=data=>{assert.equal(data.integrity.complete,true);return data;};
+  c.SB.request=async(route,body)=>{assert.equal(route,'reports/snapshot');assert.equal(body.kind,'gantt-cutting');return {data:{rows:[],report:null,integrity:{complete:true,row_count:0}}};};
   vm.createContext(c);
   c.PLANNING_CACHE_VALIDATION=null;c.getChassisMasterLines=()=>new Set([1,2,3]);
   const names=['uploadMonthKey','planningSnapshotVersion','canReusePlanningSnapshot','capturePlanningState','restorePlanningState','fetchPlanningSnapshot','loadFromSupabase'];
@@ -245,14 +248,14 @@ function state(c){return JSON.parse(JSON.stringify({planning:c.capturePlanningSt
   console.log('PASS invalidation/logout prevent old requests from publishing or evicting newer data');
 
   const view=setup(html);view.c.CURRENT_SLIDE=7;let renderCount=0;
-  view.c.renderSlide=()=>{assert.equal(view.c.sharedReportsReady(['fabric','sewing','production']),true);renderCount++;};
+  view.c.renderSlide=()=>{assert.equal(view.c.sharedReportsReady(view.c.sharedReportsForSlide(7)),true);renderCount++;};
   assert.equal(view.c.prepareSharedReportView(7),true);assert.equal(view.c.prepareSharedReportView(7),true);
-  await view.c.ensureSharedReports(['fabric','sewing','production']);
+  await view.c.ensureSharedReports(view.c.sharedReportsForSlide(7));
   await new Promise(r=>setTimeout(r,0));assert.equal(renderCount,1);
   assert.equal(view.c.prepareSharedReportView(7),true);
   const hidden=setup(html);hidden.c.CURRENT_SLIDE=7;
   hidden.c.renderSlide=()=>{throw Error('Hidden slide rendered');};hidden.c.prepareSharedReportView(7);hidden.c.CURRENT_SLIDE=0;
-  await hidden.c.ensureSharedReports(['fabric','sewing','production']);await new Promise(r=>setTimeout(r,0));
+  await hidden.c.ensureSharedReports(hidden.c.sharedReportsForSlide(7));await new Promise(r=>setTimeout(r,0));
   const denied=setup(html);denied.c.CURRENT_SLIDE=7;denied.c.canAccessSlide=()=>false;
   assert.equal(denied.c.prepareSharedReportView(7),false);assert.equal(denied.calls.length,0);
   console.log('PASS render waits for all dependencies once; hidden/forbidden views do not render/fetch');

@@ -58,7 +58,7 @@ function laSupportedReasons(proof,colors){
  });
 }
 function buildLoadAnalysisLoss(input){
- const selected=new Set((input.selected||[0,1,2,3,4]).filter(i=>Number.isInteger(i)&&i>=0&&i<5));
+ const selected=new Set((input.selected||[0,1,2,3,4]).filter(i=>Number.isInteger(i)&&i>=0&&i<5&&(input.rfdDaily===undefined||i!==0)));
  const notes=new Set(),allocated=gdsAllocate(input,notes),summary=buildGanttDailySummary({...input,selected:[...selected]},{allocation:allocated,notes}),evidence=laEvidence(input.sources||{}),overrides=input.overrides||{};
  const plan=gdsGroup(allocated.plan,row=>JSON.stringify([row.date,Number(row.line),gdsKey(row.ewo)]));
  const cellKey=row=>JSON.stringify([row.date,Number(row.line),gdsKey(row.ewo)]),lineKey=row=>JSON.stringify([Number(row.line),gdsKey(row.ewo)]);
@@ -69,10 +69,21 @@ function buildLoadAnalysisLoss(input){
   const data=dataByLine.get(JSON.stringify([line,ewo]))||[],smvs=[...new Set(data.map(row=>gdsNumber(row.smv)).filter(v=>v>0))],a=allocated.allocations.get(key);
   const daily=dailyByCell.get(key)||[];
   const expected=daily.length?gdsSum(daily,row=>gdsNumber(row.value)):smvs.length===1?rows.reduce((n,row)=>n+gdsNumber(row.value),0)*smvs[0]/60:null;
-  const known=a?.stages.filter((v,i)=>v!==null&&selected.has(i))||[],covered=selected.size===0&&a?0:known.length&&(a.smv!==null||known.every(v=>v===0))?known.reduce((n,v)=>n+v,0)*(a.smv||0)/60:null;
+  const convert=indices=>{
+   if(!a)return null;
+   if(!indices.length)return 0;
+   let total=0,known=false;
+   for(const part of a.parts||[a]){
+    const values=indices.map(i=>part.stages[i]).filter(v=>v!==null);
+    if(!values.length)continue;
+    const pcs=values.reduce((n,v)=>n+v,0);if(pcs>0&&part.smv===null)continue;
+    total+=pcs*(part.smv||0)/60;known=true;
+   }
+   return known?total:null;
+  };
+  const covered=convert([...selected]);
   const printPcs=selected.has(1)?a?.stages[1]??null:0,embPcs=selected.has(2)?a?.stages[2]??null:0;
-  const printSah=printPcs===null?null:printPcs===0?0:a.smv===null?null:printPcs*a.smv/60;
-  const embSah=embPcs===null?null:embPcs===0?0:a.smv===null?null:embPcs*a.smv/60;
+  const printSah=selected.has(1)?convert([1]):0,embSah=selected.has(2)?convert([2]):0;
   const delayed=(printSah||0)+(embSah||0),achievable=covered===null?null:Math.max(0,covered-delayed);
   const scheduled=scheduledByCell.get(key)||[];
   const scheduledColors=[...new Set(scheduled.map(r=>r.color??data.find(d=>d.record_id!=null&&String(d.record_id)===String(r.record_id))?.color).filter(Boolean))];

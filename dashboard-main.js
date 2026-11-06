@@ -2707,7 +2707,7 @@ function ganttConditionVisible(condition,enabled,filter){
 let GANTT_INDEX_CACHE=null;
 function invalidateGanttIndex(){GANTT_INDEX_CACHE=null;}
 function getGanttIndex(master){
-  const reportsReady=typeof sharedReportsReady!=='function'||sharedReportsReady(['fabric','sewing','production']);
+  const reportsReady=typeof sharedReportsReady!=='function'||sharedReportsReady(sharedReportsForSlide(7));
   const sources=[DAILY_PLAN,CLOCK_HOUR_DATA,SAH_DATA,SEWING_IO_DATA,DATE_WISE_PRODUCTION_DATA,FABRIC_CUTTING_DATA];
   const owner=typeof SITE_AUTH_USER==='undefined'?'':SITE_AUTH_USER?.id;
   const generation=typeof SITE_SESSION_GENERATION==='undefined'?0:SITE_SESSION_GENERATION;
@@ -2754,7 +2754,7 @@ function getGanttIndex(master){
   for(const x of scope){const ewo=normEwo(x.ewo);addColor(ewo,x.color);const k=Number(x.line)+'|'+x.date+'|'+String(x.ewo||'').trim();if(N(x.smv)>0&&!smvByKey.has(k))smvByKey.set(k,x);}
   for(const x of CLOCK_HOUR_DATA){for(const month of [x.month,'*']){const key=Number(x.line)+'|'+String(x.ewo)+'|'+month;clockByKey.set(key,(clockByKey.get(key)??0)+N(x.total));}}
   for(const x of SAH_DATA){for(const month of [x.month,'*']){const key=Number(x.line)+'|'+String(x.ewo)+'|'+month;if(!sahByKey.has(key))sahByKey.set(key,x);}}
-  for(const x of (reportsReady?FABRIC_CUTTING_DATA:[])||[]){const ew=normEwo(x.ewo);add(fabricByEwo,ew,x);add(fabricByColor,JSON.stringify([ew,normColor(x.color_name)]),x);addColor(ew,x.color_name);}
+  for(const x of []||[]){const ew=normEwo(x.ewo);add(fabricByEwo,ew,x);add(fabricByColor,JSON.stringify([ew,normColor(x.color_name)]),x);addColor(ew,x.color_name);}
   for(const x of (reportsReady?SEWING_IO_DATA:[])){const ew=normEwo(x.ewo);add(sewingByLineEwo,Number(x.line_no)+'|'+ew,x);add(sewingByEwo,ew,x);addColor(ew,x.color);}
   for(const x of (reportsReady?DATE_WISE_PRODUCTION_DATA:[])||[]){const ew=normEwo(x.ewo);add(productionByCell,Number(x.line_no)+'|'+String(x.output_date||'').slice(0,10)+'|'+ew,x);addColor(ew,x.color);}
   const colorsByCell=new Map();
@@ -2817,10 +2817,10 @@ function getGanttIndex(master){
     const cutableQty=(fabricTotals.get(normEwo(ewo))?.cutable_qty??0);
     const cutQty=(fabricTotals.get(normEwo(ewo))?.total_cut_qty??0);
 
-    // Cutting WIP = EWO Total Cut Qty - EWO Total Sewing Input.
-    // All lines and all colors are combined; no Line/Date/Color filter here.
+    // Legacy stock fields are not used for coverage. RFD and receipts are
+    // reconciled per EWO + Color by the shared gantt-stock.js authority.
     const cuttingTotalSewingInput=(inputTotals.get(normEwo(ewo))?.input??0);
-    const cuttingWip=Math.max(0,cutQty-cuttingTotalSewingInput);
+    const cuttingWip=null; // Authoritative allocation is in gantt-stock.js.
 
     // Informational only: show every known color for this EWO.
     const ewoColors=sortedColors.get(normEwo(ewo))||[];
@@ -2878,10 +2878,11 @@ function getGanttIndex(master){
 
 function renderS11(data){
   if(!prepareSharedReportView(7))return;
-  const reportsReady=typeof sharedReportsReady!=='function'||sharedReportsReady(['fabric','sewing','production']);
+  const reportsReady=typeof sharedReportsReady!=='function'||sharedReportsReady(sharedReportsForSlide(7));
   if(typeof recordDashboardRender==='function')recordDashboardRender('7');
   const finishRender=typeof startDashboardTiming==='function'?startDashboardTiming('gantt.render'):()=>{};
   const master=getChassisMasterLines();
+  const stockModel=reportsReady?getGanttStock():null;
   const {planDates,cellEntries,latestProdByLineEwo,actualProductionDate,cumulativeDemand,normEwo}=getGanttIndex(master);
   const planId=String(ACTIVE_PLAN_UPLOAD?.id||'local');
   if(S11_RANGE_PLAN_ID!==planId){
@@ -2948,46 +2949,7 @@ function renderS11(data){
   const s11Body=document.getElementById('s11-body'); if(!s11Body)return; s11Body.innerHTML=lines.map(line=>'<tr><td class="sticky-team">'+line+'</td>'+displayDates.map(date=>{
     const items=cellEntries.get(line+'|'+date)||[];
     const entries=items.filter(w=>!searchEwo||normEwo(w.ewo)===searchEwo).map(w=>{
-      // WIP coverage starts AFTER this exact Line + EWO's latest production date.
-      // All planned EWO entries remain the source for cumulative future Plan Qty.
-      const coverageKey=Number(line)+'|'+normEwo(w.ewo);
-      const lineEwoLatestProductionDate=latestProdByLineEwo.get(coverageKey)||'';
-      const thisDate=String(date||'').slice(0,10);
-      // Material coverage colors are allowed only AFTER the latest date physically present
-      // in the uploaded Date Wise Actual Production Report. Dates through that report date
-      // keep the normal Gantt color; coverage begins strictly on the next plan date.
-      const latestProductionDate=actualProductionDate;
-      const afterProductionCutoff=reportsReady&&!!actualProductionDate && thisDate>actualProductionDate;
-
-      let wipCovered=false,cuttingCovered=false,cutableCovered=false,materialShort=false;
-      if(afterProductionCutoff){
-        const cumulativePlan=cumulativeDemand.get(coverageKey)?.get(thisDate)||0;
-        // Sequential/additive stock consumption:
-        // 1) cumulative Plan consumes Sewing WIP first;
-        // 2) only the uncovered balance consumes Cutting WIP;
-        // 3) only the still-uncovered balance consumes Cutable Qty.
-        const sewingStock=N(w.sewingWip);
-        const cuttingStock=N(w.cuttingWip);
-        const cutableStock=N(w.cutableQty);
-        const planRequiringCutting=Math.max(0,cumulativePlan-sewingStock);
-        const planRequiringCutable=Math.max(0,cumulativePlan-sewingStock-cuttingStock);
-
-        w.consumableWip=Math.max(0,sewingStock-cumulativePlan);
-        w.consumableCuttingWip=Math.max(0,cuttingStock-planRequiringCutting);
-        w.consumableCutableQty=Math.max(0,cutableStock-planRequiringCutable);
-
-        wipCovered=cumulativePlan<=sewingStock;
-        cuttingCovered=!wipCovered && cumulativePlan<=sewingStock+cuttingStock;
-        cutableCovered=!wipCovered && !cuttingCovered && cumulativePlan<=sewingStock+cuttingStock+cutableStock;
-        materialShort=!wipCovered && !cuttingCovered && !cutableCovered;
-      }
-      if(!afterProductionCutoff){
-        w.consumableWip=null;
-        w.consumableCuttingWip=null;
-        w.consumableCutableQty=null;
-      }
-
-      const condition=ganttCoverageCondition(wipCovered,cuttingCovered,cutableCovered,materialShort);
+      const condition=stockModel?ganttAllocatedCondition(stockModel,line,date,w.ewo):'';
       if(reportsReady&&!ganttConditionVisible(condition,colorEnabled,conditionFilter))return '';
       const cellEwos=items.map(item=>({line,date,ewo:item.ewo,qty:item.qty,color:item.color,planColors:item.planColors,buyer:item.buyer,style:item.style}));
       const payloadWithWip=encodeURIComponent(JSON.stringify({line,date,...w,cellEwos}));

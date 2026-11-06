@@ -29,7 +29,7 @@ function finishHomeFirstDataTiming(){
 function sharedReportsForSlide(n){
   // Slide 21's invoker view/RPC read their evidence in SQL, not from these arrays.
   // No standalone Sewing/Production slide exists in the current slide registry.
-  return Number(n)===7?['fabric','sewing','production']:Number(n)===11?['fabric','sewing']:[];
+  return Number(n)===7?['sewing','production','gantt-cutting','embellishment']:Number(n)===11?['fabric','sewing']:[];
 }
 
 function sharedReportsReady(names){
@@ -56,9 +56,12 @@ function sharedReportCacheAvailability(){
   }));
 }
 
-function invalidateSharedReports(names=['fabric','sewing','production']){
+function invalidateSharedReports(names=['fabric','sewing','production','gantt-cutting','embellishment']){
   for(const name of names){SHARED_REPORT_LOADS.delete(name);SHARED_REPORT_FALLBACKS.delete(name);}
   SHARED_REPORT_VIEWS.clear();
+  if(typeof GANTT_STOCK_CACHE!=='undefined')GANTT_STOCK_CACHE=null;
+  if(names.includes('gantt-cutting')&&typeof GANTT_RFD_CUTTING!=='undefined')GANTT_RFD_CUTTING=null;
+  if(names.includes('embellishment')&&typeof GANTT_EMBELLISHMENT!=='undefined')GANTT_EMBELLISHMENT=[];
 }
 
 function loadSharedReport(name){
@@ -69,7 +72,7 @@ function loadSharedReport(name){
   const entry={generation,userId,loaded:false,promise:null};
   SHARED_REPORT_LOADS.set(name,entry);
   const current=()=>generation===SITE_SESSION_GENERATION&&userId===SITE_AUTH_USER?.id&&SHARED_REPORT_LOADS.get(name)===entry;
-  const label={fabric:'Fabrics & Cutting',sewing:'Sewing I/O',production:'Date Wise Production'}[name];
+  const label={fabric:'Fabrics & Cutting',sewing:'Sewing I/O',production:'Date Wise Production','gantt-cutting':'RFD Daily Production Cutting',embellishment:'Embellishment'}[name];
   const finish=startDashboardTiming('report.'+name);let requests=0;
   setLoadChip('load-'+name,'loading',label);
   entry.promise=(async()=>{
@@ -86,7 +89,12 @@ function loadSharedReport(name){
         return sbPaged(()=>{requests++;return build();});
       };
       let rows;
-      if(name==='fabric'){
+      if(name==='gantt-cutting'){
+        requests++;const {data,error}=await (typeof SB.reportSnapshot==='function'?SB.reportSnapshot(name):SB.request('reports/snapshot',{kind:name}));if(error)throw error;
+        verifyDcsRead(data);rows=data;
+      }else if(name==='embellishment'){
+        rows=await paged(()=>SB.from('embellishment_send_receive_rows').select('*').eq('is_active',true).order('source_row_no',{ascending:true}));
+      }else if(name==='fabric'){
         rows=await paged(()=>SB.from('fabric_cutting_info')
           .select('id,buyer,ewo,color_name,item_product_type,style_embellishment_type,pattern_update,color_order_qty,fabric_booking_qty,total_fabric_received,fabric_balance,fabric_stock_after_cut,cutable_qty,total_cut_qty,cutting_balance,cutting_percent,status,cutting_difficulties,pattern_received_date,replacement_receive_commitment_date')
           .order('id',{ascending:true}));
@@ -97,8 +105,8 @@ function loadSharedReport(name){
         rows=source.map(r=>({
           ewo:r.ewo==null?'':String(r.ewo).replace(/\.0$/,'').trim(),
           color:r.color||'',line_no:Number(r.line_no)||lineNumber(r.line),
-          input:N(r.total_input_qty),output:N(r.total_output_qty),
-          wip:N(r.total_wip_qty),reject:N(r.total_reject_qty)
+          input:r.total_input_qty==null||String(r.total_input_qty).trim()===''?null:N(r.total_input_qty),output:r.total_output_qty==null||String(r.total_output_qty).trim()===''?null:N(r.total_output_qty),
+          wip:r.total_wip_qty==null||String(r.total_wip_qty).trim()===''?null:N(r.total_wip_qty),reject:r.total_reject_qty==null||String(r.total_reject_qty).trim()===''?null:N(r.total_reject_qty)
         }));
       }else if(name==='production'){
         const source=await paged(()=>SB.from('date_wise_production')
@@ -112,12 +120,14 @@ function loadSharedReport(name){
         }));
       }else throw Error('Unknown shared report: '+name);
       if(!current())throw Error('Shared report load superseded.');
+      if(name==='gantt-cutting')GANTT_RFD_CUTTING=rows;
+      if(name==='embellishment')GANTT_EMBELLISHMENT=rows;
       if(name==='fabric')FABRIC_CUTTING_DATA=rows;
       if(name==='sewing')SEWING_IO_DATA=rows;
       if(name==='production')DATE_WISE_PRODUCTION_DATA=rows;
       entry.loaded=true;entry.cached=false;entry.at=Date.now();
-      setLoadChip('load-'+name,'ok',label+' ('+rows.length.toLocaleString()+')');
-      finish({status:'loaded',requests,rows:rows.length});
+      setLoadChip('load-'+name,'ok',label+' ('+(Array.isArray(rows)?rows.length:rows.rows.length).toLocaleString()+')');
+      finish({status:'loaded',requests,rows:Array.isArray(rows)?rows.length:rows.rows.length});
       return rows;
     }catch(error){
       const wasCurrent=current();

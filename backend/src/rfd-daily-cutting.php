@@ -61,8 +61,8 @@ function dcsAction(array $u,array $b): array {
         audit('dcs.activate',$id,['rows'=>$n]);return ['id'=>$id,'status'=>'SUCCESS','rows'=>$n];
     });
 }
-function dcsRead(array $u): void {
-    requirePermission($u,'slide_22');
+function dcsRead(array $u,string $permission='slide_22'): void {
+    requirePermission($u,$permission);
     if(!dcsInstalled()){jsonOut(['data'=>['headers'=>dcsHeaders(),'report'=>null,'rows'=>[],'integrity'=>['complete'=>true,'row_count'=>0],'setup_required'=>true],'error'=>null]);return;}
     $pdo=db();$pdo->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');$pdo->beginTransaction();
     try{
