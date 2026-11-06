@@ -40,6 +40,20 @@ try:
    assert table.locator(f'tfoot [data-total-column="{qty_col}"]').inner_text()==total,(prefix,'wrong selected total')
    assert 'Red' in table.locator('tbody').inner_text() and 'C. Navy' in table.locator('tbody').inner_text();assert 'Praline'not in table.locator('tbody').inner_text()
    buyer=page.locator('#'+prefix+'-buyer');assert 'Other Buyer'not in buyer.inner_text();assert 'Mixed Buyer'not in buyer.inner_text();assert 'Unknown Buyer'not in buyer.inner_text()
+   # The shared mode applies before cascades/totals/exports, across all four tables.
+   page.locator('#rfd-plan-mode').select_option('without')
+   assert page.evaluate('p=>({rfd:RFD_FILTERED,booking:BOOKING_FILTERED,dcs:DCS_FILTERED,fdr:FDR_FILTERED}[p]).length',prefix)==1
+   assert 'Praline' in table.locator('tbody').inner_text() and 'Blue' not in table.locator('tbody').inner_text()
+   assert table.locator(f'tfoot [data-total-column="{qty_col}"]').inner_text()==('99 KG' if prefix=='booking' else '99')
+   assert 'Buyer A' not in buyer.inner_text()
+   page.locator('#rfd-plan-mode').select_option('all')
+   assert page.evaluate('p=>({rfd:RFD_FILTERED,booking:BOOKING_FILTERED,dcs:DCS_FILTERED,fdr:FDR_FILTERED}[p]).length',prefix)==7
+   assert 'Mixed Buyer' in buyer.inner_text() and 'Unknown Buyer' in buyer.inner_text()
+   with page.expect_download() as all_download:page.locator('#'+prefix+'-export').click()
+   all_rows=list(csv.reader(io.StringIO(Path(all_download.value.path()).read_text(encoding='utf-8-sig'),newline='')))[1:]
+   assert all_rows==page.evaluate('p=>fixtures[p]',prefix),'All EWO export lost source rows'
+   page.locator('#rfd-plan-mode').select_option('within')
+   assert page.evaluate('p=>({rfd:RFD_FILTERED,booking:BOOKING_FILTERED,dcs:DCS_FILTERED,fdr:FDR_FILTERED}[p]).length',prefix)==4
    count=page.evaluate('requests');choose('plan-b');assert page.evaluate('requests')==count,'cached plan switch fetched reports'
    assert 'Praline'in table.locator('tbody').inner_text();assert 'Blue'not in table.locator('tbody').inner_text();assert table.locator(f'tfoot [data-total-column="{qty_col}"]').inner_text()==('99 KG'if prefix=='booking'else'99')
    choose('plan-a');assert page.evaluate('requests')==count
@@ -50,6 +64,9 @@ try:
     table.locator('tbody [data-fdr-column="3"]').first.click();assert '"source_index": 1'in page.locator('#fdr-evidence-body').inner_text();choose('plan-b');assert not page.locator('#fdr-evidence').is_visible();choose('plan-a')
    choose('plan-empty');assert page.evaluate('p=>({rfd:RFD_FILTERED,booking:BOOKING_FILTERED,dcs:DCS_FILTERED,fdr:FDR_FILTERED}[p]).length',prefix)==0;choose('plan-a')
   page.evaluate("openScopeTab('converter')");page.wait_for_function('RCON_DATA!==null');assert page.locator('#rcon-body [data-rcon-review]').count()==1;assert '271080'in page.locator('#rcon-body').inner_text();assert '272205'not in page.locator('#rcon-map-list').inner_text()
+  page.locator('#rfd-plan-mode').select_option('without');assert page.locator('#rcon-body [data-rcon-review]').count()==1;assert '272205' in page.locator('#rcon-body').inner_text();assert '271080' not in page.locator('#rcon-map-list').inner_text()
+  page.locator('#rfd-plan-mode').select_option('all');assert page.locator('#rcon-body [data-rcon-review]').count()==2;assert '271080' in page.locator('#rcon-map-list').text_content() and '272205' in page.locator('#rcon-map-list').text_content(),page.locator('#rcon-map-list').inner_html()
+  page.locator('#rfd-plan-mode').select_option('within')
   page.locator('#rcon-body [data-rcon-review]').click();assert page.locator('#rcon-review').is_visible();choose('plan-b');assert not page.locator('#rcon-review').is_visible();assert '272205'in page.locator('#rcon-body').inner_text();assert '271080'not in page.locator('#rcon-map-list').inner_text()
   # Late global-source response is always displayed under the CURRENT plan.
   choose('plan-a');page.evaluate("openScopeTab('rfd')");page.evaluate("()=>{holdRead=true;void loadRfdModule(true)}");page.wait_for_function('typeof releaseRead==="function"')
@@ -60,6 +77,9 @@ try:
   for width in [1464,721,390]:
    page.set_viewport_size({'width':width,'height':884});page.wait_for_timeout(100);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert 'All colors'in page.locator('#rfd-plan-scope').inner_text()
   page.evaluate("setPlanningReadState('error')");assert page.evaluate('RFD_FILTERED.length')==0
+  page.locator('#rfd-plan-mode').select_option('all');assert page.evaluate('RFD_FILTERED.length')==7
+  page.locator('#rfd-plan-mode').select_option('without');assert page.evaluate('RFD_FILTERED.length')==0
+  page.locator('#rfd-plan-mode').select_option('all')
   assert page.evaluate('JSON.stringify({fixtures,derived,converter})===original'),'original source records changed'
   page.evaluate('siteLogout()');page.wait_for_function('SITE_AUTH_USER===null');assert page.evaluate('RFD_ROWS.length===0&&BOOKING_ROWS.length===0&&DCS_ROWS.length===0&&FDR_ROWS.length===0')
   assert not errors,errors;b.close()

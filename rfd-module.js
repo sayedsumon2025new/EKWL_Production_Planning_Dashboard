@@ -42,7 +42,7 @@ function renderRfdModule(){
  RFD_FILTERED=rfdCascadeRows('rfd',RFD_ROWS);
  const pages=Math.max(1,Math.ceil(RFD_FILTERED.length/100));RFD_PAGE=Math.max(1,Math.min(RFD_PAGE,pages));const start=(RFD_PAGE-1)*100,part=RFD_FILTERED.slice(start,start+100);
  table.innerHTML='<colgroup>'+RFD_HEADERS.map(()=>'<col>').join('')+'</colgroup><thead><tr>'+RFD_HEADERS.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+(part.length?part.map(({row,i})=>'<tr data-source-row="'+(i+2)+'">'+row.map((value,j)=>'<td>'+(j===2?rfdEwoCell(value):esc(value))+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="22" class="rfd-empty">'+(RFD_ROWS.length?'No matching records.':'No saved RFD report. Select a CSV to preview, then Upload & Save.')+'</td></tr>')+'</tbody>'+rfdTotalsFooter('rfd',RFD_HEADERS,RFD_FILTERED,!!RFD_REPORT);
- rfdNode('rfd-count').textContent=RFD_FILTERED.length.toLocaleString()+' / '+rfdPlanRowCount('rfd').toLocaleString()+' selected-plan rows · 22 source columns';
+ rfdNode('rfd-count').textContent=RFD_FILTERED.length.toLocaleString()+' / '+rfdPlanRowCount('rfd').toLocaleString()+' scope rows · 22 source columns';
  rfdNode('rfd-source').textContent=RFD_REPORT?(RFD_MODE==='preview'?'CSV PREVIEW · NOT SAVED':'MYSQL · SAVED REPORT')+' · '+RFD_REPORT.file_name+(RFD_REPORT.completed_at?' · Saved '+RFD_REPORT.completed_at+' UTC':''):'RFD source report';
  rfdNode('rfd-page-label').textContent='Page '+RFD_PAGE+' / '+pages+(part.length?' · Rows '+(start+1)+'–'+(start+part.length):'');
  for(const id of ['rfd-first','rfd-prev'])rfdNode(id).disabled=RFD_PAGE===1;
