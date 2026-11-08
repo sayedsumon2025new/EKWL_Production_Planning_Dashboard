@@ -52,7 +52,7 @@ try:
    assert 'Mixed Buyer' in buyer.inner_text() and 'Unknown Buyer' in buyer.inner_text()
    with page.expect_download() as all_download:page.locator('#'+prefix+'-export').click()
    all_rows=list(csv.reader(io.StringIO(Path(all_download.value.path()).read_text(encoding='utf-8-sig'),newline='')))[1:]
-   assert all_rows==page.evaluate('p=>fixtures[p]',prefix),'All EWO export lost source rows'
+   assert all_rows==page.evaluate('p=>p==="fdr"?fixtures[p].map(fdrViewRow):fixtures[p]',prefix),'All EWO export lost source rows'
    page.locator('#rfd-plan-mode').select_option('within')
    assert page.evaluate('p=>({rfd:RFD_FILTERED,booking:BOOKING_FILTERED,dcs:DCS_FILTERED,fdr:FDR_FILTERED}[p]).length',prefix)==4
    count=page.evaluate('requests');choose('plan-b');assert page.evaluate('requests')==count,'cached plan switch fetched reports'
@@ -60,7 +60,7 @@ try:
    choose('plan-a');assert page.evaluate('requests')==count
    with page.expect_download()as d:page.locator('#'+prefix+'-export').click()
    downloaded=list(csv.reader(io.StringIO(Path(d.value.path()).read_text(encoding='utf-8-sig'),newline='')))[1:]
-   expected=page.evaluate('p=>fixtures[p].slice(1,5)',prefix);assert downloaded==expected,(prefix,'source export changed or included another plan')
+   expected=page.evaluate('p=>p==="fdr"?fixtures[p].slice(1,5).map(fdrViewRow):fixtures[p].slice(1,5)',prefix);assert downloaded==expected,(prefix,'source export changed or included another plan')
    if prefix=='fdr':
     table.locator('tbody [data-fdr-column="3"]').first.click();assert '"source_index": 1'in page.locator('#fdr-evidence-body').inner_text();choose('plan-b');assert not page.locator('#fdr-evidence').is_visible();choose('plan-a')
    choose('plan-empty');assert page.evaluate('p=>({rfd:RFD_FILTERED,booking:BOOKING_FILTERED,dcs:DCS_FILTERED,fdr:FDR_FILTERED}[p]).length',prefix)==0;choose('plan-a')
