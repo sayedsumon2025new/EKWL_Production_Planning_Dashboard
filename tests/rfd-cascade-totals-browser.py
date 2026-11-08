@@ -59,17 +59,17 @@ try:
   page.evaluate("openFixture('booking')")
   def total(prefix,col):return page.locator(f'#{prefix}-table tfoot [data-total-column="{col}"]').inner_text()
   for prefix in ['rfd','booking','dcs','fdr']:
-   page.evaluate('p=>openFixture(p)',prefix);assert page.locator(f'#{prefix}-table tbody tr').count()==100;assert page.locator(f'#{prefix}-table tfoot td').count()=={'rfd':22,'booking':13,'dcs':25,'fdr':31}[prefix]
+   page.evaluate('p=>openFixture(p)',prefix);assert page.locator(f'#{prefix}-table tbody tr').count()==100;assert page.locator(f'#{prefix}-table tfoot td').count()=={'rfd':22,'booking':13,'dcs':25,'fdr':30}[prefix]
    if prefix=='rfd':
     page.locator('#rfd-buyer').select_option('Buyer B\r\nTeam');assert page.evaluate('RFD_FILTERED.length')==1;page.evaluate('clearRfdFilters()')
-   expected_all={'rfd':(14,'20.5'),'booking':(11,'20.4 KG\n2 PCS'),'dcs':(9,'1,030'),'fdr':(14,'205 KG')}[prefix];assert total(prefix,expected_all[0])==expected_all[1],(prefix,total(prefix,expected_all[0]))
+   expected_all={'rfd':(14,'20.5'),'booking':(11,'20.4 KG\n2 PCS'),'dcs':(9,'1,030'),'fdr':(13,'205 KG')}[prefix];assert total(prefix,expected_all[0])==expected_all[1],(prefix,total(prefix,expected_all[0]))
    page.locator(f'#{prefix}-last').click();assert page.locator(f'#{prefix}-table tbody tr').count()==5;assert total(prefix,expected_all[0])==expected_all[1]
    page.locator(f'#{prefix}-buyer').select_option('Buyer A');color_id='fdr-place'if prefix=='fdr'else prefix+'-color';assert 'Green'not in page.locator('#'+color_id).inner_text();assert 'Blue'in page.locator('#'+color_id).inner_text();assert page.locator(f'#{prefix}-table tbody tr').count()==100
    page.locator('#'+color_id).select_option('Blue');assert page.locator(f'#{prefix}-table tbody tr').count()==60
    if prefix=='rfd':assert total(prefix,14)=='6'
    if prefix=='booking':assert total(prefix,11)=='6 KG'
    if prefix=='dcs':assert total(prefix,7)=='3,000' and total(prefix,9)=='300' and total(prefix,8)=='30'
-   if prefix=='fdr':assert total(prefix,13)=='60 KG'and total(prefix,14)=='60 KG'and total(prefix,20)=='240'and total(prefix,16)=='—'and total(prefix,18)=='—'
+   if prefix=='fdr':assert total(prefix,13)=='60 KG'and page.locator('#fdr-table [data-total-column="14"]').count()==0 and total(prefix,20)=='240'and total(prefix,16)=='—'and total(prefix,18)=='—'
    if prefix!='fdr':
     select=page.locator(f'#{prefix}-place');select.select_option('Place 1'if prefix!='dcs'else'01-Nov-26')
    page.locator(f'#{prefix}-buyer').select_option('Buyer B');assert page.locator('#'+color_id).input_value()=='';assert 'Blue'not in page.locator('#'+color_id).inner_text();assert 'Green'in page.locator('#'+color_id).inner_text()
@@ -78,7 +78,7 @@ try:
    page.locator(f'#{prefix}-search').fill({'rfd':'RFD-0204','booking':'B-204','dcs':'D-102','fdr':'F-102'}[prefix]);page.wait_for_function("p=>({rfd:RFD_FILTERED,booking:BOOKING_FILTERED,dcs:DCS_FILTERED,fdr:FDR_FILTERED}[p]).length===1",arg=prefix);assert page.locator(f'#{prefix}-table tbody tr').count()==1;page.evaluate(f'{clear}()')
    page.locator('#'+color_id).select_option('Green')
    with page.expect_download()as d:page.locator(f'#{prefix}-export').click()
-   exported=source_csv(d.value.path());expected=page.evaluate("p=>p==='fdr'?fixtureFdr.filter(r=>r[2]==='Green'):fixtureRaw[p].filter(r=>r[{rfd:6,booking:7,dcs:6}[p]]==='Green')",prefix);assert exported[1:]==expected,'Export altered source rows or appended totals'
+   exported=source_csv(d.value.path());expected=page.evaluate("p=>p==='fdr'?fixtureFdr.filter(r=>r[2]==='Green').map(fdrViewRow):fixtureRaw[p].filter(r=>r[{rfd:6,booking:7,dcs:6}[p]]==='Green')",prefix);assert exported[1:]==expected,'Export altered source rows or appended totals'
    for width in [721,1065,1920]:
     page.set_viewport_size({'width':width,'height':884});page.wait_for_timeout(100);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(prefix,width);assert page.locator('#'+color_id).is_visible();assert page.locator(f'#{prefix}-table').evaluate("e=>e.parentElement.getBoundingClientRect().bottom+30<=innerHeight"),(prefix,width,'table exceeds viewport');assert page.locator(f'#{prefix}-table tfoot td').first.evaluate("e=>{const a=e.getBoundingClientRect(),b=e.closest('table').parentElement.getBoundingClientRect();return a.bottom<=b.bottom+2&&a.top>=b.top}"),(prefix,width,'footer not pinned')
     if width==721:page.screenshot(path='/tmp/rfd-layout-'+prefix+'.png')
