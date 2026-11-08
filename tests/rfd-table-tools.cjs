@@ -25,3 +25,6 @@ console.log('PASS EWO display-only extraction, leading zeros, all distinct codes
 
 const bookingNumber=c.rfdEwoCell('271080-FBR-Add-1',true,'Original Booking No');assert(bookingNumber.includes('>271080</span>'));assert(bookingNumber.includes('data-rfd-ewo-original="271080-FBR-Add-1"'));assert(bookingNumber.includes('data-rfd-ewo-label="Original Booking No"'));
 console.log('PASS Booking No suffix display with exact original booking reference retained for hover');
+const original=JSON.stringify(fdr),bodyView={key:'body',matches:({i})=>i!==1},ribView={key:'rib',matches:({i})=>i===1};
+let selected=c.rfdCascadeRows('fdr',fdr,bodyView);assert.deepEqual(Array.from(selected,x=>x.i),[0,2]);assert.equal(c.rfdQuantityTotals('fdr',selected,data)[6].text,'2');selected=c.rfdCascadeRows('fdr',fdr,ribView);assert.deepEqual(Array.from(selected,x=>x.i),[1]);assert.equal(JSON.stringify(fdr),original);
+console.log('PASS Body/Rib predicate runs before cascade options/totals and preserves original evidence indices without mutating source rows');
