@@ -44,11 +44,12 @@ jobs:
           python3 tests/mysql/rfd.py /tmp/ekwl-test-auth.json
           python3 tests/mysql/rfd-booking.py /tmp/ekwl-test-auth.json
           python3 tests/mysql/rfd-daily-cutting.py /tmp/ekwl-test-auth.json
-          python3 tests/mysql/fabrics-derived.py /tmp/ekwl-test-auth.json
       - name: Verify Size Set performance in Chrome
         run: |
           python3 -m pip install playwright==1.58.0
           python3 tests/mysql/snapshot-browser.py /tmp/ekwl-test-auth.json
+          # This suite installs its own Order Bank quantity fixture after snapshot parity checks.
+          python3 tests/mysql/fabrics-derived.py /tmp/ekwl-test-auth.json
           python3 tests/fabrics-derived-browser.py /tmp/ekwl-test-auth.json
           python3 tests/rfd-cascade-totals-browser.py
           python3 tests/rfd-selected-plan-browser.py
