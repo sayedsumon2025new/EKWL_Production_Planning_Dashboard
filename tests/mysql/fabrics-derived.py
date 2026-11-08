@@ -14,18 +14,24 @@ rfd=[];booking=[];cut=[]
 for e,construction,qty in [('000123','Body','400'),('000123','Body','100'),('000123','Rib','100')]+[('FDR'+str(i).zfill(6),'Body','10')for i in range(110)]:
  r=['0']*22;r[2]=e;r[6]='Blue';r[7]=('Second matching fabric detail' if len(rfd)==1 else 'Long fabric description <source> '+('Cotton, soft fabric details. '*12));r[8]=construction;r[9]='Cotton';r[10]='Buyer';r[14]=qty;r[17]='1';rfd.append(r)
 for e,construction,qty in [('000123','Body','400'),('000123','Rib','200')]+[('FDR'+str(i).zfill(6),'Body','20')for i in range(110)]:booking.append([e,'B','Buyer','Team','Supplier',construction,'Cotton','Blue','160','60','kg',qty,'Additional reason\nSecond line'])
-for e,date,batch,issued,ready in [('000123','01-Nov-26','C1','200','400'),('000123','01-Nov-26','C1','100','400'),('000123','02-Nov-26','C2','50','100')]+[('FDR'+str(i).zfill(6),'01-Nov-26','C'+str(i),'2','5')for i in range(110)]:cut.append([date,'Buyer','Team',e,'Style','Company','Blue','1000','0','500' if date=='02-Nov-26' else ready]+['0']*15)
+for e,date,batch,issued,ready in [('000123','01-Nov-26','C1','200','400'),('000123','01-Nov-26','C1','100','400'),('000123','02-Nov-26','C2','50','100')]+[('FDR'+str(i).zfill(6),'01-Nov-26','C'+str(i),'2','5')for i in range(110)]:cut.append([date,'Buyer','Team',e,'Style','Company','Blue','7777','0','500' if date=='02-Nov-26' else ready]+['0']*15)
 heads={k:save(k,r) for k,r in [('rfd',rfd),('booking',booking),('cutting',cut)]}
+# Order Bank is authoritative; Daily Production deliberately disagrees.
+order_rows=[{'EWO':'000123','GmtColor':'Blue','OrderQty':'600','PO':'PO-A'},{'EWO':'000123','GmtColor':' BLUE ','OrderQty':'400','PO':'PO-B'},{'EWO':'000123','GmtColor':'Red','OrderQty':'9999','PO':'OTHER-COLOR'}]
+token=str(uuid.uuid4());admin.query('order_bank_import_rows',op='insert',rows=[{'upload_token':token,'source_row_no':i+1,'source_data':r}for i,r in enumerate(order_rows)])
+admin.call('rpc',{'name':'finalize_order_bank_import','args':{'p_upload_token':token,'p_expected_rows':len(order_rows),'p_file_name':'Order quantities.csv','p_source_columns':list(order_rows[0])}})
+
 sql(r'''$plan=Ekwl\run("SELECT id FROM ekwl_plan_uploads WHERE status='complete' ORDER BY uploaded_at DESC,id DESC LIMIT 1")->fetchColumn();Ekwl\run("UPDATE ekwl_plan_records SET ewo='000123',col='Blue',`print`='Yes',emb='No' WHERE upload_id=? AND criteria='Plan/Day' ORDER BY source_row LIMIT 1",[$plan]);$uid=Ekwl\run("SELECT auth_user_id FROM ekwl_site_users WHERE role='admin' LIMIT 1")->fetchColumn();$b=Ekwl\uuid();Ekwl\run("DELETE FROM ekwl_report_heads WHERE kind='sewing'");Ekwl\run("INSERT INTO ekwl_report_heads VALUES ('sewing','all',?)",[$b]);foreach([['100','80','20'],['100','70','30']]as $n)Ekwl\insertRows('sewing_input_output',[['ewo'=>'000123','color'=>'Blue','total_input_qty'=>$n[0],'total_output_qty'=>$n[1],'total_wip_qty'=>$n[2],'report_batch_id'=>$b,'uploaded_by'=>$uid]]);Ekwl\run('UPDATE ekwl_embellishment_send_receive_rows SET is_active=0 WHERE is_active=1');Ekwl\insertRows('embellishment_send_receive_rows',[['batch_id'=>Ekwl\uuid(),'source_row_no'=>2,'is_active'=>true,'Date'=>'01-Nov-26','EWO No'=>'000123','Color'=>'Blue','Today Print Send Qty' . chr(10)=>'400',' Today Print Receive Qty'=>'300','Today EMB Send Qty'=>'0','Today EMB Receive Qty'=>'0','uploaded_by'=>$uid]]);''')
 Client().call('rfd/fabrics-details',{'action':'read'},expected=401)
 admin.call('rfd/fabrics-details',{'action':'refresh'},csrf=False,expected=403)
 r=admin.call('rfd/fabrics-details',{'action':'refresh'})['data'];assert r['integrity']['complete'] and len(r['rows'])==112 and len(r['headers'])==31
 main=[row for row in r['rows'] if row[1]=='000123'];assert len(main)==2
-body=next(row for row in main if row[4]=='Body');assert 'Second matching fabric detail' in body[3] and 'Long fabric description' in body[3];assert r['report']['model_version']=='fabrics-derived-v5'
+body=next(row for row in main if row[4]=='Body');assert 'Second matching fabric detail' in body[3] and 'Long fabric description' in body[3];assert r['report']['model_version']=='fabrics-derived-v6'
 for i,row in enumerate(r['rows']):
  if row[1]=='000123':assert r['evidence'][i]['fabric_details_match']['status']=='matched'
 for row in main:
  for i,v in {14:'600',15:'600',16:'—',17:'1000',18:'0.6',19:'1000',20:'500',21:'400',22:'300',23:'100',24:'0',25:'0',26:'0',27:'200',28:'100',29:'50'}.items():assert row[i]==v,(i,row[i])
+pair=next(v for v in r['pairs'].values()if v['order_bank_order']['quantity']=='1000');assert [x['row']for x in pair['order_bank_order']['rows']]==[2,3];assert [x['order_qty']for x in pair['order_bank_order']['rows']]==['600','400']
 assert r['report']['materialized'];again=admin.call('rfd/fabrics-details',{'action':'refresh'})['data'];assert again['rows']==r['rows'] and again['report']['id']==r['report']['id']
 for k,route in [('rfd','rfd'),('booking','rfd/booking'),('cutting','rfd/daily-cutting')]:assert admin.call(route,{'action':'read'})['data']['report']['id']==heads[k]
 email='fdr-reader-'+secrets.token_hex(5)+'@fixture.invalid';pwd='Fixture-'+secrets.token_hex(12);admin.call('users',{'action':'create','email':email,'password':pwd,'role':'user','status':'active','permissions':{'slide_22':True}});reader=Client();reader.login(email,pwd)

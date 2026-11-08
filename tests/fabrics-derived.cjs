@@ -10,3 +10,5 @@ assert.equal(c.verifyFdrRead(valid),valid);
 for(const change of [d=>d.booking_lines=[],d=>d.booking_lines[0].n=3,d=>d.booking_lines[0].v[11]=1000,d=>d.booking_headers[0]='Wrong',d=>d.evidence[0].reconciliation.type='other',d=>d.evidence[0].reconciliation.booking_qty='999',d=>d.evidence[0].master_identity.matched=false,d=>d.evidence[0].reconciliation.type='rib']){const bad=structuredClone(valid);change(bad);assert.throws(()=>c.verifyFdrRead(bad));}
 const duplicate=structuredClone(valid);duplicate.rows.push([...duplicate.rows[0]]);duplicate.evidence.push(structuredClone(duplicate.evidence[0]));duplicate.integrity.row_count=2;assert.throws(()=>c.verifyFdrRead(duplicate));
 console.log('PASS v5 booking source headings/counts/row identity/types, role evidence, master identity, primary uniqueness and supporting-to-primary guards');
+
+const v6=structuredClone(valid);v6.report.model_version='fabrics-derived-v6';v6.rows[0][17]='1000';v6.pairs={A:{order_bank_order:{quantity:'1000'}}};assert.equal(c.verifyFdrRead(v6),v6);v6.pairs.A.order_bank_order.quantity='9999';assert.throws(()=>c.verifyFdrRead(v6));
