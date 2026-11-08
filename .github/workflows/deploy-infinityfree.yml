@@ -34,6 +34,7 @@ jobs:
           php tests/mysql/report-diagnostic.php
           php tests/mysql/load-analysis-loss.php
           php tests/mysql/fabrics-derived-model.php
+          php tests/mysql/fdr-reconciliation-model.php
           php tests/mysql/rfd-converter-model.php
       - name: Verify consistent snapshots against isolated MySQL
         run: |
@@ -63,6 +64,8 @@ jobs:
           python3 tests/rfd-daily-cutting-browser.py /tmp/ekwl-test-auth.json
           python3 tests/slides-navigation.py
           python3 tests/premium-corporate-browser.py
+          python3 tests/mysql/fdr-reconciliation.py /tmp/ekwl-test-auth.json
+          python3 tests/fdr-reconciliation-browser.py /tmp/ekwl-test-auth.json
       - name: Verify color reconciliation approvals and report linkage
         run: |
           python3 tests/mysql/new-fixture.py

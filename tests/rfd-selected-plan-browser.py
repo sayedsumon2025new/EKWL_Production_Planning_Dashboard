@@ -8,7 +8,8 @@ from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[1]
 class Quiet(SimpleHTTPRequestHandler):
  def log_message(self,*_):pass
-server=ThreadingHTTPServer(('127.0.0.1',0),partial(Quiet,directory=str(ROOT)));Thread(target=server.serve_forever,daemon=True).start();base=f'http://127.0.0.1:{server.server_port}/'
+class Server(ThreadingHTTPServer):request_queue_size=128
+server=Server(('127.0.0.1',0),partial(Quiet,directory=str(ROOT)));Thread(target=server.serve_forever,daemon=True).start();base=f'http://127.0.0.1:{server.server_port}/'
 try:
  with sync_playwright()as p:
   b=p.chromium.launch(executable_path=shutil.which('chromium')or shutil.which('google-chrome'),args=['--no-sandbox']);page=b.new_page(viewport={'width':1464,'height':1000});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
@@ -16,7 +17,7 @@ try:
    if r.request.url.startswith(base)and'/api/'not in r.request.url:r.continue_()
    elif'/api/'in r.request.url:r.fulfill(content_type='application/json',body=json.dumps({'data':{'session':None,'csrf':'fixture'},'error':None}))
    else:r.fulfill(body='',content_type='application/javascript')
-  page.route('**/*',route);page.goto(base,wait_until='networkidle')
+  page.route('**/*',route);page.goto(base,wait_until='networkidle');page.wait_for_function("typeof FDR_HEADERS!=='undefined'&&typeof renderFdrModule==='function'&&typeof BOOKING_HEADERS!=='undefined'")
   page.evaluate(r"""()=>{
    SITE_AUTH_USER={id:'scope-owner'};SITE_USER_PROFILE={role:'admin',permissions:{}};document.body.classList.remove('site-locked');document.getElementById('site-login-gate').classList.add('hidden');
    window.fixtures={rfd:[],booking:[],dcs:[],fdr:[]};const entries=[['272205','Praline','Other Buyer','99'],['271080','Blue','Buyer A','10'],['271080','Red','Buyer A','20'],['271444','Black','Buyer B','30'],['EWO 271080-FBR','C. Navy','Buyer A','5'],['271080 / 272205','Mixed','Mixed Buyer','999'],['','Unknown','Unknown Buyer','999']];
