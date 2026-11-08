@@ -34,9 +34,17 @@ and the ambiguity remain in evidence. EWO/Color totals retain their existing rul
 and repeat across fabric rows; never add their repeated values across Body/Rib.
 MCD Live Stock stays blank and Received for Cutting remains excluded.
 
-Model v5 adds per-row reconciliation/specification/master evidence plus verified
+Model v6 adds per-row reconciliation/specification/master evidence plus verified
 raw booking lines to the existing API. Derived materializations use the existing
 JSON tables and a new model dependency digest; no source-table/schema migration is
 needed. The browser verifies source headings/counts/row identities and role evidence.
 The Booking Qty/Total Booking dialog shows the original references, quantities,
 units, reasons, source rows and file/batch. CSV exports only the current tab/filter in displayed order. Booking Qty precedes Net Delivery Qty Kg.; Total Booking is omitted from the view and CSV. Its underlying values remain available to existing calculations and evidence.
+
+Total Order Qty uses the exact sum of current verified Order Bank `OrderQty` rows
+matching normalized six-digit EWO + garment Color (including currently approved
+source color mappings). Distinct PO/source rows are added once, never multiplied
+by fabric rows. Missing matches or invalid, negative or fractional quantities show
+unavailable, with no Daily Production fallback. Consumption and Cut able use that
+same Order Bank denominator; cumulative cutting retains its Daily Production rule.
+Evidence records the original Order Bank row numbers, identities and quantities.

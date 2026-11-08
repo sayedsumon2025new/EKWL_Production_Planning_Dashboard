@@ -21,7 +21,7 @@ function rcPrepare(): void {
 function rcStoredMappings(): array {
  return rcMappingsInstalled()?run('SELECT id,scope_key,ewo,source_name,from_color,to_color,is_active,revision,approved_at,source_digest FROM ekwl_rfd_color_mappings WHERE is_active=1 ORDER BY scope_key')->fetchAll():[];
 }
-function rcOrderBank(): array {
+function rcOrderBank(bool $includeQuantity=false): array {
  $h=run("SELECT id,file_name,uploaded_at,raw_rows,nonblank_rows,source_columns FROM ekwl_order_bank_upload_batches WHERE status='SUCCESS' ORDER BY uploaded_at DESC,id DESC LIMIT 1")->fetch();
  if(!$h)return ['head'=>null,'rows'=>[],'status'=>'Not uploaded'];
  $headers=json_decode($h['source_columns'],true,64,JSON_THROW_ON_ERROR);unset($h['source_columns']);
@@ -34,7 +34,7 @@ function rcOrderBank(): array {
   foreach($raw as $v)if(!is_string($v))throw new ApiError('Order Bank source cells changed type.',409);
   if($raw['EWO']!==($r['EWO']??'')||$raw['GmtColor']!==($r['GmtColor']??''))throw new ApiError('Order Bank identity differs from original source cells.',409);
   if(array_filter($raw,fn($v)=>trim($v)!==''))$nonblank++;
-  $out[]=['n'=>(int)$r['source_row_no']+1,'v'=>['ewo'=>$raw['EWO'],'color'=>$raw['GmtColor'],'details'=>null,'construction'=>null,'composition'=>null,'nonblank'=>(bool)array_filter($raw,fn($v)=>trim($v)!=='')]];
+  $out[]=['n'=>(int)$r['source_row_no']+1,'v'=>['ewo'=>$raw['EWO'],'color'=>$raw['GmtColor'],'details'=>null,'construction'=>null,'composition'=>null,'nonblank'=>(bool)array_filter($raw,fn($v)=>trim($v)!=='')]+($includeQuantity?['order_qty'=>$raw['OrderQty']??null]:[])];
  }
  if($next-1!==(int)$h['raw_rows']||$nonblank!==(int)$h['nonblank_rows'])throw new ApiError('Order Bank source count failed verification.',409);
  return ['head'=>$h,'rows'=>$out,'status'=>'Complete'];
