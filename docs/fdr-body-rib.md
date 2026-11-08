@@ -1,6 +1,6 @@
 # Fabrics Details: Body / Primary and Rib / Supporting
 
-The existing theme, 31-column report, source evidence, Plan EWO modes, cascading
+The existing theme, 31-column source contract, 30-column report view, source evidence, Plan EWO modes, cascading
 Buyer/Color filters, paging and original CSV export remain. Body contains the
 primary fabric and unresolved review rows; Rib contains supporting fabrics,
 including other constructions. Original construction/composition are never renamed.
@@ -39,4 +39,4 @@ raw booking lines to the existing API. Derived materializations use the existing
 JSON tables and a new model dependency digest; no source-table/schema migration is
 needed. The browser verifies source headings/counts/row identities and role evidence.
 The Booking Qty/Total Booking dialog shows the original references, quantities,
-units, reasons, source rows and file/batch. CSV exports only the current tab/filter.
+units, reasons, source rows and file/batch. CSV exports only the current tab/filter in displayed order. Booking Qty precedes Net Delivery Qty Kg.; Total Booking is omitted from the view and CSV. Its underlying values remain available to existing calculations and evidence.
