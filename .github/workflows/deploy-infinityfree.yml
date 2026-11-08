@@ -64,6 +64,7 @@ jobs:
           python3 tests/rfd-daily-cutting-browser.py /tmp/ekwl-test-auth.json
           python3 tests/slides-navigation.py
           python3 tests/premium-corporate-browser.py
+          python3 tests/mysql/new-fixture.py
           python3 tests/mysql/fdr-reconciliation.py /tmp/ekwl-test-auth.json
           python3 tests/fdr-reconciliation-browser.py /tmp/ekwl-test-auth.json
       - name: Verify color reconciliation approvals and report linkage

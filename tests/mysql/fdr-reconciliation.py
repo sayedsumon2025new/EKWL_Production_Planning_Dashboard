@@ -19,6 +19,7 @@ rfd=[]
 for e,c,construction,qty in [('271080','Navy','Single Jersey','1100'),('271080','Navy','Rib','100'),('271084','RED','Rib','650'),('271084','RED','Single Jersey','150'),('271087','CHARCOAL','Single Jersey','400')]:
  r=['0']*22;r[0]='01-Nov-26';r[2]=e;r[6]=c;r[7]='Original '+construction+' fabric';r[8]=construction;r[9]='Cotton';r[10]='Buyer';r[14]=qty;r[17]='1';rfd.append(r)
 save('rfd',rfd);save('rfd/booking',booking)
+save('rfd/daily-cutting',[['01-Nov-26','Buyer','Team',e,'Style','Company',c,'1000','50','50']+['0']*15 for e,c in bank])
 raw_before={route:admin.call(route,{'action':'read'})['data']['rows']for route in ['rfd','rfd/booking']}
 d=admin.call('rfd/fabrics-details',{'action':'refresh'})['data'];assert d['report']['model_version']=='fabrics-derived-v5';assert d['booking_lines']==[{'n':i+2,'v':r}for i,r in enumerate(booking)]
 find=lambda e,cons,gsm:next(i for i,r in enumerate(d['rows'])if r[1]==e and r[4]==cons and r[10]==gsm)
