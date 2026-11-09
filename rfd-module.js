@@ -1,11 +1,12 @@
-const RFD_TABS=['rfd','booking','dcs','fdr','converter'];
+const RFD_TABS=['rfd','booking','dcs','fdr','converter','master'];
 let RFD_ACTIVE_TAB='rfd';
 function selectRfdTab(tab){
  if(!RFD_TABS.includes(tab)||!SITE_AUTH_USER||!canAccessSlide(22))return;
  rfdHideEwoTooltip();
- const refresh=document.getElementById('rfd-refresh');if(refresh)refresh.hidden=tab==='converter';
+ const refresh=document.getElementById('rfd-refresh');if(refresh)refresh.hidden=['converter','master'].includes(tab);
  RFD_ACTIVE_TAB=tab;for(const name of RFD_TABS){document.getElementById(name+'-panel').hidden=name!==tab;document.getElementById(name+'-tab').setAttribute('aria-selected',String(name===tab));}
- const subtitle=document.querySelector('#s22 .slide-subtitle');if(subtitle)subtitle.textContent=tab==='converter'?'Data Converter':tab==='fdr'?'Original fabrics details report · all 31 source columns':tab==='dcs'?'Original daily production report · all 25 source columns':tab==='booking'?'Original fabric booking report · all 13 source columns':'Original RFD report · all 22 source columns';
+ const subtitle=document.querySelector('#s22 .slide-subtitle');if(subtitle)subtitle.textContent=tab==='master'?'Master ID · permanent EWO + Colour registry':tab==='converter'?'Data Converter':tab==='fdr'?'Original fabrics details report · all 31 source columns':tab==='dcs'?'Original daily production report · all 25 source columns':tab==='booking'?'Original fabric booking report · all 13 source columns':'Original RFD report · all 22 source columns';
+ if(tab==='master')return loadMasterIds();
  if(tab==='converter')return loadRfdConverter();
  return tab==='fdr'?loadFdrModule():tab==='dcs'?loadDcsModule():tab==='booking'?loadBookingModule():loadRfdModule();
 }
@@ -53,6 +54,7 @@ function rfdPage(direction){const pages=Math.max(1,Math.ceil(RFD_FILTERED.length
 function rfdFilter(){RFD_PAGE=1;renderRfdModule();}
 function clearRfdFilters(){for(const id of ['rfd-search','rfd-buyer','rfd-place','rfd-color'])if(rfdNode(id))rfdNode(id).value='';rfdFilter();}
 async function loadRfdModule(force=false){
+ if(RFD_ACTIVE_TAB==='master')return loadMasterIds(force);
  if(RFD_ACTIVE_TAB==='converter')return loadRfdConverter(force);
  if(RFD_ACTIVE_TAB==='fdr')return loadFdrModule(force);
  if(RFD_ACTIVE_TAB==='dcs')return loadDcsModule(force);
@@ -112,5 +114,5 @@ function exportRfdCSV(event){if(typeof rfdPlanExportAllowed!=='function'||!rfdPl
  const quote=v=>'"'+String(v).replace(/"/g,'""')+'"',csv=[RFD_HEADERS,...RFD_FILTERED.map(x=>x.row)].map(row=>row.map(quote).join(',')).join('\r\n');
  clearRfdExport();const link=event.currentTarget,url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));RFD_EXPORT_URL=url;link.href=url;link.download=(RFD_REPORT?.file_name||'RFD.csv').replace(/\.csv$/i,RFD_FILTERED.length<RFD_ROWS.length?'_filtered.csv':'.csv').replace(/[^\p{L}\p{N}_.-]+/gu,'_');setTimeout(()=>{URL.revokeObjectURL(url);if(RFD_EXPORT_URL===url)clearRfdExport();},30000);return true;
 }
-function resetRfdModule(){if(typeof resetRfdPlanScope==='function')resetRfdPlanScope();resetRfdConverter();rfdResetTableTools('rfd');resetFdrModule();resetDcsModule();resetBookingModule();RFD_ACTIVE_TAB='rfd';if(rfdNode('rfd-refresh'))rfdNode('rfd-refresh').hidden=false;for(const name of RFD_TABS){if(rfdNode(name+'-panel'))rfdNode(name+'-panel').hidden=name!=='rfd';rfdNode(name+'-tab')?.setAttribute('aria-selected',String(name==='rfd'));}clearRfdExport();++RFD_TOKEN;++RFD_FILE_TOKEN;clearTimeout(RFD_SEARCH_TIMER);RFD_ROWS=[];RFD_FILTERED=[];RFD_PAGE=1;RFD_REPORT=null;RFD_PREVIEW=null;RFD_LOADED_AT=0;RFD_OWNER='';RFD_GENERATION=-1;RFD_LOAD=null;RFD_BUSY=false;const file=rfdNode('rfd-file');if(file){file.value='';file.disabled=false;}if(rfdNode('rfd-save'))rfdNode('rfd-save').disabled=false;for(const id of ['rfd-table','rfd-source','rfd-count','rfd-page-label'])rfdNode(id)?.replaceChildren();rfdMessage('Waiting for sign in…');if(rfdNode('rfd-upload'))rfdNode('rfd-upload').hidden=true;}
+function resetRfdModule(){if(typeof resetRfdPlanScope==='function')resetRfdPlanScope();resetRfdConverter();if(typeof resetMasterIds==='function')resetMasterIds();rfdResetTableTools('rfd');resetFdrModule();resetDcsModule();resetBookingModule();RFD_ACTIVE_TAB='rfd';if(rfdNode('rfd-refresh'))rfdNode('rfd-refresh').hidden=false;for(const name of RFD_TABS){if(rfdNode(name+'-panel'))rfdNode(name+'-panel').hidden=name!=='rfd';rfdNode(name+'-tab')?.setAttribute('aria-selected',String(name==='rfd'));}clearRfdExport();++RFD_TOKEN;++RFD_FILE_TOKEN;clearTimeout(RFD_SEARCH_TIMER);RFD_ROWS=[];RFD_FILTERED=[];RFD_PAGE=1;RFD_REPORT=null;RFD_PREVIEW=null;RFD_LOADED_AT=0;RFD_OWNER='';RFD_GENERATION=-1;RFD_LOAD=null;RFD_BUSY=false;const file=rfdNode('rfd-file');if(file){file.value='';file.disabled=false;}if(rfdNode('rfd-save'))rfdNode('rfd-save').disabled=false;for(const id of ['rfd-table','rfd-source','rfd-count','rfd-page-label'])rfdNode(id)?.replaceChildren();rfdMessage('Waiting for sign in…');if(rfdNode('rfd-upload'))rfdNode('rfd-upload').hidden=true;}
 document.addEventListener('DOMContentLoaded',()=>{rfdNode('rfd-search')?.addEventListener('input',()=>{clearTimeout(RFD_SEARCH_TIMER);RFD_SEARCH_TIMER=setTimeout(rfdFilter,180);});});

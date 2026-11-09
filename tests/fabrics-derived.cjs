@@ -12,3 +12,5 @@ const duplicate=structuredClone(valid);duplicate.rows.push([...duplicate.rows[0]
 console.log('PASS v5 booking source headings/counts/row identity/types, role evidence, master identity, primary uniqueness and supporting-to-primary guards');
 
 const v6=structuredClone(valid);v6.report.model_version='fabrics-derived-v6';v6.rows[0][17]='1000';v6.pairs={A:{order_bank_order:{quantity:'1000'}}};assert.equal(c.verifyFdrRead(v6),v6);v6.pairs.A.order_bank_order.quantity='9999';assert.throws(()=>c.verifyFdrRead(v6));
+
+const v7=structuredClone(valid);v7.report.model_version='fabrics-derived-v7';v7.rows[0][17]='1000';v7.pairs={A:{order_bank_order:{quantity:'1000'}}};v7.evidence[0].master_identity={matched:true,master_id:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',master_code:'MID-000001',registry_status:'confirmed'};assert.equal(c.verifyFdrRead(v7),v7);v7.evidence[0].master_identity.master_code=null;assert.throws(()=>c.verifyFdrRead(v7));

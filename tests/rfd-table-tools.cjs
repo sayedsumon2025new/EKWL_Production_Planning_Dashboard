@@ -28,3 +28,8 @@ console.log('PASS Booking No suffix display with exact original booking referenc
 const original=JSON.stringify(fdr),bodyView={key:'body',matches:({i})=>i!==1},ribView={key:'rib',matches:({i})=>i===1};
 let selected=c.rfdCascadeRows('fdr',fdr,bodyView);assert.deepEqual(Array.from(selected,x=>x.i),[0,2]);assert.equal(c.rfdQuantityTotals('fdr',selected,data)[6].text,'2');selected=c.rfdCascadeRows('fdr',fdr,ribView);assert.deepEqual(Array.from(selected,x=>x.i),[1]);assert.equal(JSON.stringify(fdr),original);
 console.log('PASS Body/Rib predicate runs before cascade options/totals and preserves original evidence indices without mutating source rows');
+// Fabric Details is a downstream facet; multi-description cells match each original line.
+for(const id of ['fdr-search','fdr-buyer','fdr-place','fdr-detail'])nodes[id]={value:'',innerHTML:''};
+const descriptions=[fab('A','10'),fab('B','20')];descriptions[0][0]='Buyer A';descriptions[0][3]='Body cotton\nSecond detail';descriptions[1][0]='Buyer B';descriptions[1][2]='Red';descriptions[1][3]='Rib trim';const originalDetails=JSON.stringify(descriptions);
+c.rfdResetTableTools('fdr');c.rfdCascadeRows('fdr',descriptions);assert(nodes['fdr-detail'].innerHTML.includes('Second detail'));nodes['fdr-detail'].value='Second detail';assert.equal(c.rfdCascadeRows('fdr',descriptions).length,1);nodes['fdr-place'].value='Red';assert.equal(c.rfdCascadeRows('fdr',descriptions).length,1);assert.equal(nodes['fdr-detail'].value,'');assert(!nodes['fdr-detail'].innerHTML.includes('Second detail'));assert.equal(JSON.stringify(descriptions),originalDetails);
+console.log('PASS Fabric Details per-line facet, upstream colour cascade, invalid descendant reset and unchanged source strings');

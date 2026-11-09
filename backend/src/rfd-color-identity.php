@@ -19,7 +19,7 @@ function rcPrepare(): void {
  run("CREATE TABLE IF NOT EXISTS ekwl_rfd_color_mappings (id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,scope_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL UNIQUE,ewo CHAR(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,source_name VARCHAR(16) CHARACTER SET ascii NOT NULL,from_color TEXT NOT NULL,to_color TEXT NOT NULL,is_active TINYINT(1) NOT NULL DEFAULT 1,revision INT UNSIGNED NOT NULL DEFAULT 1,approved_by CHAR(36) NOT NULL,approved_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),source_digest CHAR(64) CHARACTER SET ascii NOT NULL,KEY ekwl_color_mapping_ewo (ewo,is_active)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin");
 }
 function rcStoredMappings(): array {
- return rcMappingsInstalled()?run('SELECT id,scope_key,ewo,source_name,from_color,to_color,is_active,revision,approved_at,source_digest FROM ekwl_rfd_color_mappings WHERE is_active=1 ORDER BY scope_key')->fetchAll():[];
+ return rcMappingsInstalled()?run('SELECT id,scope_key,ewo,source_name,from_color,to_color,is_active,revision,approved_by,approved_at,source_digest FROM ekwl_rfd_color_mappings WHERE is_active=1 ORDER BY scope_key')->fetchAll():[];
 }
 function rcOrderBank(bool $includeQuantity=false): array {
  $h=run("SELECT id,file_name,uploaded_at,raw_rows,nonblank_rows,source_columns FROM ekwl_order_bank_upload_batches WHERE status='SUCCESS' ORDER BY uploaded_at DESC,id DESC LIMIT 1")->fetch();

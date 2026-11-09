@@ -60,3 +60,5 @@
 #s22 .fdr-classification-tag{display:block;font:750 10px/1.4 'Segoe UI',Arial,sans-serif;padding:2px 4px;margin:2px 2px 0;border:1px solid var(--border);border-radius:3px;color:var(--text);max-width:100%;overflow-wrap:anywhere}#s22 [data-reconciliation=review] .fdr-classification-tag{border-color:#bd8a20}#s22 [data-reconciliation=body] .fdr-classification-tag{border-color:#2e9464}
 
 #s22 .fdr-source-details{margin:8px 0;border:1px solid var(--border);border-radius:4px;padding:6px 8px;color:var(--text);font-size:11px}#s22 .fdr-source-details>summary{cursor:pointer;font-weight:750}
+
+#fm-evidence{max-width:900px;width:calc(100% - 24px);max-height:85vh;background:var(--card);color:var(--text);border:1px solid var(--border,#486075);border-radius:8px}#fm-evidence pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;max-height:65vh;overflow:auto}.fdr-master-code{display:block;font-size:10px;font-weight:750;color:inherit;margin-top:3px}#master-panel .rcon-table{min-width:950px}#master-panel details{margin-top:10px}#fdr-detail{max-width:280px}
