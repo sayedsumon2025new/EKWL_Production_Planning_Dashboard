@@ -9,7 +9,7 @@ function rcEwo($v): string {
  return count($codes)===1?$codes[0]:rcNorm($raw);
 }
 function rcValidEwo(string $ewo): bool {return (bool)preg_match('/^\d{6}$/D',$ewo);}
-function rcScope(string $ewo,string $source,string $color): string {return hash('sha256',json_encode([$ewo,$source,rcColorKey($color)],JSON_THROW_ON_ERROR));}
+function rcScope(string $ewo,string $source,string $color,?string $details=null): string {$key=[$ewo,$source,rcColorKey($color)];if($details!==null)$key[]=rcNorm($details);return hash('sha256',json_encode($key,JSON_THROW_ON_ERROR));}
 function rcProjection(string $source,array $v): array {
  $cols=['rfd'=>[2,6,7,8,9],'booking'=>[0,7,null,5,6],'cutting'=>[3,6,null,null,null]][$source];
  $out=['nonblank'=>(bool)array_filter($v,fn($v)=>trim($v)!=='')];foreach(['ewo','color','details','construction','composition'] as $i=>$key)$out[$key]=$cols[$i]===null?null:$v[$cols[$i]];return $out;
@@ -17,9 +17,11 @@ function rcProjection(string $source,array $v): array {
 function rcMappingsInstalled(): bool {return (int)run("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='ekwl_rfd_color_mappings'")->fetchColumn()===1;}
 function rcPrepare(): void {
  run("CREATE TABLE IF NOT EXISTS ekwl_rfd_color_mappings (id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,scope_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL UNIQUE,ewo CHAR(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,source_name VARCHAR(16) CHARACTER SET ascii NOT NULL,from_color TEXT NOT NULL,to_color TEXT NOT NULL,is_active TINYINT(1) NOT NULL DEFAULT 1,revision INT UNSIGNED NOT NULL DEFAULT 1,approved_by CHAR(36) NOT NULL,approved_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),source_digest CHAR(64) CHARACTER SET ascii NOT NULL,KEY ekwl_color_mapping_ewo (ewo,is_active)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin");
+ run("CREATE TABLE IF NOT EXISTS ekwl_rfd_fabric_color_mappings (id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,scope_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL UNIQUE,ewo CHAR(6) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,source_name VARCHAR(16) CHARACTER SET ascii NOT NULL,from_color TEXT NOT NULL,to_color TEXT NOT NULL,fabric_details TEXT NOT NULL,is_active TINYINT(1) NOT NULL DEFAULT 1,revision INT UNSIGNED NOT NULL DEFAULT 1,approved_by CHAR(36) NOT NULL,approved_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),source_digest CHAR(64) CHARACTER SET ascii NOT NULL,KEY ekwl_fabric_color_mapping_ewo (ewo,is_active)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin");
 }
 function rcStoredMappings(): array {
- return rcMappingsInstalled()?run('SELECT id,scope_key,ewo,source_name,from_color,to_color,is_active,revision,approved_by,approved_at,source_digest FROM ekwl_rfd_color_mappings WHERE is_active=1 ORDER BY scope_key')->fetchAll():[];
+ $rows=rcMappingsInstalled()?run('SELECT id,scope_key,ewo,source_name,from_color,to_color,is_active,revision,approved_by,approved_at,source_digest FROM ekwl_rfd_color_mappings WHERE is_active=1 ORDER BY scope_key')->fetchAll():[];foreach($rows as &$row)$row['fabric_details']=null;unset($row);
+ if((int)run("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='ekwl_rfd_fabric_color_mappings'")->fetchColumn()===1)$rows=array_merge($rows,run('SELECT id,scope_key,ewo,source_name,from_color,to_color,fabric_details,is_active,revision,approved_by,approved_at,source_digest FROM ekwl_rfd_fabric_color_mappings WHERE is_active=1 ORDER BY scope_key')->fetchAll());return $rows;
 }
 function rcOrderBank(bool $includeQuantity=false): array {
  $h=run("SELECT id,file_name,uploaded_at,raw_rows,nonblank_rows,source_columns FROM ekwl_order_bank_upload_batches WHERE status='SUCCESS' ORDER BY uploaded_at DESC,id DESC LIMIT 1")->fetch();
@@ -40,19 +42,27 @@ function rcOrderBank(bool $includeQuantity=false): array {
  return ['head'=>$h,'rows'=>$out,'status'=>'Complete'];
 }
 function rcContext(array $sources,array $stored,bool $projected=false): array {
- $present=[];$targets=[];
- foreach($sources as $source=>$s)foreach($s['rows'] as $row){$v=$projected||$source==='orderbank'?$row['v']:rcProjection($source,$row['v']);$ewo=rcEwo($v['ewo']);$color=rcColorKey($v['color']);if(!rcValidEwo($ewo)||$color==='')continue;$present[$source][$ewo][$color]=true;if($source==='orderbank')$targets[$ewo][$color]=$v['color'];}
- $effective=[];$entries=[];
- foreach($stored as $m){$reason=null;$source=$m['source_name'];$ewo=$m['ewo'];$from=rcColorKey($m['from_color']);$to=rcColorKey($m['to_color']);
-  if($m['scope_key']!==rcScope($ewo,$source,$m['from_color']))$reason='Mapping identity failed verification.';
+ $present=[];$presentDetails=[];$targets=[];
+ foreach($sources as $source=>$s)foreach($s['rows'] as $row){$v=$projected||$source==='orderbank'?$row['v']:rcProjection($source,$row['v']);$ewo=rcEwo($v['ewo']);$color=rcColorKey($v['color']);if(!rcValidEwo($ewo)||$color==='')continue;$present[$source][$ewo][$color]=true;if($source==='rfd')$presentDetails[$ewo][$color][rcNorm($v['details']??'')]=true;if($source==='orderbank')$targets[$ewo][$color]=$v['color'];}
+ $effective=[];$entries=[];$scopedPresent=[];
+ foreach($stored as $m){$reason=null;$source=$m['source_name'];$ewo=$m['ewo'];$from=rcColorKey($m['from_color']);$to=rcColorKey($m['to_color']);$details=$m['fabric_details']??null;$scope=rcScope($ewo,$source,$m['from_color'],$details);if($details!==null)$scopedPresent[$scope]=true;
+  if($m['scope_key']!==$scope)$reason='Mapping identity failed verification.';
+  elseif($details!==null&&($source!=='rfd'||rcNorm($details)!=='BODY'))$reason='Unsupported fabric-scoped mapping.';
+  elseif($details!==null&&!isset($presentDetails[$ewo][$from][rcNorm($details)]))$reason='Original Body colour is absent from the current RFD source.';
   elseif(!isset($targets[$ewo][$to]))$reason='Approved target is absent from the current Order Bank.';
   elseif(!isset($present[$source][$ewo][$from]))$reason='Original color is absent from the current source.';
   elseif(isset($targets[$ewo][$from])&&$from!==$to)$reason='Original color is already a distinct Order Bank color.';
-  if($reason===null)$effective[rcScope($ewo,$source,$m['from_color'])]=$m;
+  if($reason===null)$effective[$scope]=$m;
   $entries[]=array_merge($m,['valid'=>$reason===null,'issue'=>$reason]);
  }
- return ['effective'=>$effective,'entries'=>$entries,'targets'=>$targets];
+ return ['effective'=>$effective,'entries'=>$entries,'targets'=>$targets,'scoped_present'=>$scopedPresent];
 }
-function rcColorLabel(array $identity,string $source,$ewo,$color): string {
- $m=$identity['effective'][rcScope(rcEwo($ewo),$source,(string)$color)]??null;return $m?$m['to_color']:(string)$color;
+/** A present scoped approval blocks broad fallback even while it needs re-review. */
+function rcMapping(array $identity,string $source,$ewo,$color,?string $details=null): ?array {
+ if($source==='rfd'&&$details!==null){$scope=rcScope(rcEwo($ewo),$source,(string)$color,$details);if(isset($identity['scoped_present'][$scope]))return $identity['effective'][$scope]??null;}
+ return $identity['effective'][rcScope(rcEwo($ewo),$source,(string)$color)]??null;
+}
+function rcColorLabel(array $identity,string $source,$ewo,$color,?string $details=null): string {$m=rcMapping($identity,$source,$ewo,$color,$details);return $m?$m['to_color']:(string)$color;}
+function rcUsedMappings(array $identity,array $groups): array {
+ $used=[];foreach($groups as $source=>$rows)foreach($rows as $r){$v=rcProjection($source,$r['v']);$m=rcMapping($identity,$source,$v['ewo'],$v['color'],$v['details']);if($m)$used[rcScope(rcEwo($v['ewo']),$source,$v['color'],$m['fabric_details']??null)]=$m;}return array_values($used);
 }
