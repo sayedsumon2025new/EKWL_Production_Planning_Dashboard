@@ -36,6 +36,10 @@ try {
         jsonOut(['data'=>['path'=>$id],'error'=>null]);exit;
     }
     $b=body();
+    if($route==='rfd/master-id'){
+        require dirname(__DIR__).'/backend/src/rfd-fabrics-details.php';
+        session_write_close();jsonOut(['data'=>Ekwl\fmAction($u,$b),'error'=>null]);exit;
+    }
     if($route==='rfd/converter'){
         require dirname(__DIR__).'/backend/src/rfd-converter.php';
         session_write_close();$result=['data'=>Ekwl\rcAction($u,$b),'error'=>null];

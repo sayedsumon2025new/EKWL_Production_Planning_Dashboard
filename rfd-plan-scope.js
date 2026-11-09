@@ -38,10 +38,10 @@ function refreshRfdPlanScope(){
  for(const prefix of ['rfd','booking','dcs','fdr'])if(typeof rfdResetTableTools==='function')rfdResetTableTools(prefix);
  for(const fn of [typeof clearRfdExport==='function'?clearRfdExport:null,typeof clearBookingExport==='function'?clearBookingExport:null,typeof clearDcsExport==='function'?clearDcsExport:null,typeof clearFdrExport==='function'?clearFdrExport:null])fn?.();
  if(typeof RFD_PAGE!=='undefined')RFD_PAGE=1;if(typeof BOOKING_PAGE!=='undefined')BOOKING_PAGE=1;if(typeof DCS_PAGE!=='undefined')DCS_PAGE=1;if(typeof FDR_PAGE!=='undefined')FDR_PAGE=1;if(typeof RCON_PAGE!=='undefined')RCON_PAGE=1;
- if(typeof rcCloseReview==='function')rcCloseReview();document.getElementById('fdr-evidence')?.close();
+ if(typeof rcCloseReview==='function')rcCloseReview();document.getElementById('fdr-evidence')?.close();document.getElementById('fm-evidence')?.close();
  if(typeof CURRENT_SLIDE==='undefined'||CURRENT_SLIDE!==22)return;
  const tab=typeof RFD_ACTIVE_TAB==='undefined'?'rfd':RFD_ACTIVE_TAB;
- const renderers={rfd:typeof renderRfdModule==='function'?renderRfdModule:null,booking:typeof renderBookingModule==='function'?renderBookingModule:null,dcs:typeof renderDcsModule==='function'?renderDcsModule:null,fdr:typeof renderFdrModule==='function'?renderFdrModule:null,converter:typeof renderRfdConverter==='function'?renderRfdConverter:null};renderers[tab]?.();
+ const renderers={master:typeof renderMasterIds==='function'?renderMasterIds:null,rfd:typeof renderRfdModule==='function'?renderRfdModule:null,booking:typeof renderBookingModule==='function'?renderBookingModule:null,dcs:typeof renderDcsModule==='function'?renderDcsModule:null,fdr:typeof renderFdrModule==='function'?renderFdrModule:null,converter:typeof renderRfdConverter==='function'?renderRfdConverter:null};renderers[tab]?.();
 }
 
 if(typeof document.addEventListener==='function')document.addEventListener('change',event=>{if(['month-filter','planning-sequence-filter'].includes(event.target?.id))refreshRfdPlanScope();});
