@@ -76,6 +76,9 @@ jobs:
           python3 tests/mysql/new-fixture.py
           python3 tests/mysql/fabric-master.py /tmp/ekwl-test-auth.json
           python3 tests/fabric-master-browser.py /tmp/ekwl-test-auth.json
+          python3 tests/mysql/new-fixture.py
+          python3 tests/mysql/rfd-body-scope.py /tmp/ekwl-test-auth.json
+          python3 tests/rfd-body-scope-browser.py /tmp/ekwl-test-auth.json
       - name: Run calculation, cache and API adapter regressions
         shell: bash
         run: |

@@ -28,7 +28,7 @@ events=len(d['events']);assert registry()['events']==d['events'],'Unchanged refr
 read=admin.call('rfd/converter',{'action':'read'})['data'];assert set(read['sources'])=={'rfd','booking','orderbank'};assert [r['ewo']for r in read['issues']]==['271090'];before_digest=read['integrity']['digest']
 save('rfd/daily-cutting',[['01-Nov-26','Buyer','Team','999999','Style','Company','Completely unrelated','1000','10','10']+['0']*15]);assert admin.call('rfd/converter',{'action':'read'})['data']['integrity']['digest']==before_digest
 assert registry()['events']==d['events'],'Daily Production must not affect registry'
-report=admin.call('rfd/fabrics-details',{'action':'read'})['data'];assert report['report']['model_version']=='fabrics-derived-v7'
+report=admin.call('rfd/fabrics-details',{'action':'read'})['data'];assert report['report']['model_version']=='fabrics-derived-v8'
 assert {report['evidence'][i]['master_identity']['master_id']for i,r in enumerate(report['rows'])if r[1]=='271084'}=={ids['271084']},'Body and supporting share one identity'
 original_rfd=admin.call('rfd',{'action':'read'})['data']['rows'];save('rfd',original_rfd);d=registry();assert {r['ewo']:r['id']for r in d['records']}==ids;assert len(d['events'])>events
 # Reference removed: retain historical ID but never use it as confirmed.

@@ -44,3 +44,26 @@ even if the saved registry needs a refresh. Existing source quantities and formu
 are unchanged. The new Fabric Details facet follows Buyer → Colour → Fabric Details
 (after Plan/search), and matches individual descriptions in multiline cells. It
 changes visible rows, footer totals and export scope without changing source cells.
+
+## Body-only colour approvals
+
+Data Converter's Fabric Details selector offers `Body only · RFD`. It uses the
+literal RFD Fabric Details value `Body` (case/whitespace normalized), never the
+booking-based Body/Primary classification or construction name. Only unmatched
+RFD Body records are editable in that mode; Booking is reference-only because its
+source contract has no Fabric Details column. Approved Body matches disappear
+from Body view even while Rib/other source differences remain in All Fabric Details.
+
+Migration 004 and idempotent `rcPrepare` add `ekwl_rfd_fabric_color_mappings`.
+Body approvals use EWO + RFD + original colour + Fabric Details = Body as a unique
+scope. Existing full-colour mappings remain in their original table. Valid Body
+approvals override a full-colour mapping for Body records only. A stale Body target
+blocks silent fallback to a broad mapping; explicit revocation restores the prior
+broad rule if it exists. A matching Rib colour cannot validate missing Body evidence.
+
+Master aliases retain the Fabric Details scope and original approval metadata in
+source references/history. Garment-colour UUIDs remain stable. Fabrics Details
+model v8 applies the mapping before its joins and records only mappings actually
+used by that fabric's source rows. Body target changes leave Rib/Cuff fabric rows
+and their mappings unchanged. Repeated EWO-colour aggregate totals can naturally
+change when a revoked Body record rejoins a previously approved broad colour.
