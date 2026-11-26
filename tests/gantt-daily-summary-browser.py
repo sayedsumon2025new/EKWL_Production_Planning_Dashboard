@@ -25,8 +25,8 @@ with sync_playwright() as p:
  def metric(name,col=0):return page.locator('#gantt-daily-summary .gds-metric').filter(has=page.locator('th',has_text=name)).locator('td').nth(col).inner_text().replace(' *','')
  assert metric('Forecastable Pcs')=='800 pcs';assert metric('Forecastable Pcs',1)=='1,200 pcs'
  assert metric('Forecastable SAH')=='160 h';assert metric('Forecastable SAH',1)=='240 h'
- assert page.locator('#gds-filter-menu input[value="0"]').is_disabled()
- assert 'All active 4' in page.locator('#gds-filter-button').inner_text()
+ assert page.locator('#gds-filter-menu input[value="0"]').is_enabled()
+ assert 'All active 5' in page.locator('#gds-filter-button').inner_text()
  assert page.locator('.g-cutable-covered,.g-material-short').count()==0
  assert page.locator('.g-cutting-covered').count()==1
  page.locator('.g-cutting-covered').click();page.wait_for_function("document.getElementById('ewo-gantt-content').textContent.includes('Σ Cutting Today')")
@@ -43,6 +43,18 @@ with sync_playwright() as p:
  assert metric('Forecastable Pcs')=='1,000 pcs';assert metric('Forecastable Pcs',1)=='1,000 pcs'
  page.evaluate('reportsReady=false;renderS11([])');assert metric('Forecastable Pcs')=='—';assert page.locator('#s11-body .g-ewo:not([disabled])').count()==0
  page.evaluate('reportsReady=true;renderS11([])');assert metric('Forecastable Pcs')=='1,000 pcs'
+ page.evaluate("""GANTT_RFD_CUTTING={...f.rfdDaily,body_cuttable:{model:'body-cuttable-v1',rows:[{ewo:'271080',color:'Navy',cuttable:2000,body_received:'1000',unit:'KG',body_consumption:'0.2',total_cut:'3000',cutting_date:'2026-11-03',reasons:[],evidence:{rfd_rows:[2,3],booking_rows:[2],cutting_rows:[4]}}],integrity:{complete:true,row_count:1}}};renderS11([]);""")
+ assert metric('Forecastable Pcs')=='1,800 pcs';assert metric('Forecastable Pcs',1)=='1,200 pcs'
+ assert page.locator('.g-cutable-covered').count()==2
+ page.locator('.g-cutable-covered').first.click();page.wait_for_function("document.getElementById('ewo-gantt-content').textContent.includes('Body only')")
+ assert '2,000' in page.locator('#ewo-gantt-content').inner_text()
+ assert 'consumption 0.2' in page.locator('#ewo-gantt-content strong[title*="Body received"]').get_attribute('title')
+ page.get_by_role('button',name='Close',exact=True).click()
+ before=page.locator('#s11-body').inner_html();lower=page.locator('#gds-consumable-table').inner_html()
+ page.locator('#gds-filter-button').click();page.locator('#gds-filter-menu input[value="0"]').uncheck()
+ assert metric('Forecastable Pcs')=='1,000 pcs';assert metric('Forecastable Pcs',1)=='1,000 pcs'
+ assert page.locator('#s11-body').inner_html()==before;assert page.locator('#gds-consumable-table').inner_html()==lower
+ page.locator('#gds-filter-menu input[value="0"]').check();page.keyboard.press('Escape')
  page.set_viewport_size({'width':721,'height':884});page.screenshot(path='/tmp/gantt-rfd-delivery-721.png',full_page=True)
  assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
  page.evaluate('SITE_SESSION_GENERATION++;SITE_AUTH_USER=null;resetGanttDailySummary();closeGanttPopup()');assert page.locator('#gantt-daily-summary').inner_text()==''

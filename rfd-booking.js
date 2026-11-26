@@ -85,6 +85,7 @@ async function uploadBookingFile(){
    const received=await request({action:'chunk',id:job.id,start_row:offset+2,rows:part});offset+=part.length;if(received.received_rows!==offset)throw Error('Booking received-row count did not match.');bookingMessage('Saving source rows… '+offset.toLocaleString()+' / '+preview.rows.length.toLocaleString());
   }
   const saved=await request({action:'finalize',id:job.id});if(saved.status!=='SUCCESS'||saved.rows!==preview.rows.length)throw Error('Booking activation audit did not match.');
+  if(typeof invalidateSharedReports==='function')invalidateSharedReports(['gantt-cutting']);
   const read=verifyBookingRead(await request({action:'read'}));
   if(read.report?.id===job.id&&(read.rows.length!==preview.rows.length||read.rows.some((row,i)=>row.some((value,j)=>value!==preview.rows[i][j]))))throw Error('Saved Booking cells did not match the original CSV. Refresh before using this report.');
   BOOKING_PREVIEW=null;bookingNode('booking-file').value='';BOOKING_LOADED_AT=Date.now();setBookingRows(read.rows,read.report,'sql');bookingMessage(read.report?.id===job.id?'Saved and verified: every source cell matches the CSV.':'Upload saved. A newer Booking report is now active.');bookingNode('booking-upload').open=false;

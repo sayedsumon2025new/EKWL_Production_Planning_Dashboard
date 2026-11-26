@@ -91,7 +91,7 @@ function loadSharedReport(name){
       let rows;
       if(name==='gantt-cutting'){
         requests++;const {data,error}=await (typeof SB.reportSnapshot==='function'?SB.reportSnapshot(name):SB.request('reports/snapshot',{kind:name}));if(error)throw error;
-        verifyDcsRead(data);rows=data;
+        verifyDcsRead(data);if(data.body_cuttable)verifyGanttBodyRead(data.body_cuttable);rows=data;
       }else if(name==='embellishment'){
         rows=await paged(()=>SB.from('embellishment_send_receive_rows').select('*').eq('is_active',true).order('source_row_no',{ascending:true}));
       }else if(name==='fabric'){

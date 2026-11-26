@@ -58,7 +58,7 @@ function laSupportedReasons(proof,colors){
  });
 }
 function buildLoadAnalysisLoss(input){
- const selected=new Set((input.selected||[0,1,2,3,4]).filter(i=>Number.isInteger(i)&&i>=0&&i<5&&(input.rfdDaily===undefined||i!==0)));
+ const selected=new Set((input.selected||[0,1,2,3,4]).filter(i=>Number.isInteger(i)&&i>=0&&i<5));
  const notes=new Set(),allocated=gdsAllocate(input,notes),summary=buildGanttDailySummary({...input,selected:[...selected]},{allocation:allocated,notes}),evidence=laEvidence(input.sources||{}),overrides=input.overrides||{};
  const plan=gdsGroup(allocated.plan,row=>JSON.stringify([row.date,Number(row.line),gdsKey(row.ewo)]));
  const cellKey=row=>JSON.stringify([row.date,Number(row.line),gdsKey(row.ewo)]),lineKey=row=>JSON.stringify([Number(row.line),gdsKey(row.ewo)]);

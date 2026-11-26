@@ -135,7 +135,7 @@ const UPLOAD_CACHE_DEPENDENCIES={
   fabric:{reports:['fabric'],gantt:true,popup:true,readiness:true,coverage:true},
   sewing:{reports:['sewing'],gantt:true,popup:true,readiness:true,coverage:true},
   production:{reports:['production'],gantt:true,popup:true,coverage:true},
-  orderbank:{snapshots:['orderbank'],sources:['orderbank'],popup:true,execution:true},
+  orderbank:{snapshots:['orderbank'],sources:['orderbank'],reports:['gantt-cutting'],gantt:true,popup:true,execution:true},
   floor:{settings:['floor']},
   size:{snapshots:['size'],sources:['size'],popup:true,readiness:true},
   accessories:{snapshots:['accessories'],sources:['accessories'],popup:true,readiness:true},

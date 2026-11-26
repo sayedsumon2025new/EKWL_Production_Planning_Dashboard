@@ -1,5 +1,5 @@
 /* Gantt stock authority: saved RFD Cutting Today, exact EWO/color, delivery-first
- * reservations across the complete selected plan. Never reads legacy fabric stock. */
+ * reservations across the complete selected plan. Body-only uncut stock uses verified textile receipts / Body consumption minus latest cumulative cutting. */
 let GANTT_RFD_CUTTING=null,GANTT_EMBELLISHMENT=[];
 let GANTT_STOCK_CACHE=null;
 function gsEwo(value){
@@ -12,8 +12,14 @@ const gsPair=(ewo,color)=>JSON.stringify([gsEwo(ewo),gsColor(color)]);
 function gsNumber(value){if(value==null||String(value).trim()==='')return null;const text=String(value).replace(/,/g,'').trim();return /^-?\d+(?:\.\d+)?$/.test(text)?Number(text):null;}
 function gsDate(value){const text=String(value??'').trim();if(!/^\d{4}-\d{2}-\d{2}(?:T|$)/.test(text))return '';const iso=text.slice(0,10),date=new Date(iso+'T00:00:00Z');return Number.isFinite(date.getTime())&&date.toISOString().slice(0,10)===iso?iso:'';}
 function gsSmv(value){const n=gsNumber(value);return n>0?n:null;}
+function verifyGanttBodyRead(body){
+ if(!body||body.model!=='body-cuttable-v1'||!Array.isArray(body.rows)||body.integrity?.complete!==true||body.integrity.row_count!==body.rows.length)throw Error('Body Cuttable WIP snapshot is incomplete.');
+ const seen=new Set();
+ for(const row of body.rows){const key=gsPair(row.ewo,row.color);if(!row.ewo||!row.color||seen.has(key)||!Array.isArray(row.reasons)||(row.cuttable!==null&&!Number.isSafeInteger(row.cuttable)))throw Error('Body Cuttable WIP source key or quantity is invalid.');seen.add(key);}
+ return body;
+}
 function buildGanttStock(input){
- const notes=new Set(['Legacy fabric/Cutable stock and material-short conditions are paused. Matching and allocation use EWO + Color.']),pairs=new Map(),allocations=new Map(),details=new Map();
+ const notes=new Set(['Cuttable WIP uses only Body textile receipts / Body consumption − latest cumulative Cutting Total. Matching and allocation use EWO + Color.']),pairs=new Map(),allocations=new Map(),details=new Map();
  const ensure=(ewo,color)=>{const key=gsPair(ewo,color);if(!pairs.has(key))pairs.set(key,{ewo:gsEwo(ewo),color:gsColor(color),cut:null,input:0,printSend:null,printReceive:null,embSend:null,embReceive:null,print:false,emb:false,hasPlan:false,cutRows:[],emRows:[],reasons:[]});return pairs.get(key);};
  const plus=(item,field,value)=>{const n=gsNumber(value);if(n===null){item[field+'Invalid']=true;return;}item[field]=(item[field]??0)+n;};
  const required=v=>!['','no','n','0','false','n/a','na','none','-','—'].includes(String(v??'').trim().toLowerCase());
@@ -24,6 +30,8 @@ function buildGanttStock(input){
   if(!gsEwo(row[3])||!gsColor(row[6]))continue;
   const p=ensure(row[3],row[6]);plus(p,'cut',row[8]);p.cutRows.push(i+2);
  }
+ const body=input.rfdDaily?.body_cuttable;
+ if(body){verifyGanttBodyRead(body);for(const row of body.rows){const p=ensure(row.ewo,row.color);p.body=row;p.cuttable=row.cuttable;p.cuttableReasons=[...row.reasons];if(row.cuttable!==null&&row.cuttable<0)p.cuttableReasons.push('Body Cutting Total exceeds received Body capacity; zero pieces are available for allocation.');}}
  for(const [i,row] of (input.embellishment||[]).entries()){
   if(!gsEwo(row['EWO No'])||!gsColor(row.Color))continue;
   const p=ensure(row['EWO No'],row.Color);
@@ -39,6 +47,8 @@ function buildGanttStock(input){
   const s=lineSewing.get(key);for(const field of ['input','output','reject','wip']){const v=gsNumber(row[field]);if(v===null)s[field+'Invalid']=true;else s[field]+=v;}
  }
  for(const p of pairs.values()){
+  if(p.cuttable===undefined){p.cuttable=null;p.cuttableReasons=['No verified matching Body receipt and consumption.'];}
+  for(const reason of p.cuttableReasons)notes.add(reason);
   p.print||=(p.printSend||0)!==0||(p.printReceive||0)!==0;p.emb||=(p.embSend||0)!==0||(p.embReceive||0)!==0;
   p.printWip=p.printSend!==null&&p.printReceive!==null&&!p.printSendInvalid&&!p.printReceiveInvalid?p.printSend-p.printReceive:!p.print&&p.hasPlan?0:null;
   p.embWip=p.embSend!==null&&p.embReceive!==null&&!p.embSendInvalid&&!p.embReceiveInvalid?p.embSend-p.embReceive:!p.emb&&p.hasPlan?0:null;
@@ -81,15 +91,16 @@ function buildGanttStock(input){
  pending.sort((a,b)=>(a.delivery||'9999-99-99').localeCompare(b.delivery||'9999-99-99')||a.date.localeCompare(b.date)||a.line-b.line||a.sourceOrder-b.sourceOrder);
  const stock=new Map();
  for(const row of pending){
-  const p=pairs.get(row.pair);if(!stock.has(row.pair))stock.set(row.pair,[p?.cutting??null,p?.embWip??null,p?.printWip??null].map(n=>n===null?null:Math.max(0,n)));
+  const p=pairs.get(row.pair);if(!stock.has(row.pair))stock.set(row.pair,[p?.cutting??null,p?.embWip??null,p?.printWip??null,p?.cuttable??null].map(n=>n===null?null:Math.max(0,n)));
   const remaining=stock.get(row.pair);
-  for(const [j,stage] of [[0,4],[1,2],[2,1]]){
+  for(const [j,stage] of [[0,4],[1,2],[2,1],[3,0]]){
    const available=remaining[j];row.stages[stage]=available===null?null:Math.min(row.need,available);
    if(available!==null){remaining[j]-=row.stages[stage];row.need-=row.stages[stage];}
-   row.stagePartial[stage]=row.stages[3]===null||remaining.slice(0,j).some(x=>x===null)||!!p?.reasons.length;
+   row.stagePartial[stage]=row.stages[3]===null||remaining.slice(0,j).some(x=>x===null)||!!p?.reasons.length||(stage===0&&!!p?.cuttableReasons?.length);
   }
   if(!row.delivery){row.reasons.push('Delivery missing: allocated after valid delivery dates.');notes.add(row.reasons[0]);}
   if(p?.reasons.length)row.reasons.push(...p.reasons);
+  if(p?.cuttableReasons?.length)row.reasons.push(...p.cuttableReasons);
   const cell=JSON.stringify([row.date,row.line,row.ewo]);if(!details.has(cell))details.set(cell,[]);details.get(cell).push(row);
  }
  // Preserve the existing daily-summary cell API; SAH is summed per allocation below.
@@ -114,5 +125,6 @@ function ganttAllocatedCondition(model,line,date,ewo){
  const sewing=item.stages[3]||0,cutting=item.stages[4]||0;
  if(sewing>=item.qty)return 'wip';
  if(sewing+cutting>=item.qty&&!item.stagePartial[4])return 'cutting';
- return ''; // No fabric-based shortage claim or Cutable condition during reconciliation.
+ if(item.stages[0]>0&&item.stages.reduce((sum,n)=>sum+(n||0),0)>=item.qty&&!item.stagePartial.some(Boolean))return 'cutable';
+ return ''; // Uncovered plan alone is not a verified fabric-shortage claim.
 }
