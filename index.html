@@ -2574,13 +2574,14 @@ input,select,textarea{
   <label for="gantt-condition-filter">Show</label>
   <select id="gantt-condition-filter" aria-label="Filter Gantt color condition" onchange="renderS11(getFiltered())">
     <option value="">All conditions</option><option value="wip">Green · Sewing WIP</option>
-    <option value="cutting">Light Blue · Cutting WIP</option><option value="cutable" disabled>Cutable · Paused</option>
-    <option value="short" disabled>Material short · Paused</option>
+    <option value="cutting">Light Blue · Cutting WIP</option><option value="cutable">Purple · Body Cuttable WIP</option>
+    <option value="short" disabled>Material short · Not evaluated</option>
   </select>
 </div>
 <span tabindex="0" title="Green → Allocated Sewing WIP covers this plan" aria-label="Green → Allocated Sewing WIP covers this plan"><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#4ade80;margin-right:6px"></b>Green · Sewing WIP</span>
 <span tabindex="0" title="Light Blue → Allocated Sewing + ready Cutting WIP covers this plan" aria-label="Light Blue → Allocated Sewing + ready Cutting WIP covers this plan"><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#bae6fd;margin-right:6px"></b>Light blue · Cutting WIP</span>
-<span>Cutable / Material short · Paused during fabric reconciliation</span>
+<span tabindex="0" title="Purple → Complete allocated coverage includes Body Cuttable WIP after Sewing, Cutting, Embroidery and Print" aria-label="Purple → Complete allocated coverage includes Body Cuttable WIP"><b style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#312e81;margin-right:6px"></b>Purple · Body Cuttable WIP</span>
+<span title="Uncovered plan alone does not confirm a fabric shortage">Material short · Not evaluated</span>
 
 </div>
 <div class="gds-toolbar"><span>DAILY PLAN SUMMARY</span><button type="button" class="top-btn" id="gds-visibility" onclick="gdsToggleVisibility()" aria-expanded="false" aria-controls="gantt-daily-summary gds-note">Show summary ▾</button></div>

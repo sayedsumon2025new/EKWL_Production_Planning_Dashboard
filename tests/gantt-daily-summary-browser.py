@@ -46,6 +46,20 @@ with sync_playwright() as p:
  page.evaluate("""GANTT_RFD_CUTTING={...f.rfdDaily,body_cuttable:{model:'body-cuttable-v1',rows:[{ewo:'271080',color:'Navy',cuttable:2000,body_received:'1000',unit:'KG',body_consumption:'0.2',total_cut:'3000',cutting_date:'2026-11-03',reasons:[],evidence:{rfd_rows:[2,3],booking_rows:[2],cutting_rows:[4]}}],integrity:{complete:true,row_count:1}}};renderS11([]);""")
  assert metric('Forecastable Pcs')=='1,800 pcs';assert metric('Forecastable Pcs',1)=='1,200 pcs'
  assert page.locator('.g-cutable-covered').count()==2
+ assert page.locator('#gantt-condition-filter option[value="cutable"]').is_enabled()
+ assert 'Purple · Body Cuttable WIP' in page.locator('.gantt-coverage-legend').inner_text()
+ assert 'Paused' not in page.locator('.gantt-coverage-legend').inner_text()
+ page.locator('#gantt-condition-filter').select_option('cutable')
+ assert page.locator('#s11-body .g-ewo').count()==2
+ assert page.locator('#s11-body .g-ewo:not(.g-cutable-covered)').count()==0
+ assert page.locator('#s11-body .g-cutable-covered').first.evaluate("e=>getComputedStyle(e).backgroundColor")=='rgb(49, 46, 129)'
+ page.locator('.gantt-coverage-switch').click()
+ assert page.locator('#gantt-condition-filter').is_disabled()
+ assert page.locator('#s11-body .g-cutable-covered').count()==0
+ assert page.locator('#s11-body .g-ewo').count()>2
+ page.locator('.gantt-coverage-switch').click()
+ assert page.locator('#s11-body .g-cutable-covered').count()==2
+ page.locator('#gantt-condition-filter').select_option('')
  page.locator('.g-cutable-covered').first.click();page.wait_for_function("document.getElementById('ewo-gantt-content').textContent.includes('Body only')")
  assert '2,000' in page.locator('#ewo-gantt-content').inner_text()
  assert 'consumption 0.2' in page.locator('#ewo-gantt-content strong[title*="Body received"]').get_attribute('title')
