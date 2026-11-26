@@ -36,6 +36,7 @@ jobs:
           php tests/mysql/fabrics-derived-model.php
           php tests/mysql/fdr-reconciliation-model.php
           php tests/mysql/rfd-converter-model.php
+          php tests/mysql/gantt-body-model.php
       - name: Verify consistent snapshots against isolated MySQL
         run: |
           python3 tests/mysql/start-runtime.py
@@ -79,6 +80,7 @@ jobs:
           python3 tests/mysql/new-fixture.py
           python3 tests/mysql/rfd-body-scope.py /tmp/ekwl-test-auth.json
           python3 tests/rfd-body-scope-browser.py /tmp/ekwl-test-auth.json
+          python3 tests/mysql/gantt-body-cuttable.py /tmp/ekwl-test-auth.json
       - name: Run calculation, cache and API adapter regressions
         shell: bash
         run: |

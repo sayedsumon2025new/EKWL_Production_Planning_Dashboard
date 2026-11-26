@@ -25,9 +25,9 @@ function reportSnapshotSpec(string $kind,array $options=[]): array {
 function reportSnapshotRead(array $u,array $b): void {
     $kind=(string)($b['kind']??'');$upload=null;
     if($kind==='gantt-cutting'){
-        require_once __DIR__.'/rfd-daily-cutting.php';
-        // Same verified active source as RFD, read-only under Gantt permission.
-        dcsRead($u,can($u,'slide_7')?'slide_7':'slide_20');return;
+        require_once __DIR__.'/gantt-body-cuttable.php';
+        // Cutting and Body balance share one verified, read-only source snapshot.
+        gcRead($u);return;
     }
     $derived=in_array($kind,['readiness','coverage'],true);
     if($kind==='planning-records'||$derived){

@@ -126,7 +126,7 @@ function ganttPopupCuttingWip(w,source){
 function ganttPopupAllocation(w){
  const rows=(getGanttStock().details.get(JSON.stringify([w.date,Number(w.line),gsEwo(w.ewo)]))||[]).filter(r=>w.selectedColors.some(c=>gsColor(c)===r.color));
  if(!rows.length)return '<div class="gt-row">No allocation through the production cutoff, or no matching plan.</div>';
- return rows.map(r=>'<div class="gt-row"><span>'+esc(r.color)+' · Delivery '+esc(r.delivery||'Missing / last priority')+'</span><strong>Plan '+esc(r.value.toLocaleString('en-US'))+'</strong></div>'+[ [3,'Sewing'],[4,'Ready Cutting'],[2,'Embroidery'],[1,'Print'] ].map(([i,name])=>'<div class="gt-row"><span>'+name+' allocated</span><strong>'+esc(r.stages[i]===null?'—':r.stages[i].toLocaleString('en-US'))+'</strong></div>').join('')+'<div class="gt-row"><span>Uncovered plan · not a fabric shortage claim</span><strong>'+esc(r.need.toLocaleString('en-US'))+'</strong></div>'+ (r.reasons.length?'<p>'+esc(r.reasons.join(' '))+'</p>':'')).join('');
+ return rows.map(r=>'<div class="gt-row"><span>'+esc(r.color)+' · Delivery '+esc(r.delivery||'Missing / last priority')+'</span><strong>Plan '+esc(r.value.toLocaleString('en-US'))+'</strong></div>'+[ [3,'Sewing'],[4,'Ready Cutting'],[2,'Embroidery'],[1,'Print'],[0,'Body Cuttable'] ].map(([i,name])=>'<div class="gt-row"><span>'+name+' allocated</span><strong>'+esc(r.stages[i]===null?'—':r.stages[i].toLocaleString('en-US'))+'</strong></div>').join('')+'<div class="gt-row"><span>Uncovered plan · not a fabric shortage claim</span><strong>'+esc(r.need.toLocaleString('en-US'))+'</strong></div>'+ (r.reasons.length?'<p>'+esc(r.reasons.join(' '))+'</p>':'')).join('');
 }
 
 function ganttHoverHtml(w,source){
@@ -138,7 +138,8 @@ function ganttHoverHtml(w,source){
   const plan=ganttHoverPlan(w),sewing=ganttHoverSewing(w.line,w.ewo,w.selectedColors);
   const model=getGanttStock(),cutItems=w.selectedColors.map(color=>model.pairs.get(gsPair(w.ewo,color)));
   const cutSum=field=>cutItems.length&&cutItems.every(p=>p?.[field]!==null&&p?.[field]!==undefined&&!p?.[field+'Invalid'])?cutItems.reduce((n,p)=>n+p[field],0):null;
-  const cutable=null,cutQty=cutSum('cut');
+  const cutable=cutSum('cuttable'),cutQty=cutSum('cut');
+  const bodyEvidence=cutItems.map(p=>p?.body?('Body received '+p.body.body_received+' '+p.body.unit+' / consumption '+p.body.body_consumption+' − Cutting Total '+p.body.total_cut+' PCS (as of '+p.body.cutting_date+'). Source rows: RFD '+p.body.evidence.rfd_rows.join(', ')+', Booking '+p.body.evidence.booking_rows.join(', ')+'. '+(p.cuttableReasons||[]).join(' ')):(p?.cuttableReasons||['No matching Body source.']).join(' ')).join(' | ');
   const cuttingWip=ganttPopupCuttingWip(w,source);
   const send=cutSum('printSend'),recv=cutSum('printReceive');
   const embSend=cutSum('embSend'),embRecv=cutSum('embReceive');
@@ -178,7 +179,7 @@ function ganttHoverHtml(w,source){
       row('3','Total Rejection Qty',selectedSewing.reject==null?null:fmt(selectedSewing.reject))+
       row('4','Total WIP Qty',selectedSewing.wip==null?null:fmt(selectedSewing.wip)))+
     card('Consumable WIP','wip',
-      row('1','Cutable WIP · Paused',null)+
+      row('1','Cutable WIP · Body only',cutable===null?null:fmt(cutable),bodyEvidence)+
       row('2','Cutting WIP',cuttingWip.value==null?null:fmt(cuttingWip.value),'RFD Cutting Today · EWO + Color across all lines · '+(cuttingWip.reason||'Print Receive − Sewing Input; Embroidery Receive − Sewing Input; no process: Total Cutting − Sewing Input.'))+
       row('3','Print',send==null||recv==null?null:fmt(send-recv))+
       row('4','Embroidery',embSend==null||embRecv==null?null:fmt(embSend-embRecv))+

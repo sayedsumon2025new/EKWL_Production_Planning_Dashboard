@@ -102,6 +102,7 @@ async function uploadRfdFile(){
    const received=await request({action:'chunk',id:job.id,start_row:offset+2,rows:part});offset+=part.length;if(received.received_rows!==offset)throw Error('RFD received-row count did not match.');rfdMessage('Saving source rows… '+offset.toLocaleString()+' / '+preview.rows.length.toLocaleString());
   }
   const saved=await request({action:'finalize',id:job.id});if(saved.status!=='SUCCESS'||saved.rows!==preview.rows.length)throw Error('RFD activation audit did not match.');
+  if(typeof invalidateSharedReports==='function')invalidateSharedReports(['gantt-cutting']);
   const read=verifyRfdRead(await request({action:'read'}));
   if(read.report?.id===job.id&&(read.rows.length!==preview.rows.length||read.rows.some((row,i)=>row.some((value,j)=>value!==preview.rows[i][j]))))throw Error('Saved RFD cells did not match the original CSV. Refresh before using this report.');
   RFD_PREVIEW=null;rfdNode('rfd-file').value='';RFD_LOADED_AT=Date.now();setRfdRows(read.rows,read.report,'sql');rfdMessage(read.report?.id===job.id?'Saved and verified: every source cell matches the CSV.':'Upload saved. A newer RFD report is now active.');rfdNode('rfd-upload').open=false;
