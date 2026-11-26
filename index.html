@@ -2318,13 +2318,13 @@ input,select,textarea{
     </div>
     <div id="upload-panel-embellishment" class="upload-report-panel" style="display:none">
       <div class="card" style="margin-top:12px">
-        <div class="card-title">🎨 Embellishment Send Receive · Daily CSV <span class="ct-right">UPLOAD PERMISSION</span></div>
+        <div class="card-title">🎨 Embellishment Send Receive · CSV / Excel <span class="ct-right">UPLOAD PERMISSION</span></div>
         <div class="ac-controls">
-          <label>CSV file<input id="em-file" type="file" accept=".csv,text/csv" onchange="previewEmbellishmentFile()"></label>
+          <label>CSV / Excel file<input id="em-file" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="previewEmbellishmentFile()"></label>
           <button id="em-upload-btn" type="button" class="top-btn primary" onclick="uploadEmbellishmentFile()">Upload &amp; Activate SQL Snapshot</button>
         </div>
         <div class="ss-source-note">CSV-এর Date column অনুযায়ী filter হবে। সফল upload-এর পরে সম্পূর্ণ file নতুন active snapshot হবে; পুরোনো snapshot সংরক্ষিত থাকবে।</div>
-        <div id="em-upload-msg" class="modal-msg" role="status" aria-live="polite">Select an Embellishment CSV to preview.</div>
+        <div id="em-upload-msg" class="modal-msg" role="status" aria-live="polite">Select an Embellishment CSV or Excel file to preview.</div>
       </div>
     </div>
   </div>
@@ -3157,7 +3157,9 @@ input,select,textarea{
       <label>Buyer Team<select id="em-team" onchange="embellishmentFiltersChanged()"><option value="">All teams</option></select></label>
       <label class="ac-search">Search Code / EWO / Style / Color<input id="em-search" type="search" placeholder="Search…"></label>
       <button class="top-btn" type="button" onclick="clearEmbellishmentFilters()">Clear filters</button>
+      <button id="em-export-btn" class="top-btn" type="button" onclick="exportEmbellishmentExcel()" disabled>Export Excel (all rows)</button>
     </div>
+    <div id="em-export-msg" class="ss-source-note" role="status" aria-live="polite"></div>
     <div id="em-kpis" class="kpi-row"></div>
     <div id="em-table" class="tbl-wrap" style="max-height:610px;overflow:auto"></div>
     <div id="em-pagination" class="ss-pager"></div>
@@ -3202,7 +3204,8 @@ input,select,textarea{
 <script defer src="rfd-fabrics-details.js?v=1"></script>
 <script defer src="rfd-converter.js?v=1"></script>
 <script defer src="rfd-master-id.js?v=1"></script>
-<script defer src="embellishment-module.js?v=3"></script>
+<script defer src="xlsx.full.min.js?v=0.20.3"></script>
+<script defer src="embellishment-module.js?v=4"></script>
 <script defer src="ewo-readiness.js?v=4"></script>
 <script defer src="ready-input-coverage.js?v=2"></script>
 <script defer src="gantt-stock.js?v=1"></script>
