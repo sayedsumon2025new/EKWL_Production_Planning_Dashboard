@@ -48,7 +48,10 @@ function emDateTime(value){
   return d.getUTCFullYear()===year&&d.getUTCMonth()===month&&d.getUTCDate()===day?time:NaN;
 }
 function parseEmbellishmentCSV(text){
-  const records=parseEmbellishmentRecords(text),headers=records.shift();
+  return parseEmbellishmentRows(parseEmbellishmentRecords(text));
+}
+function parseEmbellishmentRows(records){
+  const [headers,...body]=records;
   if(!headers)throw Error('CSV headings are missing.');
   // Report exports differ in line breaks, spacing, case and sometimes omit the
   // final unnamed column. Match by name; keep the original cell text unchanged.
@@ -65,7 +68,7 @@ function parseEmbellishmentCSV(text){
   if(missing.length||unexpected.length)
     throw Error(`CSV headings do not match the Embellishment report.${missing.length?' Missing: '+missing.join(', ')+'.':''}${unexpected.length?' Unexpected: '+unexpected.join(', ')+'.':''}`);
   const unnamed=headers.findIndex(header=>!key(header)),indices=expected.map(name=>positions.get(name));
-  const data=records.filter(cells=>cells.length!==1||cells[0]!=='');
+  const data=body.filter(cells=>cells.length!==1||cells[0]!=='');
   if(!data.length||data.length>100000)throw Error('CSV must contain 1–100,000 data rows.');
   return data.map((cells,i)=>{
     if(cells.length>headers.length&&cells.slice(headers.length).some(value=>value!==''))
@@ -77,8 +80,38 @@ function parseEmbellishmentCSV(text){
     return {source_row_no:i+2,...values};
   });
 }
+async function readEmbellishmentFile(file){
+  if(!/\.xlsx$/i.test(file.name))return parseEmbellishmentCSV(await file.text());
+  if(typeof XLSX==='undefined')throw Error('Excel support is unavailable. Reload the page and try again.');
+  const workbook=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true,cellDates:false});
+  const sheet=workbook.Sheets[workbook.SheetNames[0]];
+  if(!sheet?.['!ref'])throw Error('Excel report is empty.');
+  const range=XLSX.utils.decode_range(sheet['!ref']);
+  if(range.e.r>100000||range.e.c>20)throw Error('Excel report must contain 21 columns and at most 100,000 data rows.');
+  // Use formatted strings for edited workbooks; our exports store every cell as
+  // text, so dates, leading zeroes, whitespace and blank cells round-trip intact.
+  return parseEmbellishmentRows(XLSX.utils.sheet_to_json(sheet,{header:1,raw:false,defval:'',blankrows:true}));
+}
+function embellishmentWorkbook(){
+  const sheet=XLSX.utils.aoa_to_sheet([EM_HEADERS,...EM_ROWS.map(row=>EM_HEADERS.map((_,i)=>emCell(row,i)))]);
+  sheet['!cols']=EM_HEADERS.map((_,i)=>({wch:i===0||i===3||i===6?30:22}));
+  const workbook=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook,sheet,'Embellishment Send Receive');
+  return workbook;
+}
+function exportEmbellishmentExcel(){
+  if(!EM_ROWS.length){emMessage('em-export-msg','No report rows to export.');return;}
+  try{
+    if(typeof XLSX==='undefined')throw Error('Excel support is unavailable. Reload the page and try again.');
+    const name=(EM_FILE_NAME||'Embellishment Send Receive').replace(/\.(csv|xlsx)$/i,'');
+    XLSX.writeFile(embellishmentWorkbook(),name+'.xlsx',{bookType:'xlsx',compression:true});
+    emMessage('em-export-msg',`Exported all ${emCount(EM_ROWS.length)} rows / 21 columns. You can upload this Excel file again.`);
+  }catch(error){emMessage('em-export-msg','Excel export failed: '+(error?.message||error));}
+}
 function embellishmentSetRows(rows,fileName,uploadedAt='',mode='sql'){
   EM_ROWS=rows;EM_PAGE=1;EM_FILE_NAME=fileName;EM_UPLOADED_AT=uploadedAt;EM_MODE=mode;
+  const exportButton=document.getElementById('em-export-btn');if(exportButton)exportButton.disabled=!rows.length;
+  emMessage('em-export-msg','');
   for(const [id,index,label] of [['em-date',1,'dates'],['em-buyer',4,'buyers'],['em-team',5,'teams']]){
     const values=[...new Set(rows.map(row=>emCell(row,index)).filter(Boolean))]
       .sort(index===1?(a,b)=>emDateTime(b)-emDateTime(a):(a,b)=>a.localeCompare(b,undefined,{numeric:true}));
@@ -119,8 +152,8 @@ function renderEmbellishmentModule(){
     <button class="pg-btn" type="button" ${EM_PAGE<=1?'disabled':''} onclick="embellishmentPage(${EM_PAGE-1})">← Previous</button>
     <span>Page ${EM_PAGE} / ${pages}</span>
     <button class="pg-btn" type="button" ${EM_PAGE>=pages?'disabled':''} onclick="embellishmentPage(${EM_PAGE+1})">Next →</button>`;
-  emMessage('em-msg',`${EM_MODE==='preview'?'LOCAL CSV PREVIEW':'SQL LIVE'} · ${emCount(total)} / ${emCount(EM_ROWS.length)} rows`);
-  emMessage('em-source',`${EM_MODE==='preview'?'Local CSV':'SQL file'}: ${EM_FILE_NAME||'—'} · All 21 original CSV columns shown in source order. Date values are shown as supplied.`+
+  emMessage('em-msg',`${EM_MODE==='preview'?'LOCAL FILE PREVIEW':'SQL LIVE'} · ${emCount(total)} / ${emCount(EM_ROWS.length)} rows`);
+  emMessage('em-source',`${EM_MODE==='preview'?'Local file':'SQL file'}: ${EM_FILE_NAME||'—'} · All 21 original CSV columns shown in source order. Date values are shown as supplied.`+
     (EM_UPLOADED_AT?' · Uploaded '+new Date(EM_UPLOADED_AT).toLocaleString():'') );
 }
 function embellishmentPage(n){EM_PAGE=n;renderEmbellishmentModule();document.getElementById('em-table')?.scrollTo({top:0,left:0});}
@@ -132,12 +165,12 @@ function clearEmbellishmentFilters(){for(const id of ['em-date','em-buyer','em-t
 
 async function previewEmbellishmentFile(){
   const file=document.getElementById('em-file')?.files?.[0],token=++EM_FILE_TOKEN;
-  EM_PREVIEW=null;if(!file){emMessage('em-upload-msg','Select a CSV.');return;}
+  EM_PREVIEW=null;if(!file){emMessage('em-upload-msg','Select a CSV or Excel file.');return;}
   try{
-    const rows=parseEmbellishmentCSV(await file.text());if(token!==EM_FILE_TOKEN)return;
+    const rows=await readEmbellishmentFile(file);if(token!==EM_FILE_TOKEN)return;
     EM_PREVIEW={file,rows};embellishmentSetRows(rows,file.name,'','preview');
     emMessage('em-upload-msg',`✓ ${emCount(rows.length)} source rows / 21 columns previewed locally. Open slide 19 to inspect. SQL has not changed.`);
-  }catch(error){if(token===EM_FILE_TOKEN)emMessage('em-upload-msg','CSV preview failed: '+(error?.message||error));}
+  }catch(error){if(token===EM_FILE_TOKEN)emMessage('em-upload-msg','File preview failed: '+(error?.message||error));}
 }
 async function loadEmbellishmentModule(force=false){
   if(EM_MODE==='preview'&&!force){renderEmbellishmentModule();return;}
@@ -162,11 +195,11 @@ async function loadEmbellishmentModule(force=false){
 async function uploadEmbellishmentFile(){
   if(!siteHasPerm('embellishment_upload')){emMessage('em-upload-msg','Embellishment Upload permission required.');return;}
   const file=document.getElementById('em-file')?.files?.[0];
-  if(!file){emMessage('em-upload-msg','Select Embellishment Send Receive.csv first.');return;}
+  if(!file){emMessage('em-upload-msg','Select an Embellishment CSV or Excel file first.');return;}
   const button=document.getElementById('em-upload-btn');button.disabled=true;
   const session=SITE_SESSION_GENERATION,userId=SITE_AUTH_USER?.id;
   try{
-    const preview=EM_PREVIEW?.file===file?EM_PREVIEW:{file,rows:parseEmbellishmentCSV(await file.text())};
+    const preview=EM_PREVIEW?.file===file?EM_PREVIEW:{file,rows:await readEmbellishmentFile(file)};
     EM_PREVIEW=preview;const rows=preview.rows;
     const batchId=crypto.randomUUID();
     for(let offset=0;offset<rows.length;offset+=120){
@@ -197,5 +230,7 @@ function resetEmbellishmentModule(){
   const file=document.getElementById('em-file');if(file)file.value='';
   for(const id of ['em-kpis','em-table','em-pagination']){const el=document.getElementById(id);if(el)el.innerHTML='';}
   emMessage('em-msg','Waiting for sign in…');emMessage('em-source','');
-  emMessage('em-upload-msg','Select an Embellishment CSV to preview.');
+  const exportButton=document.getElementById('em-export-btn');if(exportButton)exportButton.disabled=true;
+  emMessage('em-export-msg','');
+  emMessage('em-upload-msg','Select an Embellishment CSV or Excel file to preview.');
 }

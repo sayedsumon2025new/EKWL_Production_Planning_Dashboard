@@ -19,6 +19,25 @@ phpMyAdmin, followed by the compatible code release.
 
 See [automatic deployment setup](docs/mysql-automatic-deployment.md).
 
+## Embellishment Excel export and re-upload
+
+Slide 19 → **Export Excel (all rows)** downloads the complete loaded report as
+`.xlsx`, including rows hidden by filters or pagination. All 21 source headings
+and cells are exported in source order as text, preserving dates, leading zeroes,
+whitespace and the final unnamed column. Export does not include SQL metadata.
+
+Upload Reports → Embellishment accepts CSV and these Excel exports. Select the
+file to preview, then use **Upload & Activate SQL Snapshot** with the existing
+upload permission. Validation, chunking and the SQL row-count audit still apply.
+Keep the worksheet's columns and text date format (`D-Mon-YY`) when editing it.
+The first worksheet is imported. Uploading activates a complete replacement
+snapshot, so export always includes all loaded rows.
+
+Excel support uses locally bundled SheetJS CE 0.20.3 from
+`https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js`;
+see [its license](docs/sheetjs-LICENSE.txt). No external service receives report
+data during export. Validate with `node tests/embellishment-excel.cjs`.
+
 ## Order Bank CSV uploads
 
 In Admin Settings → Upload Reports → Order Bank, select a CSV and choose
