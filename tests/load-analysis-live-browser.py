@@ -15,6 +15,7 @@ with sync_playwright() as p:
   path=r.request.url.split('?')[0].split('/')[-1]
   if path=='host':r.fulfill(content_type='text/html',body='<iframe id="load-analysis-workspace" src="/load-analysis.html" style="width:100%;height:940px;border:0"></iframe>')
   elif path=='load-analysis.html':r.fulfill(content_type='text/html',body=html)
+  elif path in ['load-analysis-layout.css','premium-corporate.css']:r.fulfill(content_type='text/css',body=(ROOT/path).read_text())
   elif path in ['load-analysis-plan-row.js','load-analysis-loss.js']:r.fulfill(content_type='application/javascript',body=(ROOT/path).read_text())
   else:r.fulfill(status=404,body='')
  page.route('https://ekwl.test/**',route)
@@ -147,13 +148,17 @@ with sync_playwright() as p:
   page.wait_for_timeout(100)
   metrics=frame.locator('body').evaluate("""()=>{
    const table=document.getElementById('load-analysis-loss-table'),row=table.tBodies[0].rows[0];
-   return {viewport:innerWidth,page:document.querySelector('.page').getBoundingClientRect().width,document:document.documentElement.scrollWidth,day:row.cells[2].getBoundingClientRect().width,transform:getComputedStyle(table).transform,overlap:[...table.tBodies[0].rows].some(r=>[...r.cells].some(c=>c.scrollWidth>c.clientWidth+2)),total:row.cells[row.cells.length-2].getBoundingClientRect().width,wrap:table.parentElement.clientWidth,table:table.getBoundingClientRect().width};
+   return {viewport:innerWidth,page:document.querySelector('.page').getBoundingClientRect().width,document:document.documentElement.scrollWidth,day:row.cells[2].getBoundingClientRect().width,transform:getComputedStyle(table).transform,overlap:[...table.tBodies[0].rows].some(r=>[...r.cells].some(c=>getComputedStyle(c).display!=='none'&&c.scrollWidth>c.clientWidth+2)),total:row.cells[row.cells.length-2].getBoundingClientRect().width,wrap:table.parentElement.clientWidth,table:table.getBoundingClientRect().width};
   }""")
   assert metrics['document']<=metrics['viewport'],metrics
   assert metrics['page']>=metrics['viewport']-30,metrics
-  assert metrics['day']>=75 and metrics['total']>=99,metrics
+  assert metrics['day']>=63 and metrics['total']>=85,metrics
   assert metrics['transform']=='none' and not metrics['overlap'],metrics
-  if viewport['width']==1910:assert metrics['table']<=metrics['wrap']+1,metrics
+  if viewport['width']==1910:
+   assert frame.locator('.la-bottom-grid').evaluate("e=>getComputedStyle(e).gridTemplateColumns.split(' ').length===2")
+   assert frame.locator('#load-analysis-summary-table').evaluate('e=>e.getBoundingClientRect().width<=e.parentElement.clientWidth+1')
+   assert frame.locator('#la-overview-chart rect').count()==4
+  frame.locator('body').evaluate('window.scrollTo(0,0)');page.evaluate('window.scrollTo(0,0)')
   page.screenshot(path='/tmp/load-analysis-fit-'+str(viewport['width'])+'.png',full_page=True)
   frame.locator('.la-department-panel').screenshot(path='/tmp/load-analysis-department-'+str(viewport['width'])+'.png')
  assert not errors,errors

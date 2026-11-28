@@ -4062,6 +4062,7 @@ async function refreshDashboardAfterSuccessfulUpload(source,options={}){
   }
   if(!current())return;
   if(source==='orderbank'){
+    if(typeof invalidateBodyBalance==='function')invalidateBodyBalance();
     ORDER_BANK_RAW_ROWS=[];ORDER_BANK_FILTER_INDEX={};ORDER_BANK_FILTERED_INDEXES=[];ORDER_BANK_FILTERS={};ORDER_BANK_EWO_SEARCH='';ORDER_BANK_PAGE=1;
     if(CURRENT_SLIDE===14)await loadOrderBankSlide();
     if(CURRENT_SLIDE===16)await loadOrderExecutionSlide();

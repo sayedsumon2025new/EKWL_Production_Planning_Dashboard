@@ -19,6 +19,8 @@ try:
    elif'/api/'in r.request.url:r.fulfill(content_type='application/json',body=json.dumps({'data':{'session':None,'csrf':'fixture'},'error':None}))
    else:r.fulfill(body='',content_type='application/javascript')
   page.route('**/*',route);page.goto(base,wait_until='networkidle');page.wait_for_function("typeof FDR_HEADERS!=='undefined'&&typeof renderFdrModule==='function'&&typeof BOOKING_HEADERS!=='undefined'")
+  # Finish the anonymous startup handler before installing an isolated test identity.
+  page.wait_for_function("document.getElementById('site-login-msg').textContent.includes('Email এবং password দিয়ে sign in করুন।')")
   page.evaluate(r"""()=>{
    SITE_AUTH_USER={id:'scope-owner'};SITE_USER_PROFILE={role:'admin',permissions:{}};document.body.classList.remove('site-locked');document.getElementById('site-login-gate').classList.add('hidden');
    window.fixtures={rfd:[],booking:[],dcs:[],fdr:[]};const entries=[['272205','Praline','Other Buyer','99'],['271080','Blue','Buyer A','10'],['271080','Red','Buyer A','20'],['271444','Black','Buyer B','30'],['EWO 271080-FBR','C. Navy','Buyer A','5'],['271080 / 272205','Mixed','Mixed Buyer','999'],['','Unknown','Unknown Buyer','999']];
@@ -30,7 +32,7 @@ try:
    uploads.forEach((u,i)=>{ACTIVE_PLAN_UPLOAD=u;DATA=(i===0?['271080','271444']:i===1?['272205']:[]).map((ewo,j)=>({record_id:j+1,ewo,line:j+1,buyer:'Fixture',style:'T-Shirt',color:'Plan color only',month:'Nov-26',orderqty:100,planqty:100,smv:6,startdate:'2026-11-01',enddate:'2026-11-01'}));DAILY_PLAN=[];SAH_DATA=[];SAH_DAILY=[];CLOCK_HOUR_DATA=[];CLOCK_HOUR_DAILY=[];BUYER_PLAN_DATA=[];MONTHS=['Nov-26'];EFF15_METRIC_DAILY=[];EFF15_METRIC_UPLOAD_ID=u.id;PLANNING_CACHE_VALIDATION={version:planningSnapshotVersion(u),fetchedAt:Date.now()};PLAN_VERSION_CACHE.set(u.id,capturePlanningState());});
    window.requests=0;window.holdRead=false;window.receipt=()=>({headers:[...RFD_HEADERS],rows:fixtures.rfd,report:{id:'rfd-source',file_name:'Original RFD.csv',expected_rows:7,received_rows:7},integrity:{complete:true,row_count:7,batch_id:'rfd-source'}});
    SB.request=async(route,body)=>{requests++;if(route==='rfd'){if(holdRead)return await new Promise(resolve=>window.releaseRead=()=>resolve({data:receipt()}));return{data:receipt()};}if(route==='rfd/fabrics-details')return{data:derived};if(route==='rfd/converter')return{data:converter};const key=route.endsWith('booking')?'booking':'dcs',hs=key==='booking'?BOOKING_HEADERS:DCS_HEADERS;return{data:{headers:[...hs],rows:fixtures[key],report:{id:key,file_name:key+'.csv',expected_rows:7,received_rows:7},integrity:{complete:true,row_count:7,batch_id:key}}};};
-   window.openScopeTab=async prefix=>{if(prefix==='rfd')await selectRfdTab('rfd');else await selectRfdTab(prefix);};window.original=JSON.stringify({fixtures,derived,converter});
+   window.openScopeTab=async prefix=>{if(prefix==='rfd')await selectRfdTab('rfd');else if(prefix==='fdr'){await selectRfdTab(prefix);await openFdrSourceReport();}else await selectRfdTab(prefix);};window.original=JSON.stringify({fixtures,derived,converter});
    select.value='plan-a';switchPlanningInstant('plan-a');goSlide(22);
   }""")
   page.wait_for_function("RFD_ROWS.length===7&&RFD_LOAD===null")

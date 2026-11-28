@@ -5,10 +5,10 @@ function selectRfdTab(tab){
  rfdHideEwoTooltip();
  const refresh=document.getElementById('rfd-refresh');if(refresh)refresh.hidden=['converter','master'].includes(tab);
  RFD_ACTIVE_TAB=tab;for(const name of RFD_TABS){document.getElementById(name+'-panel').hidden=name!==tab;document.getElementById(name+'-tab').setAttribute('aria-selected',String(name===tab));}
- const subtitle=document.querySelector('#s22 .slide-subtitle');if(subtitle)subtitle.textContent=tab==='master'?'Master ID · permanent EWO + Colour registry':tab==='converter'?'Data Converter':tab==='fdr'?'Original fabrics details report · all 31 source columns':tab==='dcs'?'Original daily production report · all 25 source columns':tab==='booking'?'Original fabric booking report · all 13 source columns':'Original RFD report · all 22 source columns';
+ const subtitle=document.querySelector('#s22 .slide-subtitle');if(subtitle)subtitle.textContent=tab==='master'?'Master ID · permanent EWO + Colour registry':tab==='converter'?'Data Converter':tab==='fdr'?'Body fabric booking, consumption and cutting balance · saved sources':tab==='dcs'?'Original daily production report · all 25 source columns':tab==='booking'?'Original fabric booking report · all 13 source columns':'Original RFD report · all 22 source columns';
  if(tab==='master')return loadMasterIds();
  if(tab==='converter')return loadRfdConverter();
- return tab==='fdr'?loadFdrModule():tab==='dcs'?loadDcsModule():tab==='booking'?loadBookingModule():loadRfdModule();
+ return tab==='fdr'?loadBodyBalance():tab==='dcs'?loadDcsModule():tab==='booking'?loadBookingModule():loadRfdModule();
 }
 /* RFD raw report: exact source headers/cells, atomic SQL uploads, bounded DOM. */
 const RFD_HEADERS=Object.freeze(['Receive & Delivery Date','Receive & Delivery Place','EWO No','Batch No','Re-Finish ID','Tag Number','Color','Fabric Details','Fabric Construction','Fabric Composition','Buyer Name','Vehicle Number','DC No','Re Delivery','Net Delivery Qty Kg.','Net Delivery Qty Pcs','Net Delivery Qty Yds','Total Roll','Lock No','Delivery From','Mushak Challan No','Body Fabrics']);
@@ -56,7 +56,7 @@ function clearRfdFilters(){for(const id of ['rfd-search','rfd-buyer','rfd-place'
 async function loadRfdModule(force=false){
  if(RFD_ACTIVE_TAB==='master')return loadMasterIds(force);
  if(RFD_ACTIVE_TAB==='converter')return loadRfdConverter(force);
- if(RFD_ACTIVE_TAB==='fdr')return loadFdrModule(force);
+ if(RFD_ACTIVE_TAB==='fdr')return typeof BB_STATE!=='undefined'&&BB_STATE.active?loadBodyBalance(force):loadFdrModule(force);
  if(RFD_ACTIVE_TAB==='dcs')return loadDcsModule(force);
  if(RFD_ACTIVE_TAB==='booking')return loadBookingModule(force);
  if(!SITE_AUTH_USER||!canAccessSlide(22))return;
@@ -102,6 +102,7 @@ async function uploadRfdFile(){
    const received=await request({action:'chunk',id:job.id,start_row:offset+2,rows:part});offset+=part.length;if(received.received_rows!==offset)throw Error('RFD received-row count did not match.');rfdMessage('Saving source rows… '+offset.toLocaleString()+' / '+preview.rows.length.toLocaleString());
   }
   const saved=await request({action:'finalize',id:job.id});if(saved.status!=='SUCCESS'||saved.rows!==preview.rows.length)throw Error('RFD activation audit did not match.');
+  if(typeof invalidateBodyBalance==='function')invalidateBodyBalance();
   if(typeof invalidateSharedReports==='function')invalidateSharedReports(['gantt-cutting']);
   const read=verifyRfdRead(await request({action:'read'}));
   if(read.report?.id===job.id&&(read.rows.length!==preview.rows.length||read.rows.some((row,i)=>row.some((value,j)=>value!==preview.rows[i][j]))))throw Error('Saved RFD cells did not match the original CSV. Refresh before using this report.');

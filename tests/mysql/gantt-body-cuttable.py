@@ -26,3 +26,10 @@ for permission in ['slide_7','slide_20']:
  email='body-'+secrets.token_hex(5)+'@fixture.invalid';password='Fixture-'+secrets.token_hex(12);admin.call('users',{'action':'create','email':email,'password':password,'role':'user','status':'active','permissions':{permission:True}});viewer=Client();viewer.login(email,password);assert read(viewer)==data;viewer.call('rfd',{'action':'begin'},expected=403)
 Client().call('reports/snapshot',{'kind':'gantt-cutting'},expected=401)
 print('PASS SQL Body-only cuttable snapshot, exact source rows, latest cumulative cutting once, Gantt/Load Analysis read permissions, original data immutable')
+
+balance=admin.call('rfd/body-balance',{'action':'read'})['data'];assert balance['model']=='body-fabric-balance-v1'and balance['integrity']['row_count']==1
+row=balance['rows'][0];assert len(row)==14 and row[5]=='1000'and row[7]=='0.2'and row[8]=='1000'and row[9]=='3000'and row[10]=='600'and row[11]=='400'and row[12]=='2000'and row[13]=='0'
+assert balance['evidence'][0]['grain']['rfd_rows']==[2,3]and balance['evidence'][0]['grain']['booking_rows']==[2]
+assert before==[admin.call(route,{'action':'read'})['data']for route in ['rfd','rfd/booking','rfd/daily-cutting']]
+Client().call('rfd/body-balance',{'action':'read'},expected=401);viewer.call('rfd/body-balance',{'action':'read'},expected=403);admin.call('rfd/body-balance',{'action':'refresh'},expected=400)
+print('PASS Body balance read-only SQL contract, saved booking and net receive, latest cutting, exact balances, source immutability and access/write guards')

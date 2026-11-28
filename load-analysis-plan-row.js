@@ -19,8 +19,8 @@
   const count=state.dates?.length||0;
   for(const id of ['summary','loss-table']){
    const table=byId(id),wrap=table.parentElement,available=wrap.clientWidth;if(!available)continue;
-   const leading=id==='summary'?[220]:[220,130],trailing=[100,100];
-   const fixed=[...leading,...trailing].reduce((a,b)=>a+b,0),minimum=fixed+count*76,width=Math.max(available,minimum);
+   const leading=id==='summary'?[250]:[250,110],trailing=[86,0];
+   const fixed=[...leading,...trailing].reduce((a,b)=>a+b,0),minimum=fixed+count*64,width=Math.max(available,minimum);
    const daily=count?(width-fixed)/count:0;
    let group=table.querySelector('colgroup');if(!group){group=document.createElement('colgroup');table.prepend(group);}
    group.innerHTML=[...leading,...Array(count).fill(daily),...trailing].map(value=>'<col style="width:'+value+'px">').join('');
@@ -92,6 +92,13 @@
   byId('refresh-loss').disabled=busy||!!state.loading;
   document.querySelectorAll('[data-date]').forEach(b=>b.onclick=()=>{sourceDate=b.dataset.date;render();byId('sources').open=true;byId('sources').scrollIntoView({behavior:'smooth'});});
   const maximum=Math.max(1,...days.map(d=>d.loss||0));byId('chart').innerHTML=days.map(d=>'<div class="bar-col"><span class="la-coverage">'+(d.target>0&&d.forecast!==null?fmt(d.forecast/d.target*100)+'%':'—')+'</span><strong>'+mark(d.loss,d.partial)+'</strong><div class="bar" style="height:'+(d.loss===null?0:d.loss/maximum*70)+'px"></div><span>'+label(d.date)+'</span></div>').join('');
+  const overview=byId('la-overview-chart');
+  if(overview){
+   const entries=[['Target Avg',aggregate(dates.map(()=>number(state.dailyCapacity))).avg,'#1689f8'],['Forecast Avg',aggregate(days.map(d=>d.forecast)).avg,'#25c477'],['Gap Avg',aggregate(days.map(d=>d.loss)).avg,'#f5ab31'],['Total Loss (Sum)',aggregate(days.map(d=>d.loss)).total,'#ff545b']];
+   const max=Math.max(1,...entries.map(e=>e[1]??0)),top=Math.ceil(max/4/10)*10*4,width=420,height=260,left=48,right=12,bottom=54,plot=height-bottom-22,step=(width-left-right)/4;
+   const ticks=Array.from({length:5},(_,i)=>{const value=top*i/4,y=height-bottom-plot*i/4;return '<line x1="'+left+'" x2="'+(width-right)+'" y1="'+y+'" y2="'+y+'" stroke="#dce5ee"/><text x="'+(left-7)+'" y="'+(y+4)+'" text-anchor="end">'+esc(fmt(value))+'</text>';}).join('');
+   overview.innerHTML='<svg viewBox="0 0 '+width+' '+height+'" role="img" aria-label="SAH overview with proportional bars"><g class="la-overview-axis">'+ticks+'</g>'+entries.map(([name,value,color],i)=>{const h=value===null?0:value/top*plot,x=left+i*step+9,y=height-bottom-h;return '<g><rect x="'+x+'" y="'+y+'" width="'+(step-18)+'" height="'+h+'" rx="4" fill="'+color+'"/><text class="la-overview-value" x="'+(x+(step-18)/2)+'" y="'+Math.max(14,y-8)+'" text-anchor="middle">'+esc(fmt(value))+'</text><text class="la-overview-label" x="'+(x+(step-18)/2)+'" y="'+(height-bottom+20)+'" text-anchor="middle">'+name.replace(' (Sum)','')+'</text>'+(name.includes('(Sum)')?'<text x="'+(x+(step-18)/2)+'" y="'+(height-bottom+35)+'" text-anchor="middle">(Sum)</text>':'')+'</g>';}).join('')+'</svg>';
+  }
   renderDepartments(days);
   fit();renderWipPicker();
  }

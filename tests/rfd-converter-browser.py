@@ -29,7 +29,7 @@ with sync_playwright()as p:
  page.locator('#rcon-approve').click();page.wait_for_function("!RCON_BUSY&&RCON_DATA&&!RCON_DATA.issues.some(r=>r.ewo==='271080')",timeout=60000)
  assert page.locator('#rcon-review').is_hidden();assert page.locator('#rcon-body [data-rcon-review]').count()==0
  page.locator('#rcon-refresh').click();page.wait_for_function('RCON_DATA!==null&&RCON_LOAD===null');assert page.evaluate("RCON_DATA.mappings.some(m=>m.ewo==='271080'&&m.valid)")
- page.locator('#fdr-tab').click();page.wait_for_function('FDR_DATA!==null&&FDR_LOAD===null',timeout=60000)
+ page.locator('#fdr-tab').click();page.locator('#bb-view .bb-rules').evaluate('e=>e.open=true');page.locator('#bb-source-report').click();page.wait_for_function('FDR_DATA!==null&&FDR_LOAD===null',timeout=60000)
  assert page.evaluate("FDR_ROWS.filter(r=>r[1]==='271080').length") ==1
  row=page.locator('#fdr-table tbody tr').filter(has=page.locator('button[data-fdr-column="1"]',has_text='271080'));row.locator('[data-fdr-column="3"]').click();assert 'C. Navy'in page.locator('#fdr-evidence-body').inner_text();assert 'color_mappings'in page.locator('#fdr-evidence-body').inner_text();page.locator('#fdr-evidence button').click()
  page.locator('#converter-tab').click();page.wait_for_function('RCON_DATA!==null&&RCON_LOAD===null');page.locator('#rcon-mappings summary').click();page.on('dialog',lambda d:d.accept());page.locator('#rcon-map-list [data-rcon-revoke]').first.click();page.wait_for_function("!RCON_BUSY&&RCON_DATA&&RCON_DATA.issues.some(r=>r.ewo==='271080')",timeout=60000)

@@ -92,3 +92,22 @@ Validation: `node tests/loading.cjs` covers version changes, expiry, ownership,
 master lines, invalid caches, new uploads, forced loads, and session races.
 `python tests/step1-browser.py` verifies actual reloads through sessionStorage
 and IndexedDB with unchanged Home totals and no planning-detail requests.
+
+## Body fabric balance and Load Analysis
+
+Slide 22 opens Body Fabric Balance: only literal Body receipts and matched KG
+bookings, with actual booking references and quantities. Consumption is that
+fabric's Booking KG / current Order Bank PCS. Used KG = latest cumulative
+Cutting PCS × consumption; balance KG = Body Net Delivery KG − used KG.
+Remaining cuttable PCS is floored from the exact balance/consumption and clamped
+at zero. Gap/surplus compares that balance against the uncut order requirement.
+Calculation uses full precision; display uses 4 decimals for consumption, 2 for
+KG and whole PCS. Unknown or ambiguous sources show — with clickable evidence.
+The calculation does not change saved sources. The original source report is
+available under Data sources & calculation method. Excel export includes all
+filtered rows with table styles, wrapped headers and appropriate number formats.
+
+Load Analysis uses a hero, four KPI cards, a full-width forecast table, and
+side-by-side loss reasons and overview chart. The overview uses proportional
+bars and labels Total Loss as a sum; the other three metrics are averages.
+Existing forecast calculations, evidence, corrections and WIP filters are retained.

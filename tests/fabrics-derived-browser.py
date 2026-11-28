@@ -15,7 +15,7 @@ with sync_playwright() as p:
  page.route('**/*',lambda r:r.continue_() if r.request.url.startswith(BASE) else r.fulfill(body=''))
  page.goto(BASE,wait_until='networkidle');page.wait_for_function("SITE_AUTH_USER!==null&&SITE_USER_PROFILE!==null&&document.body.dataset.planningState==='ready'",timeout=60000)
  _fixture.select_fixture_plan(page,[r[1]for r in expected['rows']])
- page.evaluate('goSlide(22)');page.locator('#fdr-tab').click();page.wait_for_function('FDR_REPORT!==null&&FDR_LOAD===null',timeout=60000)
+ page.evaluate('goSlide(22)');page.locator('#fdr-tab').click();page.locator('#bb-view .bb-rules').evaluate('e=>e.open=true');page.locator('#bb-source-report').click();page.wait_for_function('FDR_REPORT!==null&&FDR_LOAD===null',timeout=60000)
  assert page.locator('#fdr-panel input[type=file]').count()==0
  assert page.evaluate('FDR_ROWS')==expected['rows'];assert page.locator('#fdr-table thead th').all_text_contents()==view(expected['headers']);assert page.locator('#fdr-table tbody tr').count()==100
  page.locator('#fdr-search').fill('000123');page.wait_for_timeout(250);assert page.evaluate('FDR_FILTERED.length')==1
