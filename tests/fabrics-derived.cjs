@@ -20,3 +20,5 @@ const v9=structuredClone(valid);v9.report.model_version='fabrics-derived-v9';v9.
 assert.equal(c.verifyFdrRead(v9),v9);
 for(const change of [d=>delete d.evidence[0].cuttable_net_receive,d=>d.evidence[0].cuttable_net_receive.quantity='600',d=>d.evidence[0].cuttable_net_receive.source_column='Net Delivery Qty Pcs',d=>d.evidence[0].cuttable_net_receive.unit='PCS',d=>d.evidence[0].cuttable_net_receive.rfd_rows=[4]]){const bad=structuredClone(v9);change(bad);assert.throws(()=>c.verifyFdrRead(bad),/Net Delivery source evidence/);}
 console.log('PASS v9 Cuttable numerator is verified against the visible Net Delivery cell, matching unit/source column and exact fabric-row references');
+
+const unsupported=structuredClone(v9);unsupported.rows[0][12]='MTR';unsupported.evidence[0].reconciliation.unit='MTR';unsupported.evidence[0].cuttable_net_receive={unit:'MTR',quantity:null,source_column:null,rfd_rows:[2,3]};assert.equal(c.verifyFdrRead(unsupported),unsupported,'Unsupported units remain unavailable per row without blocking the entire report');
