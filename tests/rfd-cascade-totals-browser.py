@@ -1,3 +1,4 @@
+from table_excel import assert_fdr_excel
 """Offline real renderers: four cascading Color filters and exact all-page totals; synthetic data only."""
 import csv,io,json,shutil
 from functools import partial
@@ -26,7 +27,7 @@ try:
    const r=Array(22).fill('');r[2]='RFD-'+String(i).padStart(4,'0');r[1]=place;r[6]=color;r[10]=i===204?'Buyer B\r\nTeam':buyer;r[14]='0.1';r[15]='0';r[16]='0';r[17]='1';fixtureRaw.rfd.push(r);
    fixtureRaw.booking.push(['B-'+i,'0001',buyer,'Team',place,'Construction','Cotton',color,'160','60',i===204?'PCS':'kg',i===204?'2':'0.1','Reason']);
    fixtureRaw.dcs.push([i===204?'02-Nov-26':'01-Nov-26',buyer,'Team','D-'+Math.floor(i/2),'Style','Company',color,'100','1','10',...Array(15).fill('0')]);
-   const f=Array(31).fill('—');f[0]=buyer;f[1]='F-'+Math.floor(i/2);f[2]=color;f[3]='Fabric original';f[4]='Construction '+i;f[5]='Cotton';f[6]='0.1';f[7]='0';f[8]='0';f[9]='1';f[12]='KG';f[13]='1';f[14]=i===204?'1':'2';f[15]=i===204?'0.1':'0.2';f[17]='100';f[18]=i===204?'0.01':'0.02';f[19]='10';f[20]='8';f[21]='6';f[22]='5';f[23]='1';f[24]='0';f[25]='0';f[26]='0';f[27]='3';f[28]='2';f[29]='1';fixtureFdr.push(f);evidence.push({pair:'PAIR-'+Math.floor(i/2),grain:{},issues:{}});
+   const f=Array(31).fill('—');f[0]=buyer;f[1]='F-'+Math.floor(i/2);f[2]=color;f[3]='Fabric original';f[4]='Construction '+i;f[5]='Cotton';f[6]='0.1';f[7]='0';f[8]='0';f[9]='1';f[12]='KG';f[13]='1';f[14]=i===204?'1':'2';f[15]=i===204?'0.1':'0.2';f[17]='100';f[18]=i===0?'0.41113636':i===1?'0.4':i===204?'0.01':'0.02';f[19]=i<2?'3552.8358209':i<4?'4450.63492063':'10';f[20]='8';f[21]='6';f[22]='5';f[23]='1';f[24]='0';f[25]='0';f[26]='0';f[27]='3';f[28]='2';f[29]='1';fixtureFdr.push(f);evidence.push({pair:'PAIR-'+Math.floor(i/2),grain:{},issues:{}});
   }window.fixtureDerived={headers:[...FDR_HEADERS],rows:fixtureFdr,evidence,pairs:{},sources:{},report:{id:'offline',model_version:'offline',generated_at:'2026-11-01',materialized:false},integrity:{complete:true,row_count:205}};window.originalFixtures=JSON.stringify([fixtureRaw,fixtureFdr]);
   window.openFixture=prefix=>{RFD_ACTIVE_TAB=prefix;for(const name of ['rfd','booking','dcs','fdr']){document.getElementById(name+'-panel').hidden=name!==prefix;document.getElementById(name+'-tab').setAttribute('aria-selected',String(name===prefix));}if(prefix==='rfd')setRfdRows(fixtureRaw.rfd,{file_name:'offline.csv'},'preview');if(prefix==='booking')setBookingRows(fixtureRaw.booking,{file_name:'offline.csv'},'preview');if(prefix==='dcs')setDcsRows(fixtureRaw.dcs,{file_name:'offline.csv'},'preview');if(prefix==='fdr')fdrSet(fixtureDerived);};
   }""")
@@ -44,7 +45,10 @@ try:
    target=anchor if prefix!='fdr'else anchor.locator('xpath=..');target.focus();assert page.locator('#rfd-ewo-tooltip').is_visible();page.keyboard.press('Tab');assert anchor.get_attribute('aria-describedby') is None;page.locator('#'+prefix+'-search').focus();assert page.locator('#rfd-ewo-tooltip').count()==0
    assert table.locator('tbody tr').nth(3).locator('td').nth(col).locator('[data-rfd-ewo-original]').count()==0
    with page.expect_download()as d:page.locator(f'#{prefix}-export').click()
-   exported=source_csv(d.value.path());assert [r[col]for r in exported[1:7]]==cases
+   if prefix=='fdr':
+    assert len(assert_fdr_excel(page,d.value.path()))==207
+   else:
+    exported=source_csv(d.value.path());assert [r[col]for r in exported[1:7]]==cases
    assert page.evaluate('JSON.stringify([fixtureRaw,fixtureFdr])===originalFixtures')
    anchor.hover();assert page.locator('#rfd-ewo-tooltip').is_visible();page.evaluate('resetRfdModule()');assert page.locator('#rfd-ewo-tooltip').count()==0
    page.evaluate('p=>openFixture(p)',prefix)
@@ -59,9 +63,13 @@ try:
   page.evaluate("openFixture('booking')")
   def total(prefix,col):return page.locator(f'#{prefix}-table tfoot [data-total-column="{col}"]').inner_text()
   for prefix in ['rfd','booking','dcs','fdr']:
-   page.evaluate('p=>openFixture(p)',prefix);assert page.locator(f'#{prefix}-table tbody tr').count()==100;assert page.locator(f'#{prefix}-table tfoot td').count()=={'rfd':22,'booking':13,'dcs':25,'fdr':30}[prefix]
+   page.evaluate('p=>openFixture(p)',prefix);assert page.locator(f'#{prefix}-table tbody tr').count()==100;assert page.locator(f'#{prefix}-table tfoot td').count()=={'rfd':22,'booking':13,'dcs':25,'fdr':29}[prefix]
    if prefix=='rfd':
     page.locator('#rfd-buyer').select_option('Buyer B\r\nTeam');assert page.evaluate('RFD_FILTERED.length')==1;page.evaluate('clearRfdFilters()')
+   if prefix=='fdr':
+    assert page.locator('#fdr-table [data-fdr-column="15"],#fdr-table [data-total-column="15"]').count()==0
+    assert page.locator('#fdr-table [data-fdr-column="18"]').first.inner_text()=='0.4111'
+    assert page.locator('#fdr-table [data-fdr-column="19"]').first.inner_text()=='3553'
    expected_all={'rfd':(14,'20.5'),'booking':(11,'20.4 KG\n2 PCS'),'dcs':(9,'1,030'),'fdr':(13,'205 KG')}[prefix];assert total(prefix,expected_all[0])==expected_all[1],(prefix,total(prefix,expected_all[0]))
    page.locator(f'#{prefix}-last').click();assert page.locator(f'#{prefix}-table tbody tr').count()==5;assert total(prefix,expected_all[0])==expected_all[1]
    page.locator(f'#{prefix}-buyer').select_option('Buyer A');color_id='fdr-place'if prefix=='fdr'else prefix+'-color';assert 'Green'not in page.locator('#'+color_id).inner_text();assert 'Blue'in page.locator('#'+color_id).inner_text();assert page.locator(f'#{prefix}-table tbody tr').count()==100
@@ -78,7 +86,10 @@ try:
    page.locator(f'#{prefix}-search').fill({'rfd':'RFD-0204','booking':'B-204','dcs':'D-102','fdr':'F-102'}[prefix]);page.wait_for_function("p=>({rfd:RFD_FILTERED,booking:BOOKING_FILTERED,dcs:DCS_FILTERED,fdr:FDR_FILTERED}[p]).length===1",arg=prefix);assert page.locator(f'#{prefix}-table tbody tr').count()==1;page.evaluate(f'{clear}()')
    page.locator('#'+color_id).select_option('Green')
    with page.expect_download()as d:page.locator(f'#{prefix}-export').click()
-   exported=source_csv(d.value.path());expected=page.evaluate("p=>p==='fdr'?fixtureFdr.filter(r=>r[2]==='Green').map(fdrViewRow):fixtureRaw[p].filter(r=>r[{rfd:6,booking:7,dcs:6}[p]]==='Green')",prefix);assert exported[1:]==expected,'Export altered source rows or appended totals'
+   if prefix=='fdr':
+    assert len(assert_fdr_excel(page,d.value.path()))==87
+   else:
+    exported=source_csv(d.value.path());expected=page.evaluate("p=>fixtureRaw[p].filter(r=>r[{rfd:6,booking:7,dcs:6}[p]]==='Green')",prefix);assert exported[1:]==expected,'Export altered source rows or appended totals'
    for width in [721,1065,1920]:
     page.set_viewport_size({'width':width,'height':884});page.wait_for_timeout(100);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(prefix,width);assert page.locator('#'+color_id).is_visible();assert page.locator(f'#{prefix}-table').evaluate("e=>e.parentElement.getBoundingClientRect().bottom+30<=innerHeight"),(prefix,width,'table exceeds viewport');assert page.locator(f'#{prefix}-table tfoot td').first.evaluate("e=>{const a=e.getBoundingClientRect(),b=e.closest('table').parentElement.getBoundingClientRect();return a.bottom<=b.bottom+2&&a.top>=b.top}"),(prefix,width,'footer not pinned')
     if width==721:page.screenshot(path='/tmp/rfd-layout-'+prefix+'.png')

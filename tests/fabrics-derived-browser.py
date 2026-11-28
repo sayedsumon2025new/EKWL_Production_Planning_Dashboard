@@ -1,3 +1,4 @@
+from table_excel import assert_fdr_excel
 """Real browser checks: 31 source columns and the requested 30-column report view."""
 import csv,io,json,shutil,sys
 from pathlib import Path
@@ -6,7 +7,7 @@ import importlib.util
 _fixture_spec=importlib.util.spec_from_file_location("rfd_plan_fixture",Path(__file__).with_name("rfd-plan-fixture.py"));_fixture=importlib.util.module_from_spec(_fixture_spec);_fixture_spec.loader.exec_module(_fixture)
 sys.path.insert(0,str(Path(__file__).parent/'mysql'));from client import Client
 BASE='http://127.0.0.1:18080/';auth=json.loads(Path(sys.argv[1]).read_text());client=Client();client.login(auth['email'],auth['password']);expected=client.call('rfd/fabrics-details',{'action':'read'})['data']
-columns=[0, 1, 2, 3, 4, 5, 13, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+columns=[0, 1, 2, 3, 4, 5, 13, 6, 7, 8, 9, 10, 11, 12, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
 view=lambda row:[row[i]for i in columns]
 body=[r for i,r in enumerate(expected['rows'])if expected['evidence'][i]['reconciliation']['type']!='rib']
 with sync_playwright() as p:
@@ -30,7 +31,7 @@ with sync_playwright() as p:
   page.locator('#s22').evaluate('e=>e.scrollTop=e.scrollHeight');assert page.locator('#fdr-tab').evaluate("e=>{const r=e.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest('#fdr-tab')===e}");page.locator('#s22').evaluate('e=>e.scrollTop=0')
  page.locator('#fdr-last').click();assert page.locator('#fdr-table tbody tr').count()==len(body)-100
  with page.expect_download()as d:page.locator('#fdr-export').click()
- assert list(csv.reader(io.StringIO(Path(d.value.path()).read_text(encoding='utf-8-sig'),newline='')))==[view(expected['headers']),*[view(r)for r in body]]
+ assert d.value.suggested_filename.endswith('.xlsx');assert len(assert_fdr_excel(page,d.value.path()))==len(body)+2
  page.evaluate("setPlanningReadState('error')");assert page.locator('#fdr-table').is_visible();page.evaluate("setPlanningReadState('ready')")
  page.evaluate('siteLogout()');page.wait_for_function('SITE_AUTH_USER===null');assert page.evaluate('FDR_ROWS.length')==0;assert page.locator('#fdr-table').text_content()=='';assert not errors,errors
- b.close();print(json.dumps({'automatic_fabrics_rows':len(expected['rows']),'source_columns':31,'visible_columns':30,'sql_calculation_parity':True,'source_evidence_dialog':True,'all_four_tabs_hit_tested':True,'six_viewport_widths':True,'wrapped_text_not_clipped':True,'full_csv_export':True,'logout_cleared':True,'javascript_errors':0}))
+ b.close();print(json.dumps({'automatic_fabrics_rows':len(expected['rows']),'source_columns':31,'visible_columns':29,'sql_calculation_parity':True,'source_evidence_dialog':True,'all_four_tabs_hit_tested':True,'six_viewport_widths':True,'wrapped_text_not_clipped':True,'full_csv_export':True,'logout_cleared':True,'javascript_errors':0}))

@@ -33,3 +33,16 @@ for(const id of ['fdr-search','fdr-buyer','fdr-place','fdr-detail'])nodes[id]={v
 const descriptions=[fab('A','10'),fab('B','20')];descriptions[0][0]='Buyer A';descriptions[0][3]='Body cotton\nSecond detail';descriptions[1][0]='Buyer B';descriptions[1][2]='Red';descriptions[1][3]='Rib trim';const originalDetails=JSON.stringify(descriptions);
 c.rfdResetTableTools('fdr');c.rfdCascadeRows('fdr',descriptions);assert(nodes['fdr-detail'].innerHTML.includes('Second detail'));nodes['fdr-detail'].value='Second detail';assert.equal(c.rfdCascadeRows('fdr',descriptions).length,1);nodes['fdr-place'].value='Red';assert.equal(c.rfdCascadeRows('fdr',descriptions).length,1);assert.equal(nodes['fdr-detail'].value,'');assert(!nodes['fdr-detail'].innerHTML.includes('Second detail'));assert.equal(JSON.stringify(descriptions),originalDetails);
 console.log('PASS Fabric Details per-line facet, upstream colour cascade, invalid descendant reset and unchanged source strings');
+
+assert.equal(c.rfdDisplayValue('fdr',18,'0.41113636'),'0.4111');
+assert.equal(c.rfdDisplayValue('fdr',18,'0.4'),'0.4000');
+assert.equal(c.rfdDisplayValue('fdr',18,'0.99999999'),'1.0000');
+assert.equal(c.rfdDisplayValue('fdr',19,'3552.8358209'),'3553');
+assert.equal(c.rfdDisplayValue('fdr',19,'4450.63492063'),'4451');
+assert.equal(c.rfdDisplayValue('fdr',19,'—'),'—');
+assert.equal(c.rfdDisplayValue('fdr',19,'-1.5'),'-2');
+assert.equal(c.rfdDisplayValue('rfd',18,'0.41113636'),'0.41113636');
+const precise=[fab('X','0'),fab('Y','0')];precise[0][19]=precise[1][19]='0.49';
+assert.equal(c.rfdQuantityTotals('fdr',wrap(precise),{evidence:[{pair:'X'},{pair:'Y'}]})[19].text,'1');
+assert(!vm.runInContext('RFD_TABLE_VIEWS.fdr.columns.includes(15)',c));
+console.log('PASS FDR view precision: 4 consumption decimals, whole cuttable pieces, exact totals rounded once, hidden receive column and unchanged other reports');
