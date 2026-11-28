@@ -35,9 +35,9 @@ function resetRfdPlanScope(){RFD_PLAN_MODE='within';RFD_PLAN_SCOPE_CACHE=null;re
 function setRfdPlanMode(mode){if(!['within','without','all'].includes(mode))return;getRfdPlanScope();RFD_PLAN_MODE=mode;refreshRfdPlanScope();}
 function refreshRfdPlanScope(){
  RFD_PLAN_SCOPE_CACHE=null;renderRfdPlanScope();
- for(const prefix of ['rfd','booking','dcs','fdr'])if(typeof rfdResetTableTools==='function')rfdResetTableTools(prefix);
+ for(const prefix of ['rfd','booking','dcs','fdr',...(typeof BB_STATE==='undefined'?[]:['bb'])])if(typeof rfdResetTableTools==='function')rfdResetTableTools(prefix);
  for(const fn of [typeof clearRfdExport==='function'?clearRfdExport:null,typeof clearBookingExport==='function'?clearBookingExport:null,typeof clearDcsExport==='function'?clearDcsExport:null,typeof clearFdrExport==='function'?clearFdrExport:null])fn?.();
- if(typeof RFD_PAGE!=='undefined')RFD_PAGE=1;if(typeof BOOKING_PAGE!=='undefined')BOOKING_PAGE=1;if(typeof DCS_PAGE!=='undefined')DCS_PAGE=1;if(typeof FDR_PAGE!=='undefined')FDR_PAGE=1;if(typeof RCON_PAGE!=='undefined')RCON_PAGE=1;
+ if(typeof RFD_PAGE!=='undefined')RFD_PAGE=1;if(typeof BOOKING_PAGE!=='undefined')BOOKING_PAGE=1;if(typeof DCS_PAGE!=='undefined')DCS_PAGE=1;if(typeof FDR_PAGE!=='undefined')FDR_PAGE=1;if(typeof BB_STATE!=='undefined'){BB_STATE.page=1;bbClearExport();}if(typeof RCON_PAGE!=='undefined')RCON_PAGE=1;
  if(typeof rcCloseReview==='function')rcCloseReview();document.getElementById('fdr-evidence')?.close();document.getElementById('fm-evidence')?.close();
  if(typeof CURRENT_SLIDE==='undefined'||CURRENT_SLIDE!==22)return;
  const tab=typeof RFD_ACTIVE_TAB==='undefined'?'rfd':RFD_ACTIVE_TAB;
