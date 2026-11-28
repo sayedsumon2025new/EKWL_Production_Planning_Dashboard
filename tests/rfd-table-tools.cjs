@@ -46,3 +46,6 @@ const precise=[fab('X','0'),fab('Y','0')];precise[0][19]=precise[1][19]='0.49';
 assert.equal(c.rfdQuantityTotals('fdr',wrap(precise),{evidence:[{pair:'X'},{pair:'Y'}]})[19].text,'1');
 assert(!vm.runInContext('RFD_TABLE_VIEWS.fdr.columns.includes(15)',c));
 console.log('PASS FDR view precision: 4 consumption decimals, whole cuttable pieces, exact totals rounded once, hidden receive column and unchanged other reports');
+
+const ownNet=[fab('SAME','0'),fab('SAME','0')];ownNet[0][19]='833.33333333';ownNet[1][19]='166.66666667';assert.equal(c.rfdQuantityTotals('fdr',wrap(ownNet),{evidence:[{pair:'SAME'},{pair:'SAME'}]})[19].text,'1,000');
+console.log('PASS row-level net-receive cuttable totals include distinct Body/Rib fabric rows once, rounded after summation');
