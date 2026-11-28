@@ -12,7 +12,11 @@ $ops=['routing'=>[Ekwl\fdrPair('000123','Blue')=>['print'=>true,'emb'=>false,'ro
 $bank=['rows'=>[raw(2,['ewo'=>'000123','color'=>'BLUE','order_qty'=>'600']),raw(3,['ewo'=>'000123','color'=>' Blue ','order_qty'=>'400'])]];
 function build(array $sources,array $ops): array {global $bank;return Ekwl\fdrBuild($sources,$ops,[],$bank);}
 $result=build($s,$ops);check(count($result['rows'])===2,'Grain / join expansion');
-foreach($result['rows'] as $row){check(count($row)===31,'31 columns');foreach([14=>'600',15=>'600',16=>'—',17=>'1000',18=>'0.6',19=>'1000',20=>'500',21=>'400',22=>'300',23=>'100',24=>'0',25=>'0',26=>'0',27=>'200',28=>'100',29=>'50'] as $i=>$value)check($row[$i]===$value,'Formula column '.$i.' got '.$row[$i]);check($row[1]==='000123','Leading-zero key');}
+foreach($result['rows'] as $row){check(count($row)===31,'31 columns');foreach([14=>'600',15=>'600',16=>'—',17=>'1000',18=>'0.6',20=>'500',21=>'400',22=>'300',23=>'100',24=>'0',25=>'0',26=>'0',27=>'200',28=>'100',29=>'50'] as $i=>$value)check($row[$i]===$value,'Formula column '.$i.' got '.$row[$i]);check($row[1]==='000123','Leading-zero key');}
+foreach($result['rows'] as $i=>$row){check($row[19]===($row[4]==='Body'?'833.33333333':'166.66666667'),'Cuttable uses only the fabric grain Net Delivery');check($result['evidence'][$i]['cuttable_net_receive']['quantity']===$row[6],'Net receipt numerator matches visible KG cell');}
+$x=$s;$x['rfd']['rows'][2]['v'][14]='9999';$m=build($x,$ops);$body=array_values(array_filter($m['rows'],fn($r)=>$r[4]==='Body'))[0];check($body[19]==='833.33333333','Other fabric receive cannot increase Body cuttable quantity');
+$x=$s;$x['rfd']['rows']=array_values(array_filter($x['rfd']['rows'],fn($r)=>strtolower(trim($r['v'][8]))!=='body'));$m=build($x,$ops);$body=array_values(array_filter($m['rows'],fn($r)=>$r[4]==='Body'))[0];check($body[19]==='—','Missing Body receipt never falls back to Rib');
+$x=$s;$x['rfd']['rows'][0]['v'][14]='0';$x['rfd']['rows'][1]['v'][14]='0';$m=build($x,$ops);$body=array_values(array_filter($m['rows'],fn($r)=>$r[4]==='Body'))[0];check($body[19]==='0','Real zero net receipt produces zero capacity');
 check(array_sum(array_map(fn($r)=>(int)$r[6],$result['rows']))===600,'No RFD multiplication');check(array_sum(array_map(fn($r)=>(int)$r[13],$result['rows']))===600,'No Booking multiplication');
 $index=Ekwl\fdrDetailIndex($s['rfd']['rows']);$match=Ekwl\fdrDetailMatch($index,['ewo'=>' 000123 ','color'=>'BLUE','construction'=>' body ','composition'=>'cotton']);check($match['value']==='Fabric <source>'&&$match['matched_rows']===2,'Four-key RFD lookup normalizes case and whitespace');
 foreach(['ewo','color','construction','composition'] as $field){$g=['ewo'=>'000123','color'=>'Blue','construction'=>'Body','composition'=>'Cotton'];$g[$field]='WRONG';check(Ekwl\fdrDetailMatch($index,$g)['status']==='no_four_key_match','No weaker fallback when '.$field.' differs');}
@@ -48,3 +52,12 @@ echo "PASS Order Bank EWO/Color exact sum, distinct PO components, no cross-colo
 $bank=$originalBank;$x=$s;foreach(['rfd'=>6,'booking'=>7,'cutting'=>6]as $kind=>$col)foreach($x[$kind]['rows']as &$r)$r['v'][$col]='C. Blue';unset($r);
 $identity=['effective'=>[]];foreach(['rfd','booking','cutting']as $kind)$identity['effective'][Ekwl\rcScope('000123',$kind,'C. Blue')]=['ewo'=>'000123','to_color'=>'Blue'];
 $m=Ekwl\fdrBuild($x,$ops,$identity,$bank);check($m['rows'][0][17]==='1000','Approved source color mapping uses the Order Bank master quantity');
+
+foreach(['PCS'=>[15,'500','Net Delivery Qty Pcs'],'YDS'=>[16,'100','Net Delivery Qty Yds']] as $unit=>[$column,$expected,$header]){
+ $x=$s;foreach($x['booking']['rows'] as &$row)$row['v'][10]=$unit;unset($row);
+ $x['rfd']['rows'][0]['v'][$column]=$unit==='PCS'?'200':'30';$x['rfd']['rows'][1]['v'][$column]=$unit==='PCS'?'100':'30';
+ $m=build($x,$ops);foreach($m['rows'] as $i=>$row)if($row[4]==='Body'){check($row[19]===$expected,'Only matching net receipt unit supplies capacity: '.$unit);check($m['evidence'][$i]['cuttable_net_receive']['source_column']===$header,'Unit-specific receipt provenance');}
+}
+$x=$s;$x['booking']['rows'][]=bookingRow(5,'Body','1');$x['booking']['rows'][2]['v'][8]='180';$m=build($x,$ops);foreach($m['rows'] as $row)if($row[4]==='Body')check($row[6]==='—'&&$row[19]==='—','Ambiguous fabric specs cannot borrow pair receipts');
+echo "PASS Cuttable uses row-level Net Delivery only, correct KG/PCS/YDS units, missing/zero/ambiguous guards and source references; other fabric receipts never leak
+";

@@ -14,3 +14,11 @@ console.log('PASS v5 booking source headings/counts/row identity/types, role evi
 const v6=structuredClone(valid);v6.report.model_version='fabrics-derived-v6';v6.rows[0][17]='1000';v6.pairs={A:{order_bank_order:{quantity:'1000'}}};assert.equal(c.verifyFdrRead(v6),v6);v6.pairs.A.order_bank_order.quantity='9999';assert.throws(()=>c.verifyFdrRead(v6));
 
 const v7=structuredClone(valid);v7.report.model_version='fabrics-derived-v7';v7.rows[0][17]='1000';v7.pairs={A:{order_bank_order:{quantity:'1000'}}};v7.evidence[0].master_identity={matched:true,master_id:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',master_code:'MID-000001',registry_status:'confirmed'};assert.equal(c.verifyFdrRead(v7),v7);v7.evidence[0].master_identity.master_code=null;assert.throws(()=>c.verifyFdrRead(v7));
+
+vm.runInContext(fs.readFileSync('rfd-table-tools.js','utf8'),c);
+const v9=structuredClone(valid);v9.report.model_version='fabrics-derived-v9';v9.rows[0][6]='500';v9.rows[0][17]='1000';v9.pairs={A:{order_bank_order:{quantity:'1000'}}};v9.evidence[0].master_identity={matched:true,master_id:null,master_code:null};v9.evidence[0].grain={rfd_rows:[2,3]};v9.evidence[0].cuttable_net_receive={unit:'KG',quantity:'500',source_column:'Net Delivery Qty Kg.',rfd_rows:[2,3]};
+assert.equal(c.verifyFdrRead(v9),v9);
+for(const change of [d=>delete d.evidence[0].cuttable_net_receive,d=>d.evidence[0].cuttable_net_receive.quantity='600',d=>d.evidence[0].cuttable_net_receive.source_column='Net Delivery Qty Pcs',d=>d.evidence[0].cuttable_net_receive.unit='PCS',d=>d.evidence[0].cuttable_net_receive.rfd_rows=[4]]){const bad=structuredClone(v9);change(bad);assert.throws(()=>c.verifyFdrRead(bad),/Net Delivery source evidence/);}
+console.log('PASS v9 Cuttable numerator is verified against the visible Net Delivery cell, matching unit/source column and exact fabric-row references');
+
+const unsupported=structuredClone(v9);unsupported.rows[0][12]='MTR';unsupported.evidence[0].reconciliation.unit='MTR';unsupported.evidence[0].cuttable_net_receive={unit:'MTR',quantity:null,source_column:null,rfd_rows:[2,3]};assert.equal(c.verifyFdrRead(unsupported),unsupported,'Unsupported units remain unavailable per row without blocking the entire report');

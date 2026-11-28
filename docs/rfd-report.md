@@ -26,9 +26,9 @@ Footer daily measures (Cutting/Sewing/Finishing Receive/Iron/Hang Tag/Folding/Po
 
 ## Fabrics Details Report
 
-The fourth tab is derived from completed RFD, Booking and Daily Cutting reports plus active Embellishment and Sewing reports. The supplied file contains the 31 output headers only; it is not uploaded as data. Grain is EWO + Color + Construction + Composition. Booking quantity is per grain; Total Booking, textile receipt, order quantity, consumption, cuttable pieces and production/WIP are EWO+Color measures repeated across fabric rows, never additive across those rows. Units must match before adding or dividing.
+The fourth tab is derived from completed RFD, Booking and Daily Cutting reports plus active Embellishment and Sewing reports. The supplied file contains the 31 output headers only; it is not uploaded as data. Grain is EWO + Color + Construction + Composition. Booking quantity is per grain; Total Booking, textile receipt, order quantity, consumption and production/WIP are EWO+Color measures repeated across fabric rows, never additive across those rows. Units must match before adding or dividing.
 
-Consumption = Total Booking / unique Total Order Qty, rounded to eight decimals. Cuttable pieces = total textile receipt in the same unit / consumption. Received for Cutting is explicitly excluded from every calculation by the latest user instruction. MCD Live Stock remains unavailable until a replacement formula is supplied. Cutting Total and Order Qty use the latest Daily Production date per EWO+Color. Missing/conflicting latest values or unrecognized dates remain unavailable, with source date/row references in evidence. Earlier cumulative dates are never added. Daily Production Sewing Total is output, so it does not replace the existing Sewing Input/WIP report. Sewing uses the active whole-report head and sums all lines; embellishment sums active daily movements, not cumulative total columns. The latest completed plan supplies process applicability only; it does not filter report rows. No unambiguous matching plan means Cutting WIP remains unavailable rather than inferring no-process from zero movements. Both Print and Embroidery present means Cutting WIP is unresolved until final routing is known. No matching source is unavailable rather than zero.
+Consumption = Total Booking / unique Total Order Qty, rounded to eight decimals. Cuttable pieces = this fabric row Net Delivery Qty in the booking unit / consumption, calculated from unrounded inputs. It uses only the exact matched fabric receipt rows, never the EWO+Color receipt pool; each fabric result is additive in the footer. Received for Cutting is explicitly excluded from every calculation by the latest user instruction. MCD Live Stock remains unavailable until a replacement formula is supplied. Cutting Total and Order Qty use the latest Daily Production date per EWO+Color. Missing/conflicting latest values or unrecognized dates remain unavailable, with source date/row references in evidence. Earlier cumulative dates are never added. Daily Production Sewing Total is output, so it does not replace the existing Sewing Input/WIP report. Sewing uses the active whole-report head and sums all lines; embellishment sums active daily movements, not cumulative total columns. The latest completed plan supplies process applicability only; it does not filter report rows. No unambiguous matching plan means Cutting WIP remains unavailable rather than inferring no-process from zero movements. Both Print and Embroidery present means Cutting WIP is unresolved until final routing is known. No matching source is unavailable rather than zero.
 
 The endpoint reads sources in a repeatable-read SQL transaction. Admin refresh creates/updates two additive SQL materialization tables with model version, exact dependency digest and evidence. A cached result is never substituted for changed source data. Read-only users can calculate without writes. All cells expose scope, formula and source row references. Source heads/counts and all row receipts are checked before use; incomplete or ambiguous inputs fail closed.
 
@@ -66,7 +66,7 @@ Fabrics Details model v4 includes approved effective mappings and their provenan
 The report view hides Total Booking and Total Fabrics From Textile Receive while
 retaining the verified 31-cell source model and full-precision calculations.
 Consumption displays exactly four decimals; Cut able From Textile Receive displays
-whole pieces, rounded for presentation. Its footer aggregates exact distinct-pair
+whole pieces, rounded for presentation. Its footer aggregates exact fabric-row
 values before rounding once. Evidence dialogs retain original calculated precision.
 
 Export Excel downloads a native `.xlsx` containing all rows matching the current
@@ -76,3 +76,12 @@ visible column order, precision, EWO presentation, Master ID labels, classificat
 labels, theme colors, borders, widths and wrapping are retained. The first three
 columns and header freeze in Excel. Export does not change the selected page or
 write source data. Other RFD/Booking/Daily Production CSV exports are unchanged.
+
+
+Model `fabrics-derived-v9` calculates Cut able From Textile Receive outside the
+EWO/Color metric cache. The numerator is the current fabric grain's visible Net
+Delivery Qty KG, PCS or YDS according to UOM. Missing or ambiguous fabric receipts
+remain unavailable, with no fallback to receipts of another fabric. Evidence
+records the source column, exact net quantity, unit and original receipt row numbers;
+the frontend verifies those against the visible net-delivery cells. The new model
+version changes the dependency digest so old pooled calculations are not reused.

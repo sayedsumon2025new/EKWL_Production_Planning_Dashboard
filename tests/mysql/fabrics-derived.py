@@ -26,11 +26,14 @@ Client().call('rfd/fabrics-details',{'action':'read'},expected=401)
 admin.call('rfd/fabrics-details',{'action':'refresh'},csrf=False,expected=403)
 r=admin.call('rfd/fabrics-details',{'action':'refresh'})['data'];assert r['integrity']['complete'] and len(r['rows'])==112 and len(r['headers'])==31
 main=[row for row in r['rows'] if row[1]=='000123'];assert len(main)==2
-body=next(row for row in main if row[4]=='Body');assert 'Second matching fabric detail' in body[3] and 'Long fabric description' in body[3];assert r['report']['model_version']=='fabrics-derived-v8'
+body=next(row for row in main if row[4]=='Body');assert 'Second matching fabric detail' in body[3] and 'Long fabric description' in body[3];assert r['report']['model_version']=='fabrics-derived-v9'
 for i,row in enumerate(r['rows']):
  if row[1]=='000123':assert r['evidence'][i]['fabric_details_match']['status']=='matched'
 for row in main:
- for i,v in {14:'600',15:'600',16:'—',17:'1000',18:'0.6',19:'1000',20:'500',21:'400',22:'300',23:'100',24:'0',25:'0',26:'0',27:'200',28:'100',29:'50'}.items():assert row[i]==v,(i,row[i])
+ for i,v in {14:'600',15:'600',16:'—',17:'1000',18:'0.6',20:'500',21:'400',22:'300',23:'100',24:'0',25:'0',26:'0',27:'200',28:'100',29:'50'}.items():assert row[i]==v,(i,row[i])
+for row in main:assert row[19]==('833.33333333' if row[4]=='Body' else '166.66666667'),row
+for i,row in enumerate(r['rows']):
+ if row[1]=='000123':assert r['evidence'][i]['cuttable_net_receive']['quantity']==row[6]
 pair=next(v for v in r['pairs'].values()if v['order_bank_order']['quantity']=='1000');assert [x['row']for x in pair['order_bank_order']['rows']]==[2,3];assert [x['order_qty']for x in pair['order_bank_order']['rows']]==['600','400']
 assert r['report']['materialized'];again=admin.call('rfd/fabrics-details',{'action':'refresh'})['data'];assert again['rows']==r['rows'] and again['report']['id']==r['report']['id']
 for k,route in [('rfd','rfd'),('booking','rfd/booking'),('cutting','rfd/daily-cutting')]:assert admin.call(route,{'action':'read'})['data']['report']['id']==heads[k]
