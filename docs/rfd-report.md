@@ -59,3 +59,20 @@ A clean EWO key is used only when exactly one distinct six-digit identifier is p
 Only an Admin with slide_22 access can approve a source-specific color alias, with explicit confirmation and a source-version digest. The target must exist in current Order Bank colors for the same EWO. Distinct existing Order Bank colors cannot be merged. A stale source/approval digest returns 409. The first Admin approval creates the additive ekwl_rfd_color_mappings table; read-only requests create nothing. Approval/revocation writes mapping records and audit history including source versions; uploaded source cells are never updated. A mapping whose source alias or Order Bank target disappears becomes inactive for matching until reviewed. Admins can revoke a mapping; readers can inspect but cannot approve or revoke.
 
 Fabrics Details model v4 includes approved effective mappings and their provenance in its dependency digest/evidence. With no active mappings, FDR avoids an unnecessary Order Bank scan; Data Converter always checks all four identity sources. Only EWO/color grouping changes; fabric identity still requires Construction and Composition. Formulas, units, missing-data guards, source aggregation and process routing rules remain unchanged. Approvals invalidate the current browser's FDR result and late requests cannot restore old account data. Operational Sewing/Embellishment/plan colors retain their own existing exact matching; no aliases are inferred for sources outside the four reviewed reports. Received for Cutting remains excluded and MCD remains unavailable pending a formula.
+
+
+## Fabrics Details display and Excel export
+
+The report view hides Total Booking and Total Fabrics From Textile Receive while
+retaining the verified 31-cell source model and full-precision calculations.
+Consumption displays exactly four decimals; Cut able From Textile Receive displays
+whole pieces, rounded for presentation. Its footer aggregates exact distinct-pair
+values before rounding once. Evidence dialogs retain original calculated precision.
+
+Export Excel downloads a native `.xlsx` containing all rows matching the current
+plan scope, Body/Rib tab and filters across all pages, followed by the same totals
+footer. It uses the same row renderer and existing styled table workbook builder:
+visible column order, precision, EWO presentation, Master ID labels, classification
+labels, theme colors, borders, widths and wrapping are retained. The first three
+columns and header freeze in Excel. Export does not change the selected page or
+write source data. Other RFD/Booking/Daily Production CSV exports are unchanged.
