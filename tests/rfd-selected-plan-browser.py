@@ -19,6 +19,8 @@ try:
    elif'/api/'in r.request.url:r.fulfill(content_type='application/json',body=json.dumps({'data':{'session':None,'csrf':'fixture'},'error':None}))
    else:r.fulfill(body='',content_type='application/javascript')
   page.route('**/*',route);page.goto(base,wait_until='networkidle');page.wait_for_function("typeof FDR_HEADERS!=='undefined'&&typeof renderFdrModule==='function'&&typeof BOOKING_HEADERS!=='undefined'")
+  # Finish the anonymous startup handler before installing an isolated test identity.
+  page.wait_for_function("document.getElementById('site-login-msg').textContent.includes('Email এবং password দিয়ে sign in করুন।')")
   page.evaluate(r"""()=>{
    SITE_AUTH_USER={id:'scope-owner'};SITE_USER_PROFILE={role:'admin',permissions:{}};document.body.classList.remove('site-locked');document.getElementById('site-login-gate').classList.add('hidden');
    window.fixtures={rfd:[],booking:[],dcs:[],fdr:[]};const entries=[['272205','Praline','Other Buyer','99'],['271080','Blue','Buyer A','10'],['271080','Red','Buyer A','20'],['271444','Black','Buyer B','30'],['EWO 271080-FBR','C. Navy','Buyer A','5'],['271080 / 272205','Mixed','Mixed Buyer','999'],['','Unknown','Unknown Buyer','999']];

@@ -23,6 +23,8 @@ try:
    elif'/api/'in r.request.url:r.fulfill(content_type='application/json',body=json.dumps({'data':{'session':None,'csrf':'offline'},'error':None}))
    else:r.fulfill(body='')
   page.route('**/*',route);page.goto(base,wait_until='networkidle');page.wait_for_function("typeof loadBodyBalance==='function'")
+  # Finish the anonymous startup handler before installing an isolated test identity.
+  page.wait_for_function("document.getElementById('site-login-msg').textContent.includes('Email এবং password দিয়ে sign in করুন।')")
   page.evaluate('''data=>{SITE_AUTH_USER={id:'body-owner'};SITE_USER_PROFILE={role:'admin',permissions:{slide_22:true}};document.body.classList.remove('site-locked');document.getElementById('site-login-gate').classList.add('hidden');CURRENT_SLIDE=22;document.querySelectorAll('.slide').forEach(e=>e.classList.toggle('active',e.id==='s22'));setRfdPlanMode('all');window.testBody=data;window.bodyReads=0;SB.request=async(route)=>{if(route!=='rfd/body-balance')throw Error('Unexpected source '+route);bodyReads++;return {data:testBody};};}''',data)
   page.locator('#fdr-tab').click();page.wait_for_function('BB_STATE.data!==null&&BB_STATE.promise===null')
   assert page.locator('#bb-view').is_visible()and page.locator('#fdr-source-view').is_hidden()
